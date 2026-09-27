@@ -17,8 +17,8 @@
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @hotel/database migrate:deploy",
     "db:migrate:dev": "pnpm --filter @hotel/database migrate:dev",
-    "db:seed": "pnpm --filter @hotel/database seed",
-    "db:reset": "pnpm --filter @hotel/database reset",
+    "db:seed": "turbo run build --filter=@hotel/database && pnpm --filter @hotel/database seed",
+    "db:reset": "turbo run build --filter=@hotel/database && pnpm --filter @hotel/database reset",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
