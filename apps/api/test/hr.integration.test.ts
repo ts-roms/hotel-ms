@@ -6,7 +6,7 @@
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startTestApp, type TestContext, TestClient } from './harness.js';
+import { startTestApp, type TestContext, TestClient, webPunch } from './harness.js';
 
 let ctx: TestContext;
 let admin: TestClient;
@@ -312,8 +312,7 @@ describe('scheduling', () => {
 
 describe('attendance', () => {
   it('the clock follows IN → break → OUT, per employee', async () => {
-    const punch = (client: TestClient, type: string) =>
-      client.request('POST', `${mnl()}/attendance/punches`, { type });
+    const punch = (client: TestClient, type: string) => webPunch(client, mnl(), type);
     expect((await punch(reception, 'OUT')).status).toBe(409);
     expect((await punch(reception, 'IN')).status).toBe(201);
     expect((await punch(reception, 'IN')).status).toBe(409);
@@ -332,13 +331,7 @@ describe('attendance', () => {
     expect(noEmployee.status).toBe(403);
     expect(noEmployee.body.code).toBe('NOT_AN_EMPLOYEE');
     // Not at a property where one is not assigned.
-    expect(
-      (
-        await reception.request('POST', `/api/v1/properties/${P().CEB}/attendance/punches`, {
-          type: 'IN',
-        })
-      ).status,
-    ).toBe(404);
+    expect((await webPunch(reception, `/api/v1/properties/${P().CEB}`, 'IN')).status).toBe(404);
   });
 
   it('daily summaries for the employee and the property', async () => {

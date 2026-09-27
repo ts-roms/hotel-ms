@@ -13,6 +13,15 @@ import { base32Decode, hotp } from '../src/infrastructure/totp.js';
 
 export const WEB_ORIGIN = 'http://localhost:43100';
 
+/** A minimal JPEG (magic bytes and filler): the selfie every punch needs (ADR-0022). */
+export const SELFIE = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(256, 7)]);
+
+/** Web punch: type in the query, the selfie as the body. */
+export const webPunch = (client: TestClient, propertyUrl: string, type: string) =>
+  client.request('POST', `${propertyUrl}/attendance/punches?type=${type}`, SELFIE, {
+    'content-type': 'image/jpeg',
+  });
+
 export interface TestContext {
   app: NestFastifyApplication;
   world: DemoWorld;

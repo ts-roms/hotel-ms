@@ -7,6 +7,8 @@ import {
   type ClockPhoto,
   type ClockPunchQuery,
   type ClockPunchResult,
+  type Punch,
+  type PunchType,
 } from '@hotel/contracts';
 import { uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
@@ -23,13 +25,14 @@ import {
 } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
 import type { ResolvedDevice } from '../devices/kiosk-auth.js';
-import { AttendanceService } from './attendance.service.js';
+import { AttendanceService, toPunchDto } from './attendance.service.js';
 import { matchesType } from './documents.service.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 
 /** Selfies are kept this long, then deleted (the punch itself stays). */
 export const CLOCK_PHOTO_DAYS = 90;
 const PHOTO_TAGS = { retention: 'attendance-photo' };
+/** Selfies are required with every punch, from the web and from time clocks (ADR-0022). */
 
 const unsupported = (detail: string) =>
   new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported photo', detail);
@@ -53,15 +56,8 @@ export class TimeClockService {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
-  async punch(
-    device: ResolvedDevice,
-    query: ClockPunchQuery,
-    contentType: string | undefined,
-    body: unknown,
-  ): Promise<ClockPunchResult> {
-    if (device.kind !== 'TIME_CLOCK') throw Problems.forbidden('This device is not a time clock.');
-    // Enough for a shift change at the door; not enough to try Employee IDs at will.
-    await this.rateLimiter.consume(`clock:${device.id}`, 60, 5 * 60, { failClosed: true });
+  /** The selfie must be a real image of an accepted type; returns its content type. */
+  private checkPhoto(contentType: string | undefined, body: unknown): string {
     const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
     if (!(CLOCK_PHOTO_TYPES as readonly string[]).includes(type))
       throw unsupported('Send the selfie as a JPEG, PNG or WebP image.');
@@ -71,6 +67,105 @@ export class TimeClockService {
       throw new ProblemException(413, 'VALIDATION_FAILED', 'Photo too large', 'At most 2 MiB.');
     if (!matchesType(body, type as (typeof CLOCK_PHOTO_TYPES)[number]))
       throw unsupported(`The photo is not a ${type} image.`);
+    return type;
+  }
+
+  /**
+   * Stores the selfie, then records the punch and its photo in one transaction. A refused
+   * punch (e.g. "not clocked in") takes its photo with it.
+   */
+  private async recordWithPhoto(input: {
+    employeeId: string;
+    propertyId: string;
+    type: PunchType;
+    source: 'WEB' | 'KIOSK';
+    recordedBy: string | null;
+    deviceId: string | null;
+    contentType: string;
+    body: Buffer;
+  }) {
+    const organizationId = this.cls.get('organizationId')!;
+    const storageKey = `${organizationId}/attendance-photos/${uuidv7()}`;
+    const sha256 = createHash('sha256').update(input.body).digest('hex');
+    await this.storage.put(storageKey, input.body, input.contentType, sha256, {
+      tags: PHOTO_TAGS,
+    });
+    try {
+      return await this.db.run(async (tx) => {
+        const punch = await this.attendance.punchInTx(tx, {
+          employeeId: input.employeeId,
+          propertyId: input.propertyId,
+          type: input.type,
+          source: input.source,
+          recordedBy: input.recordedBy,
+        });
+        await tx.attendancePhoto.create({
+          data: {
+            punchId: punch.id,
+            organizationId,
+            deviceId: input.deviceId,
+            storageKey,
+            contentType: input.contentType,
+            sizeBytes: input.body.length,
+            sha256,
+          },
+        });
+        await this.audit.record(tx, {
+          action: input.source === 'KIOSK' ? 'attendance.clock_punch' : 'attendance.web_punch',
+          entityType: 'employee',
+          entityId: input.employeeId,
+          propertyId: input.propertyId,
+          after: { punchId: punch.id, type: input.type, photoSha256: sha256 },
+        });
+        return punch;
+      });
+    } catch (error) {
+      await this.storage.delete(storageKey).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /** Web punch from the employee's own session: a selfie is required here too. */
+  async webPunch(
+    propertyId: string,
+    type: PunchType,
+    contentType: string | undefined,
+    body: unknown,
+  ): Promise<Punch> {
+    const photoType = this.checkPhoto(contentType, body);
+    const employeeId = await this.db.run(async (tx) => {
+      const me = await this.access.myEmployee(tx);
+      const property = await this.access.property(tx, propertyId);
+      const assigned = await tx.employmentAssignment.count({
+        where: { employeeId: me.id, propertyId, ...activeOn(property.today) },
+      });
+      if (!assigned) throw Problems.forbidden('You are not assigned to this property today.');
+      return me.id;
+    });
+    const punch = await this.recordWithPhoto({
+      employeeId,
+      propertyId,
+      type,
+      source: 'WEB',
+      recordedBy: this.access.actorId,
+      deviceId: null,
+      contentType: photoType,
+      body: body as Buffer,
+    });
+    return toPunchDto(punch);
+  }
+
+  /** Time clock punch: Employee ID and a selfie, on a paired TIME_CLOCK device. */
+  async punch(
+    device: ResolvedDevice,
+    query: ClockPunchQuery,
+    contentType: string | undefined,
+    body: unknown,
+  ): Promise<ClockPunchResult> {
+    if (device.kind !== 'TIME_CLOCK') throw Problems.forbidden('This device is not a time clock.');
+    // Enough for a shift change at the door; not enough to try Employee IDs at will.
+    await this.rateLimiter.consume(`clock:${device.id}`, 60, 5 * 60, { failClosed: true });
+    const photoType = this.checkPhoto(contentType, body);
 
     // The device's organization and property; audited as SYSTEM with the device id.
     this.cls.set('organizationId', device.organizationId);
@@ -99,49 +194,21 @@ export class TimeClockService {
       return found;
     });
 
-    const photoId = uuidv7();
-    const storageKey = `${device.organizationId}/attendance-photos/${photoId}`;
-    const sha256 = createHash('sha256').update(body).digest('hex');
-    await this.storage.put(storageKey, body, type, sha256, { tags: PHOTO_TAGS });
-    try {
-      const punch = await this.db.run(async (tx) => {
-        const punch = await this.attendance.punchInTx(tx, {
-          employeeId: employee.id,
-          propertyId: device.propertyId,
-          type: query.type,
-          source: 'KIOSK',
-          recordedBy: null,
-        });
-        await tx.attendancePhoto.create({
-          data: {
-            punchId: punch.id,
-            organizationId: device.organizationId,
-            deviceId: device.id,
-            storageKey,
-            contentType: type,
-            sizeBytes: body.length,
-            sha256,
-          },
-        });
-        await this.audit.record(tx, {
-          action: 'attendance.clock_punch',
-          entityType: 'employee',
-          entityId: employee.id,
-          propertyId: device.propertyId,
-          after: { punchId: punch.id, type: query.type, photoSha256: sha256 },
-        });
-        return punch;
-      });
-      return {
-        employeeName: employee.preferredName || employee.firstName,
-        type: punch.type,
-        at: punch.at.toISOString(),
-      };
-    } catch (error) {
-      // No punch, no photo.
-      await this.storage.delete(storageKey).catch(() => undefined);
-      throw error;
-    }
+    const punch = await this.recordWithPhoto({
+      employeeId: employee.id,
+      propertyId: device.propertyId,
+      type: query.type,
+      source: 'KIOSK',
+      recordedBy: null,
+      deviceId: device.id,
+      contentType: photoType,
+      body: body as Buffer,
+    });
+    return {
+      employeeName: employee.preferredName || employee.firstName,
+      type: punch.type,
+      at: punch.at.toISOString(),
+    };
   }
 
   // ---- Review (staff) ----------------------------------------------------------------------
@@ -175,6 +242,7 @@ export class TimeClockService {
         type: r.punch.type,
         at: r.punch.at.toISOString(),
         deviceName: r.device?.name ?? null,
+        source: r.punch.source === 'KIOSK' ? ('KIOSK' as const) : ('WEB' as const),
       }));
     });
   }

@@ -58,7 +58,12 @@ matching.
 
 - The photo is evidence for a person to look at. There is no face matching, and no
   biometric template is ever created.
-- The web punch for staff with their own login (`/me`) is unchanged and takes no photo.
-  Properties that want photos for every punch should use time clocks only.
+- Amended 2026-09-29: the web punch needs a selfie too, so every punch has one.
+  - `POST …/attendance/punches?type=…` takes the camera frame as its body, with the same
+    checks, storage, review and 90-day deletion as the time clock. The old JSON punch is
+    refused (415).
+  - It is recorded with source `WEB` and audited as `attendance.web_punch`.
+  - The My time page opens the front camera when a punch button is pressed, and the stream
+    stops as soon as the punch is sent or cancelled.
 - The 90-day period is a constant for now. Making it an organization setting is a small
   follow-up if HR policy differs by country.

@@ -1,7 +1,19 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Req,
+  Res,
+} from '@nestjs/common';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   attendanceCorrectionSchema,
+  CLOCK_PHOTO_TYPES,
   attendanceDaySchema,
   birthdaySchema,
   type CorrectionRequest,
@@ -65,7 +77,7 @@ import {
   type UpdateShiftRequest,
   updateShiftRequestSchema,
 } from '@hotel/contracts';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { parseIfMatch, weakEtag } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
@@ -76,6 +88,7 @@ import { LeaveService } from './leave.service.js';
 import { PayrollService } from './payroll.service.js';
 import { PeopleService } from './people.service.js';
 import { ScheduleService } from './schedule.service.js';
+import { TimeClockService } from './time-clock.service.js';
 
 const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
@@ -331,6 +344,7 @@ export class PropertyHrController {
     private readonly leave: LeaveService,
     private readonly people: PeopleService,
     private readonly payroll: PayrollService,
+    private readonly timeClock: TimeClockService,
   ) {}
 
   /** CSV of attendance and leave for payroll (decision D7). */
@@ -351,11 +365,18 @@ export class PropertyHrController {
     return csv;
   }
 
+  /** Punch type in the query; the body is the selfie taken now (ADR-0022). */
   @Post('attendance/punches')
   @RequirePermission('attendance.punch.own')
+  @ApiConsumes(...CLOCK_PHOTO_TYPES)
+  @ApiBody({ schema: { type: 'string', format: 'binary' } })
   @ZodResponse(201, punchSchema)
-  punch(@Param('propertyId') propertyId: string, @ZodBody(punchRequestSchema) body: PunchRequest) {
-    return this.attendance.punch(propertyId, body.type);
+  punch(
+    @Param('propertyId') propertyId: string,
+    @ZodQuery(punchRequestSchema) query: PunchRequest,
+    @Req() req: FastifyRequest,
+  ) {
+    return this.timeClock.webPunch(propertyId, query.type, req.headers['content-type'], req.body);
   }
 
   @Get('attendance')
