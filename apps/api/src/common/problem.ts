@@ -26,6 +26,35 @@ export const Problems = {
   unauthenticated: () => new ProblemException(401, 'UNAUTHENTICATED', 'Authentication required'),
   invalidCredentials: () =>
     new ProblemException(401, 'INVALID_CREDENTIALS', 'Invalid email or password'),
+  mfaRequired: () =>
+    new ProblemException(
+      401,
+      'MFA_REQUIRED',
+      'Second factor required',
+      'Complete the MFA challenge to continue.',
+    ),
+  mfaEnrollmentRequired: (permission: string) =>
+    new ProblemException(
+      403,
+      'MFA_ENROLLMENT_REQUIRED',
+      'Multi-factor authentication required',
+      `${permission} is a sensitive permission. Enable multi-factor authentication to use it.`,
+    ),
+  invalidMfaCode: () => new ProblemException(401, 'INVALID_MFA_CODE', 'Invalid verification code'),
+  invalidToken: () =>
+    new ProblemException(
+      400,
+      'INVALID_TOKEN',
+      'Invalid or expired link',
+      'Request a new link and try again.',
+    ),
+  lastAdministrator: () =>
+    new ProblemException(
+      409,
+      'LAST_ADMINISTRATOR',
+      'Organization would have no administrator',
+      'At least one active member must keep role management at organization scope.',
+    ),
   csrf: () => new ProblemException(403, 'CSRF_FAILED', 'CSRF validation failed'),
   noActiveOrganization: () =>
     new ProblemException(

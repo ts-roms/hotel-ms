@@ -24,7 +24,27 @@
   `t:{org}:grants:{membership}:{grants_version}`. Any role or assignment change must bump
   `organization_memberships.grants_version`.
 
+## Access administration (Phase 1)
+
+Pure functions in `apps/api/src/modules/access/access-policy.ts`, unit-tested:
+
+- **Granting** a role at a scope requires `role.assign` covering that scope, **and** holding
+  every permission the role would confer there. Organization-only permissions are ignored
+  at property scope, because grant evaluation ignores them too. **Removing** an assignment
+  follows the same rule: you may only take away what you could have given.
+- **Inviting** also requires `member.invite` covering each target scope, and an
+  MFA-verified session, since it grants access.
+- **Acting on a member** (suspend or reactivate) requires the actor's grant to cover _every_
+  scope the member holds. A property GM cannot suspend someone who also works elsewhere.
+- **Defining roles** is organization-wide. Every permission added must be held at
+  organization scope.
+- **Last administrator.** At least one ACTIVE member must hold `role.manage` at organization
+  scope. Access mutations lock the organization row (`SELECT … FOR UPDATE`) and re-check this
+  inside the transaction, so concurrent removals cannot race past it.
+- Property-scoped viewers see only members holding a role at one of their properties.
+- Every change bumps `grants_version` for the affected memberships and is audited.
+
 ## Not yet built
 
-Role and assignment management endpoints, including the rule that a grantor cannot grant
-beyond their own grants, department scope, and "own records" conditions.
+Department scope and "own records" conditions. Removing members entirely (status
+REMOVED), and a role editor UI (the API supports create, update and delete).

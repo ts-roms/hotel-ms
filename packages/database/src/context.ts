@@ -11,6 +11,8 @@ export type Tx = Prisma.TransactionClient;
 export interface DbContext {
   organizationId: string | null;
   identityId: string | null;
+  /** SHA-256 of an invitation token; exposes exactly that invitation (see RLS policy). */
+  invitationTokenHash?: string | null;
 }
 
 export interface TransactionOptions {
@@ -33,7 +35,9 @@ export async function withDbContext<T>(
   options?: TransactionOptions,
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT set_config('app.org_id', ${ctx.organizationId ?? ''}, true), set_config('app.identity_id', ${ctx.identityId ?? ''}, true)`;
+    await tx.$queryRaw`SELECT set_config('app.org_id', ${ctx.organizationId ?? ''}, true),
+      set_config('app.identity_id', ${ctx.identityId ?? ''}, true),
+      set_config('app.invitation_token_hash', ${ctx.invitationTokenHash ?? ''}, true)`;
     return fn(tx);
   }, options);
 }

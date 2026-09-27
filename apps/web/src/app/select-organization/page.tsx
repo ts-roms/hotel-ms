@@ -13,6 +13,7 @@ export default function SelectOrganizationPage() {
 
   useEffect(() => {
     if (session.data === null) router.replace('/login');
+    else if (session.data?.mfaPending) router.replace('/login/verify');
   }, [session.data, router]);
 
   if (!session.data) return <p className="p-6 text-muted-foreground">{t('loading')}</p>;

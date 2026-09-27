@@ -20,6 +20,10 @@ export interface RequestContext extends ClsStore {
   identityId?: string;
   /** Organization chosen at login / org switch, stored server-side on the session. */
   sessionOrganizationId?: string | null;
+  /** Identity has a verified second factor. */
+  mfaEnabled?: boolean;
+  /** This session completed the second factor. Required for sensitive permissions. */
+  mfaVerified?: boolean;
 
   /** Set by TenantGuard after verifying an ACTIVE membership. */
   organizationId?: string;

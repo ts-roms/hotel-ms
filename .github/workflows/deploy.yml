@@ -1,0 +1,100 @@
+# Reusable deploy (blueprint §24): build → push → bootstrap DB roles → migrate → roll out
+# api/worker/web → smoke test. Called by deploy-staging.yml and deploy-production.yml.
+#
+# Per GitHub environment (Settings → Environments), configure:
+#   vars.AWS_DEPLOY_ROLE_ARN  Terraform output deploy_role_arn
+#   vars.DEPLOY_CONFIG        Terraform output deploy_config (JSON)
+# plus protection rules (required reviewers for production).
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ fromJSON(vars.DEPLOY_CONFIG).public_url }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      DEPLOY_CONFIG: ${{ vars.DEPLOY_CONFIG }}
+      SHA: ${{ inputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ fromJSON(vars.DEPLOY_CONFIG).region }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push images (tagged with the commit SHA)
+        run: |
+          registry="$(jq -r .ecr_registry <<<"$DEPLOY_CONFIG")"
+          for target in api worker web migrate; do
+            repository="$(jq -r ".repositories[\"$target\"]" <<<"$DEPLOY_CONFIG")"
+            docker buildx build . \
+              --file infrastructure/docker/Dockerfile \
+              --target "$target" \
+              --tag "$registry/$repository:$SHA" \
+              --cache-from "type=gha,scope=$target" \
+              --cache-to "type=gha,mode=max,scope=$target" \
+              --provenance=false \
+              --push
+            echo "IMAGE_${target^^}=$registry/$repository:$SHA" >>"$GITHUB_ENV"
+          done
+
+      - name: Register task definitions
+        run: |
+          {
+            echo "TD_API=$(scripts/deploy/ecs.sh register api "$IMAGE_API")"
+            echo "TD_WORKER=$(scripts/deploy/ecs.sh register worker "$IMAGE_WORKER")"
+            echo "TD_WEB=$(scripts/deploy/ecs.sh register web "$IMAGE_WEB")"
+            echo "TD_MIGRATE=$(scripts/deploy/ecs.sh register migrate "$IMAGE_MIGRATE")"
+            echo "TD_BOOTSTRAP=$(scripts/deploy/ecs.sh register db-bootstrap "$IMAGE_MIGRATE")"
+          } >>"$GITHUB_ENV"
+
+      - name: Bootstrap database roles (idempotent)
+        run: scripts/deploy/ecs.sh run-task "$TD_BOOTSTRAP"
+
+      - name: Migrate database and sync platform catalog
+        # Expand/contract migrations only: the previous release keeps serving meanwhile.
+        run: scripts/deploy/ecs.sh run-task "$TD_MIGRATE"
+
+      - name: Roll out services
+        run: |
+          scripts/deploy/ecs.sh update-service api "$TD_API"
+          scripts/deploy/ecs.sh update-service worker "$TD_WORKER"
+          scripts/deploy/ecs.sh update-service web "$TD_WEB"
+          scripts/deploy/ecs.sh wait-stable api worker web
+
+      - name: Smoke test
+        run: |
+          url="$(jq -r .public_url <<<"$DEPLOY_CONFIG")"
+          # Unauthenticated session probe must answer 401 problem+json from the API.
+          status="$(curl -s -o /tmp/session.json -w '%{http_code}' "$url/api/v1/auth/session")"
+          test "$status" = "401"
+          jq -e '.code == "UNAUTHENTICATED" and (.requestId | length > 0)' /tmp/session.json
+          curl -fsS -o /dev/null "$url/login"
+          # Health and docs must not be reachable from the internet.
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$url/health/ready")" = "404"

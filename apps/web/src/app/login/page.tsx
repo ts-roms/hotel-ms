@@ -14,10 +14,11 @@ import {
   Input,
   Label,
 } from '@hotel/ui';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { t } from '@/lib/i18n';
-import { useLogin } from '@/lib/session';
+import { nextRoute, useLogin } from '@/lib/session';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,8 +30,7 @@ export default function LoginPage() {
 
   const onSubmit = form.handleSubmit(async (values) => {
     const info = await login.mutateAsync(values).catch(() => null);
-    if (!info) return;
-    router.replace(info.activeOrganizationId ? '/dashboard' : '/select-organization');
+    if (info) router.replace(nextRoute(info));
   });
 
   const error = login.error;
@@ -78,6 +78,12 @@ export default function LoginPage() {
             <Button type="submit" disabled={login.isPending}>
               {login.isPending ? t('login.submitting') : t('login.submit')}
             </Button>
+            <Link
+              href="/forgot-password"
+              className="text-center text-sm text-muted-foreground underline"
+            >
+              {t('login.forgot')}
+            </Link>
           </form>
         </CardContent>
       </Card>

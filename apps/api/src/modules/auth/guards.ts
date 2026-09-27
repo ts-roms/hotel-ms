@@ -4,7 +4,9 @@ import type { FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { PERMISSIONS } from '@hotel/contracts';
 import {
+  ALLOW_MFA_PENDING,
   IS_PUBLIC,
   NO_ORGANIZATION,
   type PermissionRequirement,
@@ -59,7 +61,14 @@ export class AuthGuard implements CanActivate {
       throw Problems.csrf();
     }
 
-    const { session } = resolved;
+    const { session, mfaEnabled } = resolved;
+    const mfaVerified = mfaEnabled && session.mfaVerifiedAt !== null;
+    if (mfaEnabled && !mfaVerified && !flag(this.reflector, ALLOW_MFA_PENDING, ctx)) {
+      throw Problems.mfaRequired();
+    }
+
+    this.cls.set('mfaEnabled', mfaEnabled);
+    this.cls.set('mfaVerified', mfaVerified);
     this.cls.set('sessionId', session.id);
     this.cls.set('sessionTokenHash', resolved.tokenHash);
     this.cls.set('identityId', session.identityId);
@@ -161,6 +170,14 @@ export class PermissionGuard implements CanActivate {
         throw Problems.notFound('Property');
       }
       throw Problems.forbidden(`Missing permission ${permission}`);
+    }
+
+    // Platform minimum (blueprint §10): sensitive permissions only work from an
+    // MFA-verified session, whatever the organization's own settings say. Checked after
+    // the grant so callers without the permission learn nothing more than before.
+    const definition = PERMISSIONS[permission];
+    if ('sensitive' in definition && definition.sensitive && !this.cls.get('mfaVerified')) {
+      throw Problems.mfaEnrollmentRequired(permission);
     }
     return true;
   }

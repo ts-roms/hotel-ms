@@ -5,9 +5,16 @@ as a modular monolith. Start with the
 [Production System Blueprint](docs/architecture/00-production-system-blueprint.md) and the
 [decision records](docs/adr/).
 
-**Status: Phase 0 (walking skeleton).** Tenancy, identity, property-scoped RBAC, audit log,
-transactional outbox and the tenant-isolation test suites are in place. Hotel features start
-in Phase 2.
+**Status: Phase 1 (foundation) complete.**
+
+- Tenancy with row-level security.
+- Property-scoped RBAC with anti-escalation rules.
+- Staff member and role administration with email invitations.
+- TOTP two-step verification with recovery codes, password reset and change.
+- Audit log, transactional outbox and background email delivery.
+- Terraform for AWS staging, and deploy pipelines.
+
+Hotel features start in Phase 2.
 
 ## Layout
 
@@ -22,7 +29,9 @@ packages/
   api-client/ Typed client for the web app
   ui/         Shared shadcn-style components
 docs/         Architecture blueprint, ADRs, database conventions, generated OpenAPI
-infrastructure/docker/  Local Postgres roles, multi-target Dockerfile
+infrastructure/docker/     Local Postgres roles, multi-target Dockerfile
+infrastructure/terraform/  AWS platform module + staging root (ADR-0010)
+scripts/deploy/            ECS deploy helpers used by the deploy workflows
 ```
 
 ## Local development
@@ -63,7 +72,11 @@ pnpm --filter @hotel/worker dev
 pnpm --filter @hotel/web dev
 ```
 
-Open http://localhost:43100. The seed creates two organizations and several users that cover
+Open http://localhost:43100. With the worker running, emails (password reset, invitations)
+are written to `apps/worker/.mail/` instead of being sent.
+
+Administrative actions (members, roles, audit log) need two-step verification: enable it
+under **Security** with any authenticator app. The seed creates two organizations and several users that cover
 the access-scope cases (org admin, single-property GM, multi-property user, org-wide auditor,
 multi-organization consultant). They are listed in `packages/database/src/demo-world.ts`,
 together with the shared development password. Demo data is never seeded when
@@ -81,8 +94,12 @@ Local ports: Postgres 55432, cache Redis 56379, queue Redis 56380, API 48100, we
 | `pnpm test:integration` | Real Postgres/Redis: RLS suite, API isolation route matrix, outbox relay. Uses the `hotel_test` database. |
 | `pnpm format:check`     | Prettier                                                                                                  |
 
-CI (`.github/workflows/ci.yml`) runs all of these, plus a schema-drift check, a stale-OpenAPI
-check, `pnpm audit` and container image builds.
+CI (`.github/workflows/ci.yml`) runs all of these. It also runs a schema-drift check, a
+stale-OpenAPI check, `pnpm audit`, Terraform fmt/validate, a Trivy config scan, actionlint,
+shellcheck and container image builds. After CI passes on `main`, `deploy-staging.yml`
+deploys to staging. Production deploys are manual and approval-gated
+(`deploy-production.yml`). To set up staging for the first time, see
+[docs/operations/staging-setup.md](docs/operations/staging-setup.md).
 
 ## Rules that are easy to break
 

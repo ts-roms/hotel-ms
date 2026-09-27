@@ -125,3 +125,29 @@ export function Alert({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
     />
   );
 }
+
+/** Native select styled like Input: accessible and mobile-friendly by default. */
+export const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ className, ...props }, ref) => (
+  <select
+    ref={ref}
+    className={cn(
+      'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+      className,
+    )}
+    {...props}
+  />
+));
+Select.displayName = 'Select';
+
+export function Notice({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      role="status"
+      className={cn('rounded-md border bg-muted px-4 py-3 text-sm text-foreground', className)}
+      {...props}
+    />
+  );
+}

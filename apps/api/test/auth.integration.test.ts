@@ -7,6 +7,7 @@ beforeAll(async () => {
   ctx = await startTestApp();
 });
 afterAll(async () => {
+  await ctx?.mailbox.close();
   await ctx?.app.close();
 });
 

@@ -62,15 +62,17 @@ let clients: Record<
 beforeAll(async () => {
   ctx = await startTestApp();
   clients = {
-    abcAdmin: await TestClient.as(ctx.app, 'admin@abc.test'),
-    john: await TestClient.as(ctx.app, 'john.gm@abc.test'),
+    // Audit log access is a sensitive permission: these users need an MFA-verified session.
+    abcAdmin: await TestClient.withMfa(ctx.app, 'admin@abc.test'),
+    john: await TestClient.withMfa(ctx.app, 'john.gm@abc.test'),
     maria: await TestClient.as(ctx.app, 'maria.hr@abc.test'),
     robert: await TestClient.as(ctx.app, 'robert.finance@abc.test'),
     frontDesk: await TestClient.as(ctx.app, 'frontdesk@abc.test'),
-    xyzAdmin: await TestClient.as(ctx.app, 'admin@xyz.test'),
+    xyzAdmin: await TestClient.withMfa(ctx.app, 'admin@xyz.test'),
   };
 });
 afterAll(async () => {
+  await ctx?.mailbox.close();
   await ctx?.app.close();
 });
 

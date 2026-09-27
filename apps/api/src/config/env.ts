@@ -7,6 +7,14 @@ const envSchema = z.object({
   DATABASE_URL: z.url(),
   DATABASE_POOL_SIZE: z.coerce.number().int().min(1).max(100).default(10),
   REDIS_CACHE_URL: z.url(),
+  /** BullMQ (non-evicting instance, ADR-0007). The API only produces jobs. */
+  REDIS_QUEUE_URL: z.url(),
+  /** Base URL of the staff web app, used to build links in emails. */
+  APP_PUBLIC_URL: z.url().default('http://localhost:43100'),
+  /** AES-256-GCM keys for sensitive columns: "kid:base64key[,kid:base64key]" (newest first). */
+  DATA_ENCRYPTION_KEYS: z.string().min(1),
+  /** Issuer label shown in authenticator apps. */
+  MFA_ISSUER: z.string().default('Hotel Platform'),
   /** Browser origins allowed to call the API (CORS + CSRF Origin check). Comma-separated. */
   WEB_ORIGIN: z
     .string()

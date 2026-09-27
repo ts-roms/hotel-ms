@@ -17,7 +17,24 @@ export interface DomainEventEnvelope<TType extends string = string, TPayload = u
 export interface DomainEventPayloads {
   PropertyCreated: { propertyId: string; code: string; name: string };
   PropertyUpdated: { propertyId: string; changedFields: string[] };
-  MemberSignedIn: { identityId: string };
+  MemberInvited: { membershipId: string; identityId: string };
+  MemberJoined: { membershipId: string; identityId: string };
+  MemberStatusChanged: { membershipId: string; status: string };
+  RoleAssigned: {
+    membershipId: string;
+    assignmentId: string;
+    roleId: string;
+    propertyId: string | null;
+  };
+  RoleUnassigned: {
+    membershipId: string;
+    assignmentId: string;
+    roleId: string;
+    propertyId: string | null;
+  };
+  RoleCreated: { roleId: string; key: string };
+  RoleUpdated: { roleId: string; changedFields: string[] };
+  RoleDeleted: { roleId: string; key: string };
 }
 
 export type DomainEventType = keyof DomainEventPayloads;
