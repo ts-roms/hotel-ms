@@ -1,10 +1,12 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import type { DomainEventEnvelope } from '@hotel/contracts';
+import { type DomainEventEnvelope, type EmailJob, NOTIFICATIONS_QUEUE } from '@hotel/contracts';
 import { createPrismaClient } from '@hotel/database';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { pino } from 'pino';
 import { z } from 'zod';
+import { deliverEmail } from './email/deliver.js';
+import { createTransport } from './email/transports.js';
 import { dispatch } from './handlers.js';
 import { DOMAIN_EVENTS_QUEUE, relayOutboxBatch } from './outbox-relay.js';
 
@@ -15,6 +17,11 @@ const env = z
     REDIS_QUEUE_URL: z.url(),
     LOG_LEVEL: z.string().default('info'),
     OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
+    EMAIL_TRANSPORT: z.enum(['file', 'ses']).default('file'),
+    EMAIL_FROM: z.string().min(3),
+    MAIL_DIR: z.string().default('.mail'),
+    AWS_REGION: z.string().optional(),
+    SES_CONFIGURATION_SET: z.string().optional(),
   })
   .parse(process.env);
 
@@ -50,6 +57,20 @@ const worker = new Worker<DomainEventEnvelope>(
 );
 worker.on('failed', (job, err) => log.error({ jobId: job?.id, err }, 'event handler failed'));
 
+const transport = createTransport(env);
+const mailer = new Worker<EmailJob>(
+  NOTIFICATIONS_QUEUE,
+  (job) => deliverEmail(job.data, transport, env.EMAIL_FROM, log.child({ jobId: job.id })),
+  // Provider rate limits (SES sandbox: 1/s; production quotas are higher).
+  { connection, concurrency: 5, limiter: { max: 10, duration: 1000 } },
+);
+mailer.on('failed', (job, err) =>
+  log.error(
+    { jobId: job?.id, template: job?.data.template, attempts: job?.attemptsMade, err },
+    'email delivery failed',
+  ),
+);
+
 let running = true;
 async function relayLoop(): Promise<void> {
   while (running) {
@@ -66,13 +87,14 @@ async function relayLoop(): Promise<void> {
 }
 
 const relay = relayLoop();
-log.info('worker started');
+log.info({ emailTransport: transport.name }, 'worker started');
 
 async function shutdown(signal: string): Promise<void> {
   log.info({ signal }, 'shutting down');
   running = false;
   await relay;
   await worker.close();
+  await mailer.close();
   await queue.close();
   await system.$disconnect();
   connection.disconnect();

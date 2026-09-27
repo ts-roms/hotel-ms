@@ -69,6 +69,15 @@ export class TenantDb {
     return withDbContext(this.prisma.client, { organizationId: null, identityId }, fn);
   }
 
+  /** No tenant or identity: only the invitation matching this token hash is visible. */
+  runWithInvitationToken<T>(tokenHash: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return withDbContext(
+      this.prisma.client,
+      { organizationId: null, identityId: null, invitationTokenHash: tokenHash },
+      fn,
+    );
+  }
+
   /**
    * Explicit context for the few places that establish tenancy themselves (TenantGuard
    * verifying the session's organization, login). The organizationId MUST come from

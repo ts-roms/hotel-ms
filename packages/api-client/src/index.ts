@@ -1,11 +1,26 @@
 import type {
+  AcceptInvitationRequest,
+  AssignmentRequest,
   AuditLogEntry,
+  ChangePasswordRequest,
   CreatePropertyRequest,
+  CreateRoleRequest,
+  InvitationPreview,
+  InviteMemberRequest,
   LoginRequest,
+  Member,
+  MfaChallengeRequest,
+  PermissionInfo,
   Problem,
   Property,
+  RecoveryCodes,
+  ResetPasswordRequest,
+  RoleDto,
   SessionInfo,
+  TotpEnrollment,
+  UpdateMemberRequest,
   UpdatePropertyRequest,
+  UpdateRoleRequest,
 } from '@hotel/contracts';
 
 /**
@@ -89,6 +104,32 @@ export function createApiClient(options: ApiClientOptions = {}) {
     auth: {
       login: (body: LoginRequest) =>
         call<SessionInfo>('POST', '/auth/login', body).then((r) => r.data),
+      mfaChallenge: (body: MfaChallengeRequest) =>
+        call<SessionInfo>('POST', '/auth/mfa/challenge', body).then((r) => r.data),
+      startTotpEnrollment: () =>
+        call<TotpEnrollment>('POST', '/auth/mfa/totp/enrollment').then((r) => r.data),
+      confirmTotpEnrollment: (code: string) =>
+        call<RecoveryCodes & { session: SessionInfo }>(
+          'POST',
+          '/auth/mfa/totp/enrollment/confirm',
+          {
+            code,
+          },
+        ).then((r) => r.data),
+      regenerateRecoveryCodes: (code: string) =>
+        call<RecoveryCodes>('POST', '/auth/mfa/recovery-codes', { code }).then((r) => r.data),
+      disableMfa: (body: MfaChallengeRequest) =>
+        call<void>('POST', '/auth/mfa/disable', body).then((r) => r.data),
+      forgotPassword: (email: string) =>
+        call<object>('POST', '/auth/password/forgot', { email }).then((r) => r.data),
+      resetPassword: (body: ResetPasswordRequest) =>
+        call<void>('POST', '/auth/password/reset', body).then((r) => r.data),
+      changePassword: (body: ChangePasswordRequest) =>
+        call<void>('POST', '/auth/password/change', body).then((r) => r.data),
+      previewInvitation: (token: string) =>
+        call<InvitationPreview>('POST', '/auth/invitations/preview', { token }).then((r) => r.data),
+      acceptInvitation: (body: AcceptInvitationRequest) =>
+        call<void>('POST', '/auth/invitations/accept', body).then((r) => r.data),
       logout: () => call<void>('POST', '/auth/logout').then((r) => r.data),
       session: () => call<SessionInfo>('GET', '/auth/session').then((r) => r.data),
       switchOrganization: (organizationId: string) =>
@@ -106,6 +147,39 @@ export function createApiClient(options: ApiClientOptions = {}) {
         call<Property>('PATCH', `/properties/${encodeURIComponent(id)}`, body, {
           'if-match': etag,
         }),
+    },
+    access: {
+      permissions: () => call<PermissionInfo[]>('GET', '/permissions').then((r) => r.data),
+      roles: () => call<RoleDto[]>('GET', '/roles').then((r) => r.data),
+      getRole: (id: string) => call<RoleDto>('GET', `/roles/${encodeURIComponent(id)}`),
+      createRole: (body: CreateRoleRequest) =>
+        call<RoleDto>('POST', '/roles', body).then((r) => r.data),
+      updateRole: (id: string, etag: string, body: UpdateRoleRequest) =>
+        call<RoleDto>('PATCH', `/roles/${encodeURIComponent(id)}`, body, { 'if-match': etag }),
+      deleteRole: (id: string) =>
+        call<void>('DELETE', `/roles/${encodeURIComponent(id)}`).then((r) => r.data),
+      members: () => call<Member[]>('GET', '/members').then((r) => r.data),
+      invite: (body: InviteMemberRequest) =>
+        call<Member>('POST', '/members/invitations', body).then((r) => r.data),
+      resendInvitation: (membershipId: string) =>
+        call<void>('POST', `/members/${encodeURIComponent(membershipId)}/invitation`).then(
+          (r) => r.data,
+        ),
+      updateMember: (membershipId: string, body: UpdateMemberRequest) =>
+        call<Member>('PATCH', `/members/${encodeURIComponent(membershipId)}`, body).then(
+          (r) => r.data,
+        ),
+      addAssignment: (membershipId: string, body: AssignmentRequest) =>
+        call<Member>(
+          'POST',
+          `/members/${encodeURIComponent(membershipId)}/role-assignments`,
+          body,
+        ).then((r) => r.data),
+      removeAssignment: (membershipId: string, assignmentId: string) =>
+        call<Member>(
+          'DELETE',
+          `/members/${encodeURIComponent(membershipId)}/role-assignments/${encodeURIComponent(assignmentId)}`,
+        ).then((r) => r.data),
     },
     auditLogs: {
       list: (

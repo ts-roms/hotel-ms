@@ -26,9 +26,10 @@ model OrganizationMembership {
   createdBy      String?          @map("created_by") @db.Uuid
   updatedBy      String?          @map("updated_by") @db.Uuid
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  identity        Identity         @relation(fields: [identityId], references: [id], onDelete: Restrict)
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  identity        Identity                 @relation(fields: [identityId], references: [id], onDelete: Restrict)
   roleAssignments RoleAssignment[]
+  invitations     OrganizationInvitation[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, identityId])
@@ -88,4 +89,26 @@ model RoleAssignment {
 
   @@index([organizationId, membershipId])
   @@map("role_assignments")
+}
+
+/// Invitation to join an organization. Accepting it proves control of the email address.
+/// Readable without tenant context only by presenting the token (RLS policy on
+/// app.invitation_token_hash), so an unauthenticated visitor can resolve exactly one row.
+model OrganizationInvitation {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  membershipId   String    @map("membership_id") @db.Uuid
+  email          String    @db.Citext
+  tokenHash      String    @unique @map("token_hash")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  acceptedAt     DateTime? @map("accepted_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  membership OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, membershipId])
+  @@map("organization_invitations")
 }

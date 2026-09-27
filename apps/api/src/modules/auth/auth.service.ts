@@ -110,24 +110,44 @@ export class AuthService {
     this.cls.set('sessionId', session.id);
     this.cls.set('sessionTokenHash', tokenHash);
 
-    if (activeOrganizationId) {
-      await this.tenantDb.runWithTrustedContext(
-        { organizationId: activeOrganizationId, identityId: identity.id },
-        (tx) =>
-          this.audit.record(tx, {
-            organizationId: activeOrganizationId,
-            action: 'auth.login',
-            entityType: 'session',
-            entityId: session.id,
-          }),
+    const mfaEnabled =
+      (await this.prisma.platform.mfaFactor.count({
+        where: { identityId: identity.id, verifiedAt: { not: null } },
+      })) > 0;
+
+    if (mfaEnabled) {
+      // Password step done; the session stays limited until the second factor.
+      log.info(
+        { event: 'auth.password_ok_mfa_pending', identityId: identity.id, sessionId: session.id },
+        'mfa challenge required',
+      );
+    } else {
+      await this.recordLogin(identity.id, session.id, activeOrganizationId);
+    }
+
+    return {
+      token,
+      info: await this.sessionInfo(activeOrganizationId, { mfaPending: mfaEnabled }),
+    };
+  }
+
+  /** Audit entry for a completed sign-in (after MFA when enabled). */
+  async recordLogin(
+    identityId: string,
+    sessionId: string,
+    organizationId: string | null,
+  ): Promise<void> {
+    if (organizationId) {
+      await this.tenantDb.runWithTrustedContext({ organizationId, identityId }, (tx) =>
+        this.audit.record(tx, {
+          organizationId,
+          action: 'auth.login',
+          entityType: 'session',
+          entityId: sessionId,
+        }),
       );
     }
-    log.info(
-      { event: 'auth.login', identityId: identity.id, sessionId: session.id },
-      'login succeeded',
-    );
-
-    return { token, info: await this.sessionInfo(activeOrganizationId) };
+    this.cls.get('log').info({ event: 'auth.login', identityId, sessionId }, 'login succeeded');
   }
 
   async logout(): Promise<void> {
@@ -156,10 +176,13 @@ export class AuthService {
         entityId: this.cls.get('sessionId')!,
       }),
     );
-    return { token, info: await this.sessionInfo(organizationId) };
+    return { token, info: await this.sessionInfo(organizationId, { mfaPending: false }) };
   }
 
-  async sessionInfo(activeOrganizationId: string | null): Promise<SessionInfo> {
+  async sessionInfo(
+    activeOrganizationId: string | null,
+    { mfaPending }: { mfaPending: boolean },
+  ): Promise<SessionInfo> {
     const identityId = this.cls.get('identityId')!;
     const identity = await this.prisma.platform.identity.findUniqueOrThrow({
       where: { id: identityId },
@@ -170,7 +193,8 @@ export class AuthService {
         mfaFactors: { where: { verifiedAt: { not: null } }, select: { id: true } },
       },
     });
-    const memberships = await this.activeMemberships();
+    // Until the second factor is done, reveal nothing about organizations or access.
+    const memberships = mfaPending ? [] : await this.activeMemberships();
 
     // A session may point at an organization the identity has since lost access to.
     const organizationId =
@@ -199,6 +223,7 @@ export class AuthService {
         displayName: identity.displayName,
         mfaEnabled: identity.mfaFactors.length > 0,
       },
+      mfaPending,
       memberships,
       activeOrganizationId: organizationId,
       grants,

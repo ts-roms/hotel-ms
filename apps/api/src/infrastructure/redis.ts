@@ -44,7 +44,12 @@ export class RateLimiter {
    * Fails open if Redis is unavailable: rate limiting is a protection layer, not an
    * availability dependency (account lockout in the DB still applies to logins).
    */
-  async consume(key: string, limit: number, windowSeconds: number): Promise<void> {
+  async consume(
+    key: string,
+    limit: number,
+    windowSeconds: number,
+    options: { failClosed?: boolean } = {},
+  ): Promise<void> {
     let count: number;
     let ttl: number;
     try {
@@ -58,6 +63,8 @@ export class RateLimiter {
       count = Number(results?.[0]?.[1] ?? 0);
       ttl = Number(results?.[2]?.[1] ?? windowSeconds);
     } catch {
+      // Guessable secrets (6-digit codes) must not become brute-forceable when Redis is down.
+      if (options.failClosed) throw Problems.rateLimited(60);
       return;
     }
     if (count > limit) throw Problems.rateLimited(Math.max(ttl, 1));

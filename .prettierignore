@@ -5,3 +5,5 @@ docs/api/openapi.json
 **/dist/**
 **/.next/**
 .claude/
+.terraform/
+**/.mail/**

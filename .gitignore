@@ -10,3 +10,11 @@ coverage/
 packages/database/src/generated/
 next-env.d.ts
 *.log
+.mail/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan
+backend.hcl
+*.tfvars

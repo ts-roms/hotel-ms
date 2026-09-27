@@ -1,0 +1,32 @@
+# Promote a commit that is already running on staging. The "production" GitHub environment
+# must have required reviewers configured; the job waits for approval there.
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA to release (must be on main and deployed to staging)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Commit is on main
+        run: git merge-base --is-ancestor "${{ inputs.sha }}" origin/main
+
+  production:
+    needs: verify
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      sha: ${{ inputs.sha }}

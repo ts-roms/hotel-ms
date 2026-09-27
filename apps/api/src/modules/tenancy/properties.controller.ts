@@ -12,19 +12,12 @@ import {
   updatePropertyRequestSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { Problems } from '../../common/problem.js';
+import { parseIfMatch, weakEtag } from '../../common/etag.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { PropertiesService } from './properties.service.js';
 
-const etag = (p: Property) => `W/"${p.version}"`;
-
-function parseIfMatch(header: string | undefined): number {
-  if (!header) throw Problems.preconditionRequired();
-  const match = /^(?:W\/)?"(\d+)"$/.exec(header.trim());
-  if (!match) throw Problems.versionConflict();
-  return Number(match[1]);
-}
+const etag = (p: Property) => weakEtag(p.version);
 
 @ApiTags('properties')
 @Controller('properties')

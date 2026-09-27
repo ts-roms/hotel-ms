@@ -10,6 +10,8 @@ const TOUCH_INTERVAL_MS = 60_000;
 export interface ResolvedSession {
   session: Session;
   tokenHash: string;
+  /** The identity has a verified second factor, so this session must pass MFA. */
+  mfaEnabled: boolean;
 }
 
 /**
@@ -66,7 +68,14 @@ export class SessionService {
     const tokenHash = hashToken(token);
     const session = await this.prisma.platform.session.findUnique({
       where: { tokenHash },
-      include: { identity: { select: { status: true } } },
+      include: {
+        identity: {
+          select: {
+            status: true,
+            _count: { select: { mfaFactors: { where: { verifiedAt: { not: null } } } } },
+          },
+        },
+      },
     });
     const now = new Date();
     if (
@@ -89,8 +98,8 @@ export class SessionService {
         },
       });
     }
-    const { identity: _identity, ...plain } = session;
-    return { session: plain, tokenHash };
+    const { identity, ...plain } = session;
+    return { session: plain, tokenHash, mfaEnabled: identity._count.mfaFactors > 0 };
   }
 
   async revoke(sessionId: string, reason: string): Promise<void> {
@@ -98,6 +107,34 @@ export class SessionService {
       where: { id: sessionId, revokedAt: null },
       data: { revokedAt: new Date(), revokedReason: reason },
     });
+  }
+
+  /** Revokes every session of an identity (password reset, MFA enrolment, offboarding). */
+  async revokeAllForIdentity(
+    identityId: string,
+    reason: string,
+    exceptSessionId?: string,
+  ): Promise<number> {
+    const result = await this.prisma.platform.session.updateMany({
+      where: {
+        identityId,
+        revokedAt: null,
+        ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}),
+      },
+      data: { revokedAt: new Date(), revokedReason: reason },
+    });
+    return result.count;
+  }
+
+  /** Records a completed second factor and rotates the token (privilege change). */
+  async markMfaVerified(sessionId: string): Promise<{ token: string; tokenHash: string }> {
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = hashToken(token);
+    await this.prisma.platform.session.update({
+      where: { id: sessionId },
+      data: { tokenHash, mfaVerifiedAt: new Date() },
+    });
+    return { token, tokenHash };
   }
 
   /**

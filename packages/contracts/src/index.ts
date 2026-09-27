@@ -6,3 +6,5 @@ export * from './auth.js';
 export * from './properties.js';
 export * from './audit.js';
 export * from './events.js';
+export * from './access.js';
+export * from './jobs.js';
