@@ -5,26 +5,30 @@ import type { MenuItem, Order } from '@hotel/contracts';
 import {
   Alert,
   Badge,
+  type BadgeVariant,
   Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
   Notice,
   Select,
+  SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Minus, Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, errorMessage, formatMoney } from '@/lib/api';
 
-const STATUS: Record<Order['status'], string> = {
-  PENDING: 'Sent to the kitchen',
-  CONFIRMED: 'Accepted',
-  PREPARING: 'Being prepared',
-  READY: 'Ready',
-  OUT_FOR_DELIVERY: 'On its way',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
+const STATUS: Record<Order['status'], [string, BadgeVariant]> = {
+  PENDING: ['Sent to the kitchen', 'info'],
+  CONFIRMED: ['Accepted', 'primary'],
+  PREPARING: ['Being prepared', 'warning'],
+  READY: ['Ready', 'success'],
+  OUT_FOR_DELIVERY: ['On its way', 'info'],
+  DELIVERED: ['Delivered', 'neutral'],
+  CANCELLED: ['Cancelled', 'danger'],
 };
 
 interface Line {
@@ -59,12 +63,15 @@ export function RoomService() {
   }, [delivered, queryClient]);
 
   const menu = menus.data?.[0];
+  // Outlets that do not allow room charges only offer pay on delivery: show and send that,
+  // not the (hidden) room-charge default.
+  const payment = menu && !menu.outlet.allowRoomCharge ? 'PAY_ON_DELIVERY' : chargeMethod;
   const place = useMutation({
     mutationFn: () =>
       api.placeOrder(
         {
           outletId: menu!.outlet.id,
-          chargeMethod,
+          chargeMethod: payment,
           notes: '',
           items: cart.map((l) => ({
             menuItemId: l.item.id,
@@ -86,9 +93,11 @@ export function RoomService() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   });
 
+  if (menus.isPending) return <SkeletonCard lines={4} />;
   if (menus.error instanceof ApiError && menus.error.code === 'FEATURE_DISABLED') return null;
   if (!menu) return null;
   const total = cart.reduce((s, l) => s + unitPrice(l) * l.quantity, 0);
+  const count = cart.reduce((n, l) => n + l.quantity, 0);
   const add = (item: MenuItem) => {
     const modifierIds = item.modifierGroups
       .filter((g) => g.minSelect > 0)
@@ -100,43 +109,71 @@ export function RoomService() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{menu.outlet.name}</CardTitle>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3 text-base">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <UtensilsCrossed className="size-4" />
+          </span>
+          {menu.outlet.name}
+          <Badge variant={menu.open ? 'success' : 'neutral'} dot className="ml-auto">
+            {menu.open ? 'Open' : 'Closed'}
+          </Badge>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 text-sm">
+      <CardContent className="flex flex-col gap-5 text-sm">
         {!menu.open && <Notice>Room service is closed right now.</Notice>}
         {menu.categories.map((c) => (
-          <div key={c.id} className="flex flex-col gap-1">
-            <div className="font-medium">{c.name}</div>
+          <div key={c.id} className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {c.name}
+            </div>
             {c.items.map((i) => (
-              <div key={i.id} className="flex items-center justify-between gap-2">
-                <span>
-                  {i.name}
+              <div
+                key={i.id}
+                className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:border-primary/30"
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-medium">{i.name}</span>
                   {i.description && (
-                    <span className="block text-xs text-muted-foreground">{i.description}</span>
+                    <span className="text-xs text-muted-foreground">{i.description}</span>
                   )}
+                  <span className="mt-0.5 tabular-nums text-muted-foreground">
+                    {formatMoney(i.priceMinor, menu.currency)}
+                  </span>
                 </span>
-                <span className="flex items-center gap-2">
-                  <span className="tabular-nums">{formatMoney(i.priceMinor, menu.currency)}</span>
-                  <Button size="sm" variant="outline" disabled={!menu.open} onClick={() => add(i)}>
-                    Add
-                  </Button>
-                </span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="shrink-0 rounded-full"
+                  aria-label={`Add ${i.name}`}
+                  disabled={!menu.open}
+                  onClick={() => add(i)}
+                >
+                  <Plus />
+                </Button>
               </div>
             ))}
           </div>
         ))}
 
         {cart.length > 0 && (
-          <div className="flex flex-col gap-2 border-t pt-3">
+          <div className="flex animate-scale-in flex-col gap-3 rounded-2xl bg-muted/50 p-3">
+            <div className="flex items-center gap-2 px-1 font-medium">
+              <ShoppingBag className="size-4 text-primary" />
+              Your order
+              <Badge variant="primary" className="tabular-nums">
+                {count}
+              </Badge>
+            </div>
             {cart.map((l, index) => (
-              <div key={index} className="flex flex-col gap-1">
+              <div key={index} className="flex flex-col gap-2 rounded-xl border bg-card p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span>{l.item.name}</span>
-                  <span className="flex items-center gap-2">
+                  <span className="font-medium">{l.item.name}</span>
+                  <span className="flex items-center gap-1 rounded-full border p-0.5">
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
+                      className="size-7 rounded-full"
                       aria-label="One less"
                       onClick={() =>
                         l.quantity > 1
@@ -144,28 +181,38 @@ export function RoomService() {
                           : setCart(cart.filter((_, i) => i !== index))
                       }
                     >
-                      −
+                      <Minus />
                     </Button>
-                    <span className="tabular-nums">{l.quantity}</span>
+                    <span className="w-5 text-center font-medium tabular-nums">{l.quantity}</span>
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
+                      className="size-7 rounded-full"
                       aria-label="One more"
                       onClick={() => update(index, { quantity: Math.min(50, l.quantity + 1) })}
                     >
-                      +
+                      <Plus />
                     </Button>
                   </span>
                 </div>
                 {l.item.modifierGroups.map((g) => (
-                  <div key={g.id} className="flex flex-wrap gap-2 text-xs">
-                    <span className="text-muted-foreground">{g.name}:</span>
+                  <div key={g.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className="text-muted-foreground">{g.name}</span>
                     {g.modifiers.map((m) => {
                       const on = l.modifierIds.includes(m.id);
                       return (
-                        <label key={m.id} className="flex items-center gap-1">
+                        <label
+                          key={m.id}
+                          className={cn(
+                            'flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40',
+                            on
+                              ? 'border-primary/40 bg-primary/10 text-primary'
+                              : 'bg-card hover:border-ring/40',
+                          )}
+                        >
                           <input
                             type={g.maxSelect === 1 ? 'radio' : 'checkbox'}
+                            className="sr-only"
                             name={`${index}-${g.id}`}
                             checked={on}
                             onChange={() => {
@@ -192,7 +239,7 @@ export function RoomService() {
             ))}
             <Select
               aria-label="Payment"
-              value={chargeMethod}
+              value={payment}
               onChange={(e) => setChargeMethod(e.target.value as typeof chargeMethod)}
             >
               {menu.outlet.allowRoomCharge && (
@@ -201,39 +248,55 @@ export function RoomService() {
               <option value="PAY_ON_DELIVERY">Pay on delivery</option>
             </Select>
             {place.error && <Alert>{errorMessage(place.error)}</Alert>}
-            <Button disabled={place.isPending} onClick={() => place.mutate()}>
-              Order · {formatMoney(total, menu.currency)}
+            <Button size="lg" loading={place.isPending} onClick={() => place.mutate()}>
+              Order · <span className="tabular-nums">{formatMoney(total, menu.currency)}</span>
             </Button>
           </div>
         )}
 
         {cancel.error && <Alert>{errorMessage(cancel.error)}</Alert>}
-        {orders.data?.map((o) => (
-          <div
-            key={o.id}
-            className="flex flex-wrap items-center justify-between gap-2 border-t pt-2"
-          >
-            <span>
-              {o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}
-              <span className="block text-xs text-muted-foreground">
-                {formatMoney(o.totalMinor, o.currency)}
-              </span>
-            </span>
-            <span className="flex items-center gap-2">
-              <Badge>{STATUS[o.status]}</Badge>
-              {o.status === 'PENDING' && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={cancel.isPending}
-                  onClick={() => cancel.mutate(o.id)}
-                >
-                  Cancel
-                </Button>
-              )}
-            </span>
+        {!!orders.data?.length && (
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Your orders
+            </div>
+            <div className="stagger flex flex-col gap-2">
+              {orders.data.map((o) => {
+                const [label, variant] = STATUS[o.status];
+                return (
+                  <div
+                    key={o.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3"
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span>{o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {formatMoney(o.totalMinor, o.currency)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <Badge variant={variant} dot>
+                        {label}
+                      </Badge>
+                      {o.status === 'PENDING' && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="hover:text-destructive"
+                          loading={cancel.isPending && cancel.variables === o.id}
+                          disabled={cancel.isPending}
+                          onClick={() => cancel.mutate(o.id)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   );
