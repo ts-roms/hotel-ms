@@ -49,6 +49,7 @@ export class AuditService {
         requestId: this.cls.get('requestId') ?? null,
         ip: this.cls.get('ip') ?? null,
         userAgent: this.cls.get('userAgent')?.slice(0, 512) ?? null,
+        deviceId: this.cls.get('device')?.id ?? null,
       },
     });
   }

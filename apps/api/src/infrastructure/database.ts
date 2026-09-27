@@ -91,6 +91,15 @@ export class TenantDb {
   }
 
   /** No tenant: only the payment intent with this "provider:reference" is visible. */
+  /** Finds exactly one device by the hash of its token or pairing code (ADR-0020). */
+  runWithDeviceToken<T>(deviceTokenHash: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return withDbContext(
+      this.prisma.client,
+      { organizationId: null, identityId: null, deviceTokenHash },
+      fn,
+    );
+  }
+
   runWithPaymentRef<T>(paymentRef: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     return withDbContext(
       this.prisma.client,

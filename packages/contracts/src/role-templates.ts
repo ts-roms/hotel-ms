@@ -106,6 +106,7 @@ const FNB_MANAGE = [
   'fnb.order.create',
   'fnb.order.cancel_override',
   'fnb.menu.manage',
+  'device.manage',
 ] as const satisfies readonly PermissionCode[];
 
 const FINANCE = [

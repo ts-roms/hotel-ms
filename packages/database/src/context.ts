@@ -19,6 +19,8 @@ export interface DbContext {
   guestSessionHash?: string | null;
   /** "provider:reference" of an online payment; exposes exactly that payment intent. */
   paymentRef?: string | null;
+  /** SHA-256 of a device token or pairing code; exposes exactly that device (ADR-0020). */
+  deviceTokenHash?: string | null;
 }
 
 export interface TransactionOptions {
@@ -46,7 +48,8 @@ export async function withDbContext<T>(
       set_config('app.invitation_token_hash', ${ctx.invitationTokenHash ?? ''}, true),
       set_config('app.guest_link_hash', ${ctx.guestLinkHash ?? ''}, true),
       set_config('app.guest_session_hash', ${ctx.guestSessionHash ?? ''}, true),
-      set_config('app.payment_ref', ${ctx.paymentRef ?? ''}, true)`;
+      set_config('app.payment_ref', ${ctx.paymentRef ?? ''}, true),
+      set_config('app.device_token_hash', ${ctx.deviceTokenHash ?? ''}, true)`;
     return fn(tx);
   }, options);
 }

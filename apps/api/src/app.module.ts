@@ -39,6 +39,13 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-port
 import { ServiceRequestsService } from './modules/guest-portal/service-requests.service.js';
 import { AttendanceService } from './modules/hr/attendance.service.js';
 import { HrAccess } from './modules/hr/hr-access.js';
+import {
+  DevicesController,
+  KioskController,
+  PinController,
+} from './modules/devices/devices.controller.js';
+import { DevicesService } from './modules/devices/devices.service.js';
+import { KioskAuth } from './modules/devices/kiosk-auth.js';
 import { EmployeeDocumentsController } from './modules/hr/documents.controller.js';
 import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
@@ -96,6 +103,9 @@ export const CONTROLLERS = [
   GuestPortalController,
   HrController,
   EmployeeDocumentsController,
+  DevicesController,
+  PinController,
+  KioskController,
   MeController,
   PropertyHrController,
   FnbController,
@@ -119,6 +129,8 @@ export class AppModule {
         { provide: SECRET_BOX, useValue: new SecretBox(env.DATA_ENCRYPTION_KEYS) },
         { provide: OBJECT_STORAGE, useValue: createObjectStorage(env) },
         EmployeeDocumentsService,
+        KioskAuth,
+        DevicesService,
         NotificationsQueue,
         PrismaService,
         TenantDb,

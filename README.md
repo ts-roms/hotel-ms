@@ -109,6 +109,10 @@ HR keeps employee documents (contracts, IDs, certificates) on the employee page.
 `employee.documents` permission with two-step verification. Files go to `.data/storage` locally,
 and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019).
 
+Kitchen tablets: a manager adds a device under **Devices** and gets a pairing code. On the tablet,
+open http://localhost:43100/kiosk and enter the code. Staff then sign in there with the PIN they
+set under **Security**, and see the kitchen board with the device's permissions only (ADR-0020).
+
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
 

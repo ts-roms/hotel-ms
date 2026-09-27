@@ -1,4 +1,9 @@
 import type {
+  CreateDeviceRequest,
+  Device,
+  DevicePairing,
+  KioskState,
+  PinStatus,
   EmployeeDocument,
   ApplyDiscountRequest,
   CreateDiscountProfileRequest,
@@ -609,6 +614,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'if-match': `W/"${version}"`,
             },
           ).then((r) => r.data),
+        devices: () => call<{ items: Device[] }>('GET', `${p}/devices`).then((r) => r.data.items),
+        createDevice: (body: CreateDeviceRequest) =>
+          call<DevicePairing>('POST', `${p}/devices`, body).then((r) => r.data),
+        repairDevice: (deviceId: string) =>
+          call<DevicePairing>('POST', `${p}/devices/${id(deviceId)}/pairing`).then((r) => r.data),
+        revokeDevice: (deviceId: string) =>
+          call<Device>('POST', `${p}/devices/${id(deviceId)}/revoke`).then((r) => r.data),
         /** Server-Sent Events URL for the outlet's kitchen board. */
         orderStreamUrl: (outletId: string) =>
           `${baseUrl}${p}/outlets/${id(outletId)}/orders/stream`,
@@ -741,6 +753,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ),
     },
     me: {
+      pin: () => call<PinStatus>('GET', '/me/pin').then((r) => r.data),
+      setPin: (pin: string, currentPassword: string) =>
+        call<PinStatus>('PUT', '/me/pin', { pin, currentPassword }).then((r) => r.data),
+      removePin: () => call<PinStatus>('DELETE', '/me/pin').then((r) => r.data),
       employee: () => call<MyEmployee>('GET', '/me/employee').then((r) => r.data),
       shifts: (from: string, to: string) =>
         call<{ items: Shift[] }>('GET', `/me/shifts${qs({ from, to })}`).then((r) => r.data.items),
@@ -796,6 +812,19 @@ export type ApiClient = ReturnType<typeof createApiClient>;
  * Guest portal client (the guest app). Same transport; the guest cookie and the CSRF token
  * from the last stay response authenticate it.
  */
+/** A shared device's own endpoints (ADR-0020); its cookies authenticate it. */
+export function createKioskApiClient(options: ApiClientOptions = {}) {
+  const { call } = createCaller(options);
+  const data = <T>(r: { data: T }) => r.data;
+  return {
+    state: () => call<KioskState>('GET', '/kiosk').then(data),
+    pair: (code: string) => call<KioskState>('POST', '/kiosk/pair', { code }).then(data),
+    signIn: (membershipId: string, pin: string) =>
+      call<KioskState>('POST', '/kiosk/sign-in', { membershipId, pin }).then(data),
+    signOut: () => call<KioskState>('POST', '/kiosk/sign-out').then(data),
+  };
+}
+
 export function createGuestApiClient(options: ApiClientOptions = {}) {
   const { call } = createCaller(options);
   const data = <T>(r: { data: T }) => r.data;

@@ -57,6 +57,18 @@ export class GrantSet {
     return { kind: 'some', propertyIds: entry ? [...entry.properties].sort() : [] };
   }
 
+  /**
+   * The grants a shared device leaves an operator (ADR-0020): only the device's
+   * permissions, only at the device's property, and only where the operator holds them.
+   */
+  restrictTo(permissions: readonly PermissionCode[], propertyId: string): GrantSet {
+    return new GrantSet(
+      permissions
+        .filter((p) => this.hasForProperty(p, propertyId))
+        .map((permission) => ({ permission, scopeType: 'PROPERTY' as const, propertyId })),
+    );
+  }
+
   toJSON(): Grant[] {
     const grants: Grant[] = [];
     for (const [permission, entry] of [...this.byPermission].sort(([a], [b]) =>

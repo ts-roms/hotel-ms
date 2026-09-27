@@ -32,6 +32,17 @@ export interface RequestContext extends ClsStore {
   /** Set by TenantGuard after verifying a :propertyId route param belongs to the org. */
   propertyId?: string;
 
+  /**
+   * Shared-device realm (ADR-0020): the request comes from a paired device with a staff
+   * operator signed in on it. Grants are narrowed to the device's permissions there.
+   */
+  device?: {
+    id: string;
+    propertyId: string;
+    permissions: readonly string[];
+    operatorSessionId: string;
+  };
+
   /** Set for work done on behalf of an external system (webhooks). */
   system?: boolean;
 

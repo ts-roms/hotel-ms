@@ -28,6 +28,7 @@ import {
   Timer,
   Users,
   Landmark,
+  Tablet,
   Wallet,
   X,
 } from 'lucide-react';
@@ -82,6 +83,7 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'kitchen', label: 'nav.kitchen', icon: ChefHat, permission: 'fnb.order.read' },
   { href: 'orders', label: 'nav.orders', icon: ReceiptText, permission: 'fnb.order.read' },
   { href: 'menus', label: 'nav.menus', icon: BookOpen, permission: 'fnb.menu.manage' },
+  { href: 'devices', label: 'nav.devices', icon: Tablet, permission: 'device.manage' },
   { href: 'rooms', label: 'nav.rooms', icon: BedDouble, permission: 'room.read' },
   { href: 'schedule', label: 'nav.schedule', icon: CalendarClock, permission: 'schedule.read' },
   { href: 'attendance', label: 'nav.attendance', icon: Clock, permission: 'attendance.read' },

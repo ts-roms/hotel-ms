@@ -16,8 +16,8 @@ import {
   PageHeader,
   Skeleton,
 } from '@hotel/ui';
-import { useMutation } from '@tanstack/react-query';
-import { KeyRound, ShieldCheck } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Grid3x3, KeyRound, ShieldCheck } from 'lucide-react';
 import QRCode from 'qrcode';
 import { type FormEvent, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -32,6 +32,7 @@ export default function SecurityPage() {
       <div className="stagger flex flex-col gap-6">
         <MfaCard />
         <ChangePasswordCard />
+        <PinCard />
       </div>
     </div>
   );
@@ -241,6 +242,93 @@ function ChangePasswordCard() {
           <Button type="submit" loading={change.isPending} className="self-start">
             {t('security.changePassword')}
           </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** PIN for shared kitchen devices (ADR-0020). Needs the password to set or change. */
+function PinCard() {
+  const queryClient = useQueryClient();
+  const status = useQuery({ queryKey: ['my-pin'], queryFn: api.me.pin, retry: false });
+  const [pin, setPin] = useState('');
+  const [currentPassword, setCurrent] = useState('');
+  const save = useMutation({
+    mutationFn: () => api.me.setPin(pin, currentPassword),
+    onSuccess: (data) => {
+      setPin('');
+      setCurrent('');
+      queryClient.setQueryData(['my-pin'], data);
+    },
+  });
+  const remove = useMutation({
+    mutationFn: api.me.removePin,
+    onSuccess: (data) => queryClient.setQueryData(['my-pin'], data),
+  });
+  // Members without an organization context have nothing to sign in to.
+  if (status.error) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Grid3x3 className="size-4 text-primary" />
+          {t('pin.title')}
+        </CardTitle>
+        <CardDescription>{t('pin.hint')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            save.mutate();
+          }}
+        >
+          {(save.error || remove.error) && (
+            <Alert>{errorMessage(save.error ?? remove.error)}</Alert>
+          )}
+          {save.isSuccess && <Notice>{t('pin.saved')}</Notice>}
+          <p className="text-sm text-muted-foreground">
+            {status.data?.hasPin ? t('pin.isSet') : t('pin.notSet')}
+          </p>
+          <Label htmlFor="pin">{t('pin.new')}</Label>
+          <Input
+            id="pin"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={8}
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+          />
+          <Label htmlFor="pin-password">{t('pin.current')}</Label>
+          <Input
+            id="pin-password"
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              loading={save.isPending}
+              disabled={pin.length < 4 || !currentPassword}
+            >
+              {status.data?.hasPin ? t('pin.change') : t('pin.set')}
+            </Button>
+            {status.data?.hasPin && (
+              <Button
+                type="button"
+                variant="ghost"
+                loading={remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                {t('pin.remove')}
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>
