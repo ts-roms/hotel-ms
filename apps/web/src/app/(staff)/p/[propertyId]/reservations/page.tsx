@@ -110,7 +110,7 @@ export default function ReservationsPage() {
             <li key={r.id}>
               <Link
                 href={`/p/${propertyId}/reservations/${r.id}`}
-                className="hover-lift group flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 shadow-sm shadow-black/[0.03]"
+                className="hover-lift group flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 shadow-sm shadow-black/3"
               >
                 <Avatar name={`${r.booker.firstName} ${r.booker.lastName}`} />
                 <div className="flex min-w-40 flex-1 flex-col">

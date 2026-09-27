@@ -108,7 +108,7 @@ export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivEl
       aria-hidden="true"
       className={cn(
         'relative isolate overflow-hidden rounded-md bg-muted',
-        'before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-foreground/[0.06] before:to-transparent',
+        'before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-linear-to-r before:from-transparent before:via-foreground/6 before:to-transparent',
         className,
       )}
       {...props}
@@ -203,7 +203,7 @@ export function SkeletonTable({
 /* ------------------------------------------------------------------------------------ */
 
 const fieldClasses =
-  'flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/70 hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/15';
+  'flex h-10 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm shadow-xs transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground/70 hover:border-ring/40 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/15 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/15';
 
 export const Input = React.forwardRef<
   HTMLInputElement,
@@ -242,7 +242,7 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
   return (
     <div
       className={cn(
-        'rounded-xl border bg-card text-card-foreground shadow-sm shadow-black/[0.03] transition-[box-shadow,border-color,transform] duration-200',
+        'rounded-xl border bg-card text-card-foreground shadow-sm shadow-black/3 transition-[box-shadow,border-color,transform] duration-200',
         className,
       )}
       {...props}

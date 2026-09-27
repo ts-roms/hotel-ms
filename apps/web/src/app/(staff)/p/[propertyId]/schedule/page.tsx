@@ -76,7 +76,7 @@ export default function SchedulePage() {
       {canManage && data && <NewShift employees={data.employees} days={days} onCreated={refresh} />}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+        <table className="w-full min-w-180 border-collapse text-left text-sm">
           <thead>
             <tr className="text-xs text-muted-foreground">
               <th className="py-2 pr-2">{t('hr.employee')}</th>
