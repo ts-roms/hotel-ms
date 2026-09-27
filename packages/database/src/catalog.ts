@@ -1,5 +1,6 @@
 import { PERMISSIONS, PERMISSION_CODES, ROLE_TEMPLATES } from '@hotel/contracts';
 import type { PrismaClient } from './generated/prisma/client.js';
+import { withDbContext } from './context.js';
 
 export const FEATURE_FLAGS = [
   { key: 'self_checkin', description: 'Guest self check-in in the guest portal' },
@@ -87,4 +88,60 @@ export async function propagateTemplatePermissions(systemClient: PrismaClient): 
     }
   }
   return changedRoles;
+}
+
+/**
+ * Gives existing organizations the role templates added since they were provisioned (new
+ * organizations get every template at creation). Additive: a role whose key an
+ * organization already uses (e.g. its own custom role) is left alone. Candidates are found
+ * with the system role; roles are created in each organization's own tenant context.
+ */
+export async function addMissingTemplateRoles(
+  systemClient: PrismaClient,
+  appClient: PrismaClient,
+): Promise<number> {
+  const existing = await systemClient.role.findMany({
+    where: { templateKey: { not: null } },
+    select: { organizationId: true, templateKey: true },
+  });
+  const byOrganization = new Map<string, Set<string>>();
+  for (const role of existing) {
+    const keys = byOrganization.get(role.organizationId) ?? new Set<string>();
+    keys.add(role.templateKey!);
+    byOrganization.set(role.organizationId, keys);
+  }
+  let created = 0;
+  for (const [organizationId, keys] of byOrganization) {
+    const missing = ROLE_TEMPLATES.filter((t) => !keys.has(t.key));
+    if (missing.length === 0) continue;
+    created += await withDbContext(appClient, { organizationId, identityId: null }, async (tx) => {
+      let count = 0;
+      for (const template of missing) {
+        const taken = await tx.role.findFirst({
+          where: { key: template.key },
+          select: { id: true },
+        });
+        if (taken) continue;
+        const role = await tx.role.create({
+          data: {
+            organizationId,
+            key: template.key,
+            name: template.name,
+            description: template.description,
+            templateKey: template.key,
+          },
+        });
+        await tx.rolePermission.createMany({
+          data: template.permissions.map((permissionCode) => ({
+            organizationId,
+            roleId: role.id,
+            permissionCode,
+          })),
+        });
+        count++;
+      }
+      return count;
+    });
+  }
+  return created;
 }

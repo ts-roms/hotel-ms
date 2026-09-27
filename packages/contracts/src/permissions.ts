@@ -125,6 +125,54 @@ export const PERMISSIONS = {
     description: 'Send guests their portal link',
     scopes: ORG_OR_PROPERTY,
   },
+
+  // ---- HR: people, scheduling, attendance, leave (blueprint §13) ----------------------
+  // PROPERTY scope covers employees with an employment assignment at that property.
+  'department.manage': { description: 'Manage departments and positions', scopes: ORG_ONLY },
+  'employee.read': { description: 'View employee records', scopes: ORG_OR_PROPERTY },
+  'employee.manage': {
+    description: 'Create and edit employees and their assignments',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'employee.personal.read': {
+    description: 'View and edit personal details (birth date, personal contacts)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'schedule.read': { description: 'View the staff schedule', scopes: ORG_OR_PROPERTY },
+  'schedule.manage': {
+    description: 'Create, change and publish shifts',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'attendance.read': { description: 'View staff attendance', scopes: ORG_OR_PROPERTY },
+  'attendance.manage': {
+    description: 'Approve or reject attendance corrections',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'leave.read': {
+    description: 'View leave requests, types and balances in detail',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'leave.approve': { description: 'Approve or reject leave requests', scopes: ORG_OR_PROPERTY },
+  'leave.manage': {
+    description: 'Post leave accruals and adjustments',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'leave.configure': { description: 'Manage leave types', scopes: ORG_ONLY },
+  'birthday.read': {
+    description: "See colleagues' birthdays they chose to share",
+    scopes: ORG_OR_PROPERTY,
+  },
+  // Self-service ("own record") permissions: act only on the caller's own employee record.
+  'schedule.read.own': { description: 'View own published shifts', scopes: ORG_OR_PROPERTY },
+  'attendance.punch.own': {
+    description: 'Clock in and out, view own attendance, request corrections',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'leave.request.own': {
+    description: 'Request leave and view own balances',
+    scopes: ORG_OR_PROPERTY,
+  },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type PermissionCode = keyof typeof PERMISSIONS;

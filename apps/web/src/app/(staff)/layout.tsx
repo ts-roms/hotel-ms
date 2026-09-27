@@ -22,10 +22,15 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'housekeeping', label: 'nav.housekeeping', permission: 'housekeeping.read' },
   { href: 'service-requests', label: 'nav.serviceRequests', permission: 'guest_service.read' },
   { href: 'rooms', label: 'nav.rooms', permission: 'room.read' },
+  { href: 'schedule', label: 'nav.schedule', permission: 'schedule.read' },
+  { href: 'attendance', label: 'nav.attendance', permission: 'attendance.read' },
+  { href: 'leave', label: 'nav.leave', permission: 'leave.read' },
   { href: 'night-audit', label: 'nav.nightAudit', permission: 'night_audit.run' },
 ];
 
 const ORG_NAV: NavItem[] = [
+  { href: '/me', label: 'nav.myTime', permission: 'attendance.punch.own' },
+  { href: '/hr/employees', label: 'nav.employees', permission: 'employee.read' },
   { href: '/members', label: 'nav.members', permission: 'member.read' },
   { href: '/roles', label: 'nav.roles', permission: 'role.read' },
   { href: '/settings/security', label: 'nav.security' },

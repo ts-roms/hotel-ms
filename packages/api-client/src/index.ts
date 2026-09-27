@@ -1,4 +1,31 @@
 import type {
+  AttendanceCorrection,
+  AttendanceDay,
+  Birthday,
+  CorrectionRequest,
+  CreateEmployeeRequest,
+  CreateLeaveRequest,
+  CreateShiftRequest,
+  DecisionRequest,
+  Department,
+  Employee,
+  EmployeeLeave,
+  EmployeeListQuery,
+  EmployeeSummary,
+  LeaveDecisionResult,
+  LeaveLedgerPostRequest,
+  LeaveRequest,
+  LeaveType,
+  MyEmployee,
+  NewAssignment,
+  Punch,
+  PunchType,
+  Schedule,
+  Shift,
+  ShiftTemplate,
+  ShiftWithWarnings,
+  UpdateEmployeeRequest,
+  UpdateShiftRequest,
   FeatureFlag,
   GuestBill,
   GuestServiceRequestCreate,
@@ -390,6 +417,55 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<ServiceRequest>('PATCH', `${p}/service-requests/${id(requestId)}`, body, {
             'if-match': `W/"${version}"`,
           }).then((r) => r.data),
+        punch: (type: PunchType) =>
+          call<Punch>('POST', `${p}/attendance/punches`, { type }).then((r) => r.data),
+        attendance: (from: string, to: string) =>
+          call<{ items: AttendanceDay[] }>('GET', `${p}/attendance${qs({ from, to })}`).then(
+            (r) => r.data.items,
+          ),
+        attendanceCorrections: (status?: AttendanceCorrection['status']) =>
+          call<{ items: AttendanceCorrection[] }>(
+            'GET',
+            `${p}/attendance/corrections${qs({ status })}`,
+          ).then((r) => r.data.items),
+        decideCorrection: (id: string, version: number, body: DecisionRequest) =>
+          call<AttendanceCorrection>(
+            'POST',
+            `${p}/attendance/corrections/${encodeURIComponent(id)}/decision`,
+            body,
+            { 'if-match': `W/"${version}"` },
+          ).then((r) => r.data),
+        shiftTemplates: () =>
+          call<{ items: ShiftTemplate[] }>('GET', `${p}/shift-templates`).then((r) => r.data.items),
+        schedule: (from: string, to: string) =>
+          call<Schedule>('GET', `${p}/schedule${qs({ from, to })}`).then((r) => r.data),
+        createShift: (body: CreateShiftRequest) =>
+          call<ShiftWithWarnings>('POST', `${p}/shifts`, body).then((r) => r.data),
+        updateShift: (id: string, version: number, body: UpdateShiftRequest) =>
+          call<ShiftWithWarnings>('PATCH', `${p}/shifts/${encodeURIComponent(id)}`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
+        cancelShift: (id: string, version: number) =>
+          call<Shift>('POST', `${p}/shifts/${encodeURIComponent(id)}/cancel`, undefined, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
+        publishSchedule: (from: string, to: string) =>
+          call<{ published: number }>('POST', `${p}/schedule/publish`, { from, to }).then(
+            (r) => r.data,
+          ),
+        leaveRequests: (status?: LeaveRequest['status']) =>
+          call<{ items: LeaveRequest[] }>('GET', `${p}/leave-requests${qs({ status })}`).then(
+            (r) => r.data.items,
+          ),
+        decideLeave: (id: string, version: number, body: DecisionRequest) =>
+          call<LeaveDecisionResult>(
+            'POST',
+            `${p}/leave-requests/${encodeURIComponent(id)}/decision`,
+            body,
+            { 'if-match': `W/"${version}"` },
+          ).then((r) => r.data),
+        birthdays: () =>
+          call<{ items: Birthday[] }>('GET', `${p}/birthdays`).then((r) => r.data.items),
         cancelReservationRoom: (reservationId: string, lineId: string, reason: string) =>
           call<Reservation>(
             'POST',
@@ -397,6 +473,70 @@ export function createApiClient(options: ApiClientOptions = {}) {
             { reason },
           ).then((r) => r.data),
       };
+    },
+    hr: {
+      departments: () =>
+        call<{ items: Department[] }>('GET', '/departments').then((r) => r.data.items),
+      employees: (query: Partial<EmployeeListQuery> = {}) =>
+        call<{ items: EmployeeSummary[] }>('GET', `/employees${qs(query)}`).then(
+          (r) => r.data.items,
+        ),
+      employee: (id: string) =>
+        call<Employee>('GET', `/employees/${encodeURIComponent(id)}`).then((r) => r.data),
+      createEmployee: (body: CreateEmployeeRequest) =>
+        call<Employee>('POST', '/employees', body).then((r) => r.data),
+      updateEmployee: (id: string, version: number, body: UpdateEmployeeRequest) =>
+        call<Employee>('PATCH', `/employees/${encodeURIComponent(id)}`, body, {
+          'if-match': `W/"${version}"`,
+        }).then((r) => r.data),
+      addAssignment: (id: string, body: NewAssignment) =>
+        call<Employee>('POST', `/employees/${encodeURIComponent(id)}/assignments`, body).then(
+          (r) => r.data,
+        ),
+      endAssignment: (id: string, assignmentId: string, endDate: string) =>
+        call<Employee>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/assignments/${encodeURIComponent(assignmentId)}/end`,
+          { endDate },
+        ).then((r) => r.data),
+      terminate: (id: string, terminatedOn: string) =>
+        call<Employee>('POST', `/employees/${encodeURIComponent(id)}/terminate`, {
+          terminatedOn,
+        }).then((r) => r.data),
+      employeeLeave: (id: string) =>
+        call<EmployeeLeave>('GET', `/employees/${encodeURIComponent(id)}/leave`).then(
+          (r) => r.data,
+        ),
+      postLeave: (id: string, body: LeaveLedgerPostRequest) =>
+        call<EmployeeLeave>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/leave/entries`,
+          body,
+        ).then((r) => r.data),
+      leaveTypes: () =>
+        call<{ items: LeaveType[] }>('GET', '/leave-types').then((r) => r.data.items),
+    },
+    me: {
+      employee: () => call<MyEmployee>('GET', '/me/employee').then((r) => r.data),
+      shifts: (from: string, to: string) =>
+        call<{ items: Shift[] }>('GET', `/me/shifts${qs({ from, to })}`).then((r) => r.data.items),
+      attendance: (from: string, to: string) =>
+        call<{ items: AttendanceDay[] }>('GET', `/me/attendance${qs({ from, to })}`).then(
+          (r) => r.data.items,
+        ),
+      corrections: () =>
+        call<{ items: AttendanceCorrection[] }>('GET', '/me/attendance-corrections').then(
+          (r) => r.data.items,
+        ),
+      requestCorrection: (body: CorrectionRequest) =>
+        call<AttendanceCorrection>('POST', '/me/attendance-corrections', body).then((r) => r.data),
+      leave: () => call<EmployeeLeave>('GET', '/me/leave').then((r) => r.data),
+      requestLeave: (body: CreateLeaveRequest) =>
+        call<LeaveRequest>('POST', '/me/leave-requests', body).then((r) => r.data),
+      cancelLeave: (id: string) =>
+        call<LeaveRequest>('POST', `/me/leave-requests/${encodeURIComponent(id)}/cancel`).then(
+          (r) => r.data,
+        ),
     },
     featureFlags: {
       list: () =>

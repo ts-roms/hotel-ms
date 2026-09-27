@@ -89,6 +89,10 @@ multi-organization consultant). They are listed in `packages/database/src/demo-w
 together with the shared development password. Demo data is never seeded when
 `NODE_ENV=production`.
 
+HR (employees, schedule, attendance, leave) is under **Employees**, **My time** and the
+property **Schedule**, **Attendance** and **Leave** pages; `maria.hr@abc.test` is the demo HR
+manager and most demo staff logins are linked to employee records.
+
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
 

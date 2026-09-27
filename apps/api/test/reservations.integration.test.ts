@@ -393,8 +393,8 @@ describe('guests and scope', () => {
   it('guest profiles are visible only within scope', async () => {
     const mine = await reception.get('/api/v1/guests?q=juan');
     expect(mine.body.length).toBeGreaterThan(0);
-    const maria = await TestClient.as(ctx.app, 'maria.hr@abc.test'); // auditor at MNL + CEB
-    expect((await maria.get('/api/v1/guests?q=juan')).body.length).toBeGreaterThan(0);
+    const gm = await TestClient.as(ctx.app, 'john.gm@abc.test'); // general manager at MNL
+    expect((await gm.get('/api/v1/guests?q=juan')).body.length).toBeGreaterThan(0);
     expect((await xyzAdmin.get('/api/v1/guests?q=juan')).body).toEqual([]);
     const staffOnly = await TestClient.as(ctx.app, 'frontdesk@abc.test'); // CEB staff, no guest.read
     expect((await staffOnly.get('/api/v1/guests?q=juan')).status).toBe(403);

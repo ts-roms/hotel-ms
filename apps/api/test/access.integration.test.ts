@@ -199,10 +199,11 @@ describe('anti-escalation', () => {
     const escalate = await frontDesk.request('POST', '/api/v1/members/invitations', {
       email: 'ceb.auditor@abc.test',
       displayName: 'Cebu Auditor',
-      assignments: [{ roleId: roleIds.auditor, propertyId: P().CEB }], // auditor includes audit.read
+      // The auditor role holds permissions frontDesk lacks (audit.read, HR read access).
+      assignments: [{ roleId: roleIds.auditor, propertyId: P().CEB }],
     });
     expect(escalate.status).toBe(403);
-    expect(escalate.body.detail).toMatch(/audit\.read/);
+    expect(escalate.body.detail).toMatch(/^Cannot grant \S+: you do not hold it/);
 
     const selfEscalate = await frontDesk.request(
       'POST',

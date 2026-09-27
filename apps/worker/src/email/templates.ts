@@ -113,5 +113,32 @@ export function renderEmail(email: EmailTemplate): RenderedEmail {
         html: layout(lines),
       };
     }
+    case 'schedule-published': {
+      const { employeeName, propertyName, from, to, shifts, scheduleUrl } = email.data;
+      const lines = [
+        `Hello ${employeeName},`,
+        `Your ${propertyName} schedule for ${from} to ${to} is out:`,
+        ...shifts.map((s) => `${s.date}: ${s.startTime}–${s.endTime}`),
+      ];
+      return {
+        subject: `Your schedule at ${propertyName}, ${from} to ${to}`,
+        text: `${lines.join('\n')}\n\n${scheduleUrl}\n`,
+        html: layout(lines, { label: 'Open my schedule', url: scheduleUrl }),
+      };
+    }
+    case 'leave-decided': {
+      const { employeeName, leaveTypeName, startDate, endDate, decision, note } = email.data;
+      const verdict = decision === 'APPROVED' ? 'approved' : 'not approved';
+      const lines = [
+        `Hello ${employeeName},`,
+        `Your ${leaveTypeName} request for ${startDate} to ${endDate} was ${verdict}.`,
+        ...(note ? [`Note: ${note}`] : []),
+      ];
+      return {
+        subject: `Leave ${verdict}: ${startDate} to ${endDate}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
   }
 }
