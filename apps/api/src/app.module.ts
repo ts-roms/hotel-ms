@@ -5,6 +5,7 @@ import { IdempotencyService } from './common/idempotency.js';
 import { ProblemFilter } from './common/problem.filter.js';
 import { ENV, type Env } from './config/env.js';
 import { PrismaService, TenantDb } from './infrastructure/database.js';
+import { RealtimeService } from './infrastructure/realtime.js';
 import { CacheRedis, RateLimiter } from './infrastructure/redis.js';
 import { NotificationsQueue } from './infrastructure/queue.js';
 import { SecretBox } from './infrastructure/secret-box.js';
@@ -41,6 +42,9 @@ import { HrController, MeController, PropertyHrController } from './modules/hr/h
 import { LeaveService } from './modules/hr/leave.service.js';
 import { PeopleService } from './modules/hr/people.service.js';
 import { ScheduleService } from './modules/hr/schedule.service.js';
+import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
+import { MenuService } from './modules/fnb/menu.service.js';
+import { OrdersService } from './modules/fnb/orders.service.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
@@ -72,6 +76,8 @@ export const CONTROLLERS = [
   HrController,
   MeController,
   PropertyHrController,
+  FnbController,
+  GuestFnbController,
 ];
 
 @Module({})
@@ -118,6 +124,9 @@ export class AppModule {
         ScheduleService,
         AttendanceService,
         LeaveService,
+        RealtimeService,
+        MenuService,
+        OrdersService,
         { provide: ROOM_ACCESS_PROVIDER, useClass: FrontDeskKeyProvider },
         { provide: APP_FILTER, useClass: ProblemFilter },
         // Order matters: authenticate → establish tenant → authorize. Guest routes are

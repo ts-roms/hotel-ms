@@ -5,6 +5,7 @@ import {
 } from '../catalog.js';
 import { createPrismaClient } from '../client.js';
 import { withDbContext } from '../context.js';
+import { seedDemoFnb } from '../demo-fnb.js';
 import { DEMO_EMPLOYEES, seedDemoHr } from '../demo-hr.js';
 import { DEMO_INVENTORY, seedDemoInventory } from '../demo-pms.js';
 import { seedDemoWorld } from '../demo-world.js';
@@ -30,6 +31,9 @@ async function ensureDemoInventory(): Promise<void> {
       const employees = DEMO_EMPLOYEES[email === 'admin@abc.test' ? 'abc' : 'xyz'];
       const byCode = Object.fromEntries(properties.map((p) => [p.code, p.id]));
       await seedDemoHr(app, organizationId, byCode, employees);
+      for (const code of ['MNL', 'BOR']) {
+        if (byCode[code]) await seedDemoFnb(app, organizationId, byCode[code]);
+      }
     }
   }
 }
@@ -69,7 +73,7 @@ try {
     const existing = await app.identity.findUnique({ where: { email: 'admin@abc.test' } });
     if (existing) {
       await ensureDemoInventory();
-      console.log('Demo data already present; ensured demo inventory and HR data.');
+      console.log('Demo data already present; ensured demo inventory, HR and F&B data.');
     } else {
       const world = await seedDemoWorld(app);
       console.log(

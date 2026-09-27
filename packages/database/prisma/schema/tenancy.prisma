@@ -106,6 +106,7 @@ model Property {
   attendancePunches     AttendancePunch[]
   attendanceCorrections AttendanceCorrection[]
   leaveRequests         LeaveRequest[]
+  outlets               Outlet[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, code])

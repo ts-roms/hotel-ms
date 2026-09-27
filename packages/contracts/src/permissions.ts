@@ -126,6 +126,26 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
   },
 
+  // ---- F&B: outlets, menus, orders (blueprint §14) -------------------------------------
+  'fnb.menu.manage': { description: 'Manage outlets and menus', scopes: ORG_OR_PROPERTY },
+  'fnb.menu.availability': {
+    description: 'Mark menu items sold out or available again',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'fnb.order.read': { description: 'View orders and the kitchen board', scopes: ORG_OR_PROPERTY },
+  'fnb.order.create': {
+    description: 'Take orders, including room charges',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'fnb.order.update': {
+    description: 'Confirm, prepare, deliver and cancel orders before preparation',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'fnb.order.cancel_override': {
+    description: 'Cancel orders in preparation or delivered (reverses room charges)',
+    scopes: ORG_OR_PROPERTY,
+  },
+
   // ---- HR: people, scheduling, attendance, leave (blueprint §13) ----------------------
   // PROPERTY scope covers employees with an employment assignment at that property.
   'department.manage': { description: 'Manage departments and positions', scopes: ORG_ONLY },

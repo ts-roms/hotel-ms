@@ -89,7 +89,7 @@ export default function DashboardPage() {
               <Card className={cn('relative h-full overflow-hidden', landing && 'hover-lift')}>
                 <div
                   aria-hidden="true"
-                  className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-info opacity-70 transition-opacity group-hover:opacity-100"
+                  className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary to-info opacity-70 transition-opacity group-hover:opacity-100"
                 />
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">

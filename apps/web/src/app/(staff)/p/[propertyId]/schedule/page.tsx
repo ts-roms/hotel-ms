@@ -139,7 +139,7 @@ export default function SchedulePage() {
           )}
           aria-busy={paging}
         >
-          <table className="w-full min-w-[820px] border-collapse text-left text-sm">
+          <table className="w-full min-w-205 border-collapse text-left text-sm">
             <thead>
               <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
                 <th className="sticky left-0 z-10 bg-card px-3 py-3 font-semibold uppercase tracking-wider">
@@ -176,10 +176,7 @@ export default function SchedulePage() {
                       (u) => u.employeeId === e.id && u.from <= d && u.to >= d,
                     );
                     return (
-                      <td
-                        key={d}
-                        className={cn('px-1.5 py-2', d === todayDate && 'bg-primary/[0.03]')}
-                      >
+                      <td key={d} className={cn('px-1.5 py-2', d === todayDate && 'bg-primary/3')}>
                         {away && (
                           <Badge variant="info" className="mb-1">
                             {away.label}

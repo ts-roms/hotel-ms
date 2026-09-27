@@ -77,7 +77,7 @@ export default function EmployeesPage() {
             <li key={e.id}>
               <Link
                 href={`/hr/employees/${e.id}`}
-                className="hover-lift group flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 text-sm shadow-sm shadow-black/[0.03]"
+                className="hover-lift group flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4 text-sm shadow-sm shadow-black/3"
               >
                 <Avatar name={name} />
                 <div className="flex min-w-40 flex-1 flex-col">

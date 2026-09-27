@@ -143,7 +143,7 @@ export default function AttendancePage() {
           }
           aria-busy={days.isPlaceholderData}
         >
-          <table className="w-full min-w-[720px] text-left text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+          <table className="w-full min-w-180 text-left text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
             <thead className="text-xs uppercase tracking-wider text-muted-foreground">
               <tr className="border-b bg-muted/40">
                 <th className="px-3 py-3 font-semibold">{t('hr.employee')}</th>
