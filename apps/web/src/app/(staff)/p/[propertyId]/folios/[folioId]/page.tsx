@@ -26,6 +26,7 @@ import { t } from '@/lib/i18n';
 import { usePms, useProperty } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
+import { FolioFinance } from './finance';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();
@@ -74,7 +75,7 @@ export default function FolioPage() {
               <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Receipt className="size-4" />
               </span>
-              {t('folio.title')}
+              {f.label ?? t('folio.title')}
               <span className="font-mono text-sm font-normal text-muted-foreground">
                 {f.folioNo}
               </span>
@@ -208,6 +209,7 @@ export default function FolioPage() {
           }
         />
       )}
+      <FolioFinance propertyId={propertyId} folio={f} />
     </div>
   );
 }

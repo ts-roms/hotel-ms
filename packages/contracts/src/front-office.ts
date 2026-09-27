@@ -23,7 +23,15 @@ export const DEPARTMENTS = [
   'MISC',
 ] as const;
 export const PAYMENT_METHODS = ['CASH', 'CARD', 'BANK_TRANSFER', 'EWALLET', 'OTHER'] as const;
-export const FOLIO_LINE_TYPES = ['CHARGE', 'TAX', 'PAYMENT', 'ADJUSTMENT', 'REVERSAL'] as const;
+export const FOLIO_LINE_TYPES = [
+  'CHARGE',
+  'TAX',
+  'PAYMENT',
+  'ADJUSTMENT',
+  'REVERSAL',
+  'REFUND',
+  'TRANSFER',
+] as const;
 export const HOUSEKEEPING_TASK_TYPES = [
   'CHECKOUT_CLEAN',
   'STAYOVER',
@@ -80,6 +88,10 @@ export const paymentSchema = z.object({
   id: z.uuid(),
   method: z.enum(PAYMENT_METHODS),
   amountMinor: amountMinorSchema,
+  /** Refunded so far (succeeded and pending refunds). */
+  refundedMinor: amountMinorSchema,
+  /** Online gateway that took the payment; null for desk payments. */
+  provider: z.string().nullable(),
   reference: z.string().nullable(),
   businessDate: localDateSchema,
   createdAt: z.iso.datetime(),
@@ -93,6 +105,8 @@ export const folioSchema = z.object({
   currency: z.string(),
   balanceMinor: signedMinorSchema,
   reservationRoomId: z.uuid().nullable(),
+  /** Company / group account name; null for guest folios. */
+  label: z.string().nullable(),
   lines: z.array(folioLineSchema),
   payments: z.array(paymentSchema),
 });

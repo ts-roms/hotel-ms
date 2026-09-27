@@ -33,6 +33,7 @@ model OrganizationMembership {
   housekeepingTasks HousekeepingTask[]
   serviceRequests   ServiceRequest[]
   employee          Employee?
+  cashierShifts     CashierShift[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, identityId])

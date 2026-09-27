@@ -15,6 +15,10 @@ enum FolioLineType {
   ADJUSTMENT
   /// Exact negation of an earlier line, same business day only.
   REVERSAL
+  /// Positive: money given back to the payer.
+  REFUND
+  /// Balance moved between folios, always posted in pairs.
+  TRANSFER
 }
 
 enum PaymentMethod {
@@ -88,6 +92,8 @@ model Folio {
   propertyId        String      @map("property_id") @db.Uuid
   folioNo           String      @map("folio_no")
   reservationRoomId String?     @map("reservation_room_id") @db.Uuid
+  /// Company / group account name; null for guest folios.
+  label             String?
   status            FolioStatus @default(OPEN)
   currency          String      @db.Char(3)
   /// Cached SUM(folio_lines.amount_minor), updated in the posting transaction.
@@ -96,9 +102,13 @@ model Folio {
   closedAt          DateTime?   @map("closed_at") @db.Timestamptz(3)
   version           Int         @default(1)
 
-  reservationRoom ReservationRoom? @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  reservationRoom ReservationRoom?   @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
   lines           FolioLine[]
   payments        Payment[]
+  paymentIntents  PaymentIntent[]
+  documents       FolioDocument[]
+  routingRules    FolioRoutingRule[] @relation("RoutingSource")
+  routedFrom      FolioRoutingRule[] @relation("RoutingTarget")
 
   @@unique([organizationId, id])
   @@unique([propertyId, folioNo])
@@ -121,6 +131,8 @@ model FolioLine {
   /// TAX lines point at their CHARGE/ADJUSTMENT line.
   parentLineId   String?       @map("parent_line_id") @db.Uuid
   reversesLineId String?       @map("reverses_line_id") @db.Uuid
+  /// Pairs the two sides of a TRANSFER.
+  transferId     String?       @map("transfer_id") @db.Uuid
   taxCode        String?       @map("tax_code")
   /// Idempotency within the folio (e.g. "room:<line>:<date>" for night-audit room charges).
   sourceKey      String?       @map("source_key")
@@ -151,8 +163,14 @@ model Payment {
   businessDate   DateTime      @map("business_date") @db.Date
   receivedBy     String?       @map("received_by") @db.Uuid
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Online gateway and its reference, for payments taken through a payment intent.
+  provider       String?
+  intentId       String?       @unique @map("intent_id") @db.Uuid
+  cashierShiftId String?       @map("cashier_shift_id") @db.Uuid
 
-  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+  folio        Folio         @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+  cashierShift CashierShift? @relation(fields: [organizationId, cashierShiftId], references: [organizationId, id], onDelete: Restrict)
+  refunds      Refund[]
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, businessDate])

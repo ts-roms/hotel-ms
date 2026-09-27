@@ -47,7 +47,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/guest-shell';
 import { api, errorMessage, formatDate, formatMoney, rememberStay } from '@/lib/api';
 import { RoomService } from './room-service';
@@ -613,6 +613,31 @@ function StarRating({ disabled, onRate }: { disabled: boolean; onRate: (n: numbe
 
 function Bill() {
   const bill = useQuery({ queryKey: ['bill'], queryFn: api.bill });
+  // Back from the hosted checkout: ?payment=<intent id>.
+  const [returned] = useState(() =>
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('payment'),
+  );
+  const payments = useQuery({
+    queryKey: ['payments'],
+    queryFn: api.payments,
+    enabled: !!returned,
+    refetchInterval: (q) =>
+      q.state.data?.find((i) => i.id === returned)?.status === 'PENDING' ? 3_000 : false,
+  });
+  const outcome = payments.data?.find((i) => i.id === returned);
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (outcome?.status === 'SUCCEEDED') void queryClient.invalidateQueries({ queryKey: ['bill'] });
+  }, [outcome?.status, queryClient]);
+  const [attemptKey] = useState(() => crypto.randomUUID());
+  const pay = useMutation({
+    mutationFn: () => api.pay(undefined, attemptKey),
+    onSuccess: (intent) => {
+      if (intent.checkoutUrl) window.location.assign(intent.checkoutUrl);
+    },
+  });
   if (bill.isPending) return <SkeletonCard lines={3} />;
   if (!bill.data) return null;
   const { currency, lines, balanceMinor } = bill.data;
@@ -646,6 +671,16 @@ function Bill() {
             {formatMoney(balanceMinor, currency)}
           </span>
         </div>
+        {outcome?.status === 'SUCCEEDED' && <Notice>Thank you, your payment was received.</Notice>}
+        {outcome?.status === 'FAILED' && (
+          <Alert>The payment did not go through. You can try again.</Alert>
+        )}
+        {pay.error && <Alert>{errorMessage(pay.error)}</Alert>}
+        {balanceMinor > 0 && (
+          <Button disabled={pay.isPending} onClick={() => pay.mutate()}>
+            Pay {formatMoney(balanceMinor, currency)} now
+          </Button>
+        )}
       </CardContent>
     </Section>
   );

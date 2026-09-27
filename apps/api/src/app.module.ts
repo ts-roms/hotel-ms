@@ -45,6 +45,21 @@ import { ScheduleService } from './modules/hr/schedule.service.js';
 import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
 import { MenuService } from './modules/fnb/menu.service.js';
 import { OrdersService } from './modules/fnb/orders.service.js';
+import { CashierService } from './modules/payments/cashier.service.js';
+import { DocumentsService } from './modules/payments/documents.service.js';
+import {
+  FinanceController,
+  GuestPaymentsController,
+  PaymentWebhooksController,
+  SandboxGatewayController,
+} from './modules/payments/payments.controller.js';
+import { PaymentsService } from './modules/payments/payments.service.js';
+import {
+  PAYMENT_PROVIDERS,
+  type PaymentProvider,
+  SandboxProvider,
+} from './modules/payments/providers.js';
+import { ReportsService } from './modules/payments/reports.service.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
@@ -78,6 +93,10 @@ export const CONTROLLERS = [
   PropertyHrController,
   FnbController,
   GuestFnbController,
+  FinanceController,
+  GuestPaymentsController,
+  PaymentWebhooksController,
+  SandboxGatewayController,
 ];
 
 @Module({})
@@ -127,6 +146,16 @@ export class AppModule {
         RealtimeService,
         MenuService,
         OrdersService,
+        PaymentsService,
+        CashierService,
+        DocumentsService,
+        ReportsService,
+        {
+          provide: PAYMENT_PROVIDERS,
+          useValue: new Map<string, PaymentProvider>(
+            env.PAYMENT_SANDBOX_ENABLED ? [['sandbox', new SandboxProvider(env)]] : [],
+          ),
+        },
         { provide: ROOM_ACCESS_PROVIDER, useClass: FrontDeskKeyProvider },
         { provide: APP_FILTER, useClass: ProblemFilter },
         // Order matters: authenticate → establish tenant → authorize. Guest routes are

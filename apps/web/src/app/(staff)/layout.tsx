@@ -6,9 +6,11 @@ import {
   BedDouble,
   BellRing,
   BookOpen,
+  Building2,
   CalendarClock,
   CalendarDays,
   CalendarRange,
+  ChartColumn,
   ChefHat,
   Clock,
   ConciergeBell,
@@ -25,6 +27,7 @@ import {
   Sparkles,
   Timer,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -82,6 +85,9 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'schedule', label: 'nav.schedule', icon: CalendarClock, permission: 'schedule.read' },
   { href: 'attendance', label: 'nav.attendance', icon: Clock, permission: 'attendance.read' },
   { href: 'leave', label: 'nav.leave', icon: Plane, permission: 'leave.read' },
+  { href: 'cashier', label: 'nav.cashier', icon: Wallet, permission: 'cashier.shift' },
+  { href: 'accounts', label: 'nav.accounts', icon: Building2, permission: 'folio.transfer' },
+  { href: 'reports', label: 'nav.reports', icon: ChartColumn, permission: 'finance.report.read' },
   { href: 'night-audit', label: 'nav.nightAudit', icon: MoonStar, permission: 'night_audit.run' },
 ];
 

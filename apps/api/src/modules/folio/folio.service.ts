@@ -4,10 +4,12 @@ import type {
   CreateTaxRuleRequest,
   Folio,
   PostChargeRequest,
+  AccountFolio,
   RecordPaymentRequest,
+  RoutingRule,
   TaxRule,
 } from '@hotel/contracts';
-import { Prisma, type Tx } from '@hotel/database';
+import { Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, toDbDate } from '../../common/dates.js';
 import { ProblemException, Problems } from '../../common/problem.js';
@@ -28,6 +30,8 @@ export interface PostingInput {
   type?: 'CHARGE' | 'ADJUSTMENT';
   /** Makes the posting idempotent within the folio. */
   sourceKey?: string;
+  /** Post here even if a routing rule would send the charge elsewhere. */
+  noRouting?: boolean;
   reason?: string;
   businessDate?: string;
   /** Tax rules snapshotted by the caller (e.g. at order time) instead of today's rules. */
@@ -36,7 +40,10 @@ export interface PostingInput {
 
 const folioInclude = {
   lines: { orderBy: [{ postedAt: 'asc' }, { id: 'asc' }] },
-  payments: { orderBy: { createdAt: 'asc' } },
+  payments: {
+    orderBy: { createdAt: 'asc' },
+    include: { refunds: { select: { amountMinor: true, status: true } } },
+  },
 } satisfies Prisma.FolioInclude;
 
 type FolioRow = Prisma.FolioGetPayload<{ include: typeof folioInclude }>;
@@ -50,6 +57,7 @@ function toFolioDto(folio: FolioRow): Folio {
     currency: folio.currency,
     balanceMinor: toSignedMinor(folio.balanceMinor),
     reservationRoomId: folio.reservationRoomId,
+    label: folio.label,
     lines: folio.lines.map((l) => ({
       id: l.id,
       businessDate: fromDbDate(l.businessDate),
@@ -68,6 +76,10 @@ function toFolioDto(folio: FolioRow): Folio {
       id: p.id,
       method: p.method,
       amountMinor: toMinor(p.amountMinor),
+      refundedMinor: toMinor(
+        p.refunds.filter((r) => r.status !== 'FAILED').reduce((sum, r) => sum + r.amountMinor, 0n),
+      ),
+      provider: p.provider,
       reference: p.reference,
       businessDate: fromDbDate(p.businessDate),
       createdAt: p.createdAt.toISOString(),
@@ -159,6 +171,20 @@ export class FolioService {
     const { organizationId, propertyId, actorId } = this.ctx;
     const folio = await this.requireFolio(tx, folioId);
     if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+    if (!input.noRouting && (input.type ?? 'CHARGE') === 'CHARGE') {
+      // Routing (§15.1): e.g. the company account pays the room, the guest the extras.
+      const rule = await tx.folioRoutingRule.findFirst({
+        where: { sourceFolioId: folioId, removedAt: null, departments: { has: input.department } },
+        include: { target: { select: { id: true, status: true } } },
+      });
+      if (rule && rule.target.status === 'OPEN') {
+        return this.postInTx(tx, rule.target.id, {
+          ...input,
+          description: `${input.description} (${folio.folioNo})`,
+          noRouting: true,
+        });
+      }
+    }
     if (input.sourceKey) {
       const existing = await tx.folioLine.findFirst({
         where: { folioId, sourceKey: input.sourceKey },
@@ -343,59 +369,331 @@ export class FolioService {
     });
   }
 
-  async recordPayment(folioId: string, input: RecordPaymentRequest): Promise<Folio> {
+  /** The caller's open cashier shift at this property, if any. */
+  async openShiftInTx(tx: Tx): Promise<{ id: string } | null> {
+    const membershipId = this.cls.get('membershipId');
+    if (!membershipId) return null;
+    return tx.cashierShift.findFirst({
+      where: { membershipId, propertyId: this.ctx.propertyId, status: 'OPEN' },
+      select: { id: true },
+    });
+  }
+
+  /**
+   * Posts a payment line and its payment record. Cash taken at the desk must go into the
+   * cashier's open shift, so the drawer can be reconciled (§15.2).
+   */
+  async recordPaymentInTx(
+    tx: Tx,
+    folioId: string,
+    input: RecordPaymentRequest & { provider?: string; intentId?: string },
+  ): Promise<string> {
     const { organizationId, propertyId, actorId } = this.ctx;
+    const folio = await this.requireFolio(tx, folioId);
+    if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+    let cashierShiftId: string | null = null;
+    if (input.method === 'CASH' && !input.provider) {
+      const shift = await this.openShiftInTx(tx);
+      if (!shift) {
+        throw new ProblemException(
+          409,
+          'CASHIER_SHIFT_REQUIRED',
+          'Open a cashier shift',
+          'Cash goes into a cashier shift. Open yours before taking cash.',
+        );
+      }
+      cashierShiftId = shift.id;
+    }
+    const businessDate = toDbDate(await businessDateOf(tx, propertyId));
+    const amount = BigInt(input.amountMinor);
+    const method = input.method.replace('_', ' ').toLowerCase();
+    const line = await tx.folioLine.create({
+      data: {
+        organizationId,
+        propertyId,
+        folioId,
+        businessDate,
+        type: 'PAYMENT',
+        department: 'PAYMENT',
+        description: input.provider ? `Online payment (${method})` : `Payment (${method})`,
+        amountMinor: -amount,
+        currency: folio.currency,
+        postedBy: actorId,
+      },
+    });
+    const payment = await tx.payment.create({
+      data: {
+        organizationId,
+        propertyId,
+        folioId,
+        folioLineId: line.id,
+        method: input.method,
+        amountMinor: amount,
+        currency: folio.currency,
+        reference: input.reference,
+        businessDate,
+        receivedBy: actorId,
+        provider: input.provider ?? null,
+        intentId: input.intentId ?? null,
+        cashierShiftId,
+      },
+    });
+    await this.audit.record(tx, {
+      action: 'payment.recorded',
+      entityType: 'folio',
+      entityId: folioId,
+      propertyId,
+      after: {
+        paymentId: payment.id,
+        method: input.method,
+        amountMinor: input.amountMinor,
+        reference: input.reference,
+        provider: input.provider ?? null,
+      },
+    });
+    await this.outbox.enqueue(
+      tx,
+      'PaymentRecorded',
+      { folioId, paymentId: payment.id, method: input.method, amountMinor: input.amountMinor },
+      { propertyId },
+    );
+    return payment.id;
+  }
+
+  async recordPayment(folioId: string, input: RecordPaymentRequest): Promise<Folio> {
     return this.db.run(async (tx) => {
-      const folio = await this.requireFolio(tx, folioId);
-      if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
-      const businessDate = toDbDate(await businessDateOf(tx, propertyId));
-      const amount = BigInt(input.amountMinor);
-      const line = await tx.folioLine.create({
-        data: {
-          organizationId,
-          propertyId,
-          folioId,
-          businessDate,
-          type: 'PAYMENT',
-          department: 'PAYMENT',
-          description: `Payment (${input.method.replace('_', ' ').toLowerCase()})`,
-          amountMinor: -amount,
-          currency: folio.currency,
-          postedBy: actorId,
-        },
+      await this.recordPaymentInTx(tx, folioId, input);
+      return this.load(tx, folioId);
+    });
+  }
+
+  /** Money given back: a positive REFUND line (the payer's balance goes up). */
+  async postRefundLineInTx(
+    tx: Tx,
+    folioId: string,
+    input: { amountMinor: bigint; description: string; reason: string },
+  ): Promise<string> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    const folio = await this.requireFolio(tx, folioId);
+    if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+    const line = await tx.folioLine.create({
+      data: {
+        organizationId,
+        propertyId,
+        folioId,
+        businessDate: toDbDate(await businessDateOf(tx, propertyId)),
+        type: 'REFUND',
+        department: 'PAYMENT',
+        description: input.description,
+        amountMinor: input.amountMinor,
+        currency: folio.currency,
+        reason: input.reason,
+        postedBy: actorId,
+      },
+    });
+    return line.id;
+  }
+
+  // ---- Accounts, routing and transfers -----------------------------------------------------
+
+  /** Company / group master account: a folio without a stay (city ledger). */
+  async createAccount(label: string): Promise<Folio> {
+    const { organizationId, propertyId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const property = await tx.property.findUniqueOrThrow({
+        where: { id: propertyId },
+        select: { code: true, currency: true },
       });
-      const payment = await tx.payment.create({
+      const n = await nextNumber(tx, organizationId, propertyId, 'folio');
+      const folio = await tx.folio.create({
         data: {
           organizationId,
           propertyId,
-          folioId,
-          folioLineId: line.id,
-          method: input.method,
-          amountMinor: amount,
-          currency: folio.currency,
-          reference: input.reference,
-          businessDate,
-          receivedBy: actorId,
+          folioNo: `${property.code}-F${String(n).padStart(6, '0')}`,
+          label,
+          currency: property.currency,
         },
       });
       await this.audit.record(tx, {
-        action: 'payment.recorded',
+        action: 'folio.account_created',
+        entityType: 'folio',
+        entityId: folio.id,
+        propertyId,
+        after: { label },
+      });
+      return this.load(tx, folio.id);
+    });
+  }
+
+  async accounts(): Promise<AccountFolio[]> {
+    const rows = await this.db.run((tx) =>
+      tx.folio.findMany({
+        where: { propertyId: this.ctx.propertyId, reservationRoomId: null, label: { not: null } },
+        orderBy: { label: 'asc' },
+      }),
+    );
+    return rows.map((f) => ({
+      id: f.id,
+      folioNo: f.folioNo,
+      label: f.label!,
+      status: f.status,
+      balanceMinor: toSignedMinor(f.balanceMinor),
+    }));
+  }
+
+  async routingRules(folioId: string): Promise<RoutingRule[]> {
+    return this.db.run(async (tx) => {
+      await this.requireFolio(tx, folioId);
+      const rows = await tx.folioRoutingRule.findMany({
+        where: { sourceFolioId: folioId, removedAt: null },
+        include: { target: { select: { folioNo: true, label: true } } },
+        orderBy: { createdAt: 'asc' },
+      });
+      return rows.map((r) => ({
+        id: r.id,
+        sourceFolioId: r.sourceFolioId,
+        targetFolioId: r.targetFolioId,
+        targetFolioNo: r.target.folioNo,
+        targetLabel: r.target.label,
+        departments: r.departments as RoutingRule['departments'],
+      }));
+    });
+  }
+
+  async addRoutingRule(
+    folioId: string,
+    targetFolioId: string,
+    departments: string[],
+  ): Promise<RoutingRule[]> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    await this.db.run(async (tx) => {
+      const source = await this.requireFolio(tx, folioId);
+      const target = await tx.folio.findFirst({ where: { id: targetFolioId, propertyId } });
+      if (!target || target.id === source.id) {
+        throw Problems.validation([{ path: 'targetFolioId', message: 'Unknown or same folio' }]);
+      }
+      if (source.status !== 'OPEN' || target.status !== 'OPEN') {
+        throw invalidState('Both folios must be open.');
+      }
+      const overlapping = await tx.folioRoutingRule.count({
+        where: { sourceFolioId: folioId, removedAt: null, departments: { hasSome: departments } },
+      });
+      if (overlapping) throw Problems.conflict('A department is already routed from this folio.');
+      const rule = await tx.folioRoutingRule.create({
+        data: {
+          organizationId,
+          propertyId,
+          sourceFolioId: folioId,
+          targetFolioId,
+          departments,
+          createdBy: actorId,
+        },
+      });
+      await this.audit.record(tx, {
+        action: 'folio.routing_added',
         entityType: 'folio',
         entityId: folioId,
         propertyId,
-        after: {
-          paymentId: payment.id,
-          method: input.method,
-          amountMinor: input.amountMinor,
-          reference: input.reference,
-        },
+        after: { ruleId: rule.id, targetFolioId, departments },
       });
-      await this.outbox.enqueue(
-        tx,
-        'PaymentRecorded',
-        { folioId, paymentId: payment.id, method: input.method, amountMinor: input.amountMinor },
-        { propertyId },
-      );
+    });
+    return this.routingRules(folioId);
+  }
+
+  async removeRoutingRule(ruleId: string): Promise<void> {
+    await this.db.run(async (tx) => {
+      const { count } = await tx.folioRoutingRule.updateMany({
+        where: { id: ruleId, propertyId: this.ctx.propertyId, removedAt: null },
+        data: { removedAt: new Date() },
+      });
+      if (count !== 1) throw Problems.notFound('Routing rule');
+      await this.audit.record(tx, {
+        action: 'folio.routing_removed',
+        entityType: 'folio_routing_rule',
+        entityId: ruleId,
+        propertyId: this.ctx.propertyId,
+      });
+    });
+  }
+
+  /**
+   * Moves charges (with their taxes) to another folio as a TRANSFER pair. The source side
+   * references the charge, so a charge moves once and a moved charge cannot be voided.
+   */
+  async transfer(
+    folioId: string,
+    input: { targetFolioId: string; lineIds: string[]; reason: string },
+  ): Promise<Folio> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const source = await this.requireFolio(tx, folioId);
+      const target = await tx.folio.findFirst({ where: { id: input.targetFolioId, propertyId } });
+      if (!target || target.id === source.id) {
+        throw Problems.validation([{ path: 'targetFolioId', message: 'Unknown or same folio' }]);
+      }
+      if (source.currency !== target.currency) {
+        throw invalidState('The folios use different currencies.');
+      }
+      const businessDate = toDbDate(await businessDateOf(tx, propertyId));
+      for (const lineId of [...new Set(input.lineIds)]) {
+        const charge = await tx.folioLine.findFirst({
+          where: { id: lineId, folioId, type: 'CHARGE' },
+        });
+        if (!charge) {
+          throw Problems.validation([
+            { path: 'lineIds', message: 'Only charges of this folio can move' },
+          ]);
+        }
+        if (await tx.folioLine.count({ where: { reversesLineId: lineId } })) {
+          throw invalidState(`"${charge.description}" was already voided or moved.`);
+        }
+        const taxes = await tx.folioLine.aggregate({
+          where: { parentLineId: lineId, type: 'TAX' },
+          _sum: { amountMinor: true },
+        });
+        const gross = charge.amountMinor + (taxes._sum.amountMinor ?? 0n);
+        const transferId = uuidv7();
+        await tx.folioLine.create({
+          data: {
+            organizationId,
+            propertyId,
+            folioId,
+            businessDate,
+            type: 'TRANSFER',
+            department: charge.department,
+            description: `Moved to ${target.folioNo}: ${charge.description}`,
+            amountMinor: -gross,
+            currency: charge.currency,
+            reversesLineId: charge.id,
+            transferId,
+            reason: input.reason,
+            postedBy: actorId,
+          },
+        });
+        await tx.folioLine.create({
+          data: {
+            organizationId,
+            propertyId,
+            folioId: target.id,
+            businessDate,
+            type: 'TRANSFER',
+            department: charge.department,
+            description: `From ${source.folioNo}: ${charge.description}`,
+            amountMinor: gross,
+            currency: charge.currency,
+            transferId,
+            reason: input.reason,
+            postedBy: actorId,
+          },
+        });
+      }
+      await this.audit.record(tx, {
+        action: 'folio.transferred',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId,
+        after: { targetFolioId: target.id, lineIds: input.lineIds, reason: input.reason },
+      });
       return this.load(tx, folioId);
     });
   }

@@ -1,4 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
+import { applyDecorators, SetMetadata } from '@nestjs/common';
 import type { PermissionCode } from '@hotel/contracts';
 
 export const IS_PUBLIC = 'route:public';
@@ -25,6 +25,14 @@ export const GuestRoute = (options: Partial<GuestRouteOptions> = {}) =>
 
 /** No session required (login, health). Unsafe methods are still Origin-checked. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
+
+export const IS_WEBHOOK = 'route:webhook';
+/**
+ * Server-to-server callback (payment provider webhooks): public, and exempt from the
+ * browser Origin check. The handler MUST authenticate the request itself (signature).
+ */
+export const Webhook = () =>
+  applyDecorators(SetMetadata(IS_PUBLIC, true), SetMetadata(IS_WEBHOOK, true));
 
 /**
  * Signed in, but no organization context (session info, logout, org switch).

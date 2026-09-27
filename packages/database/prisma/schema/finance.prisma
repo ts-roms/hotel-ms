@@ -1,0 +1,178 @@
+// Finance (blueprint §15): online payment intents and webhooks, refunds, cashier shifts,
+// invoices and receipts, folio routing.
+
+enum PaymentIntentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  /// Valid but nothing to do (duplicate outcome, unknown reference).
+  IGNORED
+  FAILED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum CashierShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum FolioDocumentType {
+  INVOICE
+  RECEIPT
+}
+
+/// A request to collect money through an online gateway. The folio PAYMENT line is posted
+/// only when the provider confirms success (webhook).
+model PaymentIntent {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  propertyId     String              @map("property_id") @db.Uuid
+  folioId        String              @map("folio_id") @db.Uuid
+  provider       String
+  /// The provider's id for the checkout; unique per provider across all tenants.
+  providerRef    String?             @map("provider_ref")
+  amountMinor    BigInt              @map("amount_minor")
+  currency       String              @db.Char(3)
+  status         PaymentIntentStatus @default(PENDING)
+  checkoutUrl    String?             @map("checkout_url")
+  returnUrl      String              @map("return_url")
+  source         String
+  createdBy      String?             @map("created_by") @db.Uuid
+  guestSessionId String?             @map("guest_session_id") @db.Uuid
+  paymentId      String?             @map("payment_id") @db.Uuid
+  needsAttention Boolean             @default(false) @map("needs_attention")
+  failureReason  String?             @map("failure_reason")
+  expiresAt      DateTime            @map("expires_at") @db.Timestamptz(3)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([provider, providerRef])
+  @@index([organizationId, folioId])
+  @@map("payment_intents")
+}
+
+/// Webhook inbox: every provider event, stored before processing. Platform-level (the
+/// tenant is only known after resolving the reference); UNIQUE (provider, event_id)
+/// makes redelivered events no-ops.
+model WebhookEvent {
+  id             String             @id @default(uuid(7)) @db.Uuid
+  provider       String
+  eventId        String             @map("event_id")
+  eventType      String             @map("event_type")
+  signatureValid Boolean            @map("signature_valid")
+  payload        Json
+  status         WebhookEventStatus @default(RECEIVED)
+  attempts       Int                @default(0)
+  lastError      String?            @map("last_error")
+  receivedAt     DateTime           @default(now()) @map("received_at") @db.Timestamptz(3)
+  processedAt    DateTime?          @map("processed_at") @db.Timestamptz(3)
+
+  @@unique([provider, eventId])
+  @@index([status, receivedAt])
+  @@map("webhook_events")
+}
+
+model Refund {
+  id             String       @id @default(uuid(7)) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  propertyId     String       @map("property_id") @db.Uuid
+  paymentId      String       @map("payment_id") @db.Uuid
+  folioId        String       @map("folio_id") @db.Uuid
+  folioLineId    String?      @map("folio_line_id") @db.Uuid
+  amountMinor    BigInt       @map("amount_minor")
+  reason         String
+  status         RefundStatus
+  providerRef    String?      @map("provider_ref")
+  cashierShiftId String?      @map("cashier_shift_id") @db.Uuid
+  createdBy      String?      @map("created_by") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz(3)
+
+  payment Payment @relation(fields: [organizationId, paymentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, paymentId])
+  @@map("refunds")
+}
+
+model CashierShift {
+  id                String             @id @default(uuid(7)) @db.Uuid
+  organizationId    String             @map("organization_id") @db.Uuid
+  propertyId        String             @map("property_id") @db.Uuid
+  membershipId      String             @map("membership_id") @db.Uuid
+  status            CashierShiftStatus @default(OPEN)
+  openedAt          DateTime           @default(now()) @map("opened_at") @db.Timestamptz(3)
+  openingFloatMinor BigInt             @map("opening_float_minor")
+  closedAt          DateTime?          @map("closed_at") @db.Timestamptz(3)
+  expectedCashMinor BigInt?            @map("expected_cash_minor")
+  countedCashMinor  BigInt?            @map("counted_cash_minor")
+  varianceMinor     BigInt?            @map("variance_minor")
+  notes             String             @default("")
+  version           Int                @default(1)
+
+  membership OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  payments   Payment[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, status])
+  @@map("cashier_shifts")
+}
+
+/// Invoices and receipts: immutable, gap-free numbered per property and type.
+model FolioDocument {
+  id             String            @id @default(uuid(7)) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  propertyId     String            @map("property_id") @db.Uuid
+  folioId        String            @map("folio_id") @db.Uuid
+  type           FolioDocumentType
+  documentNo     String            @map("document_no")
+  paymentId      String?           @map("payment_id") @db.Uuid
+  currency       String            @db.Char(3)
+  totalMinor     BigInt            @map("total_minor")
+  content        Json
+  issuedBy       String?           @map("issued_by") @db.Uuid
+  issuedAt       DateTime          @default(now()) @map("issued_at") @db.Timestamptz(3)
+
+  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, type, documentNo])
+  @@index([organizationId, folioId])
+  @@map("folio_documents")
+}
+
+/// Charges of these departments posted to the source folio go to the target instead
+/// (e.g. the company pays the room, the guest pays incidentals).
+model FolioRoutingRule {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  sourceFolioId  String    @map("source_folio_id") @db.Uuid
+  targetFolioId  String    @map("target_folio_id") @db.Uuid
+  departments    String[]
+  createdBy      String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  removedAt      DateTime? @map("removed_at") @db.Timestamptz(3)
+
+  source Folio @relation("RoutingSource", fields: [organizationId, sourceFolioId], references: [organizationId, id], onDelete: Restrict)
+  target Folio @relation("RoutingTarget", fields: [organizationId, targetFolioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, sourceFolioId])
+  @@map("folio_routing_rules")
+}

@@ -105,6 +105,16 @@ const FNB_MANAGE = [
   'fnb.menu.manage',
 ] as const satisfies readonly PermissionCode[];
 
+const FINANCE = [
+  'folio.read',
+  'folio.adjust',
+  'folio.transfer',
+  'payment.create',
+  'payment.refund',
+  'invoice.issue',
+  'finance.report.read',
+] as const satisfies readonly PermissionCode[];
+
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
 
 const PMS_MANAGE = [
@@ -144,6 +154,8 @@ export const ROLE_TEMPLATES = [
       PMS_MANAGE,
       HR_ADMIN,
       FNB_MANAGE,
+      FINANCE,
+      ['cashier.shift'],
       SELF_SERVICE,
     ),
   },
@@ -168,6 +180,8 @@ export const ROLE_TEMPLATES = [
       PMS_MANAGE,
       PEOPLE_MANAGE,
       FNB_MANAGE,
+      FINANCE,
+      ['cashier.shift'],
       SELF_SERVICE,
     ),
   },
@@ -186,7 +200,7 @@ export const ROLE_TEMPLATES = [
       PMS_OPERATE,
       FRONT_OFFICE,
       GUEST_SERVICE,
-      ['fnb.order.read', 'fnb.order.create'],
+      ['fnb.order.read', 'fnb.order.create', 'cashier.shift', 'invoice.issue'],
       SELF_SERVICE,
     ),
   },
@@ -224,7 +238,16 @@ export const ROLE_TEMPLATES = [
       ],
       PMS_READ,
       HR_READ,
-      ['fnb.order.read'],
+      ['fnb.order.read', 'finance.report.read'],
+    ),
+  },
+  {
+    key: 'finance',
+    name: 'Group Finance',
+    description: 'Folios, payments, refunds, invoices and financial reports.',
+    permissions: uniq(
+      ['organization.read', 'property.read', 'reservation.read', 'guest.read'],
+      FINANCE,
     ),
   },
   {

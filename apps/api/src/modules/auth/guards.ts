@@ -9,6 +9,7 @@ import {
   ALLOW_MFA_PENDING,
   GUEST_ROUTE,
   IS_PUBLIC,
+  IS_WEBHOOK,
   NO_ORGANIZATION,
   type PermissionRequirement,
   REQUIRED_PERMISSION,
@@ -49,7 +50,13 @@ export class AuthGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const unsafe = !SAFE_METHODS.has(req.method);
 
-    if (unsafe && !this.sessions.isAllowedOrigin(req.headers.origin)) throw Problems.csrf();
+    if (
+      unsafe &&
+      !flag(this.reflector, IS_WEBHOOK, ctx) &&
+      !this.sessions.isAllowedOrigin(req.headers.origin)
+    ) {
+      throw Problems.csrf();
+    }
     if (flag(this.reflector, IS_PUBLIC, ctx) || isGuestRoute(this.reflector, ctx)) return true;
 
     const token = req.cookies[this.sessions.cookieName];

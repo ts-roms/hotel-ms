@@ -97,6 +97,11 @@ F&B lives under the property **Kitchen**, **Orders** and **Menus** pages (`kitch
 `runner@abc.test` are the demo kitchen and room-service runner). Checked-in guests order room
 service from the guest portal; delivered room charges land on their folio.
 
+Finance: folios take online payments through the built-in **sandbox gateway** (payment links for
+staff, **Pay now** for guests; no money moves), refunds, invoices and receipts. Cash needs an open
+shift on the **Cashier** page; **Accounts** holds company folios; **Reports** has the daily report
+and reconciliation.
+
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
 
