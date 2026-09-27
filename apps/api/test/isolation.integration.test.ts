@@ -8,7 +8,13 @@ import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
 import { RequestMethod } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { CONTROLLERS } from '../src/app.module.js';
-import { IS_PUBLIC, NO_ORGANIZATION, REQUIRED_PERMISSION } from '../src/common/route-metadata.js';
+import {
+  GUEST_ROUTE,
+  type GuestRouteOptions,
+  IS_PUBLIC,
+  NO_ORGANIZATION,
+  REQUIRED_PERMISSION,
+} from '../src/common/route-metadata.js';
 import { startTestApp, type TestContext, TestClient } from './harness.js';
 
 interface RouteInfo {
@@ -19,6 +25,7 @@ interface RouteInfo {
   isPublic: boolean;
   noOrganization: boolean;
   hasPermission: boolean;
+  guest: GuestRouteOptions | undefined;
 }
 
 function routeInventory(): RouteInfo[] {
@@ -43,6 +50,7 @@ function routeInventory(): RouteInfo[] {
         isPublic: meta(IS_PUBLIC) === true,
         noOrganization: meta(NO_ORGANIZATION) === true,
         hasPermission: meta(REQUIRED_PERMISSION) !== undefined,
+        guest: meta(GUEST_ROUTE),
       });
     }
   }
@@ -50,7 +58,9 @@ function routeInventory(): RouteInfo[] {
 }
 
 const ROUTES = routeInventory();
-const TENANT_ROUTES = ROUTES.filter((r) => !r.isPublic && !r.noOrganization);
+const TENANT_ROUTES = ROUTES.filter((r) => !r.isPublic && !r.noOrganization && !r.guest);
+/** Guest realm routes that need a guest session (all but the link exchange). */
+const GUEST_SESSION_ROUTES = ROUTES.filter((r) => r.guest?.session);
 const PROPERTY_ROUTES = TENANT_ROUTES.filter((r) => r.path.includes(':propertyId'));
 
 let ctx: TestContext;
@@ -103,6 +113,28 @@ describe('route inventory', () => {
         route.method === 'GET' ? undefined : {},
       );
       expect(res.status).toBe(401);
+    },
+  );
+});
+
+describe('guest realm routes', () => {
+  it('are all under /guest and never take a property or reservation id', () => {
+    const guestRoutes = ROUTES.filter((r) => r.guest);
+    expect(guestRoutes.length).toBeGreaterThanOrEqual(5);
+    for (const r of guestRoutes) {
+      expect(r.path.startsWith('/api/v1/guest/')).toBe(true);
+      expect(r.path).not.toMatch(/:propertyId|:reservationId|:lineId/);
+      expect(r.hasPermission).toBe(false);
+    }
+  });
+
+  it.each(GUEST_SESSION_ROUTES.map((r) => [`${r.method} ${r.path}`, r] as const))(
+    '%s requires a guest session, and a staff session is not one',
+    async (_label, route) => {
+      const anonymous = new TestClient(ctx.app);
+      const body = route.method === 'GET' ? undefined : {};
+      expect((await anonymous.request(route.method, route.path, body)).status).toBe(401);
+      expect((await clients.abcAdmin.request(route.method, route.path, body)).status).toBe(401);
     },
   );
 });

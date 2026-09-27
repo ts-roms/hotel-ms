@@ -106,7 +106,7 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
     crossOriginResourcePolicy: { policy: 'same-site' },
   });
   app.enableCors({
-    origin: env.WEB_ORIGIN,
+    origin: [...env.WEB_ORIGIN, env.GUEST_ORIGIN],
     credentials: true,
     allowedHeaders: ['content-type', 'x-csrf-token', 'x-request-id', 'if-match', 'idempotency-key'],
     exposedHeaders: ['etag', 'x-request-id', 'retry-after'],

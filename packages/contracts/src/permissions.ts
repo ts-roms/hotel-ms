@@ -114,6 +114,17 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
     sensitive: true,
   },
+
+  // ---- Guest experience ------------------------------------------------------------------
+  'guest_service.read': { description: 'View guest service requests', scopes: ORG_OR_PROPERTY },
+  'guest_service.update': {
+    description: 'Acknowledge, assign and complete guest service requests',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'guest_portal.invite': {
+    description: 'Send guests their portal link',
+    scopes: ORG_OR_PROPERTY,
+  },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type PermissionCode = keyof typeof PERMISSIONS;

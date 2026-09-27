@@ -118,6 +118,13 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
 
+  // ABC offers guest self check-in; XYZ does not (both states are exercised by tests).
+  await withDbContext(prisma, { organizationId: abc.organizationId, identityId: null }, (tx) =>
+    tx.organizationFeatureFlag.create({
+      data: { organizationId: abc.organizationId, flagKey: 'self_checkin', enabled: true },
+    }),
+  );
+
   const inventory = {} as DemoWorld['inventory'];
   for (const [code, propertyId] of Object.entries(abcProps)) {
     inventory[code as 'MNL'] = await seedDemoInventory(

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# One Dockerfile, one target per deployable: api, worker, web.
+# One Dockerfile, one target per deployable: api, worker, web, guest.
 #   docker build -f infrastructure/docker/Dockerfile --target api -t hotel-api .
 # Images run as a non-root user, contain production dependencies only, and hold no secrets
 # (configuration comes from the environment / secret manager at runtime).
@@ -54,3 +54,14 @@ COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next
 USER node
 EXPOSE 43100
 CMD ["node", "apps/web/server.js"]
+
+# ---- guest ------------------------------------------------------------------------------
+FROM node:${NODE_VERSION}-slim AS guest
+ENV NODE_ENV=production PORT=43200 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
+WORKDIR /app
+COPY --from=build --chown=node:node /repo/apps/guest/.next/standalone ./
+COPY --from=build --chown=node:node /repo/apps/guest/.next/static ./apps/guest/.next/static
+COPY --from=build --chown=node:node /repo/apps/guest/public ./apps/guest/public
+USER node
+EXPOSE 43200
+CMD ["node", "apps/guest/server.js"]

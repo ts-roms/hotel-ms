@@ -55,6 +55,12 @@ const HOUSEKEEPING_LEAD = [
   'housekeeping.assign',
 ] as const satisfies readonly PermissionCode[];
 
+const GUEST_SERVICE = [
+  'guest_service.read',
+  'guest_service.update',
+  'guest_portal.invite',
+] as const satisfies readonly PermissionCode[];
+
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
 
 const PMS_MANAGE = [
@@ -64,6 +70,7 @@ const PMS_MANAGE = [
   'folio.adjust',
   'tax.manage',
   'night_audit.run',
+  ...GUEST_SERVICE,
 ] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [
@@ -118,13 +125,21 @@ export const ROLE_TEMPLATES = [
     key: 'front_desk',
     name: 'Front Desk Agent',
     description: 'Reservations, guests and arrivals at the front desk.',
-    permissions: uniq(['organization.read', 'property.read'], PMS_OPERATE, FRONT_OFFICE),
+    permissions: uniq(
+      ['organization.read', 'property.read'],
+      PMS_OPERATE,
+      FRONT_OFFICE,
+      GUEST_SERVICE,
+    ),
   },
   {
     key: 'housekeeping_supervisor',
     name: 'Housekeeping Supervisor',
     description: 'Runs the housekeeping board: assigns, inspects and releases rooms.',
-    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING_LEAD),
+    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING_LEAD, [
+      'guest_service.read',
+      'guest_service.update',
+    ]),
   },
   {
     key: 'housekeeper',
@@ -145,6 +160,7 @@ export const ROLE_TEMPLATES = [
         'audit.read',
         'folio.read',
         'housekeeping.read',
+        'guest_service.read',
       ],
       PMS_READ,
     ),

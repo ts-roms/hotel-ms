@@ -170,7 +170,11 @@ export class SessionService {
 
   isAllowedOrigin(origin: string | undefined): boolean {
     // Non-browser clients send no Origin; they cannot ride a victim's cookies anyway.
-    return origin === undefined || this.env.WEB_ORIGIN.includes(origin);
+    return (
+      origin === undefined ||
+      this.env.WEB_ORIGIN.includes(origin) ||
+      origin === this.env.GUEST_ORIGIN
+    );
   }
 }
 

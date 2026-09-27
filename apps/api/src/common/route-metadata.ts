@@ -5,6 +5,23 @@ export const IS_PUBLIC = 'route:public';
 export const NO_ORGANIZATION = 'route:no-organization';
 export const REQUIRED_PERMISSION = 'route:permission';
 export const ALLOW_MFA_PENDING = 'route:allow-mfa-pending';
+export const GUEST_ROUTE = 'route:guest';
+
+/**
+ * Guest portal route: staff guards stand aside and GuestGuard authenticates the guest
+ * session instead. `session: false` allows signed-out access (link exchange); `verified`
+ * requires the emailed code to have been confirmed in this session.
+ */
+export interface GuestRouteOptions {
+  session: boolean;
+  verified: boolean;
+}
+export const GuestRoute = (options: Partial<GuestRouteOptions> = {}) =>
+  SetMetadata(GUEST_ROUTE, {
+    session: true,
+    verified: false,
+    ...options,
+  } satisfies GuestRouteOptions);
 
 /** No session required (login, health). Unsafe methods are still Origin-checked. */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
