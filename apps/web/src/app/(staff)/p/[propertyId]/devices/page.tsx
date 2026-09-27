@@ -1,6 +1,6 @@
 'use client';
 
-import { DEVICE_PERMISSIONS, type DevicePairing } from '@hotel/contracts';
+import { DEVICE_PERMISSIONS, type DeviceKind, type DevicePairing } from '@hotel/contracts';
 import {
   Alert,
   Badge,
@@ -13,6 +13,7 @@ import {
   Input,
   Notice,
   PageHeader,
+  Select,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -33,6 +34,7 @@ export default function DevicesPage() {
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const devices = useQuery({ queryKey: ['devices', propertyId], queryFn: pms.devices });
+  const [kind, setKind] = useState<DeviceKind>('KITCHEN');
   const [name, setName] = useState('Kitchen tablet');
   const [permissions, setPermissions] = useState<string[]>([...DEVICE_PERMISSIONS]);
   const [pairing, setPairing] = useState<DevicePairing | null>(null);
@@ -50,7 +52,9 @@ export default function DevicesPage() {
     act.mutate(() =>
       pms.createDevice({
         name: name.trim(),
-        permissions: permissions as (typeof DEVICE_PERMISSIONS)[number][],
+        kind,
+        permissions:
+          kind === 'KITCHEN' ? (permissions as (typeof DEVICE_PERMISSIONS)[number][]) : [],
       }),
     );
   };
@@ -86,7 +90,9 @@ export default function DevicesPage() {
                   </Badge>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {d.permissions.map((p) => PERMISSION_LABELS[p]).join(' · ')}
+                  {d.kind === 'TIME_CLOCK'
+                    ? t('dev.timeClock')
+                    : d.permissions.map((p) => PERMISSION_LABELS[p]).join(' · ')}
                   {d.lastSeenAt &&
                     ` · ${t('dev.lastSeen')} ${new Date(d.lastSeenAt).toLocaleString('en-PH')}`}
                 </span>
@@ -127,6 +133,18 @@ export default function DevicesPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={create} className="flex flex-col gap-3 text-sm">
+            <Select
+              aria-label={t('dev.kind')}
+              value={kind}
+              onChange={(e) => {
+                const next = e.target.value as DeviceKind;
+                setKind(next);
+                setName(next === 'KITCHEN' ? t('dev.kitchen') : t('dev.timeClock'));
+              }}
+            >
+              <option value="KITCHEN">{t('dev.kitchen')}</option>
+              <option value="TIME_CLOCK">{t('dev.timeClock')}</option>
+            </Select>
             <Input
               required
               maxLength={60}
@@ -135,7 +153,7 @@ export default function DevicesPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <fieldset className="flex flex-wrap gap-4">
+            <fieldset className="flex flex-wrap gap-4" hidden={kind !== 'KITCHEN'}>
               {DEVICE_PERMISSIONS.map((p) => (
                 <label key={p} className="flex items-center gap-2">
                   <input
@@ -156,7 +174,7 @@ export default function DevicesPage() {
               variant="outline"
               className="self-start"
               loading={act.isPending}
-              disabled={!name.trim() || permissions.length === 0}
+              disabled={!name.trim() || (kind === 'KITCHEN' && permissions.length === 0)}
             >
               {t('dev.add')}
             </Button>

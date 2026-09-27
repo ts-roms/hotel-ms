@@ -35,6 +35,7 @@ function toDeviceDto(d: DeviceRow): Device {
   return {
     id: d.id,
     name: d.name,
+    kind: d.kind as Device['kind'],
     permissions: d.permissions as Device['permissions'],
     status: d.revokedAt ? 'REVOKED' : d.tokenHash ? 'PAIRED' : 'PENDING',
     pairingExpiresAt: d.pairingExpiresAt?.toISOString() ?? null,
@@ -105,6 +106,7 @@ export class DevicesService {
           organizationId: this.cls.get('organizationId')!,
           propertyId,
           name: input.name,
+          kind: input.kind,
           permissions: [...new Set(input.permissions)],
           createdBy: this.cls.get('identityId') ?? null,
         },
@@ -115,7 +117,7 @@ export class DevicesService {
         entityType: 'device',
         entityId: row.id,
         propertyId,
-        after: { name: input.name, permissions: input.permissions },
+        after: { name: input.name, kind: input.kind, permissions: input.permissions },
       });
       return { device: toDeviceDto(row), pairingCode: code, expiresAt: expiresAt.toISOString() };
     });
@@ -273,6 +275,7 @@ export class DevicesService {
       organizationId: found.organizationId,
       propertyId: found.propertyId,
       name: found.name,
+      kind: found.kind as ResolvedDevice['kind'],
       permissions: found.permissions,
       tokenHash,
     };
@@ -340,6 +343,7 @@ export class DevicesService {
             name: device.name,
             propertyId: device.propertyId,
             propertyName: property.name,
+            kind: device.kind,
             permissions: device.permissions.filter((p): p is (typeof DEVICE_PERMISSIONS)[number] =>
               (DEVICE_PERMISSIONS as readonly string[]).includes(p),
             ),

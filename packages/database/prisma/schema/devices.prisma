@@ -5,6 +5,8 @@ model Device {
   organizationId   String    @map("organization_id") @db.Uuid
   propertyId       String    @map("property_id") @db.Uuid
   name             String
+  /// KITCHEN or TIME_CLOCK (ADR-0022).
+  kind             String    @default("KITCHEN")
   permissions      String[]
   /// SHA-256 of the device token; null until paired.
   tokenHash        String?   @unique @map("token_hash")
@@ -17,8 +19,9 @@ model Device {
   createdBy        String?   @map("created_by") @db.Uuid
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  property Property        @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  property Property          @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
   sessions DeviceSession[]
+  photos   AttendancePhoto[]
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId])

@@ -160,3 +160,9 @@ variable "deleted_document_retention_days" {
   type        = number
   default     = 30
 }
+
+variable "attendance_photo_expiry_days" {
+  description = "Backstop expiry for time clock selfies in S3; the API deletes them after 90 days."
+  type        = number
+  default     = 100
+}

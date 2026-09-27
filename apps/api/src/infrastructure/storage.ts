@@ -15,11 +15,25 @@ import type { Env } from '../config/env.js';
  * user input: `{organizationId}/employee-documents/{documentId}`.
  */
 export interface ObjectStorage {
-  put(key: string, body: Buffer, contentType: string, sha256Hex: string): Promise<void>;
+  put(
+    key: string,
+    body: Buffer,
+    contentType: string,
+    sha256Hex: string,
+    options?: PutOptions,
+  ): Promise<void>;
   /** Throws ObjectNotFound if the object is missing. */
   get(key: string): Promise<Readable>;
   /** Idempotent: deleting a missing object is not an error. */
   delete(key: string): Promise<void>;
+}
+
+export interface PutOptions {
+  /**
+   * Object tags. In S3, lifecycle rules match them: `retention=attendance-photo` objects
+   * expire on their own, which also removes any left behind by a crash (ADR-0022).
+   */
+  tags?: Record<string, string>;
 }
 
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
@@ -85,7 +99,13 @@ export class S3Storage implements ObjectStorage {
     this.client = new S3Client(region ? { region } : {});
   }
 
-  async put(key: string, body: Buffer, contentType: string, sha256Hex: string): Promise<void> {
+  async put(
+    key: string,
+    body: Buffer,
+    contentType: string,
+    sha256Hex: string,
+    options: PutOptions = {},
+  ): Promise<void> {
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
@@ -97,6 +117,7 @@ export class S3Storage implements ObjectStorage {
         BucketKeyEnabled: true,
         // S3 verifies the upload against our hash.
         ChecksumSHA256: Buffer.from(sha256Hex, 'hex').toString('base64'),
+        ...(options.tags ? { Tagging: new URLSearchParams(options.tags).toString() } : {}),
       }),
     );
   }

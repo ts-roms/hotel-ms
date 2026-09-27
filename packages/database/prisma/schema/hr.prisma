@@ -217,8 +217,9 @@ model AttendancePunch {
   recordedBy     String?     @map("recorded_by") @db.Uuid
   recordedAt     DateTime    @default(now()) @map("recorded_at") @db.Timestamptz(3)
 
-  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
-  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  property Property         @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee Employee         @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  photo    AttendancePhoto?
 
   @@unique([organizationId, id])
   @@index([organizationId, employeeId, at])
@@ -397,4 +398,25 @@ model EmployeeDocument {
   @@unique([storageKey])
   @@index([organizationId, employeeId])
   @@map("employee_documents")
+}
+
+/// The selfie taken with a time clock punch (ADR-0022). Punches are append-only; the photo
+/// is personal data with its own, shorter life: deleted after a fixed number of days.
+model AttendancePhoto {
+  punchId        String    @id @map("punch_id") @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  deviceId       String?   @map("device_id") @db.Uuid
+  storageKey     String    @unique @map("storage_key")
+  contentType    String    @map("content_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  punch  AttendancePunch @relation(fields: [organizationId, punchId], references: [organizationId, id], onDelete: Restrict)
+  device Device?         @relation(fields: [organizationId, deviceId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, punchId])
+  @@index([organizationId, createdAt])
+  @@map("attendance_photos")
 }

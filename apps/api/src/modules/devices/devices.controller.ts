@@ -1,6 +1,10 @@
 import { Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
+  CLOCK_PHOTO_TYPES,
+  type ClockPunchQuery,
+  clockPunchQuerySchema,
+  clockPunchResultSchema,
   type CreateDeviceRequest,
   createDeviceRequestSchema,
   deviceSchema,
@@ -19,7 +23,8 @@ import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { Problems } from '../../common/problem.js';
 import { Public, RequirePermission } from '../../common/route-metadata.js';
-import { ZodBody, ZodResponse } from '../../common/zod.js';
+import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
+import { TimeClockService } from '../hr/time-clock.service.js';
 import { DevicesService } from './devices.service.js';
 import { KioskAuth } from './kiosk-auth.js';
 
@@ -100,6 +105,7 @@ export class KioskController {
   constructor(
     private readonly devices: DevicesService,
     private readonly kiosk: KioskAuth,
+    private readonly timeClock: TimeClockService,
   ) {}
 
   private async requireDevice(req: FastifyRequest, csrf: boolean) {
@@ -158,5 +164,17 @@ export class KioskController {
     await this.devices.signOut(device, await this.kiosk.operator(req, device));
     reply.clearCookie(this.kiosk.operatorCookie, { path: '/' });
     return this.devices.state(device, null);
+  }
+
+  /** Time clock punch (ADR-0022): Employee ID in the query, the selfie as the body. */
+  @Post('clock')
+  @Public()
+  @HttpCode(201)
+  @ApiConsumes(...CLOCK_PHOTO_TYPES)
+  @ApiBody({ schema: { type: 'string', format: 'binary' } })
+  @ZodResponse(201, clockPunchResultSchema)
+  async clock(@Req() req: FastifyRequest, @ZodQuery(clockPunchQuerySchema) query: ClockPunchQuery) {
+    const device = await this.requireDevice(req, true);
+    return this.timeClock.punch(device, query, req.headers['content-type'], req.body);
   }
 }

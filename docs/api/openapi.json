@@ -20142,6 +20142,145 @@
         ]
       }
     },
+    "/api/v1/properties/{propertyId}/attendance/photos": {
+      "get": {
+        "operationId": "ClockPhotosController_list",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "punchId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "employeeId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "employeeNo": {
+                            "type": "string"
+                          },
+                          "employeeName": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "IN",
+                              "OUT",
+                              "BREAK_START",
+                              "BREAK_END"
+                            ]
+                          },
+                          "at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "deviceName": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "punchId",
+                          "employeeId",
+                          "employeeNo",
+                          "employeeName",
+                          "type",
+                          "at",
+                          "deviceName"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "hr"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/attendance/photos/{punchId}": {
+      "get": {
+        "operationId": "ClockPhotosController_photo",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "punchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hr"
+        ]
+      }
+    },
     "/api/v1/properties/{propertyId}/devices": {
       "get": {
         "operationId": "DevicesController_list",
@@ -20175,6 +20314,13 @@
                           },
                           "name": {
                             "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "KITCHEN",
+                              "TIME_CLOCK"
+                            ]
                           },
                           "permissions": {
                             "type": "array",
@@ -20222,6 +20368,7 @@
                         "required": [
                           "id",
                           "name",
+                          "kind",
                           "permissions",
                           "status",
                           "pairingExpiresAt",
@@ -20270,8 +20417,16 @@
                     "minLength": 1,
                     "maxLength": 60
                   },
+                  "kind": {
+                    "default": "KITCHEN",
+                    "type": "string",
+                    "enum": [
+                      "KITCHEN",
+                      "TIME_CLOCK"
+                    ]
+                  },
                   "permissions": {
-                    "minItems": 1,
+                    "default": [],
                     "type": "array",
                     "items": {
                       "type": "string",
@@ -20284,8 +20439,7 @@
                   }
                 },
                 "required": [
-                  "name",
-                  "permissions"
+                  "name"
                 ],
                 "additionalProperties": false
               }
@@ -20310,6 +20464,13 @@
                         },
                         "name": {
                           "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
                         },
                         "permissions": {
                           "type": "array",
@@ -20357,6 +20518,7 @@
                       "required": [
                         "id",
                         "name",
+                        "kind",
                         "permissions",
                         "status",
                         "pairingExpiresAt",
@@ -20431,6 +20593,13 @@
                         "name": {
                           "type": "string"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
+                        },
                         "permissions": {
                           "type": "array",
                           "items": {
@@ -20477,6 +20646,7 @@
                       "required": [
                         "id",
                         "name",
+                        "kind",
                         "permissions",
                         "status",
                         "pairingExpiresAt",
@@ -20548,6 +20718,13 @@
                     "name": {
                       "type": "string"
                     },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "KITCHEN",
+                        "TIME_CLOCK"
+                      ]
+                    },
                     "permissions": {
                       "type": "array",
                       "items": {
@@ -20594,6 +20771,7 @@
                   "required": [
                     "id",
                     "name",
+                    "kind",
                     "permissions",
                     "status",
                     "pairingExpiresAt",
@@ -20774,6 +20952,13 @@
                         "propertyName": {
                           "type": "string"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
+                        },
                         "permissions": {
                           "type": "array",
                           "items": {
@@ -20791,6 +20976,7 @@
                         "name",
                         "propertyId",
                         "propertyName",
+                        "kind",
                         "permissions"
                       ],
                       "additionalProperties": false
@@ -20893,6 +21079,13 @@
                         "propertyName": {
                           "type": "string"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
+                        },
                         "permissions": {
                           "type": "array",
                           "items": {
@@ -20910,6 +21103,7 @@
                         "name",
                         "propertyId",
                         "propertyName",
+                        "kind",
                         "permissions"
                       ],
                       "additionalProperties": false
@@ -21038,6 +21232,13 @@
                         "propertyName": {
                           "type": "string"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
+                        },
                         "permissions": {
                           "type": "array",
                           "items": {
@@ -21055,6 +21256,7 @@
                         "name",
                         "propertyId",
                         "propertyName",
+                        "kind",
                         "permissions"
                       ],
                       "additionalProperties": false
@@ -21157,6 +21359,13 @@
                         "propertyName": {
                           "type": "string"
                         },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "KITCHEN",
+                            "TIME_CLOCK"
+                          ]
+                        },
                         "permissions": {
                           "type": "array",
                           "items": {
@@ -21174,6 +21383,7 @@
                         "name",
                         "propertyId",
                         "propertyName",
+                        "kind",
                         "permissions"
                       ],
                       "additionalProperties": false
@@ -21233,6 +21443,100 @@
                     "operator",
                     "operators",
                     "csrfToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/api/v1/kiosk/clock": {
+      "post": {
+        "operationId": "KioskController_clock",
+        "parameters": [
+          {
+            "name": "employeeNo",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN",
+                "OUT",
+                "BREAK_START",
+                "BREAK_END"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "employeeName": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "IN",
+                        "OUT",
+                        "BREAK_START",
+                        "BREAK_END"
+                      ]
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "employeeName",
+                    "type",
+                    "at"
                   ],
                   "additionalProperties": false
                 }
