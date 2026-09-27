@@ -23,7 +23,54 @@ const CONSTRAINT_PROBLEMS: Record<string, () => ProblemException> = {
     ),
   room_assignments_one_active_per_reservation_room: () =>
     new ProblemException(409, 'CONFLICT', 'Conflict', 'This booking already has a room assigned.'),
+  shifts_no_overlap: () =>
+    new ProblemException(
+      409,
+      'SHIFT_OVERLAP',
+      'Overlapping shift',
+      'The employee already has a shift at that time.',
+    ),
+  shifts_times: () =>
+    new ProblemException(
+      400,
+      'VALIDATION_FAILED',
+      'Invalid shift',
+      'A shift lasts at most 16 hours.',
+    ),
+  shifts_break: () =>
+    new ProblemException(
+      400,
+      'VALIDATION_FAILED',
+      'Invalid shift',
+      'The break must be shorter than the shift.',
+    ),
+  employment_assignments_no_overlap: () =>
+    new ProblemException(
+      409,
+      'CONFLICT',
+      'Conflict',
+      'The employee already has an assignment at this property for overlapping dates.',
+    ),
+  employment_assignments_one_primary: () =>
+    new ProblemException(
+      409,
+      'CONFLICT',
+      'Conflict',
+      'The employee already has a primary assignment.',
+    ),
+  employment_assignments_dates: () =>
+    new ProblemException(
+      400,
+      'VALIDATION_FAILED',
+      'Invalid dates',
+      'The end date is before the start.',
+    ),
 };
+
+/** Unique-key violation (Prisma P2002), e.g. a duplicate code. */
+export function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+}
 
 function describe(error: unknown): string {
   if (!(error instanceof Error)) return '';

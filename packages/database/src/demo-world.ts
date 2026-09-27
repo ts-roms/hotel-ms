@@ -1,5 +1,6 @@
 import type { PrismaClient } from './generated/prisma/client.js';
 import { withDbContext } from './context.js';
+import { DEMO_EMPLOYEES, type DemoHr, seedDemoHr } from './demo-hr.js';
 import { DEMO_INVENTORY, type DemoInventory, seedDemoInventory } from './demo-pms.js';
 import { hashPassword } from './password.js';
 import { provisionOrganization } from './provisioning.js';
@@ -33,6 +34,8 @@ export interface DemoWorld {
   identities: Record<string, string>;
   /** Room types, rooms and rate plans per property code. */
   inventory: Record<'MNL' | 'CEB' | 'DVO' | 'BOR', DemoInventory>;
+  /** Departments, positions, leave types, employees and shift templates per organization. */
+  hr: Record<'abc' | 'xyz', DemoHr>;
 }
 
 /**
@@ -42,7 +45,7 @@ export interface DemoWorld {
  *   ABC Hospitality Group: Manila, Cebu, Davao
  *     admin@abc.test         org_admin        @ ORGANIZATION
  *     john.gm@abc.test       general_manager  @ PROPERTY(MNL)
- *     maria.hr@abc.test      auditor          @ PROPERTY(MNL), PROPERTY(CEB)
+ *     maria.hr@abc.test      hr_manager       @ PROPERTY(MNL), PROPERTY(CEB)
  *     robert.finance@abc.test auditor         @ ORGANIZATION
  *     frontdesk@abc.test     staff            @ PROPERTY(CEB)
  *     reception@abc.test     front_desk       @ PROPERTY(MNL)
@@ -107,7 +110,7 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
 
   await grant(prisma, abc.organizationId, abc.roleIdsByKey, [
     { identityId: john, role: 'general_manager', propertyIds: [abcProps.MNL!] },
-    { identityId: maria, role: 'auditor', propertyIds: [abcProps.MNL!, abcProps.CEB!] },
+    { identityId: maria, role: 'hr_manager', propertyIds: [abcProps.MNL!, abcProps.CEB!] },
     { identityId: robert, role: 'auditor', propertyIds: null },
     { identityId: frontDesk, role: 'staff', propertyIds: [abcProps.CEB!] },
     { identityId: reception, role: 'front_desk', propertyIds: [abcProps.MNL!] },
@@ -141,7 +144,13 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     DEMO_INVENTORY.BOR!,
   );
 
+  const hr = {
+    abc: (await seedDemoHr(prisma, abc.organizationId, abcProps, DEMO_EMPLOYEES.abc))!,
+    xyz: (await seedDemoHr(prisma, xyz.organizationId, xyzProps, DEMO_EMPLOYEES.xyz))!,
+  };
+
   return {
+    hr,
     inventory,
     abc: {
       organizationId: abc.organizationId,
