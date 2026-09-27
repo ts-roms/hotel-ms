@@ -1,0 +1,202 @@
+// Front office, folio (ledger), housekeeping and night audit (blueprint §12.4, §12.5, §15).
+
+enum FolioStatus {
+  OPEN
+  CLOSED
+}
+
+enum FolioLineType {
+  /// Net amount of a charge (tax is posted as separate TAX lines).
+  CHARGE
+  TAX
+  /// Negative: money received.
+  PAYMENT
+  /// Signed correction after the business day closed (needs folio.adjust).
+  ADJUSTMENT
+  /// Exact negation of an earlier line, same business day only.
+  REVERSAL
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  EWALLET
+  OTHER
+}
+
+enum HousekeepingTaskType {
+  CHECKOUT_CLEAN
+  STAYOVER
+  TOUCH_UP
+  INSPECTION
+}
+
+enum HousekeepingTaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+/// A guest's actual occupancy of a room: created at check-in, closed at check-out.
+model Stay {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationRoomId String    @unique @map("reservation_room_id") @db.Uuid
+  roomId            String    @map("room_id") @db.Uuid
+  checkedInAt       DateTime  @default(now()) @map("checked_in_at") @db.Timestamptz(3)
+  checkedInBy       String?   @map("checked_in_by") @db.Uuid
+  checkedOutAt      DateTime? @map("checked_out_at") @db.Timestamptz(3)
+  checkedOutBy      String?   @map("checked_out_by") @db.Uuid
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  room            Room            @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, checkedOutAt])
+  @@map("stays")
+}
+
+/// Tax applied to postings in the listed departments. Rates in basis points (1200 = 12%).
+/// Inclusive taxes are contained in the posted price; exclusive ones are added on top.
+model TaxRule {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  code           String
+  name           String
+  rateBps        Int       @map("rate_bps")
+  inclusive      Boolean
+  departments    String[]
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("tax_rules")
+}
+
+model Folio {
+  id                String      @id @default(uuid(7)) @db.Uuid
+  organizationId    String      @map("organization_id") @db.Uuid
+  propertyId        String      @map("property_id") @db.Uuid
+  folioNo           String      @map("folio_no")
+  reservationRoomId String?     @map("reservation_room_id") @db.Uuid
+  status            FolioStatus @default(OPEN)
+  currency          String      @db.Char(3)
+  /// Cached SUM(folio_lines.amount_minor), updated in the posting transaction.
+  balanceMinor      BigInt      @default(0) @map("balance_minor")
+  openedAt          DateTime    @default(now()) @map("opened_at") @db.Timestamptz(3)
+  closedAt          DateTime?   @map("closed_at") @db.Timestamptz(3)
+  version           Int         @default(1)
+
+  reservationRoom ReservationRoom? @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  lines           FolioLine[]
+  payments        Payment[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, folioNo])
+  @@map("folios")
+}
+
+/// Append-only ledger (§15.1): corrections are new lines, never edits or deletes.
+model FolioLine {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  propertyId     String        @map("property_id") @db.Uuid
+  folioId        String        @map("folio_id") @db.Uuid
+  businessDate   DateTime      @map("business_date") @db.Date
+  type           FolioLineType
+  department     String
+  description    String
+  /// Signed minor units: charges and taxes positive, payments negative.
+  amountMinor    BigInt        @map("amount_minor")
+  currency       String        @db.Char(3)
+  /// TAX lines point at their CHARGE/ADJUSTMENT line.
+  parentLineId   String?       @map("parent_line_id") @db.Uuid
+  reversesLineId String?       @map("reverses_line_id") @db.Uuid
+  taxCode        String?       @map("tax_code")
+  /// Idempotency within the folio (e.g. "room:<line>:<date>" for night-audit room charges).
+  sourceKey      String?       @map("source_key")
+  reason         String?
+  postedBy       String?       @map("posted_by") @db.Uuid
+  postedAt       DateTime      @default(now()) @map("posted_at") @db.Timestamptz(3)
+
+  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([folioId, sourceKey])
+  @@index([organizationId, folioId, postedAt])
+  @@index([organizationId, propertyId, businessDate])
+  @@map("folio_lines")
+}
+
+model Payment {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  propertyId     String        @map("property_id") @db.Uuid
+  folioId        String        @map("folio_id") @db.Uuid
+  folioLineId    String        @map("folio_line_id") @db.Uuid
+  method         PaymentMethod
+  amountMinor    BigInt        @map("amount_minor")
+  currency       String        @db.Char(3)
+  /// Card terminal / transfer / e-wallet reference. Never card numbers.
+  reference      String?
+  businessDate   DateTime      @map("business_date") @db.Date
+  receivedBy     String?       @map("received_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, businessDate])
+  @@map("payments")
+}
+
+model HousekeepingTask {
+  id                   String                 @id @default(uuid(7)) @db.Uuid
+  organizationId       String                 @map("organization_id") @db.Uuid
+  propertyId           String                 @map("property_id") @db.Uuid
+  roomId               String                 @map("room_id") @db.Uuid
+  type                 HousekeepingTaskType
+  status               HousekeepingTaskStatus @default(OPEN)
+  businessDate         DateTime               @map("business_date") @db.Date
+  assignedMembershipId String?                @map("assigned_membership_id") @db.Uuid
+  notes                String                 @default("")
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  startedAt            DateTime?              @map("started_at") @db.Timestamptz(3)
+  completedAt          DateTime?              @map("completed_at") @db.Timestamptz(3)
+  createdBy            String?                @map("created_by") @db.Uuid
+  version              Int                    @default(1)
+
+  room     Room                    @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  assignee OrganizationMembership? @relation(fields: [organizationId, assignedMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, businessDate])
+  @@index([organizationId, assignedMembershipId, status])
+  @@map("housekeeping_tasks")
+}
+
+/// One row per closed business day (night audit), with the day's statistics.
+model BusinessDayClosing {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  businessDate   DateTime @map("business_date") @db.Date
+  closedAt       DateTime @default(now()) @map("closed_at") @db.Timestamptz(3)
+  closedBy       String?  @map("closed_by") @db.Uuid
+  stats          Json
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, businessDate])
+  @@map("business_day_closings")
+}

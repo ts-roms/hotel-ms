@@ -22,6 +22,11 @@ import { MfaService, SECRET_BOX } from './modules/auth/mfa.service.js';
 import { PasswordService } from './modules/auth/password.service.js';
 import { SessionService } from './modules/auth/session.service.js';
 import { HealthController } from './modules/health/health.controller.js';
+import { FolioService } from './modules/folio/folio.service.js';
+import { FrontOfficeController } from './modules/front-office/front-office.controller.js';
+import { FrontOfficeService } from './modules/front-office/front-office.service.js';
+import { HousekeepingService } from './modules/front-office/housekeeping.service.js';
+import { NightAuditService } from './modules/front-office/night-audit.service.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
@@ -47,6 +52,7 @@ export const CONTROLLERS = [
   InventoryController,
   ReservationsController,
   GuestsController,
+  FrontOfficeController,
 ];
 
 @Module({})
@@ -81,6 +87,10 @@ export class AppModule {
         RatesService,
         GuestsService,
         ReservationsService,
+        FolioService,
+        FrontOfficeService,
+        HousekeepingService,
+        NightAuditService,
         { provide: APP_FILTER, useClass: ProblemFilter },
         // Order matters: authenticate → establish tenant → authorize.
         { provide: APP_GUARD, useClass: AuthGuard },

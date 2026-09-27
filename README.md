@@ -14,8 +14,9 @@ as a modular monolith. Start with the
 - Audit log, transactional outbox and background email delivery.
 - Terraform for AWS staging, and deploy pipelines.
 
-Phase 2 (in progress): room setup, rates, availability, guest profiles and reservations with
-room assignment (ADR-0011). Check-in/out, folios, housekeeping and night audit follow.
+Phase 2 (PMS core): room setup, rates, availability, guest profiles, reservations with room
+assignment (ADR-0011), check-in/out, the folio ledger with taxes and payments, housekeeping and
+the night audit (ADR-0012).
 
 ## Layout
 

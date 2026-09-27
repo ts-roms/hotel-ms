@@ -1,5 +1,17 @@
 import type {
   AcceptInvitationRequest,
+  AdjustmentRequest,
+  BusinessDayClosing,
+  CreateHousekeepingTaskRequest,
+  Folio,
+  FrontDesk,
+  HousekeepingBoard,
+  HousekeepingTask,
+  NightAuditPreview,
+  PostChargeRequest,
+  RecordPaymentRequest,
+  SetHousekeepingStatusRequest,
+  TaxRule,
   AssignRoomRequest,
   Availability,
   Building,
@@ -288,6 +300,62 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<Reservation>('POST', `${p}/reservations/${id(reservationId)}/cancel`, {
             reason,
           }).then((r) => r.data),
+        frontDesk: () => call<FrontDesk>('GET', `${p}/front-desk`).then((r) => r.data),
+        checkIn: (reservationId: string, lineId: string) =>
+          call<Reservation>(
+            'POST',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/check-in`,
+          ).then((r) => r.data),
+        checkOut: (reservationId: string, lineId: string) =>
+          call<Reservation>(
+            'POST',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/check-out`,
+          ).then((r) => r.data),
+        folio: (folioId: string) =>
+          call<Folio>('GET', `${p}/folios/${id(folioId)}`).then((r) => r.data),
+        postCharge: (folioId: string, body: PostChargeRequest, idempotencyKey: string) =>
+          call<Folio>('POST', `${p}/folios/${id(folioId)}/charges`, body, {
+            'idempotency-key': idempotencyKey,
+          }).then((r) => r.data),
+        recordPayment: (folioId: string, body: RecordPaymentRequest, idempotencyKey: string) =>
+          call<Folio>('POST', `${p}/folios/${id(folioId)}/payments`, body, {
+            'idempotency-key': idempotencyKey,
+          }).then((r) => r.data),
+        adjust: (folioId: string, body: AdjustmentRequest, idempotencyKey: string) =>
+          call<Folio>('POST', `${p}/folios/${id(folioId)}/adjustments`, body, {
+            'idempotency-key': idempotencyKey,
+          }).then((r) => r.data),
+        voidLine: (folioId: string, lineId: string, reason: string) =>
+          call<Folio>('POST', `${p}/folios/${id(folioId)}/lines/${id(lineId)}/void`, {
+            reason,
+          }).then((r) => r.data),
+        taxRules: () => call<TaxRule[]>('GET', `${p}/tax-rules`).then((r) => r.data),
+        housekeeping: () => call<HousekeepingBoard>('GET', `${p}/housekeeping`).then((r) => r.data),
+        housekeepingStaff: () =>
+          call<{ membershipId: string; displayName: string }[]>(
+            'GET',
+            `${p}/housekeeping/staff`,
+          ).then((r) => r.data),
+        setHousekeepingStatus: (roomId: string, body: SetHousekeepingStatusRequest) =>
+          call<HousekeepingBoard['rooms'][number]>(
+            'PUT',
+            `${p}/rooms/${id(roomId)}/housekeeping-status`,
+            body,
+          ).then((r) => r.data),
+        createHousekeepingTask: (body: CreateHousekeepingTaskRequest) =>
+          call<HousekeepingTask>('POST', `${p}/housekeeping/tasks`, body).then((r) => r.data),
+        assignHousekeepingTask: (taskId: string, assignedMembershipId: string | null) =>
+          call<HousekeepingTask>('PUT', `${p}/housekeeping/tasks/${id(taskId)}/assignee`, {
+            assignedMembershipId,
+          }).then((r) => r.data),
+        nightAuditPreview: () =>
+          call<NightAuditPreview>('GET', `${p}/night-audit`).then((r) => r.data),
+        runNightAudit: (businessDate: string) =>
+          call<BusinessDayClosing>('POST', `${p}/night-audit`, { businessDate }).then(
+            (r) => r.data,
+          ),
+        businessDays: () =>
+          call<BusinessDayClosing[]>('GET', `${p}/business-days`).then((r) => r.data),
         cancelReservationRoom: (reservationId: string, lineId: string, reason: string) =>
           call<Reservation>(
             'POST',

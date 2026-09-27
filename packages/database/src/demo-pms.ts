@@ -78,6 +78,20 @@ export async function seedDemoInventory(
 ): Promise<DemoInventory> {
   return withDbContext(prisma, { organizationId, identityId: null }, async (tx) => {
     const result: DemoInventory = { roomTypes: {}, rooms: {}, ratePlans: {} };
+    // Philippine VAT: 12%, included in quoted prices, on every department.
+    if ((await tx.taxRule.count({ where: { propertyId } })) === 0) {
+      await tx.taxRule.create({
+        data: {
+          organizationId,
+          propertyId,
+          code: 'VAT',
+          name: 'VAT 12%',
+          rateBps: 1200,
+          inclusive: true,
+          departments: ['ROOM', 'FNB', 'MINIBAR', 'LAUNDRY', 'TRANSPORT', 'SPA', 'MISC'],
+        },
+      });
+    }
     const existing = await tx.roomType.findMany({
       where: { propertyId },
       include: { rooms: true },

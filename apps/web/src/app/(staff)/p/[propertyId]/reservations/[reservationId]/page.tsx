@@ -110,6 +110,21 @@ export default function ReservationPage() {
           onCancel={() =>
             reason && action.mutate(() => pms.cancelReservationRoom(r.id, line.id, reason))
           }
+          folioHref={
+            line.folioId && hasPermission(session.data, 'folio.read')
+              ? `/p/${propertyId}/folios/${line.folioId}`
+              : null
+          }
+          onCheckIn={
+            hasPermission(session.data, 'stay.check_in')
+              ? () => action.mutate(() => pms.checkIn(r.id, line.id))
+              : null
+          }
+          onCheckOut={
+            hasPermission(session.data, 'stay.check_out')
+              ? () => action.mutate(() => pms.checkOut(r.id, line.id))
+              : null
+          }
         />
       ))}
 
@@ -147,6 +162,9 @@ function RoomLine({
   onAssign,
   onUnassign,
   onCancel,
+  folioHref,
+  onCheckIn,
+  onCheckOut,
 }: {
   line: ReservationRoom;
   currency: string;
@@ -157,6 +175,9 @@ function RoomLine({
   onAssign: (roomId: string) => void;
   onUnassign: () => void;
   onCancel: () => void;
+  folioHref: string | null;
+  onCheckIn: (() => void) | null;
+  onCheckOut: (() => void) | null;
 }) {
   const [roomId, setRoomId] = useState('');
   const upcoming = line.status === 'RESERVED';
@@ -222,6 +243,21 @@ function RoomLine({
           {canCancel && upcoming && (
             <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
               {t('res.cancelRoom')}
+            </Button>
+          )}
+          {onCheckIn && upcoming && line.assignedRoom && (
+            <Button size="sm" disabled={busy} onClick={onCheckIn}>
+              {t('fd.checkIn')}
+            </Button>
+          )}
+          {folioHref && (
+            <Button size="sm" variant="outline" asChild>
+              <Link href={folioHref}>{t('fd.folio')}</Link>
+            </Button>
+          )}
+          {onCheckOut && line.status === 'IN_HOUSE' && (
+            <Button size="sm" disabled={busy} onClick={onCheckOut}>
+              {t('fd.checkOut')}
             </Button>
           )}
         </div>

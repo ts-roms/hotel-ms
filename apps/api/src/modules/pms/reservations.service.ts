@@ -29,6 +29,7 @@ export const reservationInclude = {
       guest: true,
       nights: { orderBy: { stayDate: 'asc' } },
       assignments: { where: { releasedAt: null }, include: { room: { select: { number: true } } } },
+      folios: { select: { id: true } },
     },
   },
 } satisfies Prisma.ReservationInclude;
@@ -55,6 +56,7 @@ export function toReservationDto(r: ReservationRow): Reservation {
       assignedRoom: assignment
         ? { roomId: assignment.roomId, number: assignment.room.number }
         : null,
+      folioId: line.folios[0]?.id ?? null,
       nights: line.nights.map((n) => ({
         date: fromDbDate(n.stayDate),
         amountMinor: toMinor(n.amountMinor),
@@ -381,7 +383,11 @@ export class ReservationsService {
       where: { id: reservationRoomId, propertyId },
     });
     if (!line) throw Problems.notFound('Reservation room');
-    if (line.status !== 'RESERVED' && line.status !== 'IN_HOUSE') {
+    if (line.status === 'IN_HOUSE') {
+      // Moving an in-house guest also moves the stay and dirties the old room: not built yet.
+      throw invalidState('Room moves for in-house guests are not supported yet.');
+    }
+    if (line.status !== 'RESERVED') {
       throw invalidState(
         `A ${line.status.toLowerCase().replace('_', ' ')} booking cannot be assigned a room.`,
       );
@@ -393,10 +399,7 @@ export class ReservationsService {
         { path: 'roomId', message: 'The room is of a different room type than the booking' },
       ]);
     }
-    const businessDate = await businessDateOf(tx, propertyId);
-    const arrival = fromDbDate(line.arrivalDate);
-    // An in-house guest moving rooms only needs the new room from today on.
-    const start = line.status === 'IN_HOUSE' && businessDate > arrival ? businessDate : arrival;
+    const start = fromDbDate(line.arrivalDate);
 
     const current = await tx.roomAssignment.findFirst({
       where: { reservationRoomId, releasedAt: null },
