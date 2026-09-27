@@ -14,7 +14,8 @@ as a modular monolith. Start with the
 - Audit log, transactional outbox and background email delivery.
 - Terraform for AWS staging, and deploy pipelines.
 
-Hotel features start in Phase 2.
+Phase 2 (in progress): room setup, rates, availability, guest profiles and reservations with
+room assignment (ADR-0011). Check-in/out, folios, housekeeping and night audit follow.
 
 ## Layout
 

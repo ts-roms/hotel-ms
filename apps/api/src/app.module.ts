@@ -1,6 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
+import { IdempotencyService } from './common/idempotency.js';
 import { ProblemFilter } from './common/problem.filter.js';
 import { ENV, type Env } from './config/env.js';
 import { PrismaService, TenantDb } from './infrastructure/database.js';
@@ -22,6 +23,12 @@ import { PasswordService } from './modules/auth/password.service.js';
 import { SessionService } from './modules/auth/session.service.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
+import { GuestsService } from './modules/pms/guests.service.js';
+import { InventoryController } from './modules/pms/inventory.controller.js';
+import { RatesService } from './modules/pms/rates.service.js';
+import { GuestsController, ReservationsController } from './modules/pms/reservations.controller.js';
+import { ReservationsService } from './modules/pms/reservations.service.js';
+import { RoomsService } from './modules/pms/rooms.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';
 import { PropertiesService } from './modules/tenancy/properties.service.js';
@@ -37,6 +44,9 @@ export const CONTROLLERS = [
   PropertiesController,
   AccessController,
   AuditController,
+  InventoryController,
+  ReservationsController,
+  GuestsController,
 ];
 
 @Module({})
@@ -66,6 +76,11 @@ export class AppModule {
         MembersService,
         RolesService,
         InvitationsService,
+        IdempotencyService,
+        RoomsService,
+        RatesService,
+        GuestsService,
+        ReservationsService,
         { provide: APP_FILTER, useClass: ProblemFilter },
         // Order matters: authenticate → establish tenant → authorize.
         { provide: APP_GUARD, useClass: AuthGuard },

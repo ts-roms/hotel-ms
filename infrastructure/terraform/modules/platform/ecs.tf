@@ -60,7 +60,7 @@ locals {
       command     = null
       port        = null
       environment = { NODE_ENV = "production", SEED_DEMO = "false" }
-      secrets     = ["DATABASE_OWNER_URL", "DATABASE_URL"]
+      secrets     = ["DATABASE_OWNER_URL", "DATABASE_URL", "DATABASE_SYSTEM_URL"]
     }
     db-bootstrap = {
       image   = "migrate"

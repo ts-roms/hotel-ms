@@ -1,5 +1,25 @@
 import type {
   AcceptInvitationRequest,
+  AssignRoomRequest,
+  Availability,
+  Building,
+  CreateBuildingRequest,
+  CreateGuestRequest,
+  CreateRatePlanRequest,
+  CreateReservationRequest,
+  CreateRoomBlockRequest,
+  CreateRoomRequest,
+  CreateRoomTypeRequest,
+  Guest,
+  Quote,
+  RatePlan,
+  Reservation,
+  Room,
+  RoomBlock,
+  RoomType,
+  SetRateOverridesRequest,
+  UpdateRatePlanRequest,
+  UpdateReservationRoomRequest,
   AssignmentRequest,
   AuditLogEntry,
   ChangePasswordRequest,
@@ -56,7 +76,7 @@ export interface ApiClientOptions {
   fetch?: typeof fetch;
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
 export function createApiClient(options: ApiClientOptions = {}) {
   const baseUrl = options.baseUrl ?? '/api/v1';
@@ -180,6 +200,105 @@ export function createApiClient(options: ApiClientOptions = {}) {
           'DELETE',
           `/members/${encodeURIComponent(membershipId)}/role-assignments/${encodeURIComponent(assignmentId)}`,
         ).then((r) => r.data),
+    },
+    pms: (propertyId: string) => {
+      const p = `/properties/${encodeURIComponent(propertyId)}`;
+      const id = encodeURIComponent;
+      return {
+        buildings: () => call<Building[]>('GET', `${p}/buildings`).then((r) => r.data),
+        createBuilding: (body: CreateBuildingRequest) =>
+          call<Building>('POST', `${p}/buildings`, body).then((r) => r.data),
+        roomTypes: () => call<RoomType[]>('GET', `${p}/room-types`).then((r) => r.data),
+        createRoomType: (body: CreateRoomTypeRequest) =>
+          call<RoomType>('POST', `${p}/room-types`, body).then((r) => r.data),
+        rooms: () => call<Room[]>('GET', `${p}/rooms`).then((r) => r.data),
+        createRoom: (body: CreateRoomRequest) =>
+          call<Room>('POST', `${p}/rooms`, body).then((r) => r.data),
+        roomBlocks: (roomId: string) =>
+          call<RoomBlock[]>('GET', `${p}/rooms/${id(roomId)}/blocks`).then((r) => r.data),
+        blockRoom: (roomId: string, body: CreateRoomBlockRequest) =>
+          call<RoomBlock>('POST', `${p}/rooms/${id(roomId)}/blocks`, body).then((r) => r.data),
+        releaseBlock: (roomId: string, blockId: string) =>
+          call<void>('DELETE', `${p}/rooms/${id(roomId)}/blocks/${id(blockId)}`).then(
+            (r) => r.data,
+          ),
+        ratePlans: () => call<RatePlan[]>('GET', `${p}/rate-plans`).then((r) => r.data),
+        createRatePlan: (body: CreateRatePlanRequest) =>
+          call<RatePlan>('POST', `${p}/rate-plans`, body).then((r) => r.data),
+        updateRatePlan: (ratePlanId: string, version: number, body: UpdateRatePlanRequest) =>
+          call<RatePlan>('PATCH', `${p}/rate-plans/${id(ratePlanId)}`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
+        setRateOverrides: (ratePlanId: string, body: SetRateOverridesRequest) =>
+          call<void>('PUT', `${p}/rate-plans/${id(ratePlanId)}/overrides`, body).then(
+            (r) => r.data,
+          ),
+        quote: (params: {
+          roomTypeId: string;
+          ratePlanId: string;
+          arrivalDate: string;
+          departureDate: string;
+        }) => call<Quote>('GET', `${p}/quote${qs(params)}`).then((r) => r.data),
+        availability: (from: string, to: string) =>
+          call<Availability>('GET', `${p}/availability${qs({ from, to })}`).then((r) => r.data),
+        createGuest: (body: CreateGuestRequest) =>
+          call<Guest>('POST', `${p}/guests`, body).then((r) => r.data),
+        reservations: (
+          params: {
+            q?: string;
+            arrivalFrom?: string;
+            arrivalTo?: string;
+            status?: string;
+            cursor?: string;
+            limit?: number;
+          } = {},
+        ) => call<Page<Reservation>>('GET', `${p}/reservations${qs(params)}`).then((r) => r.data),
+        reservation: (reservationId: string) =>
+          call<Reservation>('GET', `${p}/reservations/${id(reservationId)}`).then((r) => r.data),
+        createReservation: (body: CreateReservationRequest, idempotencyKey: string) =>
+          call<Reservation>('POST', `${p}/reservations`, body, {
+            'idempotency-key': idempotencyKey,
+          }).then((r) => r.data),
+        updateReservationRoom: (
+          reservationId: string,
+          lineId: string,
+          version: number,
+          body: UpdateReservationRoomRequest,
+        ) =>
+          call<Reservation>(
+            'PATCH',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}`,
+            body,
+            {
+              'if-match': `W/"${version}"`,
+            },
+          ).then((r) => r.data),
+        assignRoom: (reservationId: string, lineId: string, body: AssignRoomRequest) =>
+          call<Reservation>(
+            'PUT',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/assignment`,
+            body,
+          ).then((r) => r.data),
+        unassignRoom: (reservationId: string, lineId: string) =>
+          call<Reservation>(
+            'DELETE',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/assignment`,
+          ).then((r) => r.data),
+        cancelReservation: (reservationId: string, reason: string) =>
+          call<Reservation>('POST', `${p}/reservations/${id(reservationId)}/cancel`, {
+            reason,
+          }).then((r) => r.data),
+        cancelReservationRoom: (reservationId: string, lineId: string, reason: string) =>
+          call<Reservation>(
+            'POST',
+            `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/cancel`,
+            { reason },
+          ).then((r) => r.data),
+      };
+    },
+    guests: {
+      search: (q: string, limit = 20) =>
+        call<Guest[]>('GET', `/guests${qs({ q, limit })}`).then((r) => r.data),
     },
     auditLogs: {
       list: (

@@ -1,5 +1,6 @@
 import type { PrismaClient } from './generated/prisma/client.js';
 import { withDbContext } from './context.js';
+import { DEMO_INVENTORY, type DemoInventory, seedDemoInventory } from './demo-pms.js';
 import { hashPassword } from './password.js';
 import { provisionOrganization } from './provisioning.js';
 
@@ -30,6 +31,8 @@ export interface DemoWorld {
   };
   /** Identity email → identity id */
   identities: Record<string, string>;
+  /** Room types, rooms and rate plans per property code. */
+  inventory: Record<'MNL' | 'CEB' | 'DVO' | 'BOR', DemoInventory>;
 }
 
 /**
@@ -42,6 +45,7 @@ export interface DemoWorld {
  *     maria.hr@abc.test      auditor          @ PROPERTY(MNL), PROPERTY(CEB)
  *     robert.finance@abc.test auditor         @ ORGANIZATION
  *     frontdesk@abc.test     staff            @ PROPERTY(CEB)
+ *     reception@abc.test     front_desk       @ PROPERTY(MNL)
  *   XYZ Resorts: Boracay
  *     admin@xyz.test         org_admin        @ ORGANIZATION
  *   consultant@shared.test   auditor          @ ORGANIZATION in both (multi-org identity)
@@ -66,6 +70,7 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
   const maria = await identity('maria.hr@abc.test', 'Maria Santos');
   const robert = await identity('robert.finance@abc.test', 'Robert Cruz');
   const frontDesk = await identity('frontdesk@abc.test', 'Faye Desk');
+  const reception = await identity('reception@abc.test', 'Rey Reception');
   const xyzAdmin = await identity('admin@xyz.test', 'Xavier Admin');
   const consultant = await identity('consultant@shared.test', 'Casey Consultant');
 
@@ -103,13 +108,31 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     { identityId: maria, role: 'auditor', propertyIds: [abcProps.MNL!, abcProps.CEB!] },
     { identityId: robert, role: 'auditor', propertyIds: null },
     { identityId: frontDesk, role: 'staff', propertyIds: [abcProps.CEB!] },
+    { identityId: reception, role: 'front_desk', propertyIds: [abcProps.MNL!] },
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
   await grant(prisma, xyz.organizationId, xyz.roleIdsByKey, [
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
 
+  const inventory = {} as DemoWorld['inventory'];
+  for (const [code, propertyId] of Object.entries(abcProps)) {
+    inventory[code as 'MNL'] = await seedDemoInventory(
+      prisma,
+      abc.organizationId,
+      propertyId,
+      DEMO_INVENTORY[code]!,
+    );
+  }
+  inventory.BOR = await seedDemoInventory(
+    prisma,
+    xyz.organizationId,
+    xyzProps.BOR!,
+    DEMO_INVENTORY.BOR!,
+  );
+
   return {
+    inventory,
     abc: {
       organizationId: abc.organizationId,
       properties: abcProps as DemoWorld['abc']['properties'],

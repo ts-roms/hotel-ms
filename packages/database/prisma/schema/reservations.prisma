@@ -1,0 +1,173 @@
+// Guests and reservations (blueprint §12.1). A reservation is the commercial booking; each
+// reservation room is one booked room with its own dates, rate and occupant.
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum ReservationRoomStatus {
+  RESERVED
+  IN_HOUSE
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingSource {
+  DIRECT
+  WALK_IN
+  PHONE
+  WEBSITE
+  CORPORATE
+  TRAVEL_AGENT
+  OTA
+}
+
+enum RoomAssignmentKind {
+  RESERVATION
+  /// Out-of-order block: the room is not sellable for the dates.
+  BLOCK
+}
+
+/// Organization-level guest profile (decision D3). Property staff see guests created at, or
+/// with reservations at, the properties they are authorized for.
+model Guest {
+  id                  String    @id @default(uuid(7)) @db.Uuid
+  organizationId      String    @map("organization_id") @db.Uuid
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  email               String?   @db.Citext
+  phone               String?
+  countryCode         String?   @map("country_code") @db.Char(2)
+  notes               String    @default("")
+  createdAtPropertyId String?   @map("created_at_property_id") @db.Uuid
+  archivedAt          DateTime? @map("archived_at") @db.Timestamptz(3)
+  version             Int       @default(1)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy           String?   @map("created_by") @db.Uuid
+  updatedBy           String?   @map("updated_by") @db.Uuid
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  bookings         Reservation[]
+  reservationRooms ReservationRoom[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, lastName, firstName])
+  @@index([organizationId, email])
+  @@map("guests")
+}
+
+model Reservation {
+  id              String            @id @default(uuid(7)) @db.Uuid
+  organizationId  String            @map("organization_id") @db.Uuid
+  propertyId      String            @map("property_id") @db.Uuid
+  confirmationNo  String            @map("confirmation_no")
+  status          ReservationStatus @default(CONFIRMED)
+  bookerGuestId   String            @map("booker_guest_id") @db.Uuid
+  source          BookingSource
+  externalRef     String?           @map("external_ref")
+  specialRequests String            @default("") @map("special_requests")
+  notes           String            @default("")
+  currency        String            @db.Char(3)
+  cancelledAt     DateTime?         @map("cancelled_at") @db.Timestamptz(3)
+  cancelReason    String?           @map("cancel_reason")
+  version         Int               @default(1)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy       String?           @map("created_by") @db.Uuid
+  updatedBy       String?           @map("updated_by") @db.Uuid
+
+  property Property          @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  booker   Guest             @relation(fields: [organizationId, bookerGuestId], references: [organizationId, id], onDelete: Restrict)
+  rooms    ReservationRoom[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, confirmationNo])
+  @@index([organizationId, propertyId, createdAt])
+  @@map("reservations")
+}
+
+model ReservationRoom {
+  id             String                @id @default(uuid(7)) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  propertyId     String                @map("property_id") @db.Uuid
+  reservationId  String                @map("reservation_id") @db.Uuid
+  roomTypeId     String                @map("room_type_id") @db.Uuid
+  ratePlanId     String                @map("rate_plan_id") @db.Uuid
+  guestId        String                @map("guest_id") @db.Uuid
+  arrivalDate    DateTime              @map("arrival_date") @db.Date
+  /// Exclusive: the guest leaves on this date and does not stay its night.
+  departureDate  DateTime              @map("departure_date") @db.Date
+  adults         Int
+  children       Int                   @default(0)
+  status         ReservationRoomStatus @default(RESERVED)
+  version        Int                   @default(1)
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reservation Reservation        @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+  roomType    RoomType           @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+  ratePlan    RatePlan           @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Restrict)
+  guest       Guest              @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+  nights      ReservationNight[]
+  assignments RoomAssignment[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, arrivalDate])
+  @@index([organizationId, propertyId, departureDate])
+  @@map("reservation_rooms")
+}
+
+/// Price snapshot per night, fixed at booking (later rate changes do not reprice it).
+model ReservationNight {
+  organizationId    String   @map("organization_id") @db.Uuid
+  reservationRoomId String   @map("reservation_room_id") @db.Uuid
+  stayDate          DateTime @map("stay_date") @db.Date
+  amountMinor       BigInt   @map("amount_minor")
+  currency          String   @db.Char(3)
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([reservationRoomId, stayDate])
+  @@map("reservation_nights")
+}
+
+/// A room held for a date range, by a reservation or by an out-of-order block. An
+/// EXCLUDE constraint (SQL) forbids overlapping active holds on the same room.
+model RoomAssignment {
+  id                String             @id @default(uuid(7)) @db.Uuid
+  organizationId    String             @map("organization_id") @db.Uuid
+  propertyId        String             @map("property_id") @db.Uuid
+  roomId            String             @map("room_id") @db.Uuid
+  kind              RoomAssignmentKind
+  reservationRoomId String?            @map("reservation_room_id") @db.Uuid
+  startDate         DateTime           @map("start_date") @db.Date
+  /// Exclusive end date.
+  endDate           DateTime           @map("end_date") @db.Date
+  reason            String?
+  releasedAt        DateTime?          @map("released_at") @db.Timestamptz(3)
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy         String?            @map("created_by") @db.Uuid
+
+  room            Room             @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  reservationRoom ReservationRoom? @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, roomId, startDate])
+  @@index([organizationId, reservationRoomId])
+  @@map("room_assignments")
+}
+
+/// Per-property counters for human-readable numbers (confirmation numbers, folio numbers).
+/// Incremented with UPDATE ... RETURNING inside the business transaction, so numbers are
+/// unique and gap-free per committed transaction.
+model NumberSequence {
+  organizationId String @map("organization_id") @db.Uuid
+  propertyId     String @map("property_id") @db.Uuid
+  name           String
+  nextValue      BigInt @default(1) @map("next_value")
+
+  @@id([propertyId, name])
+  @@map("number_sequences")
+}

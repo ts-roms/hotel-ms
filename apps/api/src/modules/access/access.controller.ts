@@ -33,6 +33,7 @@ import {
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { parseIfMatch, weakEtag } from '../../common/etag.js';
+import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { MembersService } from './members.service.js';
@@ -174,13 +175,4 @@ export class AccessController {
   ): Promise<Member> {
     return this.members.removeAssignment(uuidParam(membershipId), uuidParam(assignmentId));
   }
-}
-
-/** Malformed ids are indistinguishable from unknown ones. */
-function uuidParam(value: string): string {
-  if (!z.uuid().safeParse(value).success) {
-    // Same answer as a well-formed id that does not exist.
-    return '00000000-0000-0000-0000-000000000000';
-  }
-  return value;
 }

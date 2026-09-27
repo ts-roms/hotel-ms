@@ -47,3 +47,44 @@ export async function syncPlatformCatalog(ownerClient: PrismaClient): Promise<vo
     }
   });
 }
+
+/**
+ * Adds permissions that a release added to a system template to every organization role
+ * still linked to that template (`roles.template_key`). Additive only: permissions an
+ * organization removed from its copy are not re-added unless the template newly gained
+ * them in a later release, and nothing is ever taken away.
+ *
+ * Runs as the system role (cross-tenant), which RLS allows to read role ids, insert role
+ * permissions and bump grants versions, nothing else. Returns the number of roles changed.
+ */
+export async function propagateTemplatePermissions(systemClient: PrismaClient): Promise<number> {
+  let changedRoles = 0;
+  for (const template of ROLE_TEMPLATES) {
+    const roles = await systemClient.role.findMany({
+      where: { templateKey: template.key },
+      select: { id: true, organizationId: true },
+    });
+    for (const role of roles) {
+      // One transaction per role: new permissions and the cache bump land together, so a
+      // failed run cannot leave holders with stale cached grants.
+      const changed = await systemClient.$transaction(async (tx) => {
+        const inserted = await tx.rolePermission.createMany({
+          data: template.permissions.map((permissionCode) => ({
+            organizationId: role.organizationId,
+            roleId: role.id,
+            permissionCode,
+          })),
+          skipDuplicates: true,
+        });
+        if (inserted.count === 0) return false;
+        // Raw SQL: the system role may update grants_version only (not updated_at).
+        await tx.$executeRaw`
+          UPDATE organization_memberships SET grants_version = grants_version + 1
+          WHERE id IN (SELECT membership_id FROM role_assignments WHERE role_id = ${role.id}::uuid)`;
+        return true;
+      });
+      if (changed) changedRoles++;
+    }
+  }
+  return changedRoles;
+}

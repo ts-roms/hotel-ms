@@ -35,6 +35,23 @@ export interface DomainEventPayloads {
   RoleCreated: { roleId: string; key: string };
   RoleUpdated: { roleId: string; changedFields: string[] };
   RoleDeleted: { roleId: string; key: string };
+  ReservationCreated: { reservationId: string; confirmationNo: string; roomLineIds: string[] };
+  ReservationModified: {
+    reservationId: string;
+    reservationRoomId: string;
+    changedFields: string[];
+  };
+  ReservationCancelled: { reservationId: string; reservationRoomIds: string[]; reason: string };
+  RoomAssigned: { reservationRoomId: string; roomId: string };
+  RoomUnassigned: { reservationRoomId: string; roomId: string };
+  RoomBlocked: { roomId: string; blockId: string; startDate: string; endDate: string };
+  RoomUnblocked: { roomId: string; blockId: string };
+  RoomStatusChanged: {
+    roomId: string;
+    dimension: 'HOUSEKEEPING' | 'SERVICE';
+    from: string;
+    to: string;
+  };
 }
 
 export type DomainEventType = keyof DomainEventPayloads;
