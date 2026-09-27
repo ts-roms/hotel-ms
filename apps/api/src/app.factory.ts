@@ -81,6 +81,8 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
 
   const app = await NestFactory.create<NestFastifyApplication>(AppModule.forRoot(env), adapter, {
     bufferLogs: true,
+    // Webhook signatures are computed over the exact bytes received.
+    rawBody: true,
   });
   const fastify = app.getHttpAdapter().getInstance();
   app.useLogger(new PinoNestLogger(fastify.log));

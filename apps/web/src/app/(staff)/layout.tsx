@@ -28,6 +28,9 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'schedule', label: 'nav.schedule', permission: 'schedule.read' },
   { href: 'attendance', label: 'nav.attendance', permission: 'attendance.read' },
   { href: 'leave', label: 'nav.leave', permission: 'leave.read' },
+  { href: 'cashier', label: 'nav.cashier', permission: 'cashier.shift' },
+  { href: 'accounts', label: 'nav.accounts', permission: 'folio.transfer' },
+  { href: 'reports', label: 'nav.reports', permission: 'finance.report.read' },
   { href: 'night-audit', label: 'nav.nightAudit', permission: 'night_audit.run' },
 ];
 

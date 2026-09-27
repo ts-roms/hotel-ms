@@ -126,6 +126,23 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
   },
 
+  // ---- Finance (blueprint §15) ---------------------------------------------------------
+  'payment.refund': {
+    description: 'Refund payments',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'cashier.shift': { description: 'Open and close own cashier shift', scopes: ORG_OR_PROPERTY },
+  'folio.transfer': {
+    description: 'Company accounts, routing rules and transfers between folios',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'invoice.issue': { description: 'Issue invoices and receipts', scopes: ORG_OR_PROPERTY },
+  'finance.report.read': {
+    description: 'Financial reports, reconciliation and cashier shifts',
+    scopes: ORG_OR_PROPERTY,
+  },
+
   // ---- F&B: outlets, menus, orders (blueprint §14) -------------------------------------
   'fnb.menu.manage': { description: 'Manage outlets and menus', scopes: ORG_OR_PROPERTY },
   'fnb.menu.availability': {

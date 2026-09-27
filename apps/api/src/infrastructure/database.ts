@@ -90,6 +90,15 @@ export class TenantDb {
     );
   }
 
+  /** No tenant: only the payment intent with this "provider:reference" is visible. */
+  runWithPaymentRef<T>(paymentRef: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    return withDbContext(
+      this.prisma.client,
+      { organizationId: null, identityId: null, paymentRef },
+      fn,
+    );
+  }
+
   /**
    * Explicit context for the few places that establish tenancy themselves (TenantGuard
    * verifying the session's organization, login). The organizationId MUST come from

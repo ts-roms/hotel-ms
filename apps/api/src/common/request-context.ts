@@ -32,6 +32,9 @@ export interface RequestContext extends ClsStore {
   /** Set by TenantGuard after verifying a :propertyId route param belongs to the org. */
   propertyId?: string;
 
+  /** Set for work done on behalf of an external system (webhooks). */
+  system?: boolean;
+
   /** Guest realm (GuestGuard): the session's reservation is the only thing a guest can reach. */
   guest?: {
     sessionId: string;

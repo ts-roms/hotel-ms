@@ -49,11 +49,29 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
+  /** Public base URL of this API (hosted checkout pages, provider callbacks). */
+  API_PUBLIC_ORIGIN: z.url().default('http://localhost:48100'),
+  /** Online payment gateway (ADR-0016). Unset: online payments are unavailable. */
+  PAYMENT_PROVIDER: z.enum(['sandbox']).optional(),
+  /**
+   * The built-in sandbox gateway (hosted test checkout, signed webhooks). On by default
+   * outside production; production needs an explicit 'true' (e.g. staging).
+   */
+  PAYMENT_SANDBOX_ENABLED: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+  PAYMENT_SANDBOX_SECRET: z.string().min(16).default('sandbox-webhook-secret-dev-only'),
 });
 
-export type Env = Omit<z.infer<typeof envSchema>, 'COOKIE_SECURE' | 'OPENAPI_ENABLED'> & {
+export type Env = Omit<
+  z.infer<typeof envSchema>,
+  'COOKIE_SECURE' | 'OPENAPI_ENABLED' | 'PAYMENT_SANDBOX_ENABLED' | 'PAYMENT_PROVIDER'
+> & {
   COOKIE_SECURE: boolean;
   OPENAPI_ENABLED: boolean;
+  PAYMENT_SANDBOX_ENABLED: boolean;
+  PAYMENT_PROVIDER: 'sandbox' | null;
 };
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -67,10 +85,19 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   if (!isLocal && env.SESSION_SECRET.startsWith('change-me')) {
     throw new Error('SESSION_SECRET must be set to a real secret in production');
   }
+  const sandbox = env.PAYMENT_SANDBOX_ENABLED ?? isLocal;
+  if (env.PAYMENT_PROVIDER === 'sandbox' && !sandbox) {
+    throw new Error('PAYMENT_PROVIDER=sandbox needs PAYMENT_SANDBOX_ENABLED=true');
+  }
+  if (sandbox && !isLocal && env.PAYMENT_SANDBOX_SECRET.endsWith('dev-only')) {
+    throw new Error('PAYMENT_SANDBOX_SECRET must be set to a real secret outside development');
+  }
   return {
     ...env,
     COOKIE_SECURE: env.COOKIE_SECURE ?? !isLocal,
     OPENAPI_ENABLED: env.OPENAPI_ENABLED ?? isLocal,
+    PAYMENT_SANDBOX_ENABLED: sandbox,
+    PAYMENT_PROVIDER: env.PAYMENT_PROVIDER ?? (sandbox ? 'sandbox' : null),
   };
 }
 

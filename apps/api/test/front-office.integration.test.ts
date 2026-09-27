@@ -186,6 +186,18 @@ describe('folio', () => {
       idem(),
     );
     expect(pan.status).toBe(400);
+    // Cash goes into the cashier's shift (ADR-0016).
+    const noShift = await reception.request(
+      'POST',
+      `${base()}/folios/${folioA}/payments`,
+      { method: 'CASH', amountMinor: 5_600 },
+      idem(),
+    );
+    expect(noShift.body.code).toBe('CASHIER_SHIFT_REQUIRED');
+    expect(
+      (await reception.request('POST', `${base()}/cashier/shift`, { openingFloatMinor: 500_000 }))
+        .status,
+    ).toBe(201);
     const paid = await reception.request(
       'POST',
       `${base()}/folios/${folioA}/payments`,

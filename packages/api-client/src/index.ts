@@ -1,4 +1,13 @@
 import type {
+  AccountFolio,
+  CashierShift,
+  DailyReport,
+  FolioDocument,
+  IssueDocumentRequest,
+  PaymentIntent,
+  Reconciliation,
+  Refund,
+  RoutingRule,
   CreateMenuItemRequest,
   GuestOrderRequest,
   Menu,
@@ -428,6 +437,86 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<ServiceRequest>('PATCH', `${p}/service-requests/${id(requestId)}`, body, {
             'if-match': `W/"${version}"`,
           }).then((r) => r.data),
+        paymentLink: (folioId: string, amountMinor: number, idempotencyKey: string) =>
+          call<PaymentIntent>(
+            'POST',
+            `${p}/folios/${id(folioId)}/payment-links`,
+            { amountMinor },
+            {
+              'idempotency-key': idempotencyKey,
+            },
+          ).then((r) => r.data),
+        paymentIntents: (folioId: string) =>
+          call<{ items: PaymentIntent[] }>(
+            'GET',
+            `${p}/folios/${id(folioId)}/payment-intents`,
+          ).then((r) => r.data.items),
+        refund: (paymentId: string, amountMinor: number, reason: string, idempotencyKey: string) =>
+          call<Refund>(
+            'POST',
+            `${p}/payments/${id(paymentId)}/refunds`,
+            { amountMinor, reason },
+            {
+              'idempotency-key': idempotencyKey,
+            },
+          ).then((r) => r.data),
+        accounts: () =>
+          call<{ items: AccountFolio[] }>('GET', `${p}/accounts`).then((r) => r.data.items),
+        createAccount: (label: string) =>
+          call<Folio>('POST', `${p}/accounts`, { label }).then((r) => r.data),
+        routingRules: (folioId: string) =>
+          call<{ items: RoutingRule[] }>('GET', `${p}/folios/${id(folioId)}/routing-rules`).then(
+            (r) => r.data.items,
+          ),
+        addRoutingRule: (folioId: string, targetFolioId: string, departments: string[]) =>
+          call<{ items: RoutingRule[] }>('POST', `${p}/folios/${id(folioId)}/routing-rules`, {
+            targetFolioId,
+            departments,
+          }).then((r) => r.data.items),
+        removeRoutingRule: (ruleId: string) =>
+          call<void>('DELETE', `${p}/routing-rules/${id(ruleId)}`).then((r) => r.data),
+        transfer: (folioId: string, targetFolioId: string, lineIds: string[], reason: string) =>
+          call<Folio>('POST', `${p}/folios/${id(folioId)}/transfers`, {
+            targetFolioId,
+            lineIds,
+            reason,
+          }).then((r) => r.data),
+        issueDocument: (folioId: string, body: IssueDocumentRequest) =>
+          call<FolioDocument>('POST', `${p}/folios/${id(folioId)}/documents`, body).then(
+            (r) => r.data,
+          ),
+        documents: (folioId: string) =>
+          call<{ items: FolioDocument[] }>('GET', `${p}/folios/${id(folioId)}/documents`).then(
+            (r) => r.data.items,
+          ),
+        document: (documentId: string) =>
+          call<FolioDocument>('GET', `${p}/documents/${id(documentId)}`).then((r) => r.data),
+        cashierShift: () =>
+          call<{ shift: CashierShift | null }>('GET', `${p}/cashier/shift`).then(
+            (r) => r.data.shift,
+          ),
+        openCashierShift: (openingFloatMinor: number) =>
+          call<CashierShift>('POST', `${p}/cashier/shift`, { openingFloatMinor }).then(
+            (r) => r.data,
+          ),
+        closeCashierShift: (
+          shiftId: string,
+          version: number,
+          countedCashMinor: number,
+          notes: string,
+        ) =>
+          call<CashierShift>(
+            'POST',
+            `${p}/cashier/shifts/${id(shiftId)}/close`,
+            { countedCashMinor, notes },
+            { 'if-match': `W/"${version}"` },
+          ).then((r) => r.data),
+        cashierShifts: () =>
+          call<{ items: CashierShift[] }>('GET', `${p}/cashier/shifts`).then((r) => r.data.items),
+        dailyReport: (date?: string) =>
+          call<DailyReport>('GET', `${p}/reports/daily${qs({ date })}`).then((r) => r.data),
+        reconciliation: () =>
+          call<Reconciliation>('GET', `${p}/reports/reconciliation`).then((r) => r.data),
         outlets: () => call<{ items: Outlet[] }>('GET', `${p}/outlets`).then((r) => r.data.items),
         menu: (outletId: string) =>
           call<Menu>('GET', `${p}/outlets/${id(outletId)}/menu`).then((r) => r.data),
@@ -645,6 +734,15 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
       call<{ items: ServiceRequest[] }>('GET', '/guest/service-requests').then((r) => r.data.items),
     createServiceRequest: (body: GuestServiceRequestCreate) =>
       call<ServiceRequest>('POST', '/guest/service-requests', body).then(data),
+    pay: (amountMinor: number | undefined, idempotencyKey: string) =>
+      call<PaymentIntent>(
+        'POST',
+        '/guest/payments',
+        amountMinor === undefined ? {} : { amountMinor },
+        { 'idempotency-key': idempotencyKey },
+      ).then(data),
+    payments: () =>
+      call<{ items: PaymentIntent[] }>('GET', '/guest/payments').then((r) => r.data.items),
     menus: () => call<{ items: Menu[] }>('GET', '/guest/menus').then((r) => r.data.items),
     orders: () => call<{ items: Order[] }>('GET', '/guest/orders').then((r) => r.data.items),
     placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>

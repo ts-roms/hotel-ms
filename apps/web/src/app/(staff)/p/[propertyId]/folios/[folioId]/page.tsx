@@ -20,6 +20,7 @@ import { formatDate, formatMoney, minorToInput, parseMoney } from '@/lib/format'
 import { t } from '@/lib/i18n';
 import { usePms, useProperty } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { FolioFinance } from './finance';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();
@@ -49,7 +50,7 @@ export default function FolioPage() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle>
-              {t('folio.title')}{' '}
+              {f.label ?? t('folio.title')}{' '}
               <span className="font-mono text-sm text-muted-foreground">{f.folioNo}</span>
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -160,6 +161,7 @@ export default function FolioPage() {
           }
         />
       )}
+      <FolioFinance propertyId={propertyId} folio={f} />
     </div>
   );
 }
