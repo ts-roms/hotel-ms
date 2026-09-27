@@ -33,6 +33,11 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
   NORMAL: 'primary',
   HIGH: 'warning',
   URGENT: 'danger',
+  // F&B orders (PENDING, CONFIRMED and CANCELLED are shared above/below)
+  PREPARING: 'warning',
+  READY: 'success',
+  OUT_FOR_DELIVERY: 'info',
+  DELIVERED: 'neutral',
   // HR: approvals, shifts, attendance, employees
   PENDING: 'warning',
   APPROVED: 'success',

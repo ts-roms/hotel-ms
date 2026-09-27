@@ -9,16 +9,24 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
+  EmptyState,
   Input,
+  LoadingRegion,
+  PageHeader,
   Select,
+  Skeleton,
+  SkeletonTable,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, ReceiptText, ShoppingBag, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 interface CartLine {
   item: MenuItem;
@@ -107,14 +115,16 @@ export default function OrdersPage() {
     ]);
   const update = (index: number, change: Partial<CartLine>) =>
     setCart(cart.map((l, i) => (i === index ? { ...l, ...change } : l)));
+  const menuLoading = outlets.isPending || (!!outlet && menu.isPending);
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{t('fnb.orders')}</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={t('fnb.orders')} />
       {hasPermission(session.data, 'fnb.order.create') && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
+          <Card className="animate-fade-in">
+            <CardHeader className="gap-3 pb-4">
+              <CardTitle className="text-base">{t('fnb.menu')}</CardTitle>
               <Select
                 aria-label={t('fnb.outlet')}
                 value={outlet}
@@ -132,73 +142,129 @@ export default function OrdersPage() {
                   ))}
               </Select>
             </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-sm">
+            <CardContent className="flex flex-col gap-4 text-sm">
+              {menuLoading && (
+                <LoadingRegion label={t('loading')} className="flex flex-col gap-4">
+                  {Array.from({ length: 2 }, (_, c) => (
+                    <div key={c} className="flex flex-col gap-2">
+                      <Skeleton className="h-4 w-24" />
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {Array.from({ length: 4 }, (_, i) => (
+                          <Skeleton key={i} className="h-12 rounded-lg" />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </LoadingRegion>
+              )}
+              {outlets.data?.length === 0 && (
+                <EmptyState
+                  icon={<ReceiptText />}
+                  title={t('fnb.noOutlets')}
+                  className="border-0"
+                />
+              )}
               {menu.data?.categories.map((c) => (
-                <div key={c.id}>
-                  <div className="mb-1 font-medium">{c.name}</div>
-                  <div className="flex flex-wrap gap-2">
+                <div key={c.id} className="flex flex-col gap-2">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {c.name}
+                  </div>
+                  <div className="stagger grid gap-2 sm:grid-cols-2">
                     {c.items
                       .filter((i) => !i.archived)
                       .map((i) => (
-                        <Button
+                        <button
                           key={i.id}
-                          size="sm"
-                          variant="outline"
+                          type="button"
                           disabled={!i.available}
                           onClick={() => add(i)}
+                          className="group flex items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {i.name} · {formatMoney(i.priceMinor, currency)}
-                        </Button>
+                          <span className="flex flex-col">
+                            <span className="font-medium">{i.name}</span>
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              {i.available
+                                ? formatMoney(i.priceMinor, currency)
+                                : t('fnb.soldOutBadge')}
+                            </span>
+                          </span>
+                          <Plus className="size-4 text-muted-foreground transition-colors group-hover:text-primary" />
+                        </button>
                       ))}
                   </div>
                 </div>
               ))}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('fnb.newOrder')}</CardTitle>
+          <Card className="animate-fade-in lg:sticky lg:top-6 lg:self-start">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShoppingBag className="size-4 text-primary" />
+                {t('fnb.newOrder')}
+                {cart.length > 0 && (
+                  <Badge variant="primary" className="tabular-nums">
+                    {cart.reduce((n, l) => n + l.quantity, 0)}
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 text-sm">
-              {cart.length === 0 && <p className="text-muted-foreground">{t('fnb.emptyCart')}</p>}
+              {cart.length === 0 && (
+                <p className="rounded-lg border border-dashed py-8 text-center text-muted-foreground">
+                  {t('fnb.emptyCart')}
+                </p>
+              )}
               {cart.map((l, index) => (
-                <div key={index} className="flex flex-col gap-1 border-t pt-2">
+                <div
+                  key={index}
+                  className="flex animate-scale-in flex-col gap-2 rounded-lg border p-3"
+                >
                   <div className="flex items-center justify-between gap-2">
-                    <span>{l.item.name}</span>
+                    <span className="font-medium">{l.item.name}</span>
                     <span className="flex items-center gap-1">
                       <Input
                         type="number"
                         min={1}
                         max={50}
-                        className="w-16"
+                        className="h-8 w-16"
                         aria-label={t('fnb.quantity')}
                         value={l.quantity}
                         onChange={(e) =>
                           update(index, { quantity: Math.max(1, Number(e.target.value) || 1) })
                         }
                       />
-                      <span className="w-24 text-right tabular-nums">
+                      <span className="w-24 text-right font-medium tabular-nums">
                         {formatMoney(lineTotal(l), currency)}
                       </span>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="size-8 hover:text-destructive"
                         aria-label={t('fnb.remove')}
                         onClick={() => setCart(cart.filter((_, i) => i !== index))}
                       >
-                        ×
+                        <X />
                       </Button>
                     </span>
                   </div>
                   {l.item.modifierGroups.map((g) => (
-                    <div key={g.id} className="flex flex-wrap items-center gap-2 text-xs">
+                    <div key={g.id} className="flex flex-wrap items-center gap-1.5 text-xs">
                       <span className="text-muted-foreground">{g.name}</span>
                       {g.modifiers.map((m) => {
                         const on = l.modifierIds.includes(m.id);
                         return (
-                          <label key={m.id} className="flex items-center gap-1">
+                          <label
+                            key={m.id}
+                            className={cn(
+                              'flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40',
+                              on
+                                ? 'border-primary/40 bg-primary/10 text-primary'
+                                : 'hover:border-ring/40',
+                            )}
+                          >
                             <input
                               type={g.maxSelect === 1 ? 'radio' : 'checkbox'}
+                              className="sr-only"
                               name={`${index}-${g.id}`}
                               checked={on}
                               onChange={() => {
@@ -262,10 +328,13 @@ export default function OrdersPage() {
               </div>
               {place.error && <Alert>{errorMessage(place.error)}</Alert>}
               <Button
-                disabled={cart.length === 0 || place.isPending}
+                size="lg"
+                loading={place.isPending}
+                disabled={cart.length === 0}
                 onClick={() => place.mutate()}
               >
-                {t('fnb.placeOrder')} · {formatMoney(total, currency)}
+                {t('fnb.placeOrder')} ·{' '}
+                <span className="tabular-nums">{formatMoney(total, currency)}</span>
               </Button>
             </CardContent>
           </Card>
@@ -273,43 +342,63 @@ export default function OrdersPage() {
       )}
 
       {cancel.error && <Alert>{errorMessage(cancel.error)}</Alert>}
-      <table className="w-full text-left text-sm">
-        <thead className="text-xs text-muted-foreground">
-          <tr>
-            <th className="py-2">{t('fnb.order')}</th>
-            <th>{t('fnb.outlet')}</th>
-            <th>{t('fnb.room')}</th>
-            <th>{t('fnb.status')}</th>
-            <th className="text-right">{t('fnb.total')}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {recent.data?.map((o) => (
-            <tr key={o.id} className="border-t">
-              <td className="py-2 font-mono">{o.orderNo}</td>
-              <td>{o.outletName}</td>
-              <td>{o.roomNumber ?? '—'}</td>
-              <td>
-                <Badge>{o.status.toLowerCase().replaceAll('_', ' ')}</Badge>
-              </td>
-              <td className="text-right tabular-nums">{formatMoney(o.totalMinor, o.currency)}</td>
-              <td className="text-right">
-                {hasPermission(session.data, 'fnb.order.update') && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={cancel.isPending}
-                    onClick={() => cancel.mutate(o)}
-                  >
-                    {t('fnb.cancel')}
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {recent.isPending && (
+        <Card className="p-4">
+          <LoadingRegion label={t('loading')}>
+            <SkeletonTable rows={4} columns={5} />
+          </LoadingRegion>
+        </Card>
+      )}
+      {recent.data?.length === 0 && (
+        <EmptyState icon={<ReceiptText />} title={t('fnb.noActiveOrders')} />
+      )}
+      {!!recent.data?.length && (
+        <Card className="animate-fade-in overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b bg-muted/40">
+                <th className="px-3 py-3 font-semibold">{t('fnb.order')}</th>
+                <th className="px-3 py-3 font-semibold">{t('fnb.outlet')}</th>
+                <th className="px-3 py-3 font-semibold">{t('fnb.room')}</th>
+                <th className="px-3 py-3 font-semibold">{t('fnb.status')}</th>
+                <th className="px-3 py-3 text-right font-semibold">{t('fnb.total')}</th>
+                <th className="px-3 py-3" />
+              </tr>
+            </thead>
+            <tbody className="stagger">
+              {recent.data.map((o) => (
+                <tr key={o.id} className="border-t transition-colors hover:bg-accent/40">
+                  <td className="px-3 py-2.5 font-mono text-xs">{o.orderNo}</td>
+                  <td className="px-3 py-2.5">{o.outletName}</td>
+                  <td className="px-3 py-2.5">{o.roomNumber ?? '—'}</td>
+                  <td className="px-3 py-2.5">
+                    <Badge variant={statusVariant(o.status)} dot>
+                      {statusLabel(o.status)}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-medium tabular-nums">
+                    {formatMoney(o.totalMinor, o.currency)}
+                  </td>
+                  <td className="px-3 py-1.5 text-right">
+                    {hasPermission(session.data, 'fnb.order.update') && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="hover:text-destructive"
+                        loading={cancel.isPending && cancel.variables?.id === o.id}
+                        disabled={cancel.isPending}
+                        onClick={() => cancel.mutate(o)}
+                      >
+                        {t('fnb.cancel')}
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
