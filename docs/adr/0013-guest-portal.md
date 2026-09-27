@@ -110,9 +110,18 @@ vendors or mobile keys plug in behind the same interface, per property, later.
   - the request lifecycle with version conflicts;
   - assignee rules;
   - cross-guest isolation.
-- Deployment gap: the Docker image (`--target guest`) is built in CI. The ECS service and
-  the ALB host rule for the guest domain are not in Terraform yet. Until they are, staging
-  serves no guest portal, and `GUEST_ORIGIN`/`GUEST_PUBLIC_URL` stay at their defaults.
+- Deployment:
+  - The guest app runs as its own ECS service on its own host name (`guest_domain_name`),
+    behind the same ALB and WAF.
+  - On that host, only `/api/v1/guest/*` reaches the API. Every other API path answers
+    404, so staff endpoints are unreachable through the guest origin, as in local
+    development.
+  - The deploy workflow builds and rolls out the `guest` image. The smoke test checks the
+    guest app, the guest API (401) and the blocked staff API (404).
+  - After applying Terraform, refresh the `DEPLOY_CONFIG` GitHub variable: it now carries
+    `guest_url`.
+  - Point the guest DNS name at the ALB, and cover it with `certificate_arn` or
+    `guest_certificate_arn`.
 - Not built yet:
   - identity document capture and registration cards (need S3 and retention rules);
   - online payment of the bill;

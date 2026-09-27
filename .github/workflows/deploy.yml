@@ -51,7 +51,7 @@ jobs:
       - name: Build and push images (tagged with the commit SHA)
         run: |
           registry="$(jq -r .ecr_registry <<<"$DEPLOY_CONFIG")"
-          for target in api worker web migrate; do
+          for target in api worker web guest migrate; do
             repository="$(jq -r ".repositories[\"$target\"]" <<<"$DEPLOY_CONFIG")"
             docker buildx build . \
               --file infrastructure/docker/Dockerfile \
@@ -70,6 +70,7 @@ jobs:
             echo "TD_API=$(scripts/deploy/ecs.sh register api "$IMAGE_API")"
             echo "TD_WORKER=$(scripts/deploy/ecs.sh register worker "$IMAGE_WORKER")"
             echo "TD_WEB=$(scripts/deploy/ecs.sh register web "$IMAGE_WEB")"
+            echo "TD_GUEST=$(scripts/deploy/ecs.sh register guest "$IMAGE_GUEST")"
             echo "TD_MIGRATE=$(scripts/deploy/ecs.sh register migrate "$IMAGE_MIGRATE")"
             echo "TD_BOOTSTRAP=$(scripts/deploy/ecs.sh register db-bootstrap "$IMAGE_MIGRATE")"
           } >>"$GITHUB_ENV"
@@ -86,7 +87,8 @@ jobs:
           scripts/deploy/ecs.sh update-service api "$TD_API"
           scripts/deploy/ecs.sh update-service worker "$TD_WORKER"
           scripts/deploy/ecs.sh update-service web "$TD_WEB"
-          scripts/deploy/ecs.sh wait-stable api worker web
+          scripts/deploy/ecs.sh update-service guest "$TD_GUEST"
+          scripts/deploy/ecs.sh wait-stable api worker web guest
 
       - name: Smoke test
         run: |
@@ -98,3 +100,8 @@ jobs:
           curl -fsS -o /dev/null "$url/login"
           # Health and docs must not be reachable from the internet.
           test "$(curl -s -o /dev/null -w '%{http_code}' "$url/health/ready")" = "404"
+          # Guest portal: its app and API answer; staff endpoints are not reachable there.
+          guest="$(jq -r .guest_url <<<"$DEPLOY_CONFIG")"
+          curl -fsS -o /dev/null "$guest/"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$guest/api/v1/guest/stay")" = "401"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$guest/api/v1/auth/session")" = "404"

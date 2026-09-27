@@ -15,6 +15,11 @@ resource "random_password" "session_secret" {
   special = false
 }
 
+resource "random_password" "payment_sandbox_secret" {
+  length  = 48
+  special = false
+}
+
 resource "random_bytes" "data_key" {
   length = 32
 }
@@ -51,5 +56,7 @@ resource "aws_secretsmanager_secret_version" "app" {
     REDIS_QUEUE_URL      = local.redis_url.queue
     SESSION_SECRET       = random_password.session_secret.result
     DATA_ENCRYPTION_KEYS = "k1:${random_bytes.data_key.base64}"
+    # Signs sandbox gateway webhooks (staging only; ADR-0016).
+    PAYMENT_SANDBOX_SECRET = random_password.payment_sandbox_secret.result
   })
 }
