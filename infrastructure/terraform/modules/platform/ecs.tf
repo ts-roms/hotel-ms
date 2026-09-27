@@ -14,8 +14,9 @@ resource "aws_ecs_cluster" "main" {
 
 locals {
   app_secret = aws_secretsmanager_secret.app.arn
-  secret     = { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD"] : key => "${local.app_secret}:${key}::" }
+  secret     = { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD", "PAYMENT_SANDBOX_SECRET"] : key => "${local.app_secret}:${key}::" }
   public_url = "https://${var.domain_name}"
+  guest_url  = "https://${var.guest_domain_name}"
 
   containers = {
     api = {
@@ -23,16 +24,23 @@ locals {
       command = null
       port    = local.ports.api
       environment = {
-        NODE_ENV         = "production"
-        API_PORT         = tostring(local.ports.api)
-        WEB_ORIGIN       = local.public_url
-        APP_PUBLIC_URL   = local.public_url
-        TRUST_PROXY_HOPS = "1"
-        COOKIE_SECURE    = "true"
-        OPENAPI_ENABLED  = "false"
-        LOG_LEVEL        = "info"
+        NODE_ENV                = "production"
+        API_PORT                = tostring(local.ports.api)
+        WEB_ORIGIN              = local.public_url
+        APP_PUBLIC_URL          = local.public_url
+        API_PUBLIC_ORIGIN       = local.public_url
+        GUEST_ORIGIN            = local.guest_url
+        GUEST_PUBLIC_URL        = local.guest_url
+        PAYMENT_SANDBOX_ENABLED = tostring(var.payment_sandbox_enabled)
+        TRUST_PROXY_HOPS        = "1"
+        COOKIE_SECURE           = "true"
+        OPENAPI_ENABLED         = "false"
+        LOG_LEVEL               = "info"
       }
-      secrets = ["DATABASE_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS"]
+      secrets = concat(
+        ["DATABASE_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS"],
+        var.payment_sandbox_enabled ? ["PAYMENT_SANDBOX_SECRET"] : [],
+      )
     }
     worker = {
       image   = "worker"
@@ -55,6 +63,13 @@ locals {
       environment = { NODE_ENV = "production", PORT = tostring(local.ports.web), HOSTNAME = "0.0.0.0" }
       secrets     = []
     }
+    guest = {
+      image       = "guest"
+      command     = null
+      port        = local.ports.guest
+      environment = { NODE_ENV = "production", PORT = tostring(local.ports.guest), HOSTNAME = "0.0.0.0" }
+      secrets     = []
+    }
     migrate = {
       image       = "migrate"
       command     = null
@@ -75,7 +90,7 @@ locals {
     }
   }
 
-  task_role = { api = "api", worker = "worker", web = "web", migrate = "migrate", db-bootstrap = "migrate" }
+  task_role = { api = "api", worker = "worker", web = "web", guest = "web", migrate = "migrate", db-bootstrap = "migrate" }
   task_size = merge(var.services, {
     migrate      = { cpu = 512, memory = 1024, desired_count = 0 }
     db-bootstrap = { cpu = 256, memory = 512, desired_count = 0 }
@@ -144,7 +159,7 @@ resource "aws_ecs_service" "service" {
   }
 
   dynamic "load_balancer" {
-    for_each = contains(["api", "web"], each.key) ? [each.key] : []
+    for_each = contains(["api", "web", "guest"], each.key) ? [each.key] : []
     content {
       target_group_arn = aws_lb_target_group.service[load_balancer.value].arn
       container_name   = load_balancer.value
@@ -158,7 +173,7 @@ resource "aws_ecs_service" "service" {
     enable   = true
     rollback = true
   }
-  health_check_grace_period_seconds = contains(["api", "web"], each.key) ? 30 : null
+  health_check_grace_period_seconds = contains(["api", "web", "guest"], each.key) ? 30 : null
   enable_execute_command            = false
   propagate_tags                    = "SERVICE"
 

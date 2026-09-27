@@ -67,7 +67,7 @@ resource "aws_security_group" "tasks" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "tasks_from_alb" {
-  for_each                     = { api = local.ports.api, web = local.ports.web }
+  for_each                     = local.ports
   security_group_id            = aws_security_group.tasks.id
   referenced_security_group_id = aws_security_group.alb.id
   ip_protocol                  = "tcp"

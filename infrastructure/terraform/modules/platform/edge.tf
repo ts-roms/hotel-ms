@@ -1,5 +1,6 @@
-# Application Load Balancer: /api/* and /health/* go to the API, everything else to the web
-# app. One host name, so the session cookie is first-party and no CORS is involved.
+# Application Load Balancer. Staff host: /api/* goes to the API, everything else to the web
+# app (one host name, so the session cookie is first-party and no CORS is involved).
+# Guest host: the guest portal and the guest API only.
 
 # Internet-facing by design: this is the public entry point, fronted by WAF and TLS only.
 #trivy:ignore:AWS-0053
@@ -24,7 +25,7 @@ resource "aws_lb_target_group" "service" {
 
   deregistration_delay = 30
   health_check {
-    path                = each.key == "api" ? "/health/ready" : "/login"
+    path                = { api = "/health/ready", web = "/login", guest = "/" }[each.key]
     matcher             = "200"
     interval            = 15
     healthy_threshold   = 2
@@ -57,6 +58,71 @@ resource "aws_lb_listener" "https" {
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.service["web"].arn
+  }
+}
+
+# ---- Guest portal: its own host name (own origin and cookie; blueprint §11) --------------
+# Only the guest API is reachable through the guest host; staff endpoints answer 404 there.
+
+resource "aws_lb_listener_certificate" "guest" {
+  count           = var.guest_certificate_arn == null ? 0 : 1
+  listener_arn    = aws_lb_listener.https.arn
+  certificate_arn = var.guest_certificate_arn
+}
+
+resource "aws_lb_listener_rule" "guest_api" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 1
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service["api"].arn
+  }
+  condition {
+    host_header {
+      values = [var.guest_domain_name]
+    }
+  }
+  condition {
+    path_pattern {
+      values = ["/api/v1/guest/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "guest_block_other_api" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 2
+  action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Not found"
+      status_code  = "404"
+    }
+  }
+  condition {
+    host_header {
+      values = [var.guest_domain_name]
+    }
+  }
+  condition {
+    path_pattern {
+      values = ["/api/*", "/health/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "guest_app" {
+  listener_arn = aws_lb_listener.https.arn
+  priority     = 3
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.service["guest"].arn
+  }
+  condition {
+    host_header {
+      values = [var.guest_domain_name]
+    }
   }
 }
 

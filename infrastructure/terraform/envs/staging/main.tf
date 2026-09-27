@@ -31,6 +31,15 @@ variable "certificate_arn" {
   type = string
 }
 
+variable "guest_domain_name" {
+  type = string
+}
+
+variable "guest_certificate_arn" {
+  type    = string
+  default = null
+}
+
 variable "email_domain" {
   type = string
 }
@@ -51,8 +60,12 @@ module "platform" {
   name        = "hotel-staging"
   environment = "staging"
 
-  domain_name                 = var.domain_name
-  certificate_arn             = var.certificate_arn
+  domain_name           = var.domain_name
+  certificate_arn       = var.certificate_arn
+  guest_domain_name     = var.guest_domain_name
+  guest_certificate_arn = var.guest_certificate_arn
+  # Staging takes test payments through the sandbox gateway (ADR-0016).
+  payment_sandbox_enabled     = true
   email_domain                = var.email_domain
   email_from                  = "Hotel Platform (staging) <no-reply@${var.email_domain}>"
   github_repository           = var.github_repository
@@ -74,6 +87,7 @@ module "platform" {
     api    = { cpu = 512, memory = 1024, desired_count = 1 }
     worker = { cpu = 256, memory = 512, desired_count = 1 }
     web    = { cpu = 256, memory = 512, desired_count = 1 }
+    guest  = { cpu = 256, memory = 512, desired_count = 1 }
   }
 }
 

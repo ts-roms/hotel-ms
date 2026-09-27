@@ -17,6 +17,23 @@ variable "domain_name" {
   type        = string
 }
 
+variable "guest_domain_name" {
+  description = "Public host name of the guest portal, e.g. guest.staging.hotel.example.com (DNS managed outside this module)."
+  type        = string
+}
+
+variable "guest_certificate_arn" {
+  description = "ACM certificate for guest_domain_name when certificate_arn does not cover it; null to reuse certificate_arn."
+  type        = string
+  default     = null
+}
+
+variable "payment_sandbox_enabled" {
+  description = "Serve the built-in sandbox payment gateway (ADR-0016). Never in production."
+  type        = bool
+  default     = false
+}
+
 variable "certificate_arn" {
   description = "ACM certificate for domain_name, in the same region."
   type        = string
@@ -124,6 +141,7 @@ variable "services" {
     api    = { cpu = 512, memory = 1024, desired_count = 2 }
     worker = { cpu = 256, memory = 512, desired_count = 1 }
     web    = { cpu = 256, memory = 512, desired_count = 2 }
+    guest  = { cpu = 256, memory = 512, desired_count = 2 }
   }
 }
 

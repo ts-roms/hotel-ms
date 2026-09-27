@@ -9,14 +9,15 @@ locals {
   })
 
   ports = {
-    api = 48100
-    web = 43100
+    api   = 48100
+    web   = 43100
+    guest = 43200
   }
 
   region     = data.aws_region.current.region
   account_id = data.aws_caller_identity.current.account_id
 
-  images = ["api", "worker", "web", "migrate"]
+  images = ["api", "worker", "web", "guest", "migrate"]
 }
 
 # KMS key for this environment's secrets, logs, database and backups.
@@ -89,7 +90,7 @@ resource "aws_ecr_lifecycle_policy" "images" {
 }
 
 resource "aws_cloudwatch_log_group" "services" {
-  for_each          = toset(["api", "worker", "web", "migrate", "db-bootstrap"])
+  for_each          = toset(["api", "worker", "web", "guest", "migrate", "db-bootstrap"])
   name              = "/${var.name}/${each.key}"
   retention_in_days = var.log_retention_days
   kms_key_id        = aws_kms_key.platform.arn

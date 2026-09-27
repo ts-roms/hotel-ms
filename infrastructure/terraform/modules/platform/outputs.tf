@@ -1,5 +1,5 @@
 output "alb_dns_name" {
-  description = "Point domain_name (CNAME/alias) here."
+  description = "Point domain_name and guest_domain_name (CNAME/alias) here."
   value       = aws_lb.main.dns_name
 }
 
@@ -26,5 +26,6 @@ output "deploy_config" {
     subnets         = module.vpc.private_subnets
     security_groups = [aws_security_group.tasks.id]
     public_url      = "https://${var.domain_name}"
+    guest_url       = "https://${var.guest_domain_name}"
   })
 }
