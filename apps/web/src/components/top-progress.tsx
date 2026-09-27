@@ -26,7 +26,7 @@ export function TopProgress() {
       className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 overflow-hidden transition-opacity duration-300"
       style={{ opacity: visible ? 1 : 0 }}
     >
-      <div className="h-full w-full origin-left animate-progress bg-gradient-to-r from-primary via-info to-primary" />
+      <div className="h-full w-full origin-left animate-progress bg-linear-to-r from-primary via-info to-primary" />
     </div>
   );
 }
