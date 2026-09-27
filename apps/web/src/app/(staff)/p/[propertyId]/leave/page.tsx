@@ -1,14 +1,30 @@
 'use client';
 
 import type { LeaveDecisionResult, LeaveRequest } from '@hotel/contracts';
-import { Alert, Badge, Button, Card, CardContent, Input, Notice, Select } from '@hotel/ui';
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  EmptyState,
+  Input,
+  LoadingRegion,
+  Notice,
+  PageHeader,
+  Select,
+  SkeletonRow,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, Plane, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 /** Leave requests routed to this property (blueprint §13.4). */
 export default function LeavePage() {
@@ -32,25 +48,31 @@ export default function LeavePage() {
     onSuccess: setResult,
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['leave-requests', propertyId] }),
   });
+  const running = (r: LeaveRequest, decision: 'APPROVE' | 'REJECT') =>
+    decide.isPending &&
+    decide.variables?.request.id === r.id &&
+    decide.variables.decision === decision;
   const canApprove = hasPermission(session.data, 'leave.approve');
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t('hr.leave')}</h1>
-        <Select
-          className="w-auto"
-          aria-label={t('hr.status')}
-          value={status}
-          onChange={(e) => setStatus(e.target.value as LeaveRequest['status'])}
-        >
-          {(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const).map((s) => (
-            <option key={s} value={s}>
-              {s.toLowerCase()}
-            </option>
-          ))}
-        </Select>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={t('hr.leave')}
+        actions={
+          <Select
+            className="h-9 w-auto"
+            aria-label={t('hr.status')}
+            value={status}
+            onChange={(e) => setStatus(e.target.value as LeaveRequest['status'])}
+          >
+            {(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const).map((s) => (
+              <option key={s} value={s}>
+                {statusLabel(s)}
+              </option>
+            ))}
+          </Select>
+        }
+      />
       {(requests.error || decide.error) && (
         <Alert>{errorMessage(requests.error ?? decide.error)}</Alert>
       )}
@@ -62,48 +84,73 @@ export default function LeavePage() {
             .join(', ')}
         </Notice>
       )}
-      {requests.data?.length === 0 && <p className="text-muted-foreground">{t('hr.noLeave')}</p>}
-      {requests.data?.map((r) => (
-        <Card key={r.id}>
-          <CardContent className="flex flex-col gap-2 pt-4 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span>
-                <strong>{r.employeeName}</strong> · {r.leaveTypeName} · {formatDate(r.startDate)} →{' '}
-                {formatDate(r.endDate)} ({r.days} {t('hr.days')})
-              </span>
-              <Badge>{r.status.toLowerCase()}</Badge>
-            </div>
-            {r.reason && <p className="text-muted-foreground">{r.reason}</p>}
-            {r.decisionNote && <p className="text-muted-foreground">{r.decisionNote}</p>}
-            {canApprove && r.status === 'PENDING' && (
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  className="min-w-48 flex-1"
-                  placeholder={t('hr.note')}
-                  aria-label={t('hr.note')}
-                  value={notes[r.id] ?? ''}
-                  onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
-                />
-                <Button
-                  size="sm"
-                  disabled={decide.isPending}
-                  onClick={() => decide.mutate({ request: r, decision: 'APPROVE' })}
-                >
-                  {t('hr.approve')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={decide.isPending}
-                  onClick={() => decide.mutate({ request: r, decision: 'REJECT' })}
-                >
-                  {t('hr.reject')}
-                </Button>
+      {requests.isPending && (
+        <LoadingRegion label={t('loading')} className="flex flex-col gap-3">
+          {Array.from({ length: 4 }, (_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </LoadingRegion>
+      )}
+      {requests.data?.length === 0 && <EmptyState icon={<Plane />} title={t('hr.noLeave')} />}
+      <div className="stagger flex flex-col gap-3">
+        {requests.data?.map((r) => (
+          <Card key={r.id}>
+            <CardContent className="flex flex-col gap-3 pt-5 text-sm">
+              <div className="flex flex-wrap items-center gap-3">
+                <Avatar name={r.employeeName} />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{r.employeeName}</span>
+                  <span className="text-muted-foreground">
+                    {r.leaveTypeName} · {formatDate(r.startDate)} → {formatDate(r.endDate)}
+                  </span>
+                </div>
+                <Badge variant="primary" className="tabular-nums">
+                  {r.days} {t('hr.days')}
+                </Badge>
+                <Badge variant={statusVariant(r.status)} dot>
+                  {statusLabel(r.status)}
+                </Badge>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              {r.reason && (
+                <p className="rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground">{r.reason}</p>
+              )}
+              {r.decisionNote && <p className="text-muted-foreground">{r.decisionNote}</p>}
+              {canApprove && r.status === 'PENDING' && (
+                <div className="flex flex-wrap gap-2">
+                  <Input
+                    className="h-9 min-w-48 flex-1"
+                    placeholder={t('hr.note')}
+                    aria-label={t('hr.note')}
+                    value={notes[r.id] ?? ''}
+                    onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
+                  />
+                  <Button
+                    size="sm"
+                    className="h-9"
+                    loading={running(r, 'APPROVE')}
+                    disabled={decide.isPending}
+                    onClick={() => decide.mutate({ request: r, decision: 'APPROVE' })}
+                  >
+                    {!running(r, 'APPROVE') && <Check />}
+                    {t('hr.approve')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 hover:text-destructive"
+                    loading={running(r, 'REJECT')}
+                    disabled={decide.isPending}
+                    onClick={() => decide.mutate({ request: r, decision: 'REJECT' })}
+                  >
+                    {!running(r, 'REJECT') && <X />}
+                    {t('hr.reject')}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

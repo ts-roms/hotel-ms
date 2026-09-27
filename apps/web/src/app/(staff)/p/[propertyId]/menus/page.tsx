@@ -8,10 +8,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  cn,
+  EmptyState,
   Input,
+  LoadingRegion,
+  PageHeader,
   Select,
+  SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BookOpen, Check, FolderPlus, Pencil, Plus } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { formatMoney, minorToInput, parseMoney } from '@/lib/format';
@@ -40,11 +46,14 @@ export default function MenusPage() {
     },
   });
   const [item, setItem] = useState({ categoryId: '', name: '', price: '' });
+  // '' means "not chosen yet": show and submit the first category. Categories load after
+  // the first render, so the select must be given that option explicitly or it shows blank.
+  const categoryId = item.categoryId || menu.data?.categories[0]?.id || '';
   const priceMinor = parseMoney(item.price, currency);
   const addItem = useMutation({
     mutationFn: () =>
       pms.createMenuItem(outlet, {
-        categoryId: item.categoryId || menu.data!.categories[0]!.id,
+        categoryId,
         name: item.name,
         description: '',
         priceMinor: priceMinor!,
@@ -60,144 +69,177 @@ export default function MenusPage() {
       pms.updateMenuItem(input.id, input.body),
     onSettled: refresh,
   });
+  /** Only the button that started the change shows a spinner. */
+  const updating = (id: string, field: 'available' | 'archived' | 'priceMinor') =>
+    updateItem.isPending && updateItem.variables?.id === id && field in updateItem.variables.body;
   const error = menu.error ?? addCategory.error ?? addItem.error ?? updateItem.error;
 
   const onAddItem = (event: FormEvent) => {
     event.preventDefault();
     addItem.mutate();
   };
+  const loading = outlets.isPending || (!!outlet && menu.isPending);
 
   return (
-    <div className="flex max-w-4xl flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">{t('fnb.menus')}</h1>
-        <Select
-          className="w-auto"
-          aria-label={t('fnb.outlet')}
-          value={outlet}
-          onChange={(e) => setOutletId(e.target.value)}
-        >
-          {outlets.data?.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </Select>
-      </div>
-      {error && <Alert>{errorMessage(error)}</Alert>}
-
-      <Card>
-        <CardContent className="flex flex-col gap-2 pt-4">
-          <form onSubmit={onAddItem} className="flex flex-wrap items-center gap-2" noValidate>
-            <Select
-              className="w-auto"
-              aria-label={t('fnb.category')}
-              value={item.categoryId}
-              onChange={(e) => setItem({ ...item, categoryId: e.target.value })}
-            >
-              {menu.data?.categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-            <Input
-              className="min-w-40 flex-1"
-              placeholder={t('fnb.itemName')}
-              aria-label={t('fnb.itemName')}
-              value={item.name}
-              onChange={(e) => setItem({ ...item, name: e.target.value })}
-            />
-            <Input
-              className="w-28"
-              placeholder={t('fnb.price')}
-              aria-label={t('fnb.price')}
-              inputMode="decimal"
-              value={item.price}
-              onChange={(e) => setItem({ ...item, price: e.target.value })}
-            />
-            <Button
-              type="submit"
-              disabled={
-                !item.name.trim() ||
-                priceMinor === null ||
-                !menu.data?.categories.length ||
-                addItem.isPending
-              }
-            >
-              {t('fnb.addItem')}
-            </Button>
-          </form>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              className="w-56"
-              placeholder={t('fnb.newCategory')}
-              aria-label={t('fnb.newCategory')}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
-            <Button
-              variant="outline"
-              disabled={!category.trim() || addCategory.isPending}
-              onClick={() => addCategory.mutate()}
-            >
-              {t('fnb.addCategory')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {menu.data?.categories.map((c) => (
-        <Card key={c.id}>
-          <CardHeader>
-            <CardTitle className="text-base">{c.name}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 text-sm">
-            {c.items.map((i) => (
-              <div
-                key={i.id}
-                className="flex flex-wrap items-center justify-between gap-2 border-t pt-2"
-              >
-                <span className={i.archived ? 'text-muted-foreground line-through' : ''}>
-                  {i.name}
-                  {i.modifierGroups.length > 0 && (
-                    <span className="text-muted-foreground">
-                      {' '}
-                      · {i.modifierGroups.map((g) => g.name).join(', ')}
-                    </span>
-                  )}
-                </span>
-                <span className="flex items-center gap-2">
-                  {!i.available && (
-                    <Badge className="text-destructive">{t('fnb.soldOutBadge')}</Badge>
-                  )}
-                  <PriceEditor
-                    value={i.priceMinor}
-                    currency={currency}
-                    onSave={(priceMinor) => updateItem.mutate({ id: i.id, body: { priceMinor } })}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      updateItem.mutate({ id: i.id, body: { available: !i.available } })
-                    }
-                  >
-                    {i.available ? t('fnb.markSoldOut') : t('fnb.markAvailable')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => updateItem.mutate({ id: i.id, body: { archived: !i.archived } })}
-                  >
-                    {i.archived ? t('fnb.restore') : t('fnb.archive')}
-                  </Button>
-                </span>
-              </div>
+    <div className="flex max-w-4xl flex-col gap-6">
+      <PageHeader
+        title={t('fnb.menus')}
+        actions={
+          <Select
+            className="h-9 w-auto"
+            aria-label={t('fnb.outlet')}
+            value={outlet}
+            onChange={(e) => setOutletId(e.target.value)}
+          >
+            {outlets.data?.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
             ))}
+          </Select>
+        }
+      />
+      {error && <Alert>{errorMessage(error)}</Alert>}
+      {outlets.data?.length === 0 && <EmptyState icon={<BookOpen />} title={t('fnb.noOutlets')} />}
+
+      {outlet && (
+        <Card className="animate-fade-in">
+          <CardContent className="flex flex-col gap-3 pt-5">
+            <form onSubmit={onAddItem} className="flex flex-wrap items-center gap-2" noValidate>
+              <Select
+                className="w-auto"
+                aria-label={t('fnb.category')}
+                value={categoryId}
+                onChange={(e) => setItem({ ...item, categoryId: e.target.value })}
+              >
+                {menu.data?.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                className="min-w-40 flex-1"
+                placeholder={t('fnb.itemName')}
+                aria-label={t('fnb.itemName')}
+                value={item.name}
+                onChange={(e) => setItem({ ...item, name: e.target.value })}
+              />
+              <Input
+                className="w-28"
+                placeholder={t('fnb.price')}
+                aria-label={t('fnb.price')}
+                inputMode="decimal"
+                value={item.price}
+                onChange={(e) => setItem({ ...item, price: e.target.value })}
+              />
+              <Button
+                type="submit"
+                loading={addItem.isPending}
+                disabled={!item.name.trim() || priceMinor === null || !categoryId}
+              >
+                {!addItem.isPending && <Plus />}
+                {t('fnb.addItem')}
+              </Button>
+            </form>
+            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+              <Input
+                className="w-56"
+                placeholder={t('fnb.newCategory')}
+                aria-label={t('fnb.newCategory')}
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                loading={addCategory.isPending}
+                disabled={!category.trim()}
+                onClick={() => addCategory.mutate()}
+              >
+                {!addCategory.isPending && <FolderPlus />}
+                {t('fnb.addCategory')}
+              </Button>
+            </div>
           </CardContent>
         </Card>
-      ))}
+      )}
+
+      {loading && (
+        <LoadingRegion label={t('loading')} className="flex flex-col gap-4">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </LoadingRegion>
+      )}
+      {menu.data?.categories.length === 0 && (
+        <EmptyState icon={<BookOpen />} title={t('fnb.noMenuItems')} />
+      )}
+
+      <div className="stagger flex flex-col gap-4">
+        {menu.data?.categories.map((c) => (
+          <Card key={c.id}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                {c.name}
+                <Badge className="tabular-nums">{c.items.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col text-sm">
+              {c.items.map((i) => (
+                <div
+                  key={i.id}
+                  className={cn(
+                    'flex flex-wrap items-center justify-between gap-2 border-t py-2.5 transition-colors',
+                    i.archived && 'opacity-60',
+                  )}
+                >
+                  <span
+                    className={i.archived ? 'text-muted-foreground line-through' : 'font-medium'}
+                  >
+                    {i.name}
+                    {i.modifierGroups.length > 0 && (
+                      <span className="font-normal text-muted-foreground">
+                        {' '}
+                        · {i.modifierGroups.map((g) => g.name).join(', ')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {!i.available && <Badge variant="danger">{t('fnb.soldOutBadge')}</Badge>}
+                    <PriceEditor
+                      value={i.priceMinor}
+                      currency={currency}
+                      saving={updating(i.id, 'priceMinor')}
+                      onSave={(priceMinor) => updateItem.mutate({ id: i.id, body: { priceMinor } })}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      loading={updating(i.id, 'available')}
+                      disabled={updateItem.isPending}
+                      onClick={() =>
+                        updateItem.mutate({ id: i.id, body: { available: !i.available } })
+                      }
+                    >
+                      {i.available ? t('fnb.markSoldOut') : t('fnb.markAvailable')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      loading={updating(i.id, 'archived')}
+                      disabled={updateItem.isPending}
+                      onClick={() =>
+                        updateItem.mutate({ id: i.id, body: { archived: !i.archived } })
+                      }
+                    >
+                      {i.archived ? t('fnb.restore') : t('fnb.archive')}
+                    </Button>
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
@@ -205,10 +247,12 @@ export default function MenusPage() {
 function PriceEditor({
   value,
   currency,
+  saving,
   onSave,
 }: {
   value: number;
   currency: string;
+  saving: boolean;
   onSave: (minor: number) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
@@ -216,17 +260,19 @@ function PriceEditor({
     return (
       <button
         type="button"
-        className="tabular-nums underline decoration-dotted"
+        disabled={saving}
+        className="group inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium tabular-nums transition-colors hover:bg-accent disabled:opacity-60"
         onClick={() => setText(minorToInput(value, currency))}
       >
         {formatMoney(value, currency)}
+        <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </button>
     );
   }
   const parsed = parseMoney(text, currency);
   return (
     <form
-      className="flex items-center gap-1"
+      className="flex animate-fade-in items-center gap-1"
       onSubmit={(e) => {
         e.preventDefault();
         if (parsed !== null) onSave(parsed);
@@ -234,14 +280,20 @@ function PriceEditor({
       }}
     >
       <Input
-        className="w-24"
+        className="h-8 w-24"
         autoFocus
         aria-label={t('fnb.price')}
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <Button size="sm" type="submit" disabled={parsed === null}>
-        ✓
+      <Button
+        size="icon"
+        className="size-8"
+        type="submit"
+        aria-label={t('fnb.price')}
+        disabled={parsed === null}
+      >
+        <Check />
       </Button>
     </form>
   );

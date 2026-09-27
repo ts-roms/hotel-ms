@@ -22,9 +22,34 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
   ACTIVE: 'success',
   INVITED: 'info',
   SUSPENDED: 'warning',
-  // Folios
+  // Folios and service requests
   OPEN: 'primary',
   CLOSED: 'neutral',
+  ACKNOWLEDGED: 'info',
+  IN_PROGRESS: 'warning',
+  DONE: 'success',
+  // Service request priority
+  LOW: 'neutral',
+  NORMAL: 'primary',
+  HIGH: 'warning',
+  URGENT: 'danger',
+  // F&B orders (PENDING, CONFIRMED and CANCELLED are shared above/below)
+  PREPARING: 'warning',
+  READY: 'success',
+  OUT_FOR_DELIVERY: 'info',
+  DELIVERED: 'neutral',
+  // HR: approvals, shifts, attendance, employees
+  PENDING: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+  DRAFT: 'neutral',
+  PUBLISHED: 'primary',
+  PRESENT: 'success',
+  ABSENT: 'danger',
+  INCOMPLETE: 'warning',
+  ON_LEAVE: 'info',
+  SCHEDULED: 'neutral',
+  TERMINATED: 'neutral',
 };
 
 export function statusVariant(status: string): BadgeVariant {

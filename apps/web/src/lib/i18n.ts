@@ -346,6 +346,10 @@ const en = {
   'fnb.start': 'Start',
   'fnb.status': 'Status',
   'fnb.total': 'Total',
+  'fnb.noActiveOrders': 'No active orders.',
+  'fnb.noMenuItems': 'No menu items yet. Add a category, then items.',
+  'fnb.emptyColumn': 'Nothing here',
+  'fnb.menu': 'Menu',
   'error.generic': 'Something went wrong. Please try again.',
   'error.mfaRequired': 'This needs two-step verification. Turn it on under Security.',
   'error.forbidden': 'You are not allowed to do that.',
@@ -368,6 +372,9 @@ const en = {
   'na.noHistory': 'No closed days yet.',
   'folio.noLines': 'No charges or payments yet.',
   'avail.noRoomTypes': 'No room types configured.',
+  'hr.noEmployees': 'No employees found.',
+  'hr.prevWeek': 'Previous week',
+  'hr.nextWeek': 'Next week',
   loading: 'Loading…',
 } as const;
 
