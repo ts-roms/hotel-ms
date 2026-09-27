@@ -1,0 +1,138 @@
+// Tenant root and property configuration.
+// Every tenant-owned parent declares @@unique([organizationId, id]) so children can use
+// composite foreign keys that make cross-tenant references impossible (ADR-0003).
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum PropertyStatus {
+  ONBOARDING
+  ACTIVE
+  INACTIVE
+}
+
+model Organization {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  name            String
+  slug            String             @unique
+  status          OrganizationStatus @default(ACTIVE)
+  defaultLocale   String             @map("default_locale")
+  defaultCurrency String             @map("default_currency") @db.Char(3)
+  defaultTimezone String             @map("default_timezone")
+  version         Int                @default(1)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy       String?            @map("created_by") @db.Uuid
+  updatedBy       String?            @map("updated_by") @db.Uuid
+
+  brands       Brand[]
+  properties   Property[]
+  memberships  OrganizationMembership[]
+  roles        Role[]
+  settings     OrganizationSetting[]
+  featureFlags OrganizationFeatureFlag[]
+
+  @@map("organizations")
+}
+
+model Brand {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  code           String
+  name           String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+  updatedBy      String?  @map("updated_by") @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  properties   Property[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("brands")
+}
+
+/// Operational boundary: own time zone, currency, locale and business date (ADR-0008).
+model Property {
+  id                  String         @id @default(uuid(7)) @db.Uuid
+  organizationId      String         @map("organization_id") @db.Uuid
+  brandId             String?        @map("brand_id") @db.Uuid
+  code                String
+  name                String
+  status              PropertyStatus @default(ONBOARDING)
+  timezone            String
+  currency            String         @db.Char(3)
+  locale              String
+  countryCode         String         @map("country_code") @db.Char(2)
+  addressLine1        String?        @map("address_line1")
+  addressLine2        String?        @map("address_line2")
+  city                String?
+  region              String?
+  postalCode          String?        @map("postal_code")
+  phone               String?
+  email               String?
+  /// Property-local wall-clock time, "HH:mm".
+  checkInTime         String         @map("check_in_time") @db.VarChar(5)
+  /// Property-local wall-clock time, "HH:mm".
+  checkOutTime        String         @map("check_out_time") @db.VarChar(5)
+  /// The hotel day currently open; advanced only by night audit.
+  currentBusinessDate DateTime       @map("current_business_date") @db.Date
+  version             Int            @default(1)
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy           String?        @map("created_by") @db.Uuid
+  updatedBy           String?        @map("updated_by") @db.Uuid
+
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  brand           Brand?            @relation(fields: [organizationId, brandId], references: [organizationId, id], onDelete: Restrict)
+  settings        PropertySetting[]
+  roleAssignments RoleAssignment[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("properties")
+}
+
+model OrganizationSetting {
+  organizationId String   @map("organization_id") @db.Uuid
+  key            String
+  value          Json
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedBy      String?  @map("updated_by") @db.Uuid
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@id([organizationId, key])
+  @@map("organization_settings")
+}
+
+model PropertySetting {
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  key            String
+  value          Json
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedBy      String?  @map("updated_by") @db.Uuid
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([organizationId, propertyId, key])
+  @@map("property_settings")
+}
+
+model OrganizationFeatureFlag {
+  organizationId String   @map("organization_id") @db.Uuid
+  flagKey        String   @map("flag_key")
+  enabled        Boolean
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedBy      String?  @map("updated_by") @db.Uuid
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  flag         FeatureFlagDefinition @relation(fields: [flagKey], references: [key], onDelete: Restrict)
+
+  @@id([organizationId, flagKey])
+  @@map("organization_feature_flags")
+}

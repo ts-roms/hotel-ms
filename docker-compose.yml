@@ -1,0 +1,48 @@
+# Local development dependencies. Ports are offset (55432/56379/56380) to avoid clashing
+# with other local services. Nothing here is used in production.
+name: hotel-platform
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '55432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d hotel']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Cache, rate limits, locks, pub/sub. Evicting is fine here.
+  redis-cache:
+    image: valkey/valkey:8-alpine
+    command: ['valkey-server', '--maxmemory', '128mb', '--maxmemory-policy', 'allkeys-lru']
+    ports:
+      - '56379:6379'
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # BullMQ. Must never evict keys (ADR-0007).
+  redis-queue:
+    image: valkey/valkey:8-alpine
+    command: ['valkey-server', '--maxmemory-policy', 'noeviction', '--appendonly', 'yes']
+    ports:
+      - '56380:6379'
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

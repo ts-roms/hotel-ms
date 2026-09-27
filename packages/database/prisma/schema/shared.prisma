@@ -1,0 +1,74 @@
+// Shared kernel: audit, outbox, idempotency.
+
+enum ActorType {
+  MEMBER
+  GUEST
+  DEVICE
+  SYSTEM
+  PLATFORM_OPERATOR
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Append-only. The runtime role has INSERT + SELECT only (see the RLS migration).
+/// Written in the same transaction as the change it records (ADR-0005).
+model AuditLog {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String?   @map("property_id") @db.Uuid
+  actorType      ActorType @map("actor_type")
+  actorId        String?   @map("actor_id") @db.Uuid
+  action         String
+  entityType     String    @map("entity_type")
+  entityId       String?   @map("entity_id")
+  before         Json?
+  after          Json?
+  requestId      String?   @map("request_id")
+  ip             String?   @db.Inet
+  userAgent      String?   @map("user_agent")
+  occurredAt     DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  @@index([organizationId, occurredAt(sort: Desc)])
+  @@index([organizationId, entityType, entityId])
+  @@index([organizationId, propertyId, occurredAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+/// Transactional outbox. The relay (worker, system role) publishes rows to BullMQ.
+model OutboxEvent {
+  id             String    @id @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String?   @map("property_id") @db.Uuid
+  type           String
+  version        Int       @default(1)
+  payload        Json
+  actorType      ActorType @map("actor_type")
+  actorId        String?   @map("actor_id") @db.Uuid
+  correlationId  String?   @map("correlation_id")
+  occurredAt     DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  publishedAt    DateTime? @map("published_at") @db.Timestamptz(3)
+  attempts       Int       @default(0)
+  lastError      String?   @map("last_error")
+
+  @@index([organizationId, occurredAt])
+  @@map("outbox_events")
+}
+
+model IdempotencyKey {
+  organizationId String            @map("organization_id") @db.Uuid
+  scope          String
+  key            String
+  requestHash    String            @map("request_hash")
+  status         IdempotencyStatus
+  responseStatus Int?              @map("response_status")
+  responseBody   Json?             @map("response_body")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime          @map("expires_at") @db.Timestamptz(3)
+
+  @@id([organizationId, scope, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}

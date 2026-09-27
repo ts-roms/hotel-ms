@@ -1,0 +1,35 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV"],
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "DATABASE_OWNER_URL",
+    "DATABASE_SYSTEM_URL",
+    "REDIS_CACHE_URL",
+    "REDIS_QUEUE_URL"
+  ],
+  "tasks": {
+    "generate": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build", "generate"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build", "generate"]
+    },
+    "test": {
+      "dependsOn": ["^build", "generate"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build", "generate"],
+      "cache": false
+    },
+    "dev": {
+      "dependsOn": ["^build", "generate"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

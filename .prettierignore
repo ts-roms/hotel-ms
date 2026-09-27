@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+**/generated/**
+**/migrations/**
+docs/api/openapi.json
+**/dist/**
+**/.next/**
+.claude/
