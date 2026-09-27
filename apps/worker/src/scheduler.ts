@@ -44,6 +44,8 @@ const jobOptions = (jobId: string): JobsOptions => ({
  * - `property.nightly`: once per property and local date, after 03:00 local time
  *   (reconciliation).
  * - `organization.monthly-accrual`: once per organization and local month (leave accruals).
+ * - `organization.daily-documents`: once per organization and local date, after 03:00
+ *   local time (document sweep and retention, ADR-0021).
  */
 export async function planTenantJobs(
   system: PrismaClient,
@@ -82,6 +84,18 @@ export async function planTenantJobs(
       data: { type: 'organization.monthly-accrual', organizationId: o.id, period },
       opts: jobOptions(`accrual:${o.id}:${period}`),
     });
+    const local = toLocal(now, o.default_timezone);
+    if (local.time >= NIGHTLY_AFTER) {
+      jobs.push({
+        name: 'organization.daily-documents',
+        data: {
+          type: 'organization.daily-documents',
+          organizationId: o.id,
+          localDate: local.date,
+        },
+        opts: jobOptions(`documents:${o.id}:${local.date}`),
+      });
+    }
   }
   if (jobs.length > 0) await queue.addBulk(jobs);
   log.debug({ planned: jobs.length }, 'tenant jobs planned');

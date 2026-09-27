@@ -46,7 +46,10 @@ import {
 } from './modules/devices/devices.controller.js';
 import { DevicesService } from './modules/devices/devices.service.js';
 import { KioskAuth } from './modules/devices/kiosk-auth.js';
-import { EmployeeDocumentsController } from './modules/hr/documents.controller.js';
+import {
+  DocumentRetentionController,
+  EmployeeDocumentsController,
+} from './modules/hr/documents.controller.js';
 import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
@@ -103,6 +106,7 @@ export const CONTROLLERS = [
   GuestPortalController,
   HrController,
   EmployeeDocumentsController,
+  DocumentRetentionController,
   DevicesController,
   PinController,
   KioskController,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { attachmentHeader } from './documents.controller.js';
-import { matchesType } from './documents.service.js';
+import { matchesType, purgeOn } from './documents.service.js';
 
 describe('employee document files', () => {
   it('recognizes each accepted type by its magic bytes only', () => {
@@ -25,5 +25,17 @@ describe('employee document files', () => {
     expect(attachmentHeader('a"b\\c ñ.pdf')).toBe(
       `attachment; filename="a_b_c _.pdf"; filename*=UTF-8''a%22b%5Cc%20%C3%B1.pdf`,
     );
+  });
+});
+
+describe('retention date', () => {
+  it('adds months to the termination date, clamping to the month end', () => {
+    const d = (s: string) => new Date(`${s}T00:00:00Z`);
+    expect(purgeOn(d('2026-10-31'), 12)).toBe('2027-10-31');
+    expect(purgeOn(d('2026-01-31'), 1)).toBe('2026-02-28');
+    expect(purgeOn(d('2027-12-31'), 2)).toBe('2028-02-29');
+    expect(purgeOn(d('2026-03-15'), 60)).toBe('2031-03-15');
+    expect(purgeOn(null, 12)).toBeNull();
+    expect(purgeOn(d('2026-03-15'), null)).toBeNull();
   });
 });

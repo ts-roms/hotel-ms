@@ -1,4 +1,5 @@
 import type {
+  DocumentRetention,
   CreateDeviceRequest,
   Device,
   DevicePairing,
@@ -725,6 +726,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
           `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
           file,
         ).then((r) => r.data),
+      documentRetention: () =>
+        call<DocumentRetention>('GET', '/document-retention').then((r) => r.data),
+      setDocumentRetention: (rules: DocumentRetention['rules']) =>
+        call<DocumentRetention>('PUT', '/document-retention', { rules }).then((r) => r.data),
       /** Same-origin download link; the session cookie authenticates. */
       documentUrl: (id: string, documentId: string) =>
         `${baseUrl}/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/content`,

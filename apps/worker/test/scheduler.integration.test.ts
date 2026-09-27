@@ -69,6 +69,21 @@ describe('tenant job planner', () => {
     });
   });
 
+  it('plans document housekeeping once per organization and local date, after 03:00', async () => {
+    const now = new Date('2026-10-01T20:00:00Z'); // 04:00 on 2 October in Manila
+    await planTenantJobs(system, queue, log, now);
+    await planTenantJobs(system, queue, log, now);
+    const documents = (await queue.getJobs(['waiting', 'delayed'])).filter(
+      (j) => j.data.type === 'organization.daily-documents',
+    );
+    expect(documents.map((j) => j.id).sort()).toEqual(
+      [
+        `documents:${world.abc.organizationId}:2026-10-02`,
+        `documents:${world.xyz.organizationId}:2026-10-02`,
+      ].sort(),
+    );
+  });
+
   it('the system role still sees no tenant business data', async () => {
     await expect(system.$queryRaw`SELECT name FROM properties`).rejects.toThrow(
       /permission denied/,

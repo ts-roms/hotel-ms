@@ -107,7 +107,8 @@ pending until a refund webhook arrives.
 
 HR keeps employee documents (contracts, IDs, certificates) on the employee page. They need the
 `employee.documents` permission with two-step verification. Files go to `.data/storage` locally,
-and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019).
+and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019). **Document retention** (HR) deletes a
+category's documents a set number of months after an employee leaves (ADR-0021).
 
 Kitchen tablets: a manager adds a device under **Devices** and gets a pairing code. On the tablet,
 open http://localhost:43100/kiosk and enter the code. Staff then sign in there with the PIN they

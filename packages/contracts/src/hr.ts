@@ -140,8 +140,23 @@ export const employeeDocumentSchema = z.object({
   expiresOn: localDateSchema.nullable(),
   uploadedByName: z.string().nullable(),
   createdAt: z.iso.datetime(),
+  /** When the retention rules delete it (employee terminated and a rule applies). */
+  purgeOn: localDateSchema.nullable(),
 });
 export type EmployeeDocument = z.infer<typeof employeeDocumentSchema>;
+
+/**
+ * Retention per category (ADR-0021): months after the employee's termination date, after
+ * which the document is deleted. Null: kept until deleted by hand.
+ */
+export const documentRetentionSchema = z.strictObject({
+  rules: z.strictObject(
+    Object.fromEntries(
+      EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => [c, z.number().int().min(1).max(1200).nullable()]),
+    ) as Record<(typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number], z.ZodNullable<z.ZodNumber>>,
+  ),
+});
+export type DocumentRetention = z.infer<typeof documentRetentionSchema>;
 
 /**
  * Upload metadata travels in the query string; the request body is the file itself, with

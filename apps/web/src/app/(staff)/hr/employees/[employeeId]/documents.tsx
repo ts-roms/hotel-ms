@@ -24,7 +24,7 @@ import { errorMessage } from '@/lib/errors';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
-const CATEGORY_LABELS: Record<(typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number], string> = {
+export const CATEGORY_LABELS: Record<(typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number], string> = {
   CONTRACT: 'Contract',
   GOVERNMENT_ID: 'Government ID',
   TAX: 'Tax',
@@ -108,6 +108,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 {d.fileName} · {sizeLabel(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
                 {d.uploadedByName && ` · ${d.uploadedByName}`}
                 {d.expiresOn && ` · ${t('hr.expires')} ${formatDate(d.expiresOn)}`}
+                {d.purgeOn && ` · ${t('hr.deletedOn')} ${formatDate(d.purgeOn)}`}
               </span>
             </span>
             <Button
