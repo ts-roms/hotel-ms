@@ -1,9 +1,28 @@
 'use client';
 
-import { Button, cn, Select } from '@hotel/ui';
+import { Avatar, Button, cn, Select, Skeleton, SkeletonCard } from '@hotel/ui';
+import {
+  ArrowLeftRight,
+  BedDouble,
+  CalendarDays,
+  CalendarRange,
+  ConciergeBell,
+  KeyRound,
+  LayoutDashboard,
+  type LucideIcon,
+  LogOut,
+  Menu,
+  MoonStar,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  X,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
+import { BrandMark } from '@/components/brand';
+import { ThemeToggle } from '@/components/theme';
 import { type MessageKey, t } from '@/lib/i18n';
 import { lastProperty, rememberProperty, useProperties, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, nextRoute, useLogout, useSession } from '@/lib/session';
@@ -11,23 +30,44 @@ import { hasPermission, nextRoute, useLogout, useSession } from '@/lib/session';
 interface NavItem {
   href: string;
   label: MessageKey;
+  icon: LucideIcon;
   permission?: string;
 }
 
 /** Pages that work on one property live under /p/[propertyId]. */
 const PROPERTY_NAV: NavItem[] = [
-  { href: 'front-desk', label: 'nav.frontDesk', permission: 'reservation.read' },
-  { href: 'reservations', label: 'nav.reservations', permission: 'reservation.read' },
-  { href: 'availability', label: 'nav.availability', permission: 'reservation.read' },
-  { href: 'housekeeping', label: 'nav.housekeeping', permission: 'housekeeping.read' },
-  { href: 'rooms', label: 'nav.rooms', permission: 'room.read' },
-  { href: 'night-audit', label: 'nav.nightAudit', permission: 'night_audit.run' },
+  {
+    href: 'front-desk',
+    label: 'nav.frontDesk',
+    icon: ConciergeBell,
+    permission: 'reservation.read',
+  },
+  {
+    href: 'reservations',
+    label: 'nav.reservations',
+    icon: CalendarDays,
+    permission: 'reservation.read',
+  },
+  {
+    href: 'availability',
+    label: 'nav.availability',
+    icon: CalendarRange,
+    permission: 'reservation.read',
+  },
+  {
+    href: 'housekeeping',
+    label: 'nav.housekeeping',
+    icon: Sparkles,
+    permission: 'housekeeping.read',
+  },
+  { href: 'rooms', label: 'nav.rooms', icon: BedDouble, permission: 'room.read' },
+  { href: 'night-audit', label: 'nav.nightAudit', icon: MoonStar, permission: 'night_audit.run' },
 ];
 
 const ORG_NAV: NavItem[] = [
-  { href: '/members', label: 'nav.members', permission: 'member.read' },
-  { href: '/roles', label: 'nav.roles', permission: 'role.read' },
-  { href: '/settings/security', label: 'nav.security' },
+  { href: '/members', label: 'nav.members', icon: Users, permission: 'member.read' },
+  { href: '/roles', label: 'nav.roles', icon: ShieldCheck, permission: 'role.read' },
+  { href: '/settings/security', label: 'nav.security', icon: KeyRound },
 ];
 
 /**
@@ -41,6 +81,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
   const logout = useLogout();
   const properties = useProperties();
   const routePropertyId = useRoutePropertyId();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const info = session.data;
   useEffect(() => {
@@ -58,9 +99,10 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
     if (routePropertyId) rememberProperty(routePropertyId);
   }, [routePropertyId]);
 
-  if (!info?.activeOrganizationId || info.mfaPending) {
-    return <p className="p-6 text-muted-foreground">{t('loading')}</p>;
-  }
+  // Close the mobile drawer after navigating.
+  useEffect(() => setMenuOpen(false), [pathname]);
+
+  if (!info?.activeOrganizationId || info.mfaPending) return <ShellSkeleton />;
   const org = info.memberships.find((m) => m.organizationId === info.activeOrganizationId);
 
   // Keep the same page when switching property (/p/A/rooms → /p/B/rooms).
@@ -70,81 +112,221 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
     router.push(`/p/${id}/${section ?? 'reservations'}`);
   };
 
-  const navItems = [
-    { href: '/dashboard', label: 'nav.dashboard' as MessageKey },
-    ...(propertyId
-      ? PROPERTY_NAV.filter((i) => !i.permission || hasPermission(info, i.permission)).map((i) => ({
-          ...i,
-          href: `/p/${propertyId}/${i.href}`,
-        }))
-      : []),
-    ...ORG_NAV.filter((i) => !i.permission || hasPermission(info, i.permission)),
-  ];
+  const allowed = (i: NavItem) => !i.permission || hasPermission(info, i.permission);
+  const propertyNav = propertyId
+    ? PROPERTY_NAV.filter(allowed).map((i) => ({ ...i, href: `/p/${propertyId}/${i.href}` }))
+    : [];
+  const orgNav = ORG_NAV.filter(allowed);
+
+  const sidebar = (
+    <div className="flex h-full flex-col gap-4 p-4">
+      <Link href="/dashboard" className="flex items-center gap-3 rounded-lg px-1 py-1">
+        <BrandMark />
+        <div className="flex min-w-0 flex-col leading-tight">
+          <span className="text-xs text-muted-foreground">{t('app.name')}</span>
+          <span className="truncate font-semibold">{org?.organizationName}</span>
+        </div>
+      </Link>
+
+      {propertyList.length > 1 && propertyId && (
+        <Select
+          aria-label={t('nav.property')}
+          className="h-9"
+          value={propertyId}
+          onChange={(e) => switchProperty(e.target.value)}
+        >
+          {propertyList.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Select>
+      )}
+
+      <nav className="-mx-1 flex flex-1 flex-col gap-5 overflow-y-auto px-1">
+        <NavGroup
+          items={[{ href: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard }]}
+          pathname={pathname}
+        />
+        {propertyNav.length > 0 && (
+          <NavGroup title={t('nav.sectionProperty')} items={propertyNav} pathname={pathname} />
+        )}
+        {orgNav.length > 0 && (
+          <NavGroup title={t('nav.sectionOrganization')} items={orgNav} pathname={pathname} />
+        )}
+      </nav>
+
+      <div className="flex flex-col gap-2 border-t pt-4">
+        <div className="flex items-center gap-3">
+          <Avatar name={info.identity.displayName} className="size-9 text-xs" />
+          <div className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-sm font-medium">{info.identity.displayName}</span>
+            <span className="truncate text-xs text-muted-foreground">{info.identity.email}</span>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="flex gap-2">
+          {info.memberships.length > 1 && (
+            <Button variant="ghost" size="sm" className="flex-1" asChild>
+              <Link href="/select-organization">
+                <ArrowLeftRight />
+                {t('nav.switchOrganization')}
+              </Link>
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 hover:text-destructive"
+            loading={logout.isPending}
+            onClick={async () => {
+              await logout.mutateAsync().catch(() => undefined);
+              router.replace('/login');
+            }}
+          >
+            {!logout.isPending && <LogOut />}
+            {t('nav.signOut')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-dvh">
-      <header className="border-b bg-card">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div className="flex min-w-0 flex-col">
-            <Link href="/dashboard" className="text-sm text-muted-foreground">
-              {t('app.name')}
-            </Link>
-            <span className="truncate font-semibold">{org?.organizationName}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {propertyList.length > 1 && propertyId && (
-              <Select
-                aria-label={t('nav.property')}
-                className="h-9 w-auto"
-                value={propertyId}
-                onChange={(e) => switchProperty(e.target.value)}
-              >
-                {propertyList.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {info.identity.displayName}
-            </span>
-            {info.memberships.length > 1 && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/select-organization">{t('nav.switchOrganization')}</Link>
-              </Button>
-            )}
+    <div className="min-h-dvh lg:pl-64">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-sidebar lg:block">
+        {sidebar}
+      </aside>
+
+      {/* Mobile top bar + drawer */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/80 px-4 backdrop-blur-lg lg:hidden">
+        <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+          <BrandMark className="size-8" />
+          <span className="truncate font-semibold">{org?.organizationName}</span>
+        </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('nav.openMenu')}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(true)}
+        >
+          <Menu />
+        </Button>
+      </header>
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            aria-label={t('nav.closeMenu')}
+            className="absolute inset-0 animate-fade-in bg-black/40 backdrop-blur-sm"
+            onClick={() => setMenuOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] animate-slide-in-left border-r bg-sidebar shadow-2xl">
             <Button
-              variant="outline"
-              size="sm"
-              disabled={logout.isPending}
-              onClick={async () => {
-                await logout.mutateAsync().catch(() => undefined);
-                router.replace('/login');
-              }}
+              variant="ghost"
+              size="icon"
+              className="absolute right-3 top-3"
+              aria-label={t('nav.closeMenu')}
+              onClick={() => setMenuOpen(false)}
             >
-              {t('nav.signOut')}
+              <X />
             </Button>
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      {/* Re-keyed per path so every page gets the entrance animation. */}
+      <main key={pathname} className="mx-auto max-w-6xl animate-slide-up p-4 sm:p-6 lg:p-8">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function NavGroup({
+  title,
+  items,
+  pathname,
+}: {
+  title?: string;
+  items: NavItem[];
+  pathname: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {title && (
+        <span className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+          {title}
+        </span>
+      )}
+      {items.map((item) => {
+        const active = pathname.startsWith(item.href);
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200',
+              active
+                ? 'bg-primary/10 font-medium text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary transition-all duration-300',
+                active ? 'opacity-100' : 'scale-y-0 opacity-0',
+              )}
+            />
+            <Icon className="size-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+            {t(item.label)}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Mirrors the shell while the session loads, so the page does not jump when it arrives. */
+function ShellSkeleton() {
+  return (
+    <div className="min-h-dvh lg:pl-64" role="status" aria-busy="true">
+      <span className="sr-only">{t('loading')}</span>
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-6 border-r bg-sidebar p-4 lg:flex">
+        <div className="flex items-center gap-3">
+          <Skeleton className="size-9 rounded-xl" />
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'whitespace-nowrap rounded-md px-3 py-1.5 text-sm',
-                pathname.startsWith(item.href)
-                  ? 'bg-accent font-medium'
-                  : 'text-muted-foreground hover:bg-accent',
-              )}
-            >
-              {t(item.label)}
-            </Link>
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-8 w-full rounded-lg" />
           ))}
-        </nav>
+        </div>
+      </aside>
+      <header className="flex h-14 items-center justify-between border-b px-4 lg:hidden">
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        <Skeleton className="size-9 rounded-lg" />
       </header>
-      <main className="mx-auto max-w-6xl p-4">{children}</main>
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      </div>
     </div>
   );
 }
