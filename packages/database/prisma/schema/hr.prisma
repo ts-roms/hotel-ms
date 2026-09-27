@@ -251,15 +251,19 @@ model AttendanceCorrection {
 
 /// Organization leave policy per type. Jurisdiction packs are seed configuration, never code.
 model LeaveType {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  code           String
-  name           String
-  paid           Boolean   @default(true)
-  allowNegative  Boolean   @default(false) @map("allow_negative")
-  minNoticeDays  Int       @default(0) @map("min_notice_days")
-  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                      String    @id @default(uuid(7)) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  code                    String
+  name                    String
+  paid                    Boolean   @default(true)
+  allowNegative           Boolean   @default(false) @map("allow_negative")
+  minNoticeDays           Int       @default(0) @map("min_notice_days")
+  /// Half-days posted on the 1st of each month to active employees (0 = no accrual).
+  accrualHalfDaysPerMonth Int       @default(0) @map("accrual_half_days_per_month")
+  /// Manager approval first, then HR (two steps).
+  hrApprovalRequired      Boolean   @default(false) @map("hr_approval_required")
+  archivedAt              DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   ledger       LeaveLedgerEntry[]
@@ -281,6 +285,8 @@ model LeaveLedgerEntry {
   halfDays       Int             @map("half_days")
   effectiveDate  DateTime        @map("effective_date") @db.Date
   leaveRequestId String?         @map("leave_request_id") @db.Uuid
+  /// "YYYY-MM" for scheduled monthly accruals (one per employee, type and month).
+  accrualPeriod  String?         @map("accrual_period") @db.VarChar(7)
   note           String          @default("")
   createdBy      String?         @map("created_by") @db.Uuid
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -309,32 +315,54 @@ model LeaveBalance {
 }
 
 model LeaveRequest {
-  id             String         @id @default(uuid(7)) @db.Uuid
-  organizationId String         @map("organization_id") @db.Uuid
+  id                String         @id @default(uuid(7)) @db.Uuid
+  organizationId    String         @map("organization_id") @db.Uuid
   /// Property whose approvers handle the request (the employee's assignment there).
-  propertyId     String         @map("property_id") @db.Uuid
-  employeeId     String         @map("employee_id") @db.Uuid
-  leaveTypeId    String         @map("leave_type_id") @db.Uuid
-  startDate      DateTime       @map("start_date") @db.Date
+  propertyId        String         @map("property_id") @db.Uuid
+  employeeId        String         @map("employee_id") @db.Uuid
+  leaveTypeId       String         @map("leave_type_id") @db.Uuid
+  startDate         DateTime       @map("start_date") @db.Date
   /// Inclusive.
-  endDate        DateTime       @map("end_date") @db.Date
-  halfDays       Int            @map("half_days")
-  reason         String         @default("")
-  status         ApprovalStatus @default(PENDING)
-  requestedBy    String?        @map("requested_by") @db.Uuid
-  decidedBy      String?        @map("decided_by") @db.Uuid
-  decidedAt      DateTime?      @map("decided_at") @db.Timestamptz(3)
-  decisionNote   String?        @map("decision_note")
-  cancelledAt    DateTime?      @map("cancelled_at") @db.Timestamptz(3)
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  version        Int            @default(1)
+  endDate           DateTime       @map("end_date") @db.Date
+  halfDays          Int            @map("half_days")
+  reason            String         @default("")
+  status            ApprovalStatus @default(PENDING)
+  /// The step that decides next (1 = manager, 2 = HR).
+  approvalStep      Int            @default(1) @map("approval_step")
+  approvalsRequired Int            @default(1) @map("approvals_required")
+  requestedBy       String?        @map("requested_by") @db.Uuid
+  decidedBy         String?        @map("decided_by") @db.Uuid
+  decidedAt         DateTime?      @map("decided_at") @db.Timestamptz(3)
+  decisionNote      String?        @map("decision_note")
+  cancelledAt       DateTime?      @map("cancelled_at") @db.Timestamptz(3)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  version           Int            @default(1)
 
-  property  Property  @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
-  employee  Employee  @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
-  leaveType LeaveType @relation(fields: [organizationId, leaveTypeId], references: [organizationId, id], onDelete: Restrict)
+  property  Property        @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee  Employee        @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  leaveType LeaveType       @relation(fields: [organizationId, leaveTypeId], references: [organizationId, id], onDelete: Restrict)
+  approvals LeaveApproval[]
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, status])
   @@index([organizationId, employeeId, startDate])
   @@map("leave_requests")
+}
+
+/// One row per decision in a leave approval chain. Append-only.
+model LeaveApproval {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  leaveRequestId String   @map("leave_request_id") @db.Uuid
+  step           Int
+  decision       String
+  decidedBy      String?  @map("decided_by") @db.Uuid
+  note           String?
+  decidedAt      DateTime @default(now()) @map("decided_at") @db.Timestamptz(3)
+
+  request LeaveRequest @relation(fields: [organizationId, leaveRequestId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([leaveRequestId, step])
+  @@map("leave_approvals")
 }

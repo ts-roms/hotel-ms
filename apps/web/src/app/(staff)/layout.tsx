@@ -93,6 +93,7 @@ const PROPERTY_NAV: NavItem[] = [
 
 const ORG_NAV: NavItem[] = [
   { href: '/me', label: 'nav.myTime', icon: Timer, permission: 'attendance.punch.own' },
+  { href: '/hr/leave-types', label: 'nav.leaveTypes', icon: Plane, permission: 'leave.configure' },
   { href: '/hr/employees', label: 'nav.employees', icon: IdCard, permission: 'employee.read' },
   { href: '/members', label: 'nav.members', icon: Users, permission: 'member.read' },
   { href: '/roles', label: 'nav.roles', icon: ShieldCheck, permission: 'role.read' },

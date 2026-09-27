@@ -2362,6 +2362,7 @@
                         "leave.approve",
                         "leave.manage",
                         "leave.configure",
+                        "payroll.export",
                         "birthday.read",
                         "schedule.read.own",
                         "attendance.punch.own",
@@ -2618,6 +2619,7 @@
                         "leave.approve",
                         "leave.manage",
                         "leave.configure",
+                        "payroll.export",
                         "birthday.read",
                         "schedule.read.own",
                         "attendance.punch.own",
@@ -18341,6 +18343,56 @@
                               "CANCELLED"
                             ]
                           },
+                          "approvalStep": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvalsRequired": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "step": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "APPROVE",
+                                    "REJECT"
+                                  ]
+                                },
+                                "decidedBy": {
+                                  "type": "string"
+                                },
+                                "note": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "decidedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "step",
+                                "decision",
+                                "decidedBy",
+                                "note",
+                                "decidedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "decidedAt": {
                             "nullable": true,
                             "type": "string",
@@ -18375,6 +18427,9 @@
                           "days",
                           "reason",
                           "status",
+                          "approvalStep",
+                          "approvalsRequired",
+                          "approvals",
                           "decidedAt",
                           "decisionNote",
                           "createdAt",
@@ -18618,6 +18673,56 @@
                               "CANCELLED"
                             ]
                           },
+                          "approvalStep": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvalsRequired": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "step": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "APPROVE",
+                                    "REJECT"
+                                  ]
+                                },
+                                "decidedBy": {
+                                  "type": "string"
+                                },
+                                "note": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "decidedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "step",
+                                "decision",
+                                "decidedBy",
+                                "note",
+                                "decidedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "decidedAt": {
                             "nullable": true,
                             "type": "string",
@@ -18652,6 +18757,9 @@
                           "days",
                           "reason",
                           "status",
+                          "approvalStep",
+                          "approvalsRequired",
+                          "approvals",
                           "decidedAt",
                           "decisionNote",
                           "createdAt",
@@ -18716,6 +18824,12 @@
                             "minimum": -9007199254740991,
                             "maximum": 9007199254740991
                           },
+                          "accrualDaysPerMonth": {
+                            "type": "number"
+                          },
+                          "hrApprovalRequired": {
+                            "type": "boolean"
+                          },
                           "archived": {
                             "type": "boolean"
                           }
@@ -18727,6 +18841,8 @@
                           "paid",
                           "allowNegative",
                           "minNoticeDays",
+                          "accrualDaysPerMonth",
+                          "hrApprovalRequired",
                           "archived"
                         ],
                         "additionalProperties": false
@@ -18778,6 +18894,16 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 365
+                  },
+                  "accrualDaysPerMonth": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10
+                  },
+                  "hrApprovalRequired": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -18819,6 +18945,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "accrualDaysPerMonth": {
+                      "type": "number"
+                    },
+                    "hrApprovalRequired": {
+                      "type": "boolean"
+                    },
                     "archived": {
                       "type": "boolean"
                     }
@@ -18830,6 +18962,8 @@
                     "paid",
                     "allowNegative",
                     "minNoticeDays",
+                    "accrualDaysPerMonth",
+                    "hrApprovalRequired",
                     "archived"
                   ],
                   "additionalProperties": false
@@ -18879,6 +19013,14 @@
                     "minimum": 0,
                     "maximum": 365
                   },
+                  "accrualDaysPerMonth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 10
+                  },
+                  "hrApprovalRequired": {
+                    "type": "boolean"
+                  },
                   "archived": {
                     "type": "boolean"
                   }
@@ -18918,6 +19060,12 @@
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
                     },
+                    "accrualDaysPerMonth": {
+                      "type": "number"
+                    },
+                    "hrApprovalRequired": {
+                      "type": "boolean"
+                    },
                     "archived": {
                       "type": "boolean"
                     }
@@ -18929,6 +19077,8 @@
                     "paid",
                     "allowNegative",
                     "minNoticeDays",
+                    "accrualDaysPerMonth",
+                    "hrApprovalRequired",
                     "archived"
                   ],
                   "additionalProperties": false
@@ -19836,6 +19986,56 @@
                               "CANCELLED"
                             ]
                           },
+                          "approvalStep": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvalsRequired": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "step": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "APPROVE",
+                                    "REJECT"
+                                  ]
+                                },
+                                "decidedBy": {
+                                  "type": "string"
+                                },
+                                "note": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "decidedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "step",
+                                "decision",
+                                "decidedBy",
+                                "note",
+                                "decidedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "decidedAt": {
                             "nullable": true,
                             "type": "string",
@@ -19870,6 +20070,9 @@
                           "days",
                           "reason",
                           "status",
+                          "approvalStep",
+                          "approvalsRequired",
+                          "approvals",
                           "decidedAt",
                           "decisionNote",
                           "createdAt",
@@ -19999,6 +20202,56 @@
                         "CANCELLED"
                       ]
                     },
+                    "approvalStep": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvalsRequired": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "APPROVE",
+                              "REJECT"
+                            ]
+                          },
+                          "decidedBy": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "decidedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "step",
+                          "decision",
+                          "decidedBy",
+                          "note",
+                          "decidedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "decidedAt": {
                       "nullable": true,
                       "type": "string",
@@ -20033,6 +20286,9 @@
                     "days",
                     "reason",
                     "status",
+                    "approvalStep",
+                    "approvalsRequired",
+                    "approvals",
                     "decidedAt",
                     "decisionNote",
                     "createdAt",
@@ -20124,6 +20380,56 @@
                         "CANCELLED"
                       ]
                     },
+                    "approvalStep": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvalsRequired": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "APPROVE",
+                              "REJECT"
+                            ]
+                          },
+                          "decidedBy": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "decidedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "step",
+                          "decision",
+                          "decidedBy",
+                          "note",
+                          "decidedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "decidedAt": {
                       "nullable": true,
                       "type": "string",
@@ -20158,6 +20464,9 @@
                     "days",
                     "reason",
                     "status",
+                    "approvalStep",
+                    "approvalsRequired",
+                    "approvals",
                     "decidedAt",
                     "decisionNote",
                     "createdAt",
@@ -20171,6 +20480,49 @@
         },
         "tags": [
           "hr: self service"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/payroll-export": {
+      "get": {
+        "operationId": "PropertyHrController_payrollExport",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hr: property"
         ]
       }
     },
@@ -21826,6 +22178,56 @@
                               "CANCELLED"
                             ]
                           },
+                          "approvalStep": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvalsRequired": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "approvals": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "step": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "decision": {
+                                  "type": "string",
+                                  "enum": [
+                                    "APPROVE",
+                                    "REJECT"
+                                  ]
+                                },
+                                "decidedBy": {
+                                  "type": "string"
+                                },
+                                "note": {
+                                  "nullable": true,
+                                  "type": "string"
+                                },
+                                "decidedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                }
+                              },
+                              "required": [
+                                "step",
+                                "decision",
+                                "decidedBy",
+                                "note",
+                                "decidedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "decidedAt": {
                             "nullable": true,
                             "type": "string",
@@ -21860,6 +22262,9 @@
                           "days",
                           "reason",
                           "status",
+                          "approvalStep",
+                          "approvalsRequired",
+                          "approvals",
                           "decidedAt",
                           "decisionNote",
                           "createdAt",
@@ -21994,6 +22399,56 @@
                         "CANCELLED"
                       ]
                     },
+                    "approvalStep": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvalsRequired": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "approvals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "decision": {
+                            "type": "string",
+                            "enum": [
+                              "APPROVE",
+                              "REJECT"
+                            ]
+                          },
+                          "decidedBy": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "decidedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "step",
+                          "decision",
+                          "decidedBy",
+                          "note",
+                          "decidedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "decidedAt": {
                       "nullable": true,
                       "type": "string",
@@ -22116,6 +22571,9 @@
                     "days",
                     "reason",
                     "status",
+                    "approvalStep",
+                    "approvalsRequired",
+                    "approvals",
                     "decidedAt",
                     "decisionNote",
                     "createdAt",
@@ -28947,6 +29405,107 @@
                     "refunds",
                     "totals",
                     "outstandingMinor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/reports/reconciliation-runs": {
+      "get": {
+        "operationId": "FinanceController_reconciliationRuns",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "runDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "ok": {
+                            "type": "boolean"
+                          },
+                          "issues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string",
+                                  "enum": [
+                                    "FOLIO_BALANCE_MISMATCH",
+                                    "PAYMENT_WITHOUT_LINE",
+                                    "UNAPPLIED_ONLINE_PAYMENT",
+                                    "STALE_PAYMENT_INTENT",
+                                    "STALE_CASHIER_SHIFT",
+                                    "PENDING_REFUND"
+                                  ]
+                                },
+                                "message": {
+                                  "type": "string"
+                                },
+                                "reference": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "code",
+                                "message",
+                                "reference"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "runDate",
+                          "ok",
+                          "issues",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
                   ],
                   "additionalProperties": false
                 }

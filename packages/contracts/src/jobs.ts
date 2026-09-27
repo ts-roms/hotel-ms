@@ -4,6 +4,27 @@
  */
 export const NOTIFICATIONS_QUEUE = 'notifications';
 
+/**
+ * Scheduled tenant work (ADR-0017). The worker plans these from the clock (it may only list
+ * properties and organizations); the API runs them in the tenant's own context.
+ */
+export const TENANT_JOBS_QUEUE = 'tenant-jobs';
+
+export type TenantJob =
+  | {
+      type: 'property.nightly';
+      organizationId: string;
+      propertyId: string;
+      /** Property-local date the run is for. */
+      localDate: string;
+    }
+  | {
+      type: 'organization.monthly-accrual';
+      organizationId: string;
+      /** "YYYY-MM" in the organization's time zone. */
+      period: string;
+    };
+
 export type EmailTemplate =
   | {
       template: 'password-reset';

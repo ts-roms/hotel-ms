@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  buttonVariants,
   Alert,
   Badge,
   Button,
@@ -62,13 +63,24 @@ export default function AttendancePage() {
           </>
         }
         actions={
-          <Input
-            type="date"
-            className="h-9 w-auto"
-            aria-label={t('hr.to')}
-            value={to}
-            onChange={(e) => e.target.value && setTo(e.target.value)}
-          />
+          <>
+            <Input
+              type="date"
+              className="h-9 w-auto"
+              aria-label={t('hr.to')}
+              value={to}
+              onChange={(e) => e.target.value && setTo(e.target.value)}
+            />
+            {hasPermission(session.data, 'payroll.export') && (
+              <a
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                href={pms.payrollExportUrl(from, to)}
+                download
+              >
+                {t('hr.payrollCsv')}
+              </a>
+            )}
+          </>
         }
       />
       {(days.error || decide.error) && <Alert>{errorMessage(days.error ?? decide.error)}</Alert>}

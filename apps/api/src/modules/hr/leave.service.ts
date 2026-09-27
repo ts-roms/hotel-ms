@@ -33,11 +33,15 @@ const days = (halfDays: number) => halfDays / 2;
 const requestInclude = {
   employee: { select: { firstName: true, lastName: true, preferredName: true } },
   leaveType: { select: { code: true, name: true } },
+  approvals: { orderBy: { step: 'asc' } },
 } satisfies Prisma.LeaveRequestInclude;
 
 type RequestRow = Prisma.LeaveRequestGetPayload<{ include: typeof requestInclude }>;
 
-function toRequestDto(r: RequestRow): LeaveRequest {
+/** Approver display names by identity id (see LeaveService.names). */
+type Names = ReadonlyMap<string, string>;
+
+function toRequestDto(r: RequestRow, names: Names = new Map()): LeaveRequest {
   return {
     id: r.id,
     propertyId: r.propertyId,
@@ -51,6 +55,15 @@ function toRequestDto(r: RequestRow): LeaveRequest {
     days: days(r.halfDays),
     reason: r.reason,
     status: r.status,
+    approvalStep: r.approvalStep,
+    approvalsRequired: r.approvalsRequired,
+    approvals: r.approvals.map((a) => ({
+      step: a.step,
+      decision: a.decision as 'APPROVE' | 'REJECT',
+      decidedBy: (a.decidedBy && names.get(a.decidedBy)) || 'Unknown',
+      note: a.note,
+      decidedAt: a.decidedAt.toISOString(),
+    })),
     decidedAt: r.decidedAt?.toISOString() ?? null,
     decisionNote: r.decisionNote,
     createdAt: r.createdAt.toISOString(),
@@ -65,6 +78,8 @@ function toTypeDto(t: {
   paid: boolean;
   allowNegative: boolean;
   minNoticeDays: number;
+  accrualHalfDaysPerMonth: number;
+  hrApprovalRequired: boolean;
   archivedAt: Date | null;
 }): LeaveType {
   return {
@@ -74,6 +89,8 @@ function toTypeDto(t: {
     paid: t.paid,
     allowNegative: t.allowNegative,
     minNoticeDays: t.minNoticeDays,
+    accrualDaysPerMonth: days(t.accrualHalfDaysPerMonth),
+    hrApprovalRequired: t.hrApprovalRequired,
     archived: t.archivedAt !== null,
   };
 }
@@ -100,8 +117,13 @@ export class LeaveService {
   async createType(input: CreateLeaveTypeRequest): Promise<LeaveType> {
     try {
       return await this.db.run(async (tx) => {
+        const { accrualDaysPerMonth, ...fields } = input;
         const row = await tx.leaveType.create({
-          data: { organizationId: this.access.organizationId, ...input },
+          data: {
+            organizationId: this.access.organizationId,
+            ...fields,
+            accrualHalfDaysPerMonth: Math.round(accrualDaysPerMonth * 2),
+          },
         });
         await this.audit.record(tx, {
           action: 'leave_type.created',
@@ -121,11 +143,14 @@ export class LeaveService {
     return this.db.run(async (tx) => {
       const current = await tx.leaveType.findUnique({ where: { id } });
       if (!current) throw Problems.notFound('Leave type');
-      const { archived, ...fields } = input;
+      const { archived, accrualDaysPerMonth, ...fields } = input;
       const row = await tx.leaveType.update({
         where: { id },
         data: {
           ...fields,
+          ...(accrualDaysPerMonth !== undefined
+            ? { accrualHalfDaysPerMonth: Math.round(accrualDaysPerMonth * 2) }
+            : {}),
           ...(archived !== undefined
             ? { archivedAt: archived ? (current.archivedAt ?? new Date()) : null }
             : {}),
@@ -164,6 +189,7 @@ export class LeaveService {
         take: 100,
       }),
     ];
+    const names = await this.names(tx, requests);
     return {
       balances: balances.map((b) => ({
         leaveTypeId: b.leaveTypeId,
@@ -182,7 +208,7 @@ export class LeaveService {
         leaveRequestId: e.leaveRequestId,
         createdAt: e.createdAt.toISOString(),
       })),
-      requests: requests.map(toRequestDto),
+      requests: requests.map((r) => toRequestDto(r, names)),
     };
   }
 
@@ -319,6 +345,7 @@ export class LeaveService {
           startDate: toDbDate(input.startDate),
           endDate: toDbDate(input.endDate),
           halfDays,
+          approvalsRequired: type.hrApprovalRequired ? 2 : 1,
           reason: input.reason,
           requestedBy: this.access.actorId,
         },
@@ -390,9 +417,11 @@ export class LeaveService {
         { leaveRequestId: id, employeeId: me.id },
         { propertyId: current.propertyId },
       );
-      return toRequestDto(
-        await tx.leaveRequest.findUniqueOrThrow({ where: { id }, include: requestInclude }),
-      );
+      const row = await tx.leaveRequest.findUniqueOrThrow({
+        where: { id },
+        include: requestInclude,
+      });
+      return toRequestDto(row, await this.names(tx, [row]));
     });
   }
 
@@ -400,15 +429,16 @@ export class LeaveService {
     propertyId: string,
     query: LeaveRequestListQuery,
   ): Promise<LeaveRequest[]> {
-    const rows = await this.db.run((tx) =>
-      tx.leaveRequest.findMany({
+    return this.db.run(async (tx) => {
+      const rows = await tx.leaveRequest.findMany({
         where: { propertyId, ...(query.status ? { status: query.status } : {}) },
         include: requestInclude,
         orderBy: [{ startDate: 'asc' }],
         take: query.limit,
-      }),
-    );
-    return rows.map(toRequestDto);
+      });
+      const names = await this.names(tx, rows);
+      return rows.map((r) => toRequestDto(r, names));
+    });
   }
 
   /**
@@ -445,10 +475,60 @@ export class LeaveService {
         throw Problems.forbidden('You cannot decide your own leave request.');
       }
       if (current.status !== 'PENDING') throw invalidState('The request was already decided.');
+      const step = current.approvalStep;
+      if (step === 2) {
+        // The HR step (§13.4 approval chain): needs leave.manage, and another person.
+        if (!(await this.access.coversEmployee(tx, 'leave.manage', current.employeeId))) {
+          throw Problems.forbidden("The second approval is HR's (leave.manage).");
+        }
+        const first = current.approvals.find((a) => a.step === 1);
+        if (first?.decidedBy && first.decidedBy === this.access.actorId) {
+          throw Problems.forbidden('A different person must give the second approval.');
+        }
+      }
+      const final = input.decision === 'REJECT' || step === current.approvalsRequired;
+      if (!final) {
+        const { count } = await tx.leaveRequest.updateMany({
+          where: { id, version: expectedVersion, status: 'PENDING', approvalStep: step },
+          data: { approvalStep: step + 1, version: { increment: 1 } },
+        });
+        if (count !== 1) throw Problems.versionConflict();
+        await tx.leaveApproval.create({
+          data: {
+            organizationId: this.access.organizationId,
+            leaveRequestId: id,
+            step,
+            decision: 'APPROVE',
+            decidedBy: this.access.actorId,
+            note: input.note || null,
+          },
+        });
+        await this.audit.record(tx, {
+          action: 'leave.step_approved',
+          entityType: 'leave_request',
+          entityId: id,
+          propertyId,
+          after: { step, note: input.note },
+        });
+        await this.outbox.enqueue(
+          tx,
+          'LeaveStepApproved',
+          { leaveRequestId: id, employeeId: current.employeeId, step },
+          { propertyId },
+        );
+        const row = await tx.leaveRequest.findUniqueOrThrow({
+          where: { id },
+          include: requestInclude,
+        });
+        return {
+          result: { ...toRequestDto(row, await this.names(tx, [row])), conflictingShifts: [] },
+          mail: null,
+        };
+      }
       const status: 'APPROVED' | 'REJECTED' =
         input.decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
       const { count } = await tx.leaveRequest.updateMany({
-        where: { id, version: expectedVersion, status: 'PENDING' },
+        where: { id, version: expectedVersion, status: 'PENDING', approvalStep: step },
         data: {
           status,
           decidedBy: this.access.actorId,
@@ -458,6 +538,16 @@ export class LeaveService {
         },
       });
       if (count !== 1) throw Problems.versionConflict();
+      await tx.leaveApproval.create({
+        data: {
+          organizationId: this.access.organizationId,
+          leaveRequestId: id,
+          step,
+          decision: input.decision,
+          decidedBy: this.access.actorId,
+          note: input.note || null,
+        },
+      });
 
       let conflicting: Shift[] = [];
       if (status === 'APPROVED') {
@@ -507,7 +597,10 @@ export class LeaveService {
       });
       const recipient = current.employee.membership?.identity.email ?? current.employee.workEmail;
       return {
-        result: { ...toRequestDto(row), conflictingShifts: conflicting },
+        result: {
+          ...toRequestDto(row, await this.names(tx, [row])),
+          conflictingShifts: conflicting,
+        },
         mail: recipient
           ? {
               to: recipient,
@@ -525,6 +618,68 @@ export class LeaveService {
     });
     if (mail) await this.notifications.sendEmail({ template: 'leave-decided', ...mail });
     return result;
+  }
+
+  /** Display names of the people who decided these requests' approval steps. */
+  private async names(
+    tx: Tx,
+    rows: { approvals: { decidedBy: string | null }[] }[],
+  ): Promise<Names> {
+    const ids = [
+      ...new Set(
+        rows.flatMap((r) => r.approvals.map((a) => a.decidedBy)).filter((x): x is string => !!x),
+      ),
+    ];
+    if (ids.length === 0) return new Map();
+    const identities = await tx.identity.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, displayName: true },
+    });
+    return new Map(identities.map((i) => [i.id, i.displayName]));
+  }
+
+  /**
+   * Scheduled monthly accrual (ADR-0017): every active employee hired by the end of the
+   * month gets each accruing leave type's monthly amount, once per month. The unique
+   * (employee, type, period) index makes reruns no-ops.
+   */
+  async accrueMonth(period: string): Promise<number> {
+    return this.db.run(async (tx) => {
+      const types = await tx.leaveType.findMany({
+        where: { archivedAt: null, accrualHalfDaysPerMonth: { gt: 0 } },
+      });
+      if (types.length === 0) return 0;
+      const first = `${period}-01`;
+      const [year, month] = period.split('-').map(Number) as [number, number];
+      const last = new Date(Date.UTC(year, month, 0));
+      const employees = await tx.employee.findMany({
+        where: { status: 'ACTIVE', hireDate: { lte: last } },
+        select: { id: true },
+      });
+      const { count } = await tx.leaveLedgerEntry.createMany({
+        data: employees.flatMap((e) =>
+          types.map((t) => ({
+            organizationId: this.access.organizationId,
+            employeeId: e.id,
+            leaveTypeId: t.id,
+            kind: 'ACCRUAL' as const,
+            halfDays: t.accrualHalfDaysPerMonth,
+            effectiveDate: toDbDate(first),
+            accrualPeriod: period,
+            note: `Monthly accrual ${period}`,
+          })),
+        ),
+        skipDuplicates: true,
+      });
+      if (count > 0) {
+        await this.audit.record(tx, {
+          action: 'leave.monthly_accrual',
+          entityType: 'leave_ledger',
+          after: { period, entries: count },
+        });
+      }
+      return count;
+    });
   }
 
   private async conflictingShifts(

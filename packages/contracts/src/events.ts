@@ -78,6 +78,8 @@ export interface DomainEventPayloads {
   ShiftChanged: { shiftId: string; employeeId: string; status: string };
   LeaveRequested: { leaveRequestId: string; employeeId: string };
   LeaveApproved: { leaveRequestId: string; employeeId: string; conflictingShiftIds: string[] };
+  LeaveStepApproved: { leaveRequestId: string; employeeId: string; step: number };
+  ReconciliationCompleted: { runDate: string; ok: boolean; issueCount: number };
   LeaveRejected: { leaveRequestId: string; employeeId: string };
   LeaveCancelled: { leaveRequestId: string; employeeId: string };
   GuestPreCheckedIn: { reservationRoomId: string };

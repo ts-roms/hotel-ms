@@ -370,6 +370,10 @@ export const leaveTypeSchema = z.object({
   paid: z.boolean(),
   allowNegative: z.boolean(),
   minNoticeDays: z.number().int(),
+  /** Posted on the 1st of each month to every active employee (0 = none). */
+  accrualDaysPerMonth: z.number(),
+  /** A manager approves first, then HR. */
+  hrApprovalRequired: z.boolean(),
   archived: z.boolean(),
 });
 export type LeaveType = z.infer<typeof leaveTypeSchema>;
@@ -380,6 +384,13 @@ export const createLeaveTypeRequestSchema = z.strictObject({
   paid: z.boolean().default(true),
   allowNegative: z.boolean().default(false),
   minNoticeDays: z.number().int().min(0).max(365).default(0),
+  accrualDaysPerMonth: z
+    .number()
+    .min(0)
+    .max(10)
+    .refine((v) => Number.isInteger(v * 2), 'Use whole or half days')
+    .default(0),
+  hrApprovalRequired: z.boolean().default(false),
 });
 export type CreateLeaveTypeRequest = z.infer<typeof createLeaveTypeRequestSchema>;
 
@@ -389,6 +400,12 @@ export const updateLeaveTypeRequestSchema = z
     paid: z.boolean(),
     allowNegative: z.boolean(),
     minNoticeDays: z.number().int().min(0).max(365),
+    accrualDaysPerMonth: z
+      .number()
+      .min(0)
+      .max(10)
+      .refine((v) => Number.isInteger(v * 2), 'Use whole or half days'),
+    hrApprovalRequired: z.boolean(),
     archived: z.boolean(),
   })
   .partial();
@@ -439,6 +456,18 @@ export const leaveRequestSchema = z.object({
   days: z.number(),
   reason: z.string(),
   status: z.enum(APPROVAL_STATUSES),
+  /** 1 = the manager decides next; 2 = HR decides next (when two approvals are required). */
+  approvalStep: z.number().int(),
+  approvalsRequired: z.number().int(),
+  approvals: z.array(
+    z.object({
+      step: z.number().int(),
+      decision: z.enum(['APPROVE', 'REJECT']),
+      decidedBy: z.string(),
+      note: z.string().nullable(),
+      decidedAt: z.iso.datetime(),
+    }),
+  ),
   decidedAt: z.iso.datetime().nullable(),
   decisionNote: z.string().nullable(),
   createdAt: z.iso.datetime(),

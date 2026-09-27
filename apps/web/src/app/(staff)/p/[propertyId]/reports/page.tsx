@@ -21,6 +21,10 @@ export default function ReportsPage() {
     queryKey: ['reconciliation', propertyId],
     queryFn: pms.reconciliation,
   });
+  const runs = useQuery({
+    queryKey: ['reconciliation-runs', propertyId],
+    queryFn: pms.reconciliationRuns,
+  });
   const r = report.data;
   const money = (v: number) => formatMoney(v, r?.currency ?? 'PHP');
 
@@ -110,6 +114,23 @@ export default function ReportsPage() {
             {t('fin.outstanding')}: {money(r.outstandingMinor)}
           </Notice>
         </div>
+      )}
+      {!!runs.data?.length && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('fin.nightlyRuns')}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-1 text-sm">
+            {runs.data.map((run) => (
+              <div key={run.id} className="flex justify-between gap-2">
+                <span>{run.runDate}</span>
+                <span className={run.ok ? 'text-success' : 'text-destructive'}>
+                  {run.ok ? t('fin.runOk') : `${run.issues.length} ${t('fin.runIssues')}`}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

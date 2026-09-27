@@ -73,6 +73,7 @@ import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { AttendanceService } from './attendance.service.js';
 import { LeaveService } from './leave.service.js';
+import { PayrollService } from './payroll.service.js';
 import { PeopleService } from './people.service.js';
 import { ScheduleService } from './schedule.service.js';
 
@@ -329,7 +330,26 @@ export class PropertyHrController {
     private readonly schedule: ScheduleService,
     private readonly leave: LeaveService,
     private readonly people: PeopleService,
+    private readonly payroll: PayrollService,
   ) {}
+
+  /** CSV of attendance and leave for payroll (decision D7). */
+  @Get('payroll-export')
+  @RequirePermission('payroll.export')
+  async payrollExport(
+    @Param('propertyId') propertyId: string,
+    @ZodQuery(dateRangeQuerySchema) query: DateRangeQuery,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<string> {
+    const csv = await this.payroll.exportCsv(propertyId, query.from, query.to);
+    reply.header('content-type', 'text/csv; charset=utf-8');
+    reply.header(
+      'content-disposition',
+      `attachment; filename="payroll-${query.from}-${query.to}.csv"`,
+    );
+    reply.header('cache-control', 'no-store');
+    return csv;
+  }
 
   @Post('attendance/punches')
   @RequirePermission('attendance.punch.own')

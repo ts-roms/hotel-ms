@@ -1,4 +1,7 @@
 import type {
+  CreateLeaveTypeRequest,
+  ReconciliationRun,
+  UpdateLeaveTypeRequest,
   AccountFolio,
   CashierShift,
   DailyReport,
@@ -517,6 +520,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<DailyReport>('GET', `${p}/reports/daily${qs({ date })}`).then((r) => r.data),
         reconciliation: () =>
           call<Reconciliation>('GET', `${p}/reports/reconciliation`).then((r) => r.data),
+        reconciliationRuns: () =>
+          call<{ items: ReconciliationRun[] }>('GET', `${p}/reports/reconciliation-runs`).then(
+            (r) => r.data.items,
+          ),
+        /** Download URL of the payroll CSV (same-origin; the session cookie authenticates). */
+        payrollExportUrl: (from: string, to: string) =>
+          `${baseUrl}${p}/payroll-export${qs({ from, to })}`,
         outlets: () => call<{ items: Outlet[] }>('GET', `${p}/outlets`).then((r) => r.data.items),
         menu: (outletId: string) =>
           call<Menu>('GET', `${p}/outlets/${id(outletId)}/menu`).then((r) => r.data),
@@ -659,6 +669,12 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ).then((r) => r.data),
       leaveTypes: () =>
         call<{ items: LeaveType[] }>('GET', '/leave-types').then((r) => r.data.items),
+      createLeaveType: (body: CreateLeaveTypeRequest) =>
+        call<LeaveType>('POST', '/leave-types', body).then((r) => r.data),
+      updateLeaveType: (leaveTypeId: string, body: UpdateLeaveTypeRequest) =>
+        call<LeaveType>('PATCH', `/leave-types/${encodeURIComponent(leaveTypeId)}`, body).then(
+          (r) => r.data,
+        ),
     },
     me: {
       employee: () => call<MyEmployee>('GET', '/me/employee').then((r) => r.data),

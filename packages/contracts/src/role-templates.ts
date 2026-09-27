@@ -90,6 +90,7 @@ const HR_ADMIN = [
   'leave.manage',
   'leave.configure',
   'department.manage',
+  'payroll.export',
 ] as const satisfies readonly PermissionCode[];
 
 const FNB_KITCHEN = [

@@ -196,6 +196,11 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
   },
   'leave.configure': { description: 'Manage leave types', scopes: ORG_ONLY },
+  'payroll.export': {
+    description: 'Export attendance, overtime and leave for payroll',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
   'birthday.read': {
     description: "See colleagues' birthdays they chose to share",
     scopes: ORG_OR_PROPERTY,
