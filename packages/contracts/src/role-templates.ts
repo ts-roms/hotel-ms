@@ -55,6 +55,43 @@ const HOUSEKEEPING_LEAD = [
   'housekeeping.assign',
 ] as const satisfies readonly PermissionCode[];
 
+const GUEST_SERVICE = [
+  'guest_service.read',
+  'guest_service.update',
+  'guest_portal.invite',
+] as const satisfies readonly PermissionCode[];
+
+/** Every employee's own-record access (clock in, own shifts, own leave). */
+const SELF_SERVICE = [
+  'schedule.read.own',
+  'attendance.punch.own',
+  'leave.request.own',
+  'birthday.read',
+] as const satisfies readonly PermissionCode[];
+
+const HR_READ = [
+  'employee.read',
+  'schedule.read',
+  'attendance.read',
+  'leave.read',
+] as const satisfies readonly PermissionCode[];
+
+const PEOPLE_MANAGE = [
+  ...HR_READ,
+  'employee.manage',
+  'schedule.manage',
+  'attendance.manage',
+  'leave.approve',
+] as const satisfies readonly PermissionCode[];
+
+const HR_ADMIN = [
+  ...PEOPLE_MANAGE,
+  'employee.personal.read',
+  'leave.manage',
+  'leave.configure',
+  'department.manage',
+] as const satisfies readonly PermissionCode[];
+
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
 
 const PMS_MANAGE = [
@@ -64,6 +101,7 @@ const PMS_MANAGE = [
   'folio.adjust',
   'tax.manage',
   'night_audit.run',
+  ...GUEST_SERVICE,
 ] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [
@@ -91,6 +129,8 @@ export const ROLE_TEMPLATES = [
       ],
       PMS_OPERATE,
       PMS_MANAGE,
+      HR_ADMIN,
+      SELF_SERVICE,
     ),
   },
   {
@@ -112,25 +152,44 @@ export const ROLE_TEMPLATES = [
       ],
       PMS_OPERATE,
       PMS_MANAGE,
+      PEOPLE_MANAGE,
+      SELF_SERVICE,
     ),
+  },
+  {
+    key: 'hr_manager',
+    name: 'HR Manager',
+    description: 'Employees, schedules, attendance and leave for their properties.',
+    permissions: uniq(['organization.read', 'property.read'], HR_ADMIN, SELF_SERVICE),
   },
   {
     key: 'front_desk',
     name: 'Front Desk Agent',
     description: 'Reservations, guests and arrivals at the front desk.',
-    permissions: uniq(['organization.read', 'property.read'], PMS_OPERATE, FRONT_OFFICE),
+    permissions: uniq(
+      ['organization.read', 'property.read'],
+      PMS_OPERATE,
+      FRONT_OFFICE,
+      GUEST_SERVICE,
+      SELF_SERVICE,
+    ),
   },
   {
     key: 'housekeeping_supervisor',
     name: 'Housekeeping Supervisor',
     description: 'Runs the housekeeping board: assigns, inspects and releases rooms.',
-    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING_LEAD),
+    permissions: uniq(
+      ['organization.read', 'property.read', 'schedule.read'],
+      HOUSEKEEPING_LEAD,
+      ['guest_service.read', 'guest_service.update'],
+      SELF_SERVICE,
+    ),
   },
   {
     key: 'housekeeper',
     name: 'Housekeeper',
     description: 'Cleans assigned rooms. Sees only their own tasks.',
-    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING),
+    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING, SELF_SERVICE),
   },
   {
     key: 'auditor',
@@ -145,14 +204,16 @@ export const ROLE_TEMPLATES = [
         'audit.read',
         'folio.read',
         'housekeeping.read',
+        'guest_service.read',
       ],
       PMS_READ,
+      HR_READ,
     ),
   },
   {
     key: 'staff',
     name: 'Staff',
     description: 'Baseline access for any staff member.',
-    permissions: uniq(['organization.read', 'property.read']),
+    permissions: uniq(['organization.read', 'property.read'], SELF_SERVICE),
   },
 ] satisfies readonly RoleTemplate[];

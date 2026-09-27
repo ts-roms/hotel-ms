@@ -25,6 +25,10 @@ const envSchema = z.object({
         .map((o) => o.trim())
         .filter(Boolean),
     ),
+  /** Origin of the guest portal app (its own origin and cookie; blueprint §11). */
+  GUEST_ORIGIN: z.string().default('http://localhost:43200'),
+  /** Base URL of the guest portal, used in emailed links. */
+  GUEST_PUBLIC_URL: z.url().default('http://localhost:43200'),
   /** HMAC key for CSRF tokens. At least 32 bytes of entropy in real environments. */
   SESSION_SECRET: z.string().min(32),
   SESSION_IDLE_MINUTES: z.coerce

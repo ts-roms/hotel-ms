@@ -34,6 +34,9 @@ model Organization {
   settings     OrganizationSetting[]
   featureFlags OrganizationFeatureFlag[]
   guests       Guest[]
+  departments  Department[]
+  employees    Employee[]
+  leaveTypes   LeaveType[]
 
   @@map("organizations")
 }
@@ -87,16 +90,22 @@ model Property {
   createdBy           String?        @map("created_by") @db.Uuid
   updatedBy           String?        @map("updated_by") @db.Uuid
 
-  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  brand               Brand?               @relation(fields: [organizationId, brandId], references: [organizationId, id], onDelete: Restrict)
-  settings            PropertySetting[]
-  roleAssignments     RoleAssignment[]
-  buildings           Building[]
-  roomTypes           RoomType[]
-  ratePlans           RatePlan[]
-  reservations        Reservation[]
-  taxRules            TaxRule[]
-  businessDayClosings BusinessDayClosing[]
+  organization          Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  brand                 Brand?                 @relation(fields: [organizationId, brandId], references: [organizationId, id], onDelete: Restrict)
+  settings              PropertySetting[]
+  roleAssignments       RoleAssignment[]
+  buildings             Building[]
+  roomTypes             RoomType[]
+  ratePlans             RatePlan[]
+  reservations          Reservation[]
+  taxRules              TaxRule[]
+  businessDayClosings   BusinessDayClosing[]
+  employmentAssignments EmploymentAssignment[]
+  shiftTemplates        ShiftTemplate[]
+  shifts                Shift[]
+  attendancePunches     AttendancePunch[]
+  attendanceCorrections AttendanceCorrection[]
+  leaveRequests         LeaveRequest[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, code])

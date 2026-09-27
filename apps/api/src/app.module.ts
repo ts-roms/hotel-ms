@@ -27,6 +27,20 @@ import { FrontOfficeController } from './modules/front-office/front-office.contr
 import { FrontOfficeService } from './modules/front-office/front-office.service.js';
 import { HousekeepingService } from './modules/front-office/housekeeping.service.js';
 import { NightAuditService } from './modules/front-office/night-audit.service.js';
+import {
+  GuestPortalController,
+  GuestServiceController,
+} from './modules/guest-portal/guest-portal.controller.js';
+import { GuestPortalService } from './modules/guest-portal/guest-portal.service.js';
+import { GuestGuard, GuestSessions } from './modules/guest-portal/guest-session.js';
+import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-portal/room-access.js';
+import { ServiceRequestsService } from './modules/guest-portal/service-requests.service.js';
+import { AttendanceService } from './modules/hr/attendance.service.js';
+import { HrAccess } from './modules/hr/hr-access.js';
+import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
+import { LeaveService } from './modules/hr/leave.service.js';
+import { PeopleService } from './modules/hr/people.service.js';
+import { ScheduleService } from './modules/hr/schedule.service.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
@@ -53,6 +67,11 @@ export const CONTROLLERS = [
   ReservationsController,
   GuestsController,
   FrontOfficeController,
+  GuestServiceController,
+  GuestPortalController,
+  HrController,
+  MeController,
+  PropertyHrController,
 ];
 
 @Module({})
@@ -91,11 +110,22 @@ export class AppModule {
         FrontOfficeService,
         HousekeepingService,
         NightAuditService,
+        GuestSessions,
+        GuestPortalService,
+        ServiceRequestsService,
+        HrAccess,
+        PeopleService,
+        ScheduleService,
+        AttendanceService,
+        LeaveService,
+        { provide: ROOM_ACCESS_PROVIDER, useClass: FrontDeskKeyProvider },
         { provide: APP_FILTER, useClass: ProblemFilter },
-        // Order matters: authenticate → establish tenant → authorize.
+        // Order matters: authenticate → establish tenant → authorize. Guest routes are
+        // skipped by the first three and authenticated by GuestGuard.
         { provide: APP_GUARD, useClass: AuthGuard },
         { provide: APP_GUARD, useClass: TenantGuard },
         { provide: APP_GUARD, useClass: PermissionGuard },
+        { provide: APP_GUARD, useClass: GuestGuard },
       ],
     };
   }

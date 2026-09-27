@@ -56,6 +56,24 @@ export interface DomainEventPayloads {
   GuestCheckedOut: { reservationRoomId: string; stayId: string; roomId: string; folioId: string };
   FolioLinePosted: { folioId: string; lineId: string; type: string; amountMinor: number };
   PaymentRecorded: { folioId: string; paymentId: string; method: string; amountMinor: number };
+  GuestPortalLinkSent: { reservationId: string };
+  EmployeeHired: { employeeId: string };
+  EmployeeTerminated: { employeeId: string; terminatedOn: string };
+  EmployeeClockedIn: { employeeId: string; punchId: string };
+  EmployeeClockedOut: { employeeId: string; punchId: string };
+  SchedulePublished: { from: string; to: string; shiftIds: string[] };
+  ShiftChanged: { shiftId: string; employeeId: string; status: string };
+  LeaveRequested: { leaveRequestId: string; employeeId: string };
+  LeaveApproved: { leaveRequestId: string; employeeId: string; conflictingShiftIds: string[] };
+  LeaveRejected: { leaveRequestId: string; employeeId: string };
+  LeaveCancelled: { leaveRequestId: string; employeeId: string };
+  GuestPreCheckedIn: { reservationRoomId: string };
+  ServiceRequestCreated: {
+    serviceRequestId: string;
+    department: string;
+    source: 'GUEST' | 'STAFF';
+  };
+  ServiceRequestUpdated: { serviceRequestId: string; status: string };
   BusinessDateClosed: { businessDate: string; nextBusinessDate: string };
 }
 

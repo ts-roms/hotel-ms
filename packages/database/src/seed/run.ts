@@ -1,10 +1,15 @@
-import { propagateTemplatePermissions, syncPlatformCatalog } from '../catalog.js';
+import {
+  addMissingTemplateRoles,
+  propagateTemplatePermissions,
+  syncPlatformCatalog,
+} from '../catalog.js';
 import { createPrismaClient } from '../client.js';
 import { withDbContext } from '../context.js';
+import { DEMO_EMPLOYEES, seedDemoHr } from '../demo-hr.js';
 import { DEMO_INVENTORY, seedDemoInventory } from '../demo-pms.js';
 import { seedDemoWorld } from '../demo-world.js';
 
-/** Adds demo inventory to demo databases created before inventory existed. */
+/** Adds demo inventory and HR data to demo databases created before they existed. */
 async function ensureDemoInventory(): Promise<void> {
   for (const email of ['admin@abc.test', 'admin@xyz.test']) {
     const admin = await app.identity.findUnique({ where: { email } });
@@ -22,6 +27,9 @@ async function ensureDemoInventory(): Promise<void> {
         const spec = DEMO_INVENTORY[property.code];
         if (spec) await seedDemoInventory(app, organizationId, property.id, spec);
       }
+      const employees = DEMO_EMPLOYEES[email === 'admin@abc.test' ? 'abc' : 'xyz'];
+      const byCode = Object.fromEntries(properties.map((p) => [p.code, p.id]));
+      await seedDemoHr(app, organizationId, byCode, employees);
     }
   }
 }
@@ -53,13 +61,15 @@ try {
   console.log('Platform catalog synchronized.');
   const changed = await propagateTemplatePermissions(system);
   console.log(`Template permissions propagated to ${changed} organization role(s).`);
+  const added = await addMissingTemplateRoles(system, app);
+  console.log(`Missing template roles added: ${added}.`);
 
   const seedDemo = process.env.NODE_ENV !== 'production' && process.env.SEED_DEMO !== 'false';
   if (seedDemo) {
     const existing = await app.identity.findUnique({ where: { email: 'admin@abc.test' } });
     if (existing) {
       await ensureDemoInventory();
-      console.log('Demo data already present; ensured demo inventory.');
+      console.log('Demo data already present; ensured demo inventory and HR data.');
     } else {
       const world = await seedDemoWorld(app);
       console.log(

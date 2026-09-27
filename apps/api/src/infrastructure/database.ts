@@ -78,6 +78,18 @@ export class TenantDb {
     );
   }
 
+  /** No tenant: only the guest portal link / guest session matching the hash is visible. */
+  runWithGuestToken<T>(
+    lookup: { guestLinkHash: string } | { guestSessionHash: string },
+    fn: (tx: Tx) => Promise<T>,
+  ): Promise<T> {
+    return withDbContext(
+      this.prisma.client,
+      { organizationId: null, identityId: null, ...lookup },
+      fn,
+    );
+  }
+
   /**
    * Explicit context for the few places that establish tenancy themselves (TenantGuard
    * verifying the session's organization, login). The organizationId MUST come from

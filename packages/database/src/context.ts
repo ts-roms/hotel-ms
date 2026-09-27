@@ -13,6 +13,10 @@ export interface DbContext {
   identityId: string | null;
   /** SHA-256 of an invitation token; exposes exactly that invitation (see RLS policy). */
   invitationTokenHash?: string | null;
+  /** SHA-256 of a guest portal link token; exposes exactly that link. */
+  guestLinkHash?: string | null;
+  /** SHA-256 of a guest session token; exposes exactly that session. */
+  guestSessionHash?: string | null;
 }
 
 export interface TransactionOptions {
@@ -37,7 +41,9 @@ export async function withDbContext<T>(
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT set_config('app.org_id', ${ctx.organizationId ?? ''}, true),
       set_config('app.identity_id', ${ctx.identityId ?? ''}, true),
-      set_config('app.invitation_token_hash', ${ctx.invitationTokenHash ?? ''}, true)`;
+      set_config('app.invitation_token_hash', ${ctx.invitationTokenHash ?? ''}, true),
+      set_config('app.guest_link_hash', ${ctx.guestLinkHash ?? ''}, true),
+      set_config('app.guest_session_hash', ${ctx.guestSessionHash ?? ''}, true)`;
     return fn(tx);
   }, options);
 }
