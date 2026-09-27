@@ -1,6 +1,30 @@
-import { syncPlatformCatalog } from '../catalog.js';
+import { propagateTemplatePermissions, syncPlatformCatalog } from '../catalog.js';
 import { createPrismaClient } from '../client.js';
+import { withDbContext } from '../context.js';
+import { DEMO_INVENTORY, seedDemoInventory } from '../demo-pms.js';
 import { seedDemoWorld } from '../demo-world.js';
+
+/** Adds demo inventory to demo databases created before inventory existed. */
+async function ensureDemoInventory(): Promise<void> {
+  for (const email of ['admin@abc.test', 'admin@xyz.test']) {
+    const admin = await app.identity.findUnique({ where: { email } });
+    if (!admin) continue;
+    const memberships = await withDbContext(
+      app,
+      { organizationId: null, identityId: admin.id },
+      (tx) => tx.organizationMembership.findMany({ select: { organizationId: true } }),
+    );
+    for (const { organizationId } of memberships) {
+      const properties = await withDbContext(app, { organizationId, identityId: null }, (tx) =>
+        tx.property.findMany({ select: { id: true, code: true } }),
+      );
+      for (const property of properties) {
+        const spec = DEMO_INVENTORY[property.code];
+        if (spec) await seedDemoInventory(app, organizationId, property.id, spec);
+      }
+    }
+  }
+}
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -13,6 +37,11 @@ const owner = createPrismaClient({
   applicationName: 'seed-owner',
   maxConnections: 1,
 });
+const system = createPrismaClient({
+  connectionString: requireEnv('DATABASE_SYSTEM_URL'),
+  applicationName: 'seed-system',
+  maxConnections: 1,
+});
 const app = createPrismaClient({
   connectionString: requireEnv('DATABASE_URL'),
   applicationName: 'seed-app',
@@ -22,12 +51,15 @@ const app = createPrismaClient({
 try {
   await syncPlatformCatalog(owner);
   console.log('Platform catalog synchronized.');
+  const changed = await propagateTemplatePermissions(system);
+  console.log(`Template permissions propagated to ${changed} organization role(s).`);
 
   const seedDemo = process.env.NODE_ENV !== 'production' && process.env.SEED_DEMO !== 'false';
   if (seedDemo) {
     const existing = await app.identity.findUnique({ where: { email: 'admin@abc.test' } });
     if (existing) {
-      console.log('Demo data already present; skipping.');
+      await ensureDemoInventory();
+      console.log('Demo data already present; ensured demo inventory.');
     } else {
       const world = await seedDemoWorld(app);
       console.log(
@@ -38,5 +70,6 @@ try {
   }
 } finally {
   await owner.$disconnect();
+  await system.$disconnect();
   await app.$disconnect();
 }

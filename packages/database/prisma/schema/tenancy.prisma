@@ -33,6 +33,7 @@ model Organization {
   roles        Role[]
   settings     OrganizationSetting[]
   featureFlags OrganizationFeatureFlag[]
+  guests       Guest[]
 
   @@map("organizations")
 }
@@ -90,6 +91,10 @@ model Property {
   brand           Brand?            @relation(fields: [organizationId, brandId], references: [organizationId, id], onDelete: Restrict)
   settings        PropertySetting[]
   roleAssignments RoleAssignment[]
+  buildings       Building[]
+  roomTypes       RoomType[]
+  ratePlans       RatePlan[]
+  reservations    Reservation[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, code])

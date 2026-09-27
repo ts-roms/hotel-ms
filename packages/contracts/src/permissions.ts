@@ -57,6 +57,27 @@ export const PERMISSIONS = {
 
   'audit.read': { description: 'View audit log', scopes: ORG_OR_PROPERTY, sensitive: true },
   'feature_flag.manage': { description: 'Enable or disable features', scopes: ORG_ONLY },
+
+  // ---- PMS: inventory, rates, guests, reservations -----------------------------------
+  'room.read': { description: 'View room types, rooms and room status', scopes: ORG_OR_PROPERTY },
+  'room.manage': {
+    description: 'Configure buildings, room types and rooms; block rooms out of order',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'rate.read': { description: 'View rate plans and prices', scopes: ORG_OR_PROPERTY },
+  'rate.manage': { description: 'Configure rate plans and prices', scopes: ORG_OR_PROPERTY },
+  'guest.read': { description: 'View guest profiles', scopes: ORG_OR_PROPERTY },
+  'guest.update': { description: 'Create and edit guest profiles', scopes: ORG_OR_PROPERTY },
+  'reservation.read': {
+    description: 'View reservations and availability',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'reservation.create': { description: 'Create reservations', scopes: ORG_OR_PROPERTY },
+  'reservation.update': {
+    description: 'Modify reservations and assign rooms',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'reservation.cancel': { description: 'Cancel reservations', scopes: ORG_OR_PROPERTY },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type PermissionCode = keyof typeof PERMISSIONS;

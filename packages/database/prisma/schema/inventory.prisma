@@ -1,0 +1,216 @@
+// Physical inventory, sellable inventory and prices (blueprint §12). Property-owned.
+//
+// Room status is three independent dimensions (blueprint §12.2): occupancy is derived from
+// stays; housekeeping and service status are stored here, with every change recorded in
+// room_status_events.
+
+enum HousekeepingStatus {
+  DIRTY
+  CLEANING
+  CLEAN
+  INSPECTED
+}
+
+enum ServiceStatus {
+  IN_SERVICE
+  /// Sellable but flagged (minor issue).
+  OUT_OF_SERVICE
+  /// Removed from inventory for the blocked dates.
+  OUT_OF_ORDER
+}
+
+enum RoomStatusDimension {
+  HOUSEKEEPING
+  SERVICE
+}
+
+model Building {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  code           String
+  name           String
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  floors   Floor[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("buildings")
+}
+
+model Floor {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  buildingId     String   @map("building_id") @db.Uuid
+  level          Int
+  name           String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  building Building @relation(fields: [organizationId, buildingId], references: [organizationId, id], onDelete: Restrict)
+  rooms    Room[]
+
+  @@unique([organizationId, id])
+  @@unique([buildingId, level])
+  @@map("floors")
+}
+
+model RoomType {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  code           String
+  name           String
+  description    String    @default("")
+  baseOccupancy  Int       @map("base_occupancy")
+  maxOccupancy   Int       @map("max_occupancy")
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+
+  property         Property           @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  rooms            Room[]
+  inventoryNights  InventoryNight[]
+  ratePlanPrices   RatePlanRoomType[]
+  rateOverrides    RateOverride[]
+  reservationRooms ReservationRoom[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("room_types")
+}
+
+model Room {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  organizationId     String             @map("organization_id") @db.Uuid
+  propertyId         String             @map("property_id") @db.Uuid
+  roomTypeId         String             @map("room_type_id") @db.Uuid
+  floorId            String?            @map("floor_id") @db.Uuid
+  number             String
+  housekeepingStatus HousekeepingStatus @default(INSPECTED) @map("housekeeping_status")
+  serviceStatus      ServiceStatus      @default(IN_SERVICE) @map("service_status")
+  notes              String             @default("")
+  archivedAt         DateTime?          @map("archived_at") @db.Timestamptz(3)
+  version            Int                @default(1)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy          String?            @map("created_by") @db.Uuid
+  updatedBy          String?            @map("updated_by") @db.Uuid
+
+  roomType     RoomType          @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+  floor        Floor?            @relation(fields: [organizationId, floorId], references: [organizationId, id], onDelete: Restrict)
+  assignments  RoomAssignment[]
+  statusEvents RoomStatusEvent[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, number])
+  @@index([organizationId, roomTypeId])
+  @@map("rooms")
+}
+
+/// Append-only history of housekeeping and service status changes.
+model RoomStatusEvent {
+  id             String              @id @default(uuid(7)) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  propertyId     String              @map("property_id") @db.Uuid
+  roomId         String              @map("room_id") @db.Uuid
+  dimension      RoomStatusDimension
+  fromValue      String              @map("from_value")
+  toValue        String              @map("to_value")
+  reason         String?
+  actorId        String?             @map("actor_id") @db.Uuid
+  occurredAt     DateTime            @default(now()) @map("occurred_at") @db.Timestamptz(3)
+
+  room Room @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, roomId, occurredAt])
+  @@map("room_status_events")
+}
+
+/// Sellable inventory per room type and night. `sold + blocked <= capacity + overbooking`
+/// is a CHECK constraint; reservations take a night with a conditional UPDATE (§12.3).
+/// Rows are created on demand with capacity = active rooms of the type.
+model InventoryNight {
+  organizationId   String   @map("organization_id") @db.Uuid
+  propertyId       String   @map("property_id") @db.Uuid
+  roomTypeId       String   @map("room_type_id") @db.Uuid
+  stayDate         DateTime @map("stay_date") @db.Date
+  capacity         Int
+  sold             Int      @default(0)
+  blocked          Int      @default(0)
+  overbookingLimit Int      @default(0) @map("overbooking_limit")
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  roomType RoomType @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([roomTypeId, stayDate])
+  @@index([organizationId, propertyId, stayDate])
+  @@map("inventory_nights")
+}
+
+model RatePlan {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  organizationId     String    @map("organization_id") @db.Uuid
+  propertyId         String    @map("property_id") @db.Uuid
+  code               String
+  name               String
+  description        String    @default("")
+  cancellationPolicy String    @default("") @map("cancellation_policy")
+  /// Prices are stored in the property's currency; kept here so history survives changes.
+  currency           String    @db.Char(3)
+  archivedAt         DateTime? @map("archived_at") @db.Timestamptz(3)
+  version            Int       @default(1)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy          String?   @map("created_by") @db.Uuid
+  updatedBy          String?   @map("updated_by") @db.Uuid
+
+  property         Property           @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  roomTypePrices   RatePlanRoomType[]
+  overrides        RateOverride[]
+  reservationRooms ReservationRoom[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("rate_plans")
+}
+
+/// Base nightly price of a room type under a rate plan (minor units, e.g. centavos).
+model RatePlanRoomType {
+  organizationId  String @map("organization_id") @db.Uuid
+  ratePlanId      String @map("rate_plan_id") @db.Uuid
+  roomTypeId      String @map("room_type_id") @db.Uuid
+  baseAmountMinor BigInt @map("base_amount_minor")
+
+  ratePlan RatePlan @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Cascade)
+  roomType RoomType @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([ratePlanId, roomTypeId])
+  @@map("rate_plan_room_types")
+}
+
+/// Per-date price that replaces the base price (seasons, events).
+model RateOverride {
+  organizationId String   @map("organization_id") @db.Uuid
+  ratePlanId     String   @map("rate_plan_id") @db.Uuid
+  roomTypeId     String   @map("room_type_id") @db.Uuid
+  stayDate       DateTime @map("stay_date") @db.Date
+  amountMinor    BigInt   @map("amount_minor")
+
+  ratePlan RatePlan @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Cascade)
+  roomType RoomType @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([ratePlanId, roomTypeId, stayDate])
+  @@map("rate_overrides")
+}

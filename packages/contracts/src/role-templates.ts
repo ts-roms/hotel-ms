@@ -2,7 +2,9 @@ import type { PermissionCode } from './permissions.js';
 
 /**
  * System role templates. Organizations get a copy of each template on creation and may
- * edit their copies. Templates grow as modules land (front desk, housekeeping, HR...).
+ * edit their copies. When a template gains permissions in a release, the catalog sync adds
+ * them to organization roles still linked to that template (additive only; see
+ * packages/database/src/catalog.ts).
  */
 export interface RoleTemplate {
   readonly key: string;
@@ -10,6 +12,23 @@ export interface RoleTemplate {
   readonly description: string;
   readonly permissions: readonly PermissionCode[];
 }
+
+const PMS_READ = [
+  'room.read',
+  'rate.read',
+  'guest.read',
+  'reservation.read',
+] as const satisfies readonly PermissionCode[];
+
+const PMS_OPERATE = [
+  ...PMS_READ,
+  'guest.update',
+  'reservation.create',
+  'reservation.update',
+  'reservation.cancel',
+] as const satisfies readonly PermissionCode[];
+
+const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [
   {
@@ -32,6 +51,8 @@ export const ROLE_TEMPLATES = [
       'role.assign',
       'audit.read',
       'feature_flag.manage',
+      ...PMS_OPERATE,
+      ...PMS_CONFIGURE,
     ],
   },
   {
@@ -49,13 +70,28 @@ export const ROLE_TEMPLATES = [
       'role.read',
       'role.assign',
       'audit.read',
+      ...PMS_OPERATE,
+      ...PMS_CONFIGURE,
     ],
+  },
+  {
+    key: 'front_desk',
+    name: 'Front Desk Agent',
+    description: 'Reservations, guests and arrivals at the front desk.',
+    permissions: ['organization.read', 'property.read', ...PMS_OPERATE],
   },
   {
     key: 'auditor',
     name: 'Auditor',
-    description: 'Read-only access to configuration and the audit log.',
-    permissions: ['organization.read', 'property.read', 'member.read', 'role.read', 'audit.read'],
+    description: 'Read-only access to configuration, operations and the audit log.',
+    permissions: [
+      'organization.read',
+      'property.read',
+      'member.read',
+      'role.read',
+      'audit.read',
+      ...PMS_READ,
+    ],
   },
   {
     key: 'staff',
