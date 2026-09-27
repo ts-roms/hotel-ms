@@ -1,0 +1,91 @@
+// Property-scoped RBAC (ADR-0004).
+// identity ──< membership ──< role_assignment >── role ──< role_permission >── permission
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum ScopeType {
+  ORGANIZATION
+  PROPERTY
+}
+
+model OrganizationMembership {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  identityId     String           @map("identity_id") @db.Uuid
+  status         MembershipStatus @default(INVITED)
+  /// Bumped on any role or assignment change; part of the permission cache key.
+  grantsVersion  Int              @default(1) @map("grants_version")
+  joinedAt       DateTime?        @map("joined_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy      String?          @map("created_by") @db.Uuid
+  updatedBy      String?          @map("updated_by") @db.Uuid
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  identity        Identity         @relation(fields: [identityId], references: [id], onDelete: Restrict)
+  roleAssignments RoleAssignment[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, identityId])
+  @@index([identityId])
+  @@map("organization_memberships")
+}
+
+model Role {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  key            String
+  name           String
+  description    String   @default("")
+  templateKey    String?  @map("template_key")
+  version        Int      @default(1)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+  updatedBy      String?  @map("updated_by") @db.Uuid
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  permissions  RolePermission[]
+  assignments  RoleAssignment[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, key])
+  @@map("roles")
+}
+
+model RolePermission {
+  organizationId String @map("organization_id") @db.Uuid
+  roleId         String @map("role_id") @db.Uuid
+  permissionCode String @map("permission_code")
+
+  role       Role       @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionCode], references: [code], onDelete: Restrict)
+
+  @@id([roleId, permissionCode])
+  @@map("role_permissions")
+}
+
+/// A role granted to a membership at a scope. A CHECK constraint (SQL) ties scope_type to
+/// property_id; partial unique indexes (SQL) prevent duplicate assignments.
+model RoleAssignment {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  membershipId   String    @map("membership_id") @db.Uuid
+  roleId         String    @map("role_id") @db.Uuid
+  scopeType      ScopeType @map("scope_type")
+  propertyId     String?   @map("property_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  membership OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  role       Role                   @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Restrict)
+  property   Property?              @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, membershipId])
+  @@map("role_assignments")
+}

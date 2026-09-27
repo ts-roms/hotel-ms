@@ -1,0 +1,15 @@
+// Multi-file schema: one file per bounded context (docs/architecture/00-production-system-blueprint.md §6).
+// Things Prisma cannot express (RLS policies, grants, CHECK/EXCLUDE constraints,
+// partial indexes, triggers) live in hand-written SQL inside migrations.
+// Read docs/database/conventions.md before adding a model.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../../src/generated/prisma"
+  moduleFormat = "esm"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
