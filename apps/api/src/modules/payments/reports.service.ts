@@ -10,6 +10,9 @@ import { toMinor } from '../pms/pricing.js';
 
 const signed = (v: bigint | null) => (v === null ? 0 : v < 0n ? -toMinor(-v) : toMinor(v));
 
+/** Card issuers typically drop an uncaptured authorization after about a week. */
+const STALE_HOLD_DAYS = 7;
+
 /**
  * Financial reports (blueprint §15): the day's revenue, tax, payments and refunds by
  * business date, and a reconciliation check of the ledger against its caches and the
@@ -211,6 +214,34 @@ export class ReportsService {
           code: 'PENDING_REFUND',
           message: 'Refund pending at the provider for over an hour.',
           reference: r.id,
+        });
+      }
+      // Card holds must end captured or released: flag old ones, and any whose stay is over.
+      const holds = await tx.paymentIntent.findMany({
+        where: { propertyId, kind: 'HOLD', status: 'AUTHORIZED' },
+        select: { id: true, reservationRoomId: true, createdAt: true },
+      });
+      const endedLines = new Set(
+        (
+          await tx.reservationRoom.findMany({
+            where: {
+              id: { in: holds.flatMap((h) => (h.reservationRoomId ? [h.reservationRoomId] : [])) },
+              status: { in: ['CHECKED_OUT', 'CANCELLED', 'NO_SHOW'] },
+            },
+            select: { id: true },
+          })
+        ).map((l) => l.id),
+      );
+      const holdCutoff = Date.now() - STALE_HOLD_DAYS * 86_400_000;
+      for (const h of holds) {
+        const ended = h.reservationRoomId !== null && endedLines.has(h.reservationRoomId);
+        if (!ended && h.createdAt.getTime() >= holdCutoff) continue;
+        issues.push({
+          code: 'STALE_HOLD',
+          message: ended
+            ? 'Card hold still authorized after the stay ended. Capture or release it.'
+            : `Card hold authorized more than ${STALE_HOLD_DAYS} days ago; the card issuer may drop it.`,
+          reference: h.id,
         });
       }
       return { ok: issues.length === 0, checkedAt: new Date().toISOString(), issues };

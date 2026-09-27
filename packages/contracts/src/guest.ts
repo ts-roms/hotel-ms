@@ -44,6 +44,10 @@ export const guestStaySchema = z.object({
   /** Masked destination of the verification code, e.g. "j•••@example.com". */
   verificationDestination: z.string().nullable(),
   selfCheckInAvailable: z.boolean(),
+  /** Card hold the property asks for before self check-in; null when none is needed. */
+  cardHold: z
+    .object({ requiredMinor: z.number().int(), currency: z.string(), authorized: z.boolean() })
+    .nullable(),
   csrfToken: z.string(),
 });
 export type GuestStay = z.infer<typeof guestStaySchema>;

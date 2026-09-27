@@ -138,6 +138,14 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
   },
   'invoice.issue': { description: 'Issue invoices and receipts', scopes: ORG_OR_PROPERTY },
+  'exchange_rate.manage': {
+    description: 'Set exchange rates for foreign cash',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'folio.discount': {
+    description: 'Apply statutory discounts (e.g. senior citizen, PWD) to folios',
+    scopes: ORG_OR_PROPERTY,
+  },
   'finance.report.read': {
     description: 'Financial reports, reconciliation and cashier shifts',
     scopes: ORG_OR_PROPERTY,

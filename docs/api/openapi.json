@@ -186,6 +186,8 @@
                         "SHIFT_OVERLAP",
                         "OUTLET_CLOSED",
                         "CASHIER_SHIFT_REQUIRED",
+                        "HOLD_REQUIRED",
+                        "NO_EXCHANGE_RATE",
                         "REFUND_EXCEEDS_PAYMENT",
                         "INVALID_SIGNATURE",
                         "ITEM_UNAVAILABLE",
@@ -2343,6 +2345,8 @@
                         "cashier.shift",
                         "folio.transfer",
                         "invoice.issue",
+                        "exchange_rate.manage",
+                        "folio.discount",
                         "finance.report.read",
                         "fnb.menu.manage",
                         "fnb.menu.availability",
@@ -2600,6 +2604,8 @@
                         "cashier.shift",
                         "folio.transfer",
                         "invoice.issue",
+                        "exchange_rate.manage",
+                        "folio.discount",
                         "finance.report.read",
                         "fnb.menu.manage",
                         "fnb.menu.availability",
@@ -10135,6 +10141,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -10253,6 +10290,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -10274,6 +10334,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -10290,6 +10351,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -10358,6 +10420,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -10476,6 +10569,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -10497,6 +10613,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -10513,6 +10630,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -10630,6 +10748,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -10748,6 +10897,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -10769,6 +10941,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -10785,6 +10958,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -10843,6 +11017,25 @@
                     "minimum": 0,
                     "maximum": 1000000000000
                   },
+                  "tendered": {
+                    "type": "object",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      },
+                      "amountMinor": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000000000
+                      }
+                    },
+                    "required": [
+                      "currency",
+                      "amountMinor"
+                    ],
+                    "additionalProperties": false
+                  },
                   "reference": {
                     "default": null,
                     "nullable": true,
@@ -10851,8 +11044,7 @@
                   }
                 },
                 "required": [
-                  "method",
-                  "amountMinor"
+                  "method"
                 ],
                 "additionalProperties": false
               }
@@ -10899,6 +11091,37 @@
                     "label": {
                       "nullable": true,
                       "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
                     },
                     "lines": {
                       "type": "array",
@@ -11018,6 +11241,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -11039,6 +11285,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -11055,6 +11302,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -11178,6 +11426,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -11296,6 +11575,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -11317,6 +11619,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -11333,6 +11636,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -11430,6 +11734,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -11548,6 +11883,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -11569,6 +11927,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -11585,6 +11944,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -14058,6 +14418,29 @@
                     "selfCheckInAvailable": {
                       "type": "boolean"
                     },
+                    "cardHold": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "requiredMinor": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "authorized": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "requiredMinor",
+                        "currency",
+                        "authorized"
+                      ],
+                      "additionalProperties": false
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -14070,6 +14453,7 @@
                     "verified",
                     "verificationDestination",
                     "selfCheckInAvailable",
+                    "cardHold",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -14236,6 +14620,29 @@
                     "selfCheckInAvailable": {
                       "type": "boolean"
                     },
+                    "cardHold": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "requiredMinor": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "authorized": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "requiredMinor",
+                        "currency",
+                        "authorized"
+                      ],
+                      "additionalProperties": false
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -14248,6 +14655,7 @@
                     "verified",
                     "verificationDestination",
                     "selfCheckInAvailable",
+                    "cardHold",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -14436,6 +14844,29 @@
                     "selfCheckInAvailable": {
                       "type": "boolean"
                     },
+                    "cardHold": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "requiredMinor": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "authorized": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "requiredMinor",
+                        "currency",
+                        "authorized"
+                      ],
+                      "additionalProperties": false
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -14448,6 +14879,7 @@
                     "verified",
                     "verificationDestination",
                     "selfCheckInAvailable",
+                    "cardHold",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -14633,6 +15065,29 @@
                     "selfCheckInAvailable": {
                       "type": "boolean"
                     },
+                    "cardHold": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "requiredMinor": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string"
+                        },
+                        "authorized": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "requiredMinor",
+                        "currency",
+                        "authorized"
+                      ],
+                      "additionalProperties": false
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -14645,6 +15100,7 @@
                     "verified",
                     "verificationDestination",
                     "selfCheckInAvailable",
+                    "cardHold",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -26707,10 +27163,29 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT",
+                        "HOLD"
+                      ]
+                    },
                     "folioId": {
+                      "nullable": true,
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "capturedMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "provider": {
                       "type": "string"
@@ -26727,6 +27202,7 @@
                       "type": "string",
                       "enum": [
                         "PENDING",
+                        "AUTHORIZED",
                         "SUCCEEDED",
                         "FAILED",
                         "CANCELLED",
@@ -26763,7 +27239,10 @@
                   },
                   "required": [
                     "id",
+                    "kind",
                     "folioId",
+                    "reservationRoomId",
+                    "capturedMinor",
                     "provider",
                     "amountMinor",
                     "currency",
@@ -26817,10 +27296,29 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "PAYMENT",
+                              "HOLD"
+                            ]
+                          },
                           "folioId": {
+                            "nullable": true,
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reservationRoomId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "capturedMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
                           },
                           "provider": {
                             "type": "string"
@@ -26837,6 +27335,7 @@
                             "type": "string",
                             "enum": [
                               "PENDING",
+                              "AUTHORIZED",
                               "SUCCEEDED",
                               "FAILED",
                               "CANCELLED",
@@ -26873,7 +27372,10 @@
                         },
                         "required": [
                           "id",
+                          "kind",
                           "folioId",
+                          "reservationRoomId",
+                          "capturedMinor",
                           "provider",
                           "amountMinor",
                           "currency",
@@ -27131,6 +27633,1385 @@
         ]
       }
     },
+    "/api/v1/properties/{propertyId}/payment-settings": {
+      "get": {
+        "operationId": "FinanceController_paymentSettings",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "selfCheckInHoldMinor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000000000
+                    }
+                  },
+                  "required": [
+                    "selfCheckInHoldMinor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "put": {
+        "operationId": "FinanceController_updatePaymentSettings",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "selfCheckInHoldMinor": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000000
+                  }
+                },
+                "required": [
+                  "selfCheckInHoldMinor"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "selfCheckInHoldMinor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000000000
+                    }
+                  },
+                  "required": [
+                    "selfCheckInHoldMinor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/holds/{intentId}/capture": {
+      "post": {
+        "operationId": "FinanceController_captureHold",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "intentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Unique per attempt; retries reuse it",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000000000
+                  }
+                },
+                "required": [
+                  "amountMinor"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT",
+                        "HOLD"
+                      ]
+                    },
+                    "folioId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "capturedMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "amountMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "AUTHORIZED",
+                        "SUCCEEDED",
+                        "FAILED",
+                        "CANCELLED",
+                        "EXPIRED"
+                      ]
+                    },
+                    "checkoutUrl": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "paymentId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "needsAttention": {
+                      "type": "boolean"
+                    },
+                    "failureReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "folioId",
+                    "reservationRoomId",
+                    "capturedMinor",
+                    "provider",
+                    "amountMinor",
+                    "currency",
+                    "status",
+                    "checkoutUrl",
+                    "paymentId",
+                    "needsAttention",
+                    "failureReason",
+                    "expiresAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/holds/{intentId}/release": {
+      "post": {
+        "operationId": "FinanceController_releaseHold",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "intentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT",
+                        "HOLD"
+                      ]
+                    },
+                    "folioId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "capturedMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "amountMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "AUTHORIZED",
+                        "SUCCEEDED",
+                        "FAILED",
+                        "CANCELLED",
+                        "EXPIRED"
+                      ]
+                    },
+                    "checkoutUrl": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "paymentId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "needsAttention": {
+                      "type": "boolean"
+                    },
+                    "failureReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "folioId",
+                    "reservationRoomId",
+                    "capturedMinor",
+                    "provider",
+                    "amountMinor",
+                    "currency",
+                    "status",
+                    "checkoutUrl",
+                    "paymentId",
+                    "needsAttention",
+                    "failureReason",
+                    "expiresAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/exchange-rates": {
+      "get": {
+        "operationId": "FinanceController_exchangeRates",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "currency": {
+                            "type": "string"
+                          },
+                          "rate": {
+                            "type": "string"
+                          },
+                          "effectiveFrom": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "currency",
+                          "rate",
+                          "effectiveFrom"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "post": {
+        "operationId": "FinanceController_setExchangeRate",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}$"
+                  },
+                  "rate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,9}(\\.\\d{1,6})?$"
+                  }
+                },
+                "required": [
+                  "currency",
+                  "rate"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "rate": {
+                      "type": "string"
+                    },
+                    "effectiveFrom": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "currency",
+                    "rate",
+                    "effectiveFrom"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/discount-profiles": {
+      "get": {
+        "operationId": "FinanceController_discountProfiles",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "discountPercent": {
+                            "type": "number"
+                          },
+                          "exemptTaxCodes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "departments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "active": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "code",
+                          "name",
+                          "discountPercent",
+                          "exemptTaxCodes",
+                          "departments",
+                          "active"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "post": {
+        "operationId": "FinanceController_createDiscountProfile",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z0-9_-]{1,20}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "discountPercent": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "exemptTaxCodes": {
+                    "default": [],
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20
+                    }
+                  },
+                  "departments": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "ROOM",
+                        "FNB",
+                        "MINIBAR",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "SPA",
+                        "MISC"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "discountPercent",
+                  "departments"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "discountPercent": {
+                      "type": "number"
+                    },
+                    "exemptTaxCodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "departments": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "active": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "name",
+                    "discountPercent",
+                    "exemptTaxCodes",
+                    "departments",
+                    "active"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/discount-profiles/{profileId}/archive": {
+      "post": {
+        "operationId": "FinanceController_archiveDiscountProfile",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "profileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/folios/{folioId}/discount": {
+      "put": {
+        "operationId": "FinanceController_applyDiscount",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profileId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "idNumber": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "profileId",
+                  "holderName",
+                  "idNumber"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "delete": {
+        "operationId": "FinanceController_removeDiscount",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
     "/api/v1/properties/{propertyId}/accounts": {
       "get": {
         "operationId": "FinanceController_accounts",
@@ -27261,6 +29142,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -27379,6 +29291,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -27400,6 +29335,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -27416,6 +29352,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -27761,6 +29698,37 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
                     "lines": {
                       "type": "array",
                       "items": {
@@ -27879,6 +29847,29 @@
                             "nullable": true,
                             "type": "string"
                           },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
                           "reference": {
                             "nullable": true,
                             "type": "string"
@@ -27900,6 +29891,7 @@
                           "amountMinor",
                           "refundedMinor",
                           "provider",
+                          "tendered",
                           "reference",
                           "businessDate",
                           "createdAt"
@@ -27916,6 +29908,7 @@
                     "balanceMinor",
                     "reservationRoomId",
                     "label",
+                    "discount",
                     "lines",
                     "payments"
                   ],
@@ -28778,6 +30771,27 @@
                         "notes": {
                           "type": "string"
                         },
+                        "foreignCash": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
                         "version": {
                           "type": "integer",
                           "minimum": -9007199254740991,
@@ -28797,6 +30811,7 @@
                         "countedCashMinor",
                         "varianceMinor",
                         "notes",
+                        "foreignCash",
                         "version"
                       ],
                       "additionalProperties": false
@@ -28917,6 +30932,27 @@
                     "notes": {
                       "type": "string"
                     },
+                    "foreignCash": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "currency": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "currency",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "version": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -28936,6 +30972,7 @@
                     "countedCashMinor",
                     "varianceMinor",
                     "notes",
+                    "foreignCash",
                     "version"
                   ],
                   "additionalProperties": false
@@ -29065,6 +31102,27 @@
                     "notes": {
                       "type": "string"
                     },
+                    "foreignCash": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "currency": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "currency",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
                     "version": {
                       "type": "integer",
                       "minimum": -9007199254740991,
@@ -29084,6 +31142,7 @@
                     "countedCashMinor",
                     "varianceMinor",
                     "notes",
+                    "foreignCash",
                     "version"
                   ],
                   "additionalProperties": false
@@ -29184,6 +31243,27 @@
                           "notes": {
                             "type": "string"
                           },
+                          "foreignCash": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "currency": {
+                                  "type": "string"
+                                },
+                                "amountMinor": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "currency",
+                                "amountMinor"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "version": {
                             "type": "integer",
                             "minimum": -9007199254740991,
@@ -29203,6 +31283,7 @@
                           "countedCashMinor",
                           "varianceMinor",
                           "notes",
+                          "foreignCash",
                           "version"
                         ],
                         "additionalProperties": false
@@ -29469,6 +31550,7 @@
                                     "UNAPPLIED_ONLINE_PAYMENT",
                                     "STALE_PAYMENT_INTENT",
                                     "STALE_CASHIER_SHIFT",
+                                    "STALE_HOLD",
                                     "PENDING_REFUND"
                                   ]
                                 },
@@ -29560,6 +31642,7 @@
                               "UNAPPLIED_ONLINE_PAYMENT",
                               "STALE_PAYMENT_INTENT",
                               "STALE_CASHIER_SHIFT",
+                              "STALE_HOLD",
                               "PENDING_REFUND"
                             ]
                           },
@@ -29640,10 +31723,29 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT",
+                        "HOLD"
+                      ]
+                    },
                     "folioId": {
+                      "nullable": true,
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "capturedMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "provider": {
                       "type": "string"
@@ -29660,6 +31762,7 @@
                       "type": "string",
                       "enum": [
                         "PENDING",
+                        "AUTHORIZED",
                         "SUCCEEDED",
                         "FAILED",
                         "CANCELLED",
@@ -29696,7 +31799,10 @@
                   },
                   "required": [
                     "id",
+                    "kind",
                     "folioId",
+                    "reservationRoomId",
+                    "capturedMinor",
                     "provider",
                     "amountMinor",
                     "currency",
@@ -29739,10 +31845,29 @@
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                           },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "PAYMENT",
+                              "HOLD"
+                            ]
+                          },
                           "folioId": {
+                            "nullable": true,
                             "type": "string",
                             "format": "uuid",
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reservationRoomId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "capturedMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
                           },
                           "provider": {
                             "type": "string"
@@ -29759,6 +31884,7 @@
                             "type": "string",
                             "enum": [
                               "PENDING",
+                              "AUTHORIZED",
                               "SUCCEEDED",
                               "FAILED",
                               "CANCELLED",
@@ -29795,7 +31921,10 @@
                         },
                         "required": [
                           "id",
+                          "kind",
                           "folioId",
+                          "reservationRoomId",
+                          "capturedMinor",
                           "provider",
                           "amountMinor",
                           "currency",
@@ -29813,6 +31942,135 @@
                   },
                   "required": [
                     "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/holds": {
+      "post": {
+        "operationId": "GuestPaymentsController_hold",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Unique per attempt; retries reuse it",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "PAYMENT",
+                        "HOLD"
+                      ]
+                    },
+                    "folioId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "capturedMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "amountMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "AUTHORIZED",
+                        "SUCCEEDED",
+                        "FAILED",
+                        "CANCELLED",
+                        "EXPIRED"
+                      ]
+                    },
+                    "checkoutUrl": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "paymentId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "needsAttention": {
+                      "type": "boolean"
+                    },
+                    "failureReason": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "folioId",
+                    "reservationRoomId",
+                    "capturedMinor",
+                    "provider",
+                    "amountMinor",
+                    "currency",
+                    "status",
+                    "checkoutUrl",
+                    "paymentId",
+                    "needsAttention",
+                    "failureReason",
+                    "expiresAt",
+                    "createdAt"
                   ],
                   "additionalProperties": false
                 }

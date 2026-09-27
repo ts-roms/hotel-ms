@@ -47,6 +47,7 @@ import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.
 import { MenuService } from './modules/fnb/menu.service.js';
 import { OrdersService } from './modules/fnb/orders.service.js';
 import { CashierService } from './modules/payments/cashier.service.js';
+import { FinanceSettingsService } from './modules/payments/finance-settings.service.js';
 import { DocumentsService } from './modules/payments/documents.service.js';
 import {
   FinanceController,
@@ -151,6 +152,7 @@ export class AppModule {
         OrdersService,
         PaymentsService,
         CashierService,
+        FinanceSettingsService,
         DocumentsService,
         ReportsService,
         TenantJobsProcessor,

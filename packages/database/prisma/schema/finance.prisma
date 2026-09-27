@@ -3,6 +3,8 @@
 
 enum PaymentIntentStatus {
   PENDING
+  /// A card hold is in place (pre-authorization); nothing captured yet.
+  AUTHORIZED
   SUCCEEDED
   FAILED
   CANCELLED
@@ -36,32 +38,38 @@ enum FolioDocumentType {
 /// A request to collect money through an online gateway. The folio PAYMENT line is posted
 /// only when the provider confirms success (webhook).
 model PaymentIntent {
-  id             String              @id @default(uuid(7)) @db.Uuid
-  organizationId String              @map("organization_id") @db.Uuid
-  propertyId     String              @map("property_id") @db.Uuid
-  folioId        String              @map("folio_id") @db.Uuid
-  provider       String
+  id                String              @id @default(uuid(7)) @db.Uuid
+  organizationId    String              @map("organization_id") @db.Uuid
+  propertyId        String              @map("property_id") @db.Uuid
+  /// Null for a hold placed before the stay's folio exists.
+  folioId           String?             @map("folio_id") @db.Uuid
+  reservationRoomId String?             @map("reservation_room_id") @db.Uuid
+  /// PAYMENT or HOLD.
+  kind              String              @default("PAYMENT")
+  capturedMinor     BigInt              @default(0) @map("captured_minor")
+  provider          String
   /// The provider's id for the checkout; unique per provider across all tenants.
-  providerRef    String?             @map("provider_ref")
-  amountMinor    BigInt              @map("amount_minor")
-  currency       String              @db.Char(3)
-  status         PaymentIntentStatus @default(PENDING)
-  checkoutUrl    String?             @map("checkout_url")
-  returnUrl      String              @map("return_url")
-  source         String
-  createdBy      String?             @map("created_by") @db.Uuid
-  guestSessionId String?             @map("guest_session_id") @db.Uuid
-  paymentId      String?             @map("payment_id") @db.Uuid
-  needsAttention Boolean             @default(false) @map("needs_attention")
-  failureReason  String?             @map("failure_reason")
-  expiresAt      DateTime            @map("expires_at") @db.Timestamptz(3)
-  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  providerRef       String?             @map("provider_ref")
+  amountMinor       BigInt              @map("amount_minor")
+  currency          String              @db.Char(3)
+  status            PaymentIntentStatus @default(PENDING)
+  checkoutUrl       String?             @map("checkout_url")
+  returnUrl         String              @map("return_url")
+  source            String
+  createdBy         String?             @map("created_by") @db.Uuid
+  guestSessionId    String?             @map("guest_session_id") @db.Uuid
+  paymentId         String?             @map("payment_id") @db.Uuid
+  needsAttention    Boolean             @default(false) @map("needs_attention")
+  failureReason     String?             @map("failure_reason")
+  expiresAt         DateTime            @map("expires_at") @db.Timestamptz(3)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+  folio Folio? @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, id])
   @@unique([provider, providerRef])
+  @@index([organizationId, reservationRoomId])
   @@index([organizationId, folioId])
   @@map("payment_intents")
 }
@@ -97,6 +105,7 @@ model Refund {
   amountMinor    BigInt       @map("amount_minor")
   reason         String
   status         RefundStatus
+  provider       String?
   providerRef    String?      @map("provider_ref")
   cashierShiftId String?      @map("cashier_shift_id") @db.Uuid
   createdBy      String?      @map("created_by") @db.Uuid
@@ -190,4 +199,40 @@ model ReconciliationRun {
   @@unique([organizationId, id])
   @@unique([propertyId, runDate])
   @@map("reconciliation_runs")
+}
+
+/// Exchange rates for foreign cash (history; the latest effective one applies).
+model ExchangeRate {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  currency       String   @db.Char(3)
+  /// Property currency units per 1 unit of `currency`, times 1,000,000.
+  rateMicros     BigInt   @map("rate_micros")
+  effectiveFrom  DateTime @default(now()) @map("effective_from") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+
+  @@unique([organizationId, id])
+  @@index([propertyId, currency, effectiveFrom])
+  @@map("exchange_rates")
+}
+
+/// Statutory discount profiles (e.g. PH senior citizen / PWD): configuration, not code.
+model DiscountProfile {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  code           String
+  name           String
+  discountBps    Int       @map("discount_bps")
+  exemptTaxCodes String[]  @map("exempt_tax_codes")
+  departments    String[]
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  folios Folio[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("discount_profiles")
 }

@@ -21,6 +21,7 @@ import { formatMoney, minorToInput, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { CardHolds, ForeignCash, StatutoryDiscount } from './extras';
 
 /** Payments, refunds, online links, transfers, routing and documents for one folio. */
 export function FolioFinance({ propertyId, folio }: { propertyId: string; folio: Folio }) {
@@ -30,6 +31,11 @@ export function FolioFinance({ propertyId, folio }: { propertyId: string; folio:
   return (
     <>
       {folio.payments.length > 0 && <Payments propertyId={propertyId} folio={folio} />}
+      {(open || folio.discount) && can('folio.discount') && (
+        <StatutoryDiscount propertyId={propertyId} folio={folio} />
+      )}
+      {open && can('payment.create') && <ForeignCash propertyId={propertyId} folio={folio} />}
+      {can('payment.create') && <CardHolds propertyId={propertyId} folio={folio} />}
       {open && can('payment.create') && <PaymentLink propertyId={propertyId} folio={folio} />}
       {open && can('folio.transfer') && <Transfers propertyId={propertyId} folio={folio} />}
       {can('invoice.issue') && <Documents propertyId={propertyId} folio={folio} />}
@@ -76,6 +82,13 @@ function Payments({ propertyId, folio }: { propertyId: string; folio: Folio }) {
                   {p.method.replace('_', ' ').toLowerCase()}
                   {p.provider && <Badge className="ml-2">{t('fin.online')}</Badge>}
                   {p.reference && <span className="text-muted-foreground"> · {p.reference}</span>}
+                  {p.tendered && (
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {formatMoney(p.tendered.amountMinor, p.tendered.currency)} @{' '}
+                      {p.tendered.rate}
+                    </span>
+                  )}
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="tabular-nums">{formatMoney(p.amountMinor, folio.currency)}</span>
@@ -178,34 +191,37 @@ function PaymentLink({ propertyId, folio }: { propertyId: string; folio: Folio }
           </Button>
         </div>
         {create.error && <Alert>{errorMessage(create.error)}</Alert>}
-        {intents.data?.slice(0, 5).map((i) => (
-          <div
-            key={i.id}
-            className="flex flex-wrap items-center justify-between gap-2 border-t pt-2"
-          >
-            <span className="tabular-nums">{formatMoney(i.amountMinor, i.currency)}</span>
-            <span className="flex items-center gap-2">
-              <Badge className={i.needsAttention ? 'text-destructive' : ''}>
-                {i.status.toLowerCase()}
-                {i.needsAttention && ` · ${t('fin.needsAttention')}`}
-              </Badge>
-              {i.checkoutUrl && (
-                <>
-                  <a className="underline" href={i.checkoutUrl} target="_blank" rel="noreferrer">
-                    {t('fin.openLink')}
-                  </a>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void navigator.clipboard.writeText(i.checkoutUrl!)}
-                  >
-                    {t('fin.copyLink')}
-                  </Button>
-                </>
-              )}
-            </span>
-          </div>
-        ))}
+        {intents.data
+          ?.filter((i) => i.kind === 'PAYMENT')
+          .slice(0, 5)
+          .map((i) => (
+            <div
+              key={i.id}
+              className="flex flex-wrap items-center justify-between gap-2 border-t pt-2"
+            >
+              <span className="tabular-nums">{formatMoney(i.amountMinor, i.currency)}</span>
+              <span className="flex items-center gap-2">
+                <Badge className={i.needsAttention ? 'text-destructive' : ''}>
+                  {i.status.toLowerCase()}
+                  {i.needsAttention && ` · ${t('fin.needsAttention')}`}
+                </Badge>
+                {i.checkoutUrl && (
+                  <>
+                    <a className="underline" href={i.checkoutUrl} target="_blank" rel="noreferrer">
+                      {t('fin.openLink')}
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void navigator.clipboard.writeText(i.checkoutUrl!)}
+                    >
+                      {t('fin.copyLink')}
+                    </Button>
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
       </CardContent>
     </Card>
   );

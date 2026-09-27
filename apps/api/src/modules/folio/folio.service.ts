@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   AdjustmentRequest,
   CreateTaxRuleRequest,
@@ -20,7 +20,14 @@ import { OutboxService } from '../outbox/outbox.service.js';
 import { toMinor } from '../pms/pricing.js';
 import { invalidState, nextNumber } from '../pms/reservations.service.js';
 import { businessDateOf } from '../pms/rooms.service.js';
-import { computeTaxes, type TaxRuleInput } from './tax-engine.js';
+import { convertMinor, currencyDigits, formatRate } from '../../common/money.js';
+import { SECRET_BOX } from '../auth/mfa.service.js';
+import type { SecretBox } from '../../infrastructure/secret-box.js';
+import { applyStatutoryDiscount, computeTaxes, type TaxRuleInput } from './tax-engine.js';
+
+/** Foreign cash amount in major units, for line descriptions ("100", "1.5"). */
+const formatForeign = (t: { currency: string; amountMinor: bigint }) =>
+  String(Number(t.amountMinor) / 10 ** currencyDigits(t.currency));
 
 export interface PostingInput {
   department: string;
@@ -44,6 +51,7 @@ const folioInclude = {
     orderBy: { createdAt: 'asc' },
     include: { refunds: { select: { amountMinor: true, status: true } } },
   },
+  discountProfile: { select: { id: true, code: true, name: true } },
 } satisfies Prisma.FolioInclude;
 
 type FolioRow = Prisma.FolioGetPayload<{ include: typeof folioInclude }>;
@@ -58,6 +66,16 @@ function toFolioDto(folio: FolioRow): Folio {
     balanceMinor: toSignedMinor(folio.balanceMinor),
     reservationRoomId: folio.reservationRoomId,
     label: folio.label,
+    discount:
+      folio.discountProfile && folio.discountHolderName && folio.discountIdLast4
+        ? {
+            profileId: folio.discountProfile.id,
+            code: folio.discountProfile.code,
+            name: folio.discountProfile.name,
+            holderName: folio.discountHolderName,
+            idLast4: folio.discountIdLast4,
+          }
+        : null,
     lines: folio.lines.map((l) => ({
       id: l.id,
       businessDate: fromDbDate(l.businessDate),
@@ -80,6 +98,14 @@ function toFolioDto(folio: FolioRow): Folio {
         p.refunds.filter((r) => r.status !== 'FAILED').reduce((sum, r) => sum + r.amountMinor, 0n),
       ),
       provider: p.provider,
+      tendered:
+        p.tenderedCurrency && p.tenderedAmountMinor !== null && p.exchangeRateMicros !== null
+          ? {
+              currency: p.tenderedCurrency,
+              amountMinor: toMinor(p.tenderedAmountMinor),
+              rate: formatRate(p.exchangeRateMicros),
+            }
+          : null,
       reference: p.reference,
       businessDate: fromDbDate(p.businessDate),
       createdAt: p.createdAt.toISOString(),
@@ -103,6 +129,7 @@ export class FolioService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    @Inject(SECRET_BOX) private readonly secretBox: SecretBox,
   ) {}
 
   private get ctx() {
@@ -192,9 +219,33 @@ export class FolioService {
       if (existing) return existing.id;
     }
     const businessDate = input.businessDate ?? (await businessDateOf(tx, propertyId));
-    const rules = input.taxRules ?? (await this.taxRulesFor(tx, propertyId, input.department));
-    const breakdown = computeTaxes(input.amountMinor, rules);
+    let rules = input.taxRules ?? (await this.taxRulesFor(tx, propertyId, input.department));
+    let amount = input.amountMinor;
+    let description = input.description;
     const type = input.type ?? 'CHARGE';
+    // Statutory discount on this folio (e.g. PH senior citizen / PWD): exempt taxes are
+    // taken out, and the discount follows as its own line linked to the charge.
+    let discount: { amount: bigint; label: string } | null = null;
+    if (type === 'CHARGE' && folio.discountProfileId) {
+      const profile = await tx.discountProfile.findUnique({
+        where: { id: folio.discountProfileId },
+      });
+      if (profile && !profile.archivedAt && profile.departments.includes(input.department)) {
+        const applied = applyStatutoryDiscount(amount, rules, profile);
+        amount = applied.base;
+        rules = applied.rules;
+        if (profile.exemptTaxCodes.length > 0) {
+          description = `${description} (${profile.exemptTaxCodes.join(', ')}-exempt)`;
+        }
+        if (applied.discount > 0n) {
+          discount = {
+            amount: applied.discount,
+            label: `${profile.name} discount (${profile.discountBps / 100}%)`,
+          };
+        }
+      }
+    }
+    const breakdown = computeTaxes(amount, rules);
 
     const line = await tx.folioLine.create({
       data: {
@@ -204,7 +255,7 @@ export class FolioService {
         businessDate: toDbDate(businessDate),
         type,
         department: input.department,
-        description: input.description,
+        description,
         amountMinor: breakdown.netMinor,
         currency: folio.currency,
         sourceKey: input.sourceKey ?? null,
@@ -230,10 +281,33 @@ export class FolioService {
         },
       });
     }
+    if (discount) {
+      await tx.folioLine.create({
+        data: {
+          organizationId,
+          propertyId,
+          folioId,
+          businessDate: toDbDate(businessDate),
+          type: 'ADJUSTMENT',
+          department: input.department,
+          description: discount.label,
+          amountMinor: -discount.amount,
+          currency: folio.currency,
+          parentLineId: line.id,
+          reason: 'Statutory discount',
+          postedBy: actorId,
+        },
+      });
+    }
     await this.outbox.enqueue(
       tx,
       'FolioLinePosted',
-      { folioId, lineId: line.id, type, amountMinor: Number(breakdown.totalMinor) },
+      {
+        folioId,
+        lineId: line.id,
+        type,
+        amountMinor: Number(breakdown.totalMinor - (discount?.amount ?? 0n)),
+      },
       { propertyId },
     );
     return line.id;
@@ -405,7 +479,45 @@ export class FolioService {
       cashierShiftId = shift.id;
     }
     const businessDate = toDbDate(await businessDateOf(tx, propertyId));
-    const amount = BigInt(input.amountMinor);
+    let amount: bigint;
+    let tendered: { currency: string; amountMinor: bigint; rateMicros: bigint } | null = null;
+    if (input.tendered) {
+      if (input.tendered.currency === folio.currency) {
+        throw Problems.validation([
+          { path: 'tendered.currency', message: 'Use amountMinor for the folio currency' },
+        ]);
+      }
+      // The rate in force now; rates are history rows, never edited.
+      const rate = await tx.exchangeRate.findFirst({
+        where: {
+          propertyId,
+          currency: input.tendered.currency,
+          effectiveFrom: { lte: new Date() },
+        },
+        orderBy: { effectiveFrom: 'desc' },
+      });
+      if (!rate) {
+        throw new ProblemException(
+          409,
+          'NO_EXCHANGE_RATE',
+          'No exchange rate',
+          `Set a ${input.tendered.currency} exchange rate before taking that currency.`,
+        );
+      }
+      tendered = {
+        currency: input.tendered.currency,
+        amountMinor: BigInt(input.tendered.amountMinor),
+        rateMicros: rate.rateMicros,
+      };
+      amount = convertMinor(
+        tendered.amountMinor,
+        tendered.currency,
+        rate.rateMicros,
+        folio.currency,
+      );
+    } else {
+      amount = BigInt(input.amountMinor!);
+    }
     const method = input.method.replace('_', ' ').toLowerCase();
     const line = await tx.folioLine.create({
       data: {
@@ -415,7 +527,11 @@ export class FolioService {
         businessDate,
         type: 'PAYMENT',
         department: 'PAYMENT',
-        description: input.provider ? `Online payment (${method})` : `Payment (${method})`,
+        description: input.provider
+          ? `Online payment (${method})`
+          : tendered
+            ? `Payment (cash ${tendered.currency} ${formatForeign(tendered)})`
+            : `Payment (${method})`,
         amountMinor: -amount,
         currency: folio.currency,
         postedBy: actorId,
@@ -436,6 +552,9 @@ export class FolioService {
         provider: input.provider ?? null,
         intentId: input.intentId ?? null,
         cashierShiftId,
+        tenderedCurrency: tendered?.currency ?? null,
+        tenderedAmountMinor: tendered?.amountMinor ?? null,
+        exchangeRateMicros: tendered?.rateMicros ?? null,
       },
     });
     await this.audit.record(tx, {
@@ -446,15 +565,22 @@ export class FolioService {
       after: {
         paymentId: payment.id,
         method: input.method,
-        amountMinor: input.amountMinor,
+        amountMinor: toMinor(amount),
         reference: input.reference,
         provider: input.provider ?? null,
+        tendered: tendered
+          ? {
+              currency: tendered.currency,
+              amountMinor: toMinor(tendered.amountMinor),
+              rate: formatRate(tendered.rateMicros),
+            }
+          : null,
       },
     });
     await this.outbox.enqueue(
       tx,
       'PaymentRecorded',
-      { folioId, paymentId: payment.id, method: input.method, amountMinor: input.amountMinor },
+      { folioId, paymentId: payment.id, method: input.method, amountMinor: toMinor(amount) },
       { propertyId },
     );
     return payment.id;
@@ -492,6 +618,75 @@ export class FolioService {
       },
     });
     return line.id;
+  }
+
+  // ---- Statutory discounts -------------------------------------------------------------
+
+  /** Applies a discount profile to a folio; its later charges are discounted (§15.1). */
+  async applyDiscount(
+    folioId: string,
+    input: { profileId: string; holderName: string; idNumber: string },
+  ): Promise<Folio> {
+    const { propertyId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const folio = await this.requireFolio(tx, folioId);
+      if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+      const profile = await tx.discountProfile.findFirst({
+        where: { id: input.profileId, propertyId, archivedAt: null },
+      });
+      if (!profile) throw Problems.validation([{ path: 'profileId', message: 'Unknown discount' }]);
+      const id = input.idNumber.replace(/\s+/g, '');
+      await tx.folio.update({
+        where: { id: folioId },
+        data: {
+          discountProfileId: profile.id,
+          discountHolderName: input.holderName,
+          discountIdLast4: id.slice(-4),
+          // Bound to this folio, so a copied ciphertext cannot be read elsewhere.
+          discountIdEncrypted: new Uint8Array(
+            this.secretBox.encrypt(id, `folio-discount:${folioId}`),
+          ),
+        },
+      });
+      await this.audit.record(tx, {
+        action: 'folio.discount_applied',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId,
+        after: { profile: profile.code, holderName: input.holderName, idLast4: id.slice(-4) },
+      });
+      await this.outbox.enqueue(
+        tx,
+        'FolioDiscountApplied',
+        { folioId, profileCode: profile.code },
+        { propertyId },
+      );
+      return this.load(tx, folioId);
+    });
+  }
+
+  async removeDiscount(folioId: string): Promise<Folio> {
+    const { propertyId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const folio = await this.requireFolio(tx, folioId);
+      if (!folio.discountProfileId) return this.load(tx, folioId);
+      await tx.folio.update({
+        where: { id: folioId },
+        data: {
+          discountProfileId: null,
+          discountHolderName: null,
+          discountIdLast4: null,
+          discountIdEncrypted: null,
+        },
+      });
+      await this.audit.record(tx, {
+        action: 'folio.discount_removed',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId,
+      });
+      return this.load(tx, folioId);
+    });
   }
 
   // ---- Accounts, routing and transfers -----------------------------------------------------
@@ -648,7 +843,7 @@ export class FolioService {
           throw invalidState(`"${charge.description}" was already voided or moved.`);
         }
         const taxes = await tx.folioLine.aggregate({
-          where: { parentLineId: lineId, type: 'TAX' },
+          where: { parentLineId: lineId },
           _sum: { amountMinor: true },
         });
         const gross = charge.amountMinor + (taxes._sum.amountMinor ?? 0n);

@@ -35,6 +35,7 @@ import {
   CalendarDays,
   Check,
   Clock,
+  CreditCard,
   DoorOpen,
   KeyRound,
   LogOut,
@@ -456,6 +457,32 @@ function SelfCheckIn({
       return queryClient.invalidateQueries({ queryKey: ['stay'] });
     },
   });
+  // Back from the card provider: ?hold=<intent id>. Wait for its confirmation.
+  const [returned] = useState(() =>
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('hold'),
+  );
+  const holdPending = !!s.cardHold && !s.cardHold.authorized;
+  const payments = useQuery({
+    queryKey: ['payments'],
+    queryFn: api.payments,
+    enabled: !!returned && holdPending,
+    refetchInterval: (q) =>
+      q.state.data?.find((i) => i.id === returned)?.status === 'PENDING' ? 3_000 : false,
+  });
+  const returnedHold = payments.data?.find((i) => i.id === returned);
+  useEffect(() => {
+    if (returnedHold?.status === 'AUTHORIZED')
+      void queryClient.invalidateQueries({ queryKey: ['stay'] });
+  }, [returnedHold?.status, queryClient]);
+  const [attemptKey] = useState(() => crypto.randomUUID());
+  const hold = useMutation({
+    mutationFn: () => api.hold(attemptKey),
+    onSuccess: (intent) => {
+      if (intent.status === 'AUTHORIZED')
+        return queryClient.invalidateQueries({ queryKey: ['stay'] });
+      if (intent.checkoutUrl) window.location.assign(intent.checkoutUrl);
+    },
+  });
   return (
     <Section
       icon={<KeyRound />}
@@ -467,12 +494,44 @@ function SelfCheckIn({
       }
     >
       <CardContent className="flex flex-col gap-3">
+        {s.cardHold && (
+          <div className="flex flex-col gap-2 rounded-xl border p-3 text-sm">
+            <span className="flex items-center justify-between gap-2">
+              <span>
+                Card hold for incidentals:{' '}
+                <strong>{formatMoney(s.cardHold.requiredMinor, s.cardHold.currency)}</strong>
+              </span>
+              {s.cardHold.authorized && <Badge variant="success">Authorized</Badge>}
+            </span>
+            {!s.cardHold.authorized && (
+              <>
+                <span className="text-muted-foreground">
+                  The amount is reserved on your card, not charged. You only pay for what you use;
+                  the rest is released after check-out.
+                </span>
+                {returnedHold?.status === 'FAILED' && (
+                  <Alert>Your card was declined. Try again or use another card.</Alert>
+                )}
+                {hold.error && <Alert>{errorMessage(hold.error)}</Alert>}
+                <Button
+                  variant="outline"
+                  onClick={() => hold.mutate()}
+                  loading={hold.isPending || returnedHold?.status === 'PENDING'}
+                  disabled={!s.verified}
+                >
+                  {!hold.isPending && <CreditCard />}
+                  Authorize card hold
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         {checkIn.error && <Alert>{errorMessage(checkIn.error)}</Alert>}
         <Button
           size="lg"
           onClick={() => checkIn.mutate()}
           loading={checkIn.isPending}
-          disabled={!s.verified}
+          disabled={!s.verified || holdPending}
         >
           {!checkIn.isPending && <DoorOpen />}
           Check in now

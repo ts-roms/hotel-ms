@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeTaxes } from './tax-engine.js';
+import { applyStatutoryDiscount, computeTaxes } from './tax-engine.js';
 
 const VAT = { code: 'VAT', name: 'VAT 12%', rateBps: 1200, inclusive: true };
 const CITY = { code: 'CITY', name: 'City tax 0.75%', rateBps: 75, inclusive: false };
@@ -56,5 +56,35 @@ describe('computeTaxes', () => {
 
   it('no rules: everything is net', () => {
     expect(computeTaxes(5_000n, [])).toEqual({ netMinor: 5_000n, taxes: [], totalMinor: 5_000n });
+  });
+});
+
+describe('statutory discounts', () => {
+  const vat = { code: 'VAT', name: 'VAT 12%', rateBps: 1200, inclusive: true };
+  const senior = { discountBps: 2000, exemptTaxCodes: ['VAT'] };
+
+  it('takes out the exempt VAT, then discounts 20% (PH senior citizen)', () => {
+    const r = applyStatutoryDiscount(350_000n, [vat], senior);
+    expect(r).toEqual({ base: 312_500n, discount: 62_500n, rules: [] });
+    // The guest pays 2,500.00 for a 3,500.00 room.
+    expect(r.base - r.discount).toBe(250_000n);
+  });
+
+  it('keeps taxes the holder is not exempt from', () => {
+    const service = { code: 'SC', name: 'Service charge', rateBps: 1000, inclusive: false };
+    const r = applyStatutoryDiscount(112_000n, [vat, service], senior);
+    expect(r.base).toBe(100_000n);
+    expect(r.discount).toBe(20_000n);
+    expect(r.rules).toEqual([service]);
+  });
+
+  it('without exemptions only discounts', () => {
+    expect(
+      applyStatutoryDiscount(10_000n, [vat], { discountBps: 500, exemptTaxCodes: [] }),
+    ).toEqual({
+      base: 10_000n,
+      discount: 500n,
+      rules: [vat],
+    });
   });
 });

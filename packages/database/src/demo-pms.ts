@@ -92,6 +92,26 @@ export async function seedDemoInventory(
         },
       });
     }
+    // Philippine statutory discounts (RA 9994, RA 10754): 20% and VAT-exempt. Seed
+    // configuration that each property can change, never code.
+    if ((await tx.discountProfile.count({ where: { propertyId } })) === 0) {
+      for (const [code, name] of [
+        ['SENIOR', 'Senior citizen'],
+        ['PWD', 'Person with disability'],
+      ] as const) {
+        await tx.discountProfile.create({
+          data: {
+            organizationId,
+            propertyId,
+            code,
+            name,
+            discountBps: 2000,
+            exemptTaxCodes: ['VAT'],
+            departments: ['ROOM', 'FNB'],
+          },
+        });
+      }
+    }
     const existing = await tx.roomType.findMany({
       where: { propertyId },
       include: { rooms: true },

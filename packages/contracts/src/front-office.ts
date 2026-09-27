@@ -92,6 +92,10 @@ export const paymentSchema = z.object({
   refundedMinor: amountMinorSchema,
   /** Online gateway that took the payment; null for desk payments. */
   provider: z.string().nullable(),
+  /** Foreign cash: what was handed over and the rate used (folio currency per unit). */
+  tendered: z
+    .object({ currency: z.string(), amountMinor: z.number().int(), rate: z.string() })
+    .nullable(),
   reference: z.string().nullable(),
   businessDate: localDateSchema,
   createdAt: z.iso.datetime(),
@@ -107,6 +111,17 @@ export const folioSchema = z.object({
   reservationRoomId: z.uuid().nullable(),
   /** Company / group account name; null for guest folios. */
   label: z.string().nullable(),
+  /** Statutory discount on this folio's charges (e.g. PH senior citizen / PWD). */
+  discount: z
+    .object({
+      profileId: z.uuid(),
+      code: z.string(),
+      name: z.string(),
+      holderName: z.string(),
+      /** Last four characters of the ID only; the full number is stored encrypted. */
+      idLast4: z.string(),
+    })
+    .nullable(),
   lines: z.array(folioLineSchema),
   payments: z.array(paymentSchema),
 });
@@ -120,18 +135,35 @@ export const postChargeRequestSchema = z.strictObject({
 });
 export type PostChargeRequest = z.infer<typeof postChargeRequestSchema>;
 
-export const recordPaymentRequestSchema = z.strictObject({
-  method: z.enum(PAYMENT_METHODS),
-  amountMinor: amountMinorSchema.refine((v) => v > 0, 'Must be greater than zero'),
-  /** Terminal slip, transfer or e-wallet reference. Never a card number. */
-  reference: z
-    .string()
-    .trim()
-    .max(80)
-    .refine((v) => !/\d{12,}/.test(v.replace(/[\s-]/g, '')), 'Do not enter card numbers')
-    .nullable()
-    .default(null),
-});
+export const recordPaymentRequestSchema = z
+  .strictObject({
+    method: z.enum(PAYMENT_METHODS),
+    /** In the folio currency. Omit when paying foreign cash: it follows from `tendered`. */
+    amountMinor: amountMinorSchema.refine((v) => v > 0, 'Must be greater than zero').optional(),
+    /** Foreign cash, converted at the property's current exchange rate. */
+    tendered: z
+      .strictObject({
+        currency: z.string().regex(/^[A-Z]{3}$/, 'Must be an ISO 4217 code'),
+        amountMinor: amountMinorSchema.refine((v) => v > 0, 'Must be greater than zero'),
+      })
+      .optional(),
+    /** Terminal slip, transfer or e-wallet reference. Never a card number. */
+    reference: z
+      .string()
+      .trim()
+      .max(80)
+      .refine((v) => !/\d{12,}/.test(v.replace(/[\s-]/g, '')), 'Do not enter card numbers')
+      .nullable()
+      .default(null),
+  })
+  .refine((p) => (p.amountMinor === undefined) !== (p.tendered === undefined), {
+    message: 'Give either amountMinor, or tendered foreign cash',
+    path: ['amountMinor'],
+  })
+  .refine((p) => !p.tendered || p.method === 'CASH', {
+    message: 'Only cash can be tendered in a foreign currency',
+    path: ['tendered'],
+  });
 export type RecordPaymentRequest = z.infer<typeof recordPaymentRequestSchema>;
 
 export const voidLineRequestSchema = z.strictObject({ reason: z.string().trim().min(1).max(200) });

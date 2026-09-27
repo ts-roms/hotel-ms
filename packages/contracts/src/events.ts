@@ -63,7 +63,11 @@ export interface DomainEventPayloads {
     folioId: string;
     amountMinor: number;
   };
-  PaymentFailed: { paymentIntentId: string; folioId: string; reason: string };
+  HoldAuthorized: { paymentIntentId: string; reservationRoomId: string; amountMinor: number };
+  HoldCaptured: { paymentIntentId: string; paymentId: string; amountMinor: number };
+  HoldReleased: { paymentIntentId: string };
+  FolioDiscountApplied: { folioId: string; profileCode: string };
+  PaymentFailed: { paymentIntentId: string; folioId: string | null; reason: string };
   RefundIssued: { refundId: string; paymentId: string; amountMinor: number; status: string };
   CashierShiftClosed: { shiftId: string; varianceMinor: number };
   DocumentIssued: { documentId: string; type: string; documentNo: string };
