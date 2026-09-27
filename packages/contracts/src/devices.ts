@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUNCH_TYPES } from './hr.js';
 
 /**
  * Shared devices (ADR-0020): a kitchen tablet paired to one property, used by staff who
@@ -14,9 +15,17 @@ export const DEVICE_PERMISSIONS = [
 ] as const;
 export type DevicePermission = (typeof DEVICE_PERMISSIONS)[number];
 
+/**
+ * KITCHEN: staff sign in with a PIN and work within the device's permissions.
+ * TIME_CLOCK: no sign-in; employees punch with their Employee ID and a selfie (ADR-0022).
+ */
+export const DEVICE_KINDS = ['KITCHEN', 'TIME_CLOCK'] as const;
+export type DeviceKind = (typeof DEVICE_KINDS)[number];
+
 export const deviceSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  kind: z.enum(DEVICE_KINDS),
   permissions: z.array(z.enum(DEVICE_PERMISSIONS)),
   /** PENDING: waiting for its pairing code; PAIRED: in use; REVOKED: can never sign in. */
   status: z.enum(['PENDING', 'PAIRED', 'REVOKED']),
@@ -27,10 +36,16 @@ export const deviceSchema = z.object({
 });
 export type Device = z.infer<typeof deviceSchema>;
 
-export const createDeviceRequestSchema = z.strictObject({
-  name: z.string().trim().min(1).max(60),
-  permissions: z.array(z.enum(DEVICE_PERMISSIONS)).min(1),
-});
+export const createDeviceRequestSchema = z
+  .strictObject({
+    name: z.string().trim().min(1).max(60),
+    kind: z.enum(DEVICE_KINDS).default('KITCHEN'),
+    permissions: z.array(z.enum(DEVICE_PERMISSIONS)).default([]),
+  })
+  .refine((d) => (d.kind === 'KITCHEN') === d.permissions.length > 0, {
+    message: 'Kitchen devices need permissions; time clocks take none',
+    path: ['permissions'],
+  });
 export type CreateDeviceRequest = z.infer<typeof createDeviceRequestSchema>;
 
 /** The pairing code is shown once; only its hash is stored. */
@@ -58,6 +73,7 @@ export const kioskStateSchema = z.object({
     name: z.string(),
     propertyId: z.uuid(),
     propertyName: z.string(),
+    kind: z.enum(DEVICE_KINDS),
     permissions: z.array(z.enum(DEVICE_PERMISSIONS)),
   }),
   /** Staff signed in on this device right now, if any. */
@@ -84,3 +100,38 @@ export type SetPinRequest = z.infer<typeof setPinRequestSchema>;
 
 export const pinStatusSchema = z.object({ hasPin: z.boolean() });
 export type PinStatus = z.infer<typeof pinStatusSchema>;
+
+// ---- Time clock (ADR-0022) --------------------------------------------------------------------
+
+/** Selfie formats a time clock may send (checked against the image's own bytes). */
+export const CLOCK_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+/** Largest accepted selfie: 2 MiB (a camera frame is far smaller). */
+export const CLOCK_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** The punch travels in the query string; the body is the selfie itself. */
+export const clockPunchQuerySchema = z.strictObject({
+  /** Matched case-insensitively. */
+  employeeNo: z.string().trim().min(1).max(40),
+  type: z.enum(PUNCH_TYPES),
+});
+export type ClockPunchQuery = z.infer<typeof clockPunchQuerySchema>;
+
+export const clockPunchResultSchema = z.object({
+  /** First (or preferred) name only, for the greeting on a shared screen. */
+  employeeName: z.string(),
+  type: z.enum(PUNCH_TYPES),
+  at: z.iso.datetime(),
+});
+export type ClockPunchResult = z.infer<typeof clockPunchResultSchema>;
+
+/** A punch with its selfie, for managers reviewing time clock punches. */
+export const clockPhotoSchema = z.object({
+  punchId: z.uuid(),
+  employeeId: z.uuid(),
+  employeeNo: z.string(),
+  employeeName: z.string(),
+  type: z.enum(PUNCH_TYPES),
+  at: z.iso.datetime(),
+  deviceName: z.string().nullable(),
+});
+export type ClockPhoto = z.infer<typeof clockPhotoSchema>;

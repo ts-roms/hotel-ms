@@ -19,6 +19,7 @@ export interface ResolvedDevice {
   organizationId: string;
   propertyId: string;
   name: string;
+  kind: 'KITCHEN' | 'TIME_CLOCK';
   permissions: string[];
   tokenHash: string;
 }
@@ -104,6 +105,7 @@ export class KioskAuth {
       organizationId: device.organizationId,
       propertyId: device.propertyId,
       name: device.name,
+      kind: device.kind as ResolvedDevice['kind'],
       permissions: device.permissions,
       tokenHash,
     };

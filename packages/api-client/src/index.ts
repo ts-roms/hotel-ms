@@ -1,4 +1,6 @@
 import type {
+  ClockPhoto,
+  ClockPunchResult,
   DocumentRetention,
   CreateDeviceRequest,
   Device,
@@ -615,6 +617,12 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'if-match': `W/"${version}"`,
             },
           ).then((r) => r.data),
+        clockPhotos: (from: string, to: string) =>
+          call<{ items: ClockPhoto[] }>('GET', `${p}/attendance/photos${qs({ from, to })}`).then(
+            (r) => r.data.items,
+          ),
+        /** Same-origin image URL; each load is audited. */
+        clockPhotoUrl: (punchId: string) => `${baseUrl}${p}/attendance/photos/${id(punchId)}`,
         devices: () => call<{ items: Device[] }>('GET', `${p}/devices`).then((r) => r.data.items),
         createDevice: (body: CreateDeviceRequest) =>
           call<DevicePairing>('POST', `${p}/devices`, body).then((r) => r.data),
@@ -827,6 +835,13 @@ export function createKioskApiClient(options: ApiClientOptions = {}) {
     signIn: (membershipId: string, pin: string) =>
       call<KioskState>('POST', '/kiosk/sign-in', { membershipId, pin }).then(data),
     signOut: () => call<KioskState>('POST', '/kiosk/sign-out').then(data),
+    /** Time clock punch: the selfie (a JPEG blob) is the body. */
+    clock: (employeeNo: string, type: PunchType, selfie: Blob) =>
+      call<ClockPunchResult>(
+        'POST',
+        `/kiosk/clock?${new URLSearchParams({ employeeNo, type })}`,
+        selfie,
+      ).then(data),
   };
 }
 

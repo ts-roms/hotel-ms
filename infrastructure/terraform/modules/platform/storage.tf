@@ -58,6 +58,25 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
       days_after_initiation = 1
     }
   }
+
+  # Time clock selfies (ADR-0022): the API deletes them after 90 days; this backstop also
+  # removes any a crash left without a punch.
+  rule {
+    id     = "expire-attendance-photos"
+    status = "Enabled"
+    filter {
+      tag {
+        key   = "retention"
+        value = "attendance-photo"
+      }
+    }
+    expiration {
+      days = var.attendance_photo_expiry_days
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+  }
 }
 
 data "aws_iam_policy_document" "documents_bucket" {
@@ -102,7 +121,7 @@ resource "aws_s3_bucket_policy" "documents" {
 # Only the API task reads and writes documents; nothing may list the bucket.
 data "aws_iam_policy_document" "api_documents" {
   statement {
-    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+    actions   = ["s3:PutObject", "s3:PutObjectTagging", "s3:GetObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.documents.arn}/*"]
   }
   statement {

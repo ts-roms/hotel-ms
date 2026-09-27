@@ -92,8 +92,7 @@ export class AttendanceService {
   }
 
   /**
-   * Clock in/out (blueprint §13.2). Punches of one employee are serialized with a row lock
-   * on the employee, so two devices cannot both clock in.
+   * Clock in/out (blueprint §13.2) from the employee's own session.
    */
   async punch(propertyId: string, type: PunchType): Promise<Punch> {
     return this.db.run(async (tx) => {
@@ -103,47 +102,71 @@ export class AttendanceService {
         where: { employeeId: me.id, propertyId, ...activeOn(property.today) },
       });
       if (!assigned) throw Problems.forbidden('You are not assigned to this property today.');
-
-      await tx.$queryRaw`SELECT id FROM employees WHERE id = ${me.id}::uuid FOR UPDATE`;
-      const last = await tx.attendancePunch.findFirst({
-        where: { employeeId: me.id },
-        orderBy: [{ at: 'desc' }, { recordedAt: 'desc' }],
+      const punch = await this.punchInTx(tx, {
+        employeeId: me.id,
+        propertyId,
+        type,
+        source: 'WEB',
+        recordedBy: this.access.actorId,
       });
-      const now = new Date();
-      const stale = last && now.getTime() - last.at.getTime() > STALE_OPEN_HOURS * 3_600_000;
-      const state: PunchType | 'NONE' =
-        !last || (stale && last.type !== 'OUT') ? 'NONE' : last.type;
-      if (!NEXT[state].includes(type)) {
-        throw invalidState(
-          state === 'NONE' || state === 'OUT'
-            ? 'You are not clocked in.'
-            : `You cannot ${type.toLowerCase().replace('_', ' ')} now (last: ${state.toLowerCase().replace('_', ' ')}).`,
-        );
-      }
-      if (last && type !== 'IN' && last.propertyId !== propertyId) {
-        throw invalidState('You are clocked in at another property.');
-      }
-      const punch = await tx.attendancePunch.create({
-        data: {
-          organizationId: this.access.organizationId,
-          propertyId,
-          employeeId: me.id,
-          type,
-          at: now,
-          source: 'WEB',
-          recordedBy: this.access.actorId,
-        },
-      });
-      if (type === 'IN' || type === 'OUT') {
-        await this.outbox.enqueue(
-          tx,
-          type === 'IN' ? 'EmployeeClockedIn' : 'EmployeeClockedOut',
-          { employeeId: me.id, punchId: punch.id },
-          { propertyId },
-        );
-      }
       return toPunchDto(punch);
     });
+  }
+
+  /**
+   * Records one punch after checking it may follow the last one. Punches of one employee
+   * are serialized with a row lock on the employee, so two devices cannot both clock in.
+   * Shared by the web punch and the time clock (ADR-0022).
+   */
+  async punchInTx(
+    tx: Tx,
+    input: {
+      employeeId: string;
+      propertyId: string;
+      type: PunchType;
+      source: Punch['source'];
+      recordedBy: string | null;
+    },
+  ) {
+    const { employeeId, propertyId, type } = input;
+    await tx.$queryRaw`SELECT id FROM employees WHERE id = ${employeeId}::uuid FOR UPDATE`;
+    const last = await tx.attendancePunch.findFirst({
+      where: { employeeId },
+      orderBy: [{ at: 'desc' }, { recordedAt: 'desc' }],
+    });
+    const now = new Date();
+    const stale = last && now.getTime() - last.at.getTime() > STALE_OPEN_HOURS * 3_600_000;
+    const state: PunchType | 'NONE' = !last || (stale && last.type !== 'OUT') ? 'NONE' : last.type;
+    if (!NEXT[state].includes(type)) {
+      throw invalidState(
+        state === 'NONE' || state === 'OUT'
+          ? 'You are not clocked in.'
+          : `You cannot ${type.toLowerCase().replace('_', ' ')} now (last: ${state.toLowerCase().replace('_', ' ')}).`,
+      );
+    }
+    if (last && type !== 'IN' && last.propertyId !== propertyId) {
+      throw invalidState('You are clocked in at another property.');
+    }
+    const punch = await tx.attendancePunch.create({
+      data: {
+        organizationId: this.access.organizationId,
+        propertyId,
+        employeeId,
+        type,
+        at: now,
+        source: input.source,
+        recordedBy: input.recordedBy,
+      },
+    });
+    if (type === 'IN' || type === 'OUT') {
+      await this.outbox.enqueue(
+        tx,
+        type === 'IN' ? 'EmployeeClockedIn' : 'EmployeeClockedOut',
+        { employeeId, punchId: punch.id },
+        { propertyId },
+      );
+    }
+    return punch;
   }
 
   async myAttendance(from: string, to: string): Promise<AttendanceDay[]> {
