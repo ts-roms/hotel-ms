@@ -609,6 +609,9 @@ describe('birthdays', () => {
     expect(names).not.toContain('Faye Desk'); // works in Cebu
     for (const b of res.body.items)
       expect(Object.keys(b).sort()).toEqual(['day', 'employeeId', 'month', 'name']);
-    expect(JSON.stringify(res.body)).not.toMatch(/19\d\d/);
+    // No birth year anywhere (employee ids are random UUIDs, so check the other fields only).
+    for (const b of res.body.items) {
+      expect(JSON.stringify([b.name, b.month, b.day])).not.toMatch(/19\d\d/);
+    }
   });
 });
