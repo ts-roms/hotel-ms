@@ -309,10 +309,12 @@ function MyLeave() {
   const leave = useQuery({ queryKey: ['me', 'leave'], queryFn: api.me.leave });
   const types = useQuery({ queryKey: ['leave-types'], queryFn: api.hr.leaveTypes });
   const [form, setForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+  // '' means "not chosen yet": show and submit the first active type (types load after mount).
+  const activeTypes = types.data?.filter((lt) => !lt.archived) ?? [];
+  const leaveTypeId = form.leaveTypeId || activeTypes[0]?.id || '';
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me', 'leave'] });
   const request = useMutation({
-    mutationFn: () =>
-      api.me.requestLeave({ ...form, leaveTypeId: form.leaveTypeId || types.data![0]!.id }),
+    mutationFn: () => api.me.requestLeave({ ...form, leaveTypeId }),
     onSuccess: () => {
       setForm({ leaveTypeId: form.leaveTypeId, startDate: '', endDate: '', reason: '' });
       return refresh();
@@ -323,7 +325,6 @@ function MyLeave() {
     event.preventDefault();
     request.mutate();
   };
-  const activeTypes = types.data?.filter((lt) => !lt.archived) ?? [];
   return (
     <Card>
       <CardHeader>
@@ -354,7 +355,7 @@ function MyLeave() {
           <Select
             aria-label={t('hr.leaveType')}
             className="w-auto"
-            value={form.leaveTypeId}
+            value={leaveTypeId}
             onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
           >
             {activeTypes.map((lt) => (
@@ -393,7 +394,7 @@ function MyLeave() {
           <Button
             type="submit"
             loading={request.isPending}
-            disabled={!form.startDate || !form.endDate}
+            disabled={!leaveTypeId || !form.startDate || !form.endDate}
           >
             {t('hr.requestLeave')}
           </Button>

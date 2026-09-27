@@ -249,12 +249,16 @@ function NewShift({
   });
   const [form, setForm] = useState({ employeeId: '', date: days[0]!, templateId: '' });
   const [warnings, setWarnings] = useState<ShiftWarning[]>([]);
+  // '' means "not chosen yet": show and submit the first option. The templates load after
+  // the first render, so the select must be given that option explicitly or it shows blank.
+  const employeeId = form.employeeId || employees[0]?.id || '';
+  const templateId = form.templateId || templates.data?.[0]?.id || '';
   const create = useMutation({
     mutationFn: () =>
       pms.createShift({
-        employeeId: form.employeeId || employees[0]!.id,
+        employeeId,
         date: form.date,
-        templateId: form.templateId || templates.data![0]!.id,
+        templateId,
         departmentId: null,
         notes: '',
       }),
@@ -274,7 +278,7 @@ function NewShift({
           <Select
             className="w-auto"
             aria-label={t('hr.employee')}
-            value={form.employeeId}
+            value={employeeId}
             onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
           >
             {employees.map((e) => (
@@ -293,7 +297,7 @@ function NewShift({
           <Select
             className="w-auto"
             aria-label={t('hr.shiftTemplate')}
-            value={form.templateId}
+            value={templateId}
             onChange={(e) => setForm({ ...form, templateId: e.target.value })}
           >
             {templates.data?.map((tpl) => (
@@ -302,11 +306,7 @@ function NewShift({
               </option>
             ))}
           </Select>
-          <Button
-            type="submit"
-            loading={create.isPending}
-            disabled={employees.length === 0 || !templates.data?.length}
-          >
+          <Button type="submit" loading={create.isPending} disabled={!employeeId || !templateId}>
             {!create.isPending && <Plus />}
             {t('hr.addShift')}
           </Button>

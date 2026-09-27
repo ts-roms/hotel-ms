@@ -144,10 +144,12 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
   });
   const types = useQuery({ queryKey: ['leave-types'], queryFn: api.hr.leaveTypes });
   const [form, setForm] = useState({ leaveTypeId: '', days: '', note: '' });
+  // '' means "not chosen yet": show and submit the first type (types load after mount).
+  const leaveTypeId = form.leaveTypeId || types.data?.[0]?.id || '';
   const post = useMutation({
     mutationFn: () =>
       api.hr.postLeave(employeeId, {
-        leaveTypeId: form.leaveTypeId || types.data![0]!.id,
+        leaveTypeId,
         kind: Number(form.days) > 0 ? 'ACCRUAL' : 'ADJUSTMENT',
         days: Number(form.days),
         effectiveDate: today(),
@@ -190,7 +192,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
             <Select
               className="w-auto"
               aria-label={t('hr.leaveType')}
-              value={form.leaveTypeId}
+              value={leaveTypeId}
               onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
             >
               {types.data?.map((lt) => (
@@ -219,7 +221,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
               type="submit"
               variant="outline"
               loading={post.isPending}
-              disabled={!Number(form.days) || !form.note.trim()}
+              disabled={!leaveTypeId || !Number(form.days) || !form.note.trim()}
             >
               {t('hr.postLeave')}
             </Button>

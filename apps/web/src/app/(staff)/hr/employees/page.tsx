@@ -114,10 +114,15 @@ function NewEmployee() {
     departmentId: '',
     positionId: '',
   });
+  // '' means "not chosen yet": show and submit the first option. Options load after the
+  // first render, so the selects must be given that option explicitly or they show blank.
+  const activeDepartments = departments.data?.filter((d) => !d.archived) ?? [];
+  const propertyId = form.propertyId || properties.data?.items[0]?.id || '';
+  const department =
+    activeDepartments.find((d) => d.id === form.departmentId) ?? activeDepartments[0];
+  const departmentId = department?.id ?? '';
   const create = useMutation({
     mutationFn: () => {
-      const propertyId = form.propertyId || properties.data!.items[0]!.id;
-      const departmentId = form.departmentId || departments.data![0]!.id;
       return api.hr.createEmployee({
         employeeNo: form.employeeNo,
         firstName: form.firstName,
@@ -142,8 +147,6 @@ function NewEmployee() {
       return queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
   });
-  const department =
-    departments.data?.find((d) => d.id === form.departmentId) ?? departments.data?.[0];
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     create.mutate();
@@ -182,7 +185,7 @@ function NewEmployee() {
           <Select
             className="w-auto"
             aria-label={t('hr.property')}
-            value={form.propertyId}
+            value={propertyId}
             onChange={(e) => setForm({ ...form, propertyId: e.target.value })}
           >
             {properties.data?.items.map((p) => (
@@ -194,16 +197,14 @@ function NewEmployee() {
           <Select
             className="w-auto"
             aria-label={t('hr.department')}
-            value={form.departmentId}
+            value={departmentId}
             onChange={(e) => setForm({ ...form, departmentId: e.target.value, positionId: '' })}
           >
-            {departments.data
-              ?.filter((d) => !d.archived)
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
+            {activeDepartments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
           </Select>
           <Select
             className="w-auto"
@@ -221,7 +222,9 @@ function NewEmployee() {
           <Button
             type="submit"
             loading={create.isPending}
-            disabled={!form.employeeNo || !form.firstName || !form.lastName}
+            disabled={
+              !form.employeeNo || !form.firstName || !form.lastName || !propertyId || !departmentId
+            }
           >
             {t('hr.addEmployee')}
           </Button>
