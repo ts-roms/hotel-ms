@@ -13,6 +13,11 @@ export interface RoleTemplate {
   readonly permissions: readonly PermissionCode[];
 }
 
+/** Permission groups overlap; templates list each permission once. */
+const uniq = (...groups: (readonly PermissionCode[])[]): PermissionCode[] => [
+  ...new Set(groups.flat()),
+];
+
 const PMS_READ = [
   'room.read',
   'rate.read',
@@ -28,75 +33,126 @@ const PMS_OPERATE = [
   'reservation.cancel',
 ] as const satisfies readonly PermissionCode[];
 
+const FRONT_OFFICE = [
+  'stay.check_in',
+  'stay.check_out',
+  'folio.read',
+  'folio.post',
+  'folio.void',
+  'payment.create',
+  'housekeeping.read',
+] as const satisfies readonly PermissionCode[];
+
+const HOUSEKEEPING = [
+  'room.read',
+  'housekeeping.read',
+  'housekeeping.update',
+] as const satisfies readonly PermissionCode[];
+
+const HOUSEKEEPING_LEAD = [
+  ...HOUSEKEEPING,
+  'housekeeping.inspect',
+  'housekeeping.assign',
+] as const satisfies readonly PermissionCode[];
+
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
+
+const PMS_MANAGE = [
+  ...PMS_CONFIGURE,
+  ...FRONT_OFFICE,
+  ...HOUSEKEEPING_LEAD,
+  'folio.adjust',
+  'tax.manage',
+  'night_audit.run',
+] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [
   {
     key: 'org_admin',
     name: 'Organization Administrator',
     description: 'Full administrative access to the organization.',
-    permissions: [
-      'organization.read',
-      'organization.update',
-      'organization.settings.manage',
-      'property.read',
-      'property.create',
-      'property.update',
-      'property.settings.manage',
-      'member.read',
-      'member.invite',
-      'member.update',
-      'role.read',
-      'role.manage',
-      'role.assign',
-      'audit.read',
-      'feature_flag.manage',
-      ...PMS_OPERATE,
-      ...PMS_CONFIGURE,
-    ],
+    permissions: uniq(
+      [
+        'organization.read',
+        'organization.update',
+        'organization.settings.manage',
+        'property.read',
+        'property.create',
+        'property.update',
+        'property.settings.manage',
+        'member.read',
+        'member.invite',
+        'member.update',
+        'role.read',
+        'role.manage',
+        'role.assign',
+        'audit.read',
+        'feature_flag.manage',
+      ],
+      PMS_OPERATE,
+      PMS_MANAGE,
+    ),
   },
   {
     key: 'general_manager',
     name: 'General Manager',
     description: 'Runs one or more properties.',
-    permissions: [
-      'organization.read',
-      'property.read',
-      'property.update',
-      'property.settings.manage',
-      'member.read',
-      'member.invite',
-      'member.update',
-      'role.read',
-      'role.assign',
-      'audit.read',
-      ...PMS_OPERATE,
-      ...PMS_CONFIGURE,
-    ],
+    permissions: uniq(
+      [
+        'organization.read',
+        'property.read',
+        'property.update',
+        'property.settings.manage',
+        'member.read',
+        'member.invite',
+        'member.update',
+        'role.read',
+        'role.assign',
+        'audit.read',
+      ],
+      PMS_OPERATE,
+      PMS_MANAGE,
+    ),
   },
   {
     key: 'front_desk',
     name: 'Front Desk Agent',
     description: 'Reservations, guests and arrivals at the front desk.',
-    permissions: ['organization.read', 'property.read', ...PMS_OPERATE],
+    permissions: uniq(['organization.read', 'property.read'], PMS_OPERATE, FRONT_OFFICE),
+  },
+  {
+    key: 'housekeeping_supervisor',
+    name: 'Housekeeping Supervisor',
+    description: 'Runs the housekeeping board: assigns, inspects and releases rooms.',
+    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING_LEAD),
+  },
+  {
+    key: 'housekeeper',
+    name: 'Housekeeper',
+    description: 'Cleans assigned rooms. Sees only their own tasks.',
+    permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING),
   },
   {
     key: 'auditor',
     name: 'Auditor',
     description: 'Read-only access to configuration, operations and the audit log.',
-    permissions: [
-      'organization.read',
-      'property.read',
-      'member.read',
-      'role.read',
-      'audit.read',
-      ...PMS_READ,
-    ],
+    permissions: uniq(
+      [
+        'organization.read',
+        'property.read',
+        'member.read',
+        'role.read',
+        'audit.read',
+        'folio.read',
+        'housekeeping.read',
+      ],
+      PMS_READ,
+    ),
   },
   {
     key: 'staff',
     name: 'Staff',
     description: 'Baseline access for any staff member.',
-    permissions: ['organization.read', 'property.read'],
+    permissions: uniq(['organization.read', 'property.read']),
   },
-] as const satisfies readonly RoleTemplate[];
+] satisfies readonly RoleTemplate[];

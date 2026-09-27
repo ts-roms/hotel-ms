@@ -331,6 +331,8 @@ export const reservationRoomSchema = z.object({
   children: z.number().int(),
   status: z.enum(RESERVATION_ROOM_STATUSES),
   assignedRoom: z.object({ roomId: z.uuid(), number: z.string() }).nullable(),
+  /** Set once the guest has checked in. */
+  folioId: z.uuid().nullable(),
   nights: z.array(nightPriceSchema),
   totalMinor: amountMinorSchema,
   version: z.number().int(),

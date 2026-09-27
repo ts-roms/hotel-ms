@@ -16,9 +16,12 @@ interface NavItem {
 
 /** Pages that work on one property live under /p/[propertyId]. */
 const PROPERTY_NAV: NavItem[] = [
+  { href: 'front-desk', label: 'nav.frontDesk', permission: 'reservation.read' },
   { href: 'reservations', label: 'nav.reservations', permission: 'reservation.read' },
   { href: 'availability', label: 'nav.availability', permission: 'reservation.read' },
+  { href: 'housekeeping', label: 'nav.housekeeping', permission: 'housekeeping.read' },
   { href: 'rooms', label: 'nav.rooms', permission: 'room.read' },
+  { href: 'night-audit', label: 'nav.nightAudit', permission: 'night_audit.run' },
 ];
 
 const ORG_NAV: NavItem[] = [

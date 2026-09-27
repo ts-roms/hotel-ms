@@ -21,7 +21,7 @@
 - Out-of-scope property routes answer `404`, like other tenants' properties, so scoped users
   cannot enumerate properties.
 - Effective grants are cached in Redis under
-  `t:{org}:grants:{membership}:{grants_version}`. Any role or assignment change must bump
+  `t:{org}:grants:{membership}:{grants_version}:{catalog fingerprint}`. Any role or assignment change must bump
   `organization_memberships.grants_version`.
 
 ## Access administration (Phase 1)

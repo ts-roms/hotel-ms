@@ -78,6 +78,42 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
   },
   'reservation.cancel': { description: 'Cancel reservations', scopes: ORG_OR_PROPERTY },
+
+  // ---- PMS: front office, folio, housekeeping, night audit ---------------------------
+  'stay.check_in': { description: 'Check guests in', scopes: ORG_OR_PROPERTY },
+  'stay.check_out': { description: 'Check guests out', scopes: ORG_OR_PROPERTY },
+  'folio.read': { description: 'View guest folios and payments', scopes: ORG_OR_PROPERTY },
+  'folio.post': { description: 'Post charges to folios', scopes: ORG_OR_PROPERTY },
+  'folio.void': {
+    description: 'Void charges posted on the current business date',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'folio.adjust': {
+    description: 'Post adjustments to folios (after the business day closed)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'payment.create': { description: 'Record payments', scopes: ORG_OR_PROPERTY },
+  'tax.manage': {
+    description: 'Configure taxes',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'housekeeping.read': { description: 'View the housekeeping board', scopes: ORG_OR_PROPERTY },
+  'housekeeping.update': {
+    description: 'Update cleaning status of assigned rooms',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'housekeeping.inspect': { description: 'Inspect and release rooms', scopes: ORG_OR_PROPERTY },
+  'housekeeping.assign': {
+    description: 'Create and assign housekeeping tasks for any room',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'night_audit.run': {
+    description: 'Close the business day (night audit)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type PermissionCode = keyof typeof PERMISSIONS;

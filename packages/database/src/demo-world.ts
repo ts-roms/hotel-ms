@@ -46,6 +46,7 @@ export interface DemoWorld {
  *     robert.finance@abc.test auditor         @ ORGANIZATION
  *     frontdesk@abc.test     staff            @ PROPERTY(CEB)
  *     reception@abc.test     front_desk       @ PROPERTY(MNL)
+ *     hk@abc.test            housekeeper      @ PROPERTY(MNL)
  *   XYZ Resorts: Boracay
  *     admin@xyz.test         org_admin        @ ORGANIZATION
  *   consultant@shared.test   auditor          @ ORGANIZATION in both (multi-org identity)
@@ -71,6 +72,7 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
   const robert = await identity('robert.finance@abc.test', 'Robert Cruz');
   const frontDesk = await identity('frontdesk@abc.test', 'Faye Desk');
   const reception = await identity('reception@abc.test', 'Rey Reception');
+  const housekeeper = await identity('hk@abc.test', 'Hana Housekeeper');
   const xyzAdmin = await identity('admin@xyz.test', 'Xavier Admin');
   const consultant = await identity('consultant@shared.test', 'Casey Consultant');
 
@@ -109,6 +111,7 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     { identityId: robert, role: 'auditor', propertyIds: null },
     { identityId: frontDesk, role: 'staff', propertyIds: [abcProps.CEB!] },
     { identityId: reception, role: 'front_desk', propertyIds: [abcProps.MNL!] },
+    { identityId: housekeeper, role: 'housekeeper', propertyIds: [abcProps.MNL!] },
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
   await grant(prisma, xyz.organizationId, xyz.roleIdsByKey, [

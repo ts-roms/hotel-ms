@@ -113,6 +113,8 @@ model ReservationRoom {
   guest       Guest              @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
   nights      ReservationNight[]
   assignments RoomAssignment[]
+  stays       Stay[]
+  folios      Folio[]
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, arrivalDate])

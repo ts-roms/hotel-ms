@@ -52,6 +52,11 @@ export interface DomainEventPayloads {
     from: string;
     to: string;
   };
+  GuestCheckedIn: { reservationRoomId: string; stayId: string; roomId: string; folioId: string };
+  GuestCheckedOut: { reservationRoomId: string; stayId: string; roomId: string; folioId: string };
+  FolioLinePosted: { folioId: string; lineId: string; type: string; amountMinor: number };
+  PaymentRecorded: { folioId: string; paymentId: string; method: string; amountMinor: number };
+  BusinessDateClosed: { businessDate: string; nextBusinessDate: string };
 }
 
 export type DomainEventType = keyof DomainEventPayloads;

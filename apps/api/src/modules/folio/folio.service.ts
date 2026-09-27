@@ -1,0 +1,428 @@
+import { Injectable } from '@nestjs/common';
+import type {
+  AdjustmentRequest,
+  CreateTaxRuleRequest,
+  Folio,
+  PostChargeRequest,
+  RecordPaymentRequest,
+  TaxRule,
+} from '@hotel/contracts';
+import { Prisma, type Tx } from '@hotel/database';
+import { ClsService } from 'nestjs-cls';
+import { fromDbDate, toDbDate } from '../../common/dates.js';
+import { ProblemException, Problems } from '../../common/problem.js';
+import type { RequestContext } from '../../common/request-context.js';
+import { TenantDb } from '../../infrastructure/database.js';
+import { AuditService } from '../audit/audit.service.js';
+import { OutboxService } from '../outbox/outbox.service.js';
+import { toMinor } from '../pms/pricing.js';
+import { invalidState, nextNumber } from '../pms/reservations.service.js';
+import { businessDateOf } from '../pms/rooms.service.js';
+import { computeTaxes } from './tax-engine.js';
+
+export interface PostingInput {
+  department: string;
+  description: string;
+  /** As charged: tax-inclusive where the department's taxes are inclusive. */
+  amountMinor: bigint;
+  type?: 'CHARGE' | 'ADJUSTMENT';
+  /** Makes the posting idempotent within the folio. */
+  sourceKey?: string;
+  reason?: string;
+  businessDate?: string;
+}
+
+const folioInclude = {
+  lines: { orderBy: [{ postedAt: 'asc' }, { id: 'asc' }] },
+  payments: { orderBy: { createdAt: 'asc' } },
+} satisfies Prisma.FolioInclude;
+
+type FolioRow = Prisma.FolioGetPayload<{ include: typeof folioInclude }>;
+
+function toFolioDto(folio: FolioRow): Folio {
+  const reversed = new Set(folio.lines.map((l) => l.reversesLineId).filter(Boolean));
+  return {
+    id: folio.id,
+    folioNo: folio.folioNo,
+    status: folio.status,
+    currency: folio.currency,
+    balanceMinor: toSignedMinor(folio.balanceMinor),
+    reservationRoomId: folio.reservationRoomId,
+    lines: folio.lines.map((l) => ({
+      id: l.id,
+      businessDate: fromDbDate(l.businessDate),
+      type: l.type,
+      department: l.department,
+      description: l.description,
+      amountMinor: toSignedMinor(l.amountMinor),
+      taxCode: l.taxCode,
+      parentLineId: l.parentLineId,
+      reversesLineId: l.reversesLineId,
+      reversed: reversed.has(l.id),
+      reason: l.reason,
+      postedAt: l.postedAt.toISOString(),
+    })),
+    payments: folio.payments.map((p) => ({
+      id: p.id,
+      method: p.method,
+      amountMinor: toMinor(p.amountMinor),
+      reference: p.reference,
+      businessDate: fromDbDate(p.businessDate),
+      createdAt: p.createdAt.toISOString(),
+    })),
+  };
+}
+
+function toSignedMinor(value: bigint): number {
+  return value < 0n ? -toMinor(-value) : toMinor(value);
+}
+
+/**
+ * The guest folio is an append-only ledger (§15.1). Every mutation here is an INSERT;
+ * the database keeps the balance (trigger), refuses edits and deletes, and refuses
+ * postings to closed folios.
+ */
+@Injectable()
+export class FolioService {
+  constructor(
+    private readonly db: TenantDb,
+    private readonly audit: AuditService,
+    private readonly outbox: OutboxService,
+    private readonly cls: ClsService<RequestContext>,
+  ) {}
+
+  private get ctx() {
+    return {
+      organizationId: this.cls.get('organizationId')!,
+      propertyId: this.cls.get('propertyId')!,
+      actorId: this.cls.get('identityId') ?? null,
+    };
+  }
+
+  async openInTx(tx: Tx, reservationRoomId: string, currency: string): Promise<{ id: string }> {
+    const { organizationId, propertyId } = this.ctx;
+    const property = await tx.property.findUniqueOrThrow({
+      where: { id: propertyId },
+      select: { code: true },
+    });
+    const n = await nextNumber(tx, organizationId, propertyId, 'folio');
+    return tx.folio.create({
+      data: {
+        organizationId,
+        propertyId,
+        folioNo: `${property.code}-F${String(n).padStart(6, '0')}`,
+        reservationRoomId,
+        currency,
+      },
+      select: { id: true },
+    });
+  }
+
+  private async requireFolio(tx: Tx, folioId: string) {
+    const folio = await tx.folio.findFirst({
+      where: { id: folioId, propertyId: this.ctx.propertyId },
+    });
+    if (!folio) throw Problems.notFound('Folio');
+    return folio;
+  }
+
+  private async load(tx: Tx, folioId: string): Promise<Folio> {
+    const folio = await tx.folio.findFirst({
+      where: { id: folioId, propertyId: this.ctx.propertyId },
+      include: folioInclude,
+    });
+    if (!folio) throw Problems.notFound('Folio');
+    return toFolioDto(folio);
+  }
+
+  get(folioId: string): Promise<Folio> {
+    return this.db.run((tx) => this.load(tx, folioId));
+  }
+
+  async findForReservationRoom(reservationRoomId: string): Promise<Folio> {
+    return this.db.run(async (tx) => {
+      const folio = await tx.folio.findFirst({
+        where: { reservationRoomId, propertyId: this.ctx.propertyId },
+      });
+      if (!folio) throw Problems.notFound('Folio');
+      return this.load(tx, folio.id);
+    });
+  }
+
+  /**
+   * Posts a charge (or adjustment) as a net line plus one line per applicable tax.
+   * With a sourceKey, a repeated posting returns without posting twice.
+   */
+  async postInTx(tx: Tx, folioId: string, input: PostingInput): Promise<string> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    const folio = await this.requireFolio(tx, folioId);
+    if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+    if (input.sourceKey) {
+      const existing = await tx.folioLine.findFirst({
+        where: { folioId, sourceKey: input.sourceKey },
+      });
+      if (existing) return existing.id;
+    }
+    const businessDate = input.businessDate ?? (await businessDateOf(tx, propertyId));
+    const rules = await tx.taxRule.findMany({
+      where: { propertyId, archivedAt: null, departments: { has: input.department } },
+      orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+    });
+    const breakdown = computeTaxes(input.amountMinor, rules);
+    const type = input.type ?? 'CHARGE';
+
+    const line = await tx.folioLine.create({
+      data: {
+        organizationId,
+        propertyId,
+        folioId,
+        businessDate: toDbDate(businessDate),
+        type,
+        department: input.department,
+        description: input.description,
+        amountMinor: breakdown.netMinor,
+        currency: folio.currency,
+        sourceKey: input.sourceKey ?? null,
+        reason: input.reason ?? null,
+        postedBy: actorId,
+      },
+    });
+    for (const tax of breakdown.taxes) {
+      await tx.folioLine.create({
+        data: {
+          organizationId,
+          propertyId,
+          folioId,
+          businessDate: toDbDate(businessDate),
+          type: type === 'CHARGE' ? 'TAX' : 'ADJUSTMENT',
+          department: input.department,
+          description: tax.name,
+          amountMinor: tax.amountMinor,
+          currency: folio.currency,
+          parentLineId: line.id,
+          taxCode: tax.code,
+          postedBy: actorId,
+        },
+      });
+    }
+    await this.outbox.enqueue(
+      tx,
+      'FolioLinePosted',
+      { folioId, lineId: line.id, type, amountMinor: Number(breakdown.totalMinor) },
+      { propertyId },
+    );
+    return line.id;
+  }
+
+  async postCharge(folioId: string, input: PostChargeRequest): Promise<Folio> {
+    return this.db.run(async (tx) => {
+      const lineId = await this.postInTx(tx, folioId, {
+        ...input,
+        amountMinor: BigInt(input.amountMinor),
+      });
+      await this.audit.record(tx, {
+        action: 'folio.charge_posted',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId: this.ctx.propertyId,
+        after: { lineId, ...input },
+      });
+      return this.load(tx, folioId);
+    });
+  }
+
+  async adjust(folioId: string, input: AdjustmentRequest): Promise<Folio> {
+    return this.db.run(async (tx) => {
+      const lineId = await this.postInTx(tx, folioId, {
+        department: input.department,
+        description: input.description,
+        amountMinor: BigInt(input.amountMinor),
+        type: 'ADJUSTMENT',
+        reason: input.reason,
+      });
+      await this.audit.record(tx, {
+        action: 'folio.adjusted',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId: this.ctx.propertyId,
+        after: { lineId, ...input },
+      });
+      return this.load(tx, folioId);
+    });
+  }
+
+  async recordPayment(folioId: string, input: RecordPaymentRequest): Promise<Folio> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const folio = await this.requireFolio(tx, folioId);
+      if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+      const businessDate = toDbDate(await businessDateOf(tx, propertyId));
+      const amount = BigInt(input.amountMinor);
+      const line = await tx.folioLine.create({
+        data: {
+          organizationId,
+          propertyId,
+          folioId,
+          businessDate,
+          type: 'PAYMENT',
+          department: 'PAYMENT',
+          description: `Payment (${input.method.replace('_', ' ').toLowerCase()})`,
+          amountMinor: -amount,
+          currency: folio.currency,
+          postedBy: actorId,
+        },
+      });
+      const payment = await tx.payment.create({
+        data: {
+          organizationId,
+          propertyId,
+          folioId,
+          folioLineId: line.id,
+          method: input.method,
+          amountMinor: amount,
+          currency: folio.currency,
+          reference: input.reference,
+          businessDate,
+          receivedBy: actorId,
+        },
+      });
+      await this.audit.record(tx, {
+        action: 'payment.recorded',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId,
+        after: {
+          paymentId: payment.id,
+          method: input.method,
+          amountMinor: input.amountMinor,
+          reference: input.reference,
+        },
+      });
+      await this.outbox.enqueue(
+        tx,
+        'PaymentRecorded',
+        { folioId, paymentId: payment.id, method: input.method, amountMinor: input.amountMinor },
+        { propertyId },
+      );
+      return this.load(tx, folioId);
+    });
+  }
+
+  /**
+   * Voids a charge posted today: posts exact negations of the charge and its tax lines.
+   * After the business day has closed, corrections are adjustments instead.
+   */
+  async voidLine(folioId: string, lineId: string, reason: string): Promise<Folio> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const folio = await this.requireFolio(tx, folioId);
+      const line = await tx.folioLine.findFirst({ where: { id: lineId, folioId } });
+      if (!line) throw Problems.notFound('Folio line');
+      if (line.type !== 'CHARGE')
+        throw invalidState('Only charges can be voided. Use an adjustment otherwise.');
+      const businessDate = await businessDateOf(tx, propertyId);
+      if (fromDbDate(line.businessDate) !== businessDate) {
+        throw new ProblemException(
+          409,
+          'INVALID_STATE',
+          'Business day closed',
+          'This charge belongs to a closed business day. Post an adjustment instead.',
+        );
+      }
+      if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+      const already = await tx.folioLine.count({ where: { reversesLineId: lineId } });
+      if (already > 0) throw invalidState('This charge has already been voided.');
+
+      const taxes = await tx.folioLine.findMany({ where: { parentLineId: lineId } });
+      for (const original of [line, ...taxes]) {
+        await tx.folioLine.create({
+          data: {
+            organizationId,
+            propertyId,
+            folioId,
+            businessDate: toDbDate(businessDate),
+            type: 'REVERSAL',
+            department: original.department,
+            description: `Void: ${original.description}`,
+            amountMinor: -original.amountMinor,
+            currency: original.currency,
+            reversesLineId: original.id,
+            taxCode: original.taxCode,
+            reason,
+            postedBy: actorId,
+          },
+        });
+      }
+      await this.audit.record(tx, {
+        action: 'folio.line_voided',
+        entityType: 'folio',
+        entityId: folioId,
+        propertyId,
+        after: { lineId, reason },
+      });
+      return this.load(tx, folioId);
+    });
+  }
+
+  // ---- Tax configuration ------------------------------------------------------------------
+
+  async listTaxRules(): Promise<TaxRule[]> {
+    const rows = await this.db.run((tx) =>
+      tx.taxRule.findMany({
+        where: { propertyId: this.ctx.propertyId },
+        orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+      }),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      rateBps: r.rateBps,
+      inclusive: r.inclusive,
+      departments: r.departments as TaxRule['departments'],
+      archived: r.archivedAt !== null,
+    }));
+  }
+
+  /** New rules apply to postings from now on; history keeps the tax it was posted with. */
+  async createTaxRule(input: CreateTaxRuleRequest): Promise<TaxRule> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    try {
+      const rule = await this.db.run(async (tx) => {
+        const created = await tx.taxRule.create({
+          data: { organizationId, propertyId, ...input, createdBy: actorId },
+        });
+        await this.audit.record(tx, {
+          action: 'tax_rule.created',
+          entityType: 'tax_rule',
+          entityId: created.id,
+          propertyId,
+          after: input,
+        });
+        return created;
+      });
+      return (await this.listTaxRules()).find((r) => r.id === rule.id)!;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw Problems.conflict(`A tax with code ${input.code} already exists.`);
+      }
+      throw error;
+    }
+  }
+
+  async archiveTaxRule(taxRuleId: string): Promise<void> {
+    const { propertyId } = this.ctx;
+    await this.db.run(async (tx) => {
+      const rule = await tx.taxRule.findFirst({ where: { id: taxRuleId, propertyId } });
+      if (!rule) throw Problems.notFound('Tax rule');
+      if (rule.archivedAt) return;
+      await tx.taxRule.update({ where: { id: taxRuleId }, data: { archivedAt: new Date() } });
+      await this.audit.record(tx, {
+        action: 'tax_rule.archived',
+        entityType: 'tax_rule',
+        entityId: taxRuleId,
+        propertyId,
+      });
+    });
+  }
+}
