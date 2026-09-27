@@ -316,6 +316,9 @@ const en = {
   'na.noHistory': 'No closed days yet.',
   'folio.noLines': 'No charges or payments yet.',
   'avail.noRoomTypes': 'No room types configured.',
+  'hr.noEmployees': 'No employees found.',
+  'hr.prevWeek': 'Previous week',
+  'hr.nextWeek': 'Next week',
   loading: 'Loading…',
 } as const;
 

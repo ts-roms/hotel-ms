@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -10,9 +11,14 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  LoadingRegion,
   Select,
+  Skeleton,
+  SkeletonCard,
+  SkeletonText,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Briefcase, Plane } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
@@ -22,6 +28,7 @@ import { formatDate } from '@/lib/format';
 import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -32,26 +39,50 @@ export default function EmployeePage() {
   });
   const e = employee.data;
   if (employee.error) return <Alert>{errorMessage(employee.error)}</Alert>;
-  if (!e) return <p className="text-muted-foreground">{t('loading')}</p>;
+  if (!e)
+    return (
+      <LoadingRegion label={t('loading')} className="flex max-w-3xl flex-col gap-4">
+        <Skeleton className="h-4 w-16" />
+        <Card className="flex flex-col gap-4 p-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-12 rounded-full" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <SkeletonText lines={3} />
+        </Card>
+        <SkeletonCard lines={2} />
+      </LoadingRegion>
+    );
+  const name = `${e.preferredName || e.firstName} ${e.lastName}`;
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      <Link href="/hr/employees" className="text-sm text-muted-foreground underline">
+      <Link
+        href="/hr/employees"
+        className="group flex items-center gap-1 self-start text-sm text-muted-foreground transition-colors hover:text-primary"
+      >
+        <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <CardTitle>
-                {e.preferredName || e.firstName} {e.lastName}
-              </CardTitle>
-              <CardDescription className="font-mono">{e.employeeNo}</CardDescription>
+            <div className="flex items-center gap-3">
+              <Avatar name={name} className="size-12" />
+              <div className="flex flex-col gap-1">
+                <CardTitle>{name}</CardTitle>
+                <CardDescription className="font-mono">{e.employeeNo}</CardDescription>
+              </div>
             </div>
-            <Badge>{e.status.toLowerCase()}</Badge>
+            <Badge variant={statusVariant(e.status)} dot>
+              {statusLabel(e.status)}
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-1 text-sm sm:grid-cols-2">
+        <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
           <span>
             {t('hr.hired')}: {formatDate(e.hireDate)}
           </span>
@@ -75,15 +106,21 @@ export default function EmployeePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t('hr.assignments')}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Briefcase className="size-4 text-primary" />
+            {t('hr.assignments')}
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-1 text-sm">
+        <CardContent className="stagger flex flex-col gap-2 text-sm">
           {e.assignmentHistory.map((a) => (
-            <div key={a.id} className="flex flex-wrap justify-between gap-2 border-t pt-1">
-              <span>
-                {a.propertyName} · {a.departmentName}
+            <div
+              key={a.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+            >
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{a.propertyName}</span>· {a.departmentName}
                 {a.positionName && ` · ${a.positionName}`}
-                {a.isPrimary && ` (${t('hr.primary')})`}
+                {a.isPrimary && <Badge variant="primary">{t('hr.primary')}</Badge>}
               </span>
               <span className="text-muted-foreground">
                 {formatDate(a.startDate)} → {a.endDate ? formatDate(a.endDate) : '…'}
@@ -128,13 +165,22 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('hr.leave')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Plane className="size-4 text-primary" />
+          {t('hr.leave')}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {leave.error && <Alert>{errorMessage(leave.error)}</Alert>}
         <div className="flex flex-wrap gap-2">
+          {!leave.data && !leave.error && (
+            <>
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </>
+          )}
           {leave.data?.balances.map((b) => (
-            <Badge key={b.leaveTypeId}>
+            <Badge key={b.leaveTypeId} variant="primary">
               {b.leaveTypeName}: {b.days} {t('hr.days')}
             </Badge>
           ))}
@@ -172,7 +218,8 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
             <Button
               type="submit"
               variant="outline"
-              disabled={!Number(form.days) || !form.note.trim() || post.isPending}
+              loading={post.isPending}
+              disabled={!Number(form.days) || !form.note.trim()}
             >
               {t('hr.postLeave')}
             </Button>
@@ -182,12 +229,16 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
         {leave.data?.ledger.slice(0, 20).map((l) => (
           <div
             key={l.id}
-            className="flex justify-between gap-2 border-t pt-1 text-muted-foreground"
+            className="flex justify-between gap-2 border-t pt-2 text-muted-foreground"
           >
             <span>
               {formatDate(l.effectiveDate)} · {l.leaveTypeCode} · {l.kind.toLowerCase()} · {l.note}
             </span>
-            <span className="tabular-nums">
+            <span
+              className={
+                l.days > 0 ? 'font-medium tabular-nums text-success' : 'font-medium tabular-nums'
+              }
+            >
               {l.days > 0 ? '+' : ''}
               {l.days}
             </span>

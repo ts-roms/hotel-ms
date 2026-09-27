@@ -6,21 +6,34 @@ import {
   type ServiceRequest,
   type ServiceRequestUpdate,
 } from '@hotel/contracts';
-import { Alert, Badge, Button, Card, CardContent, cn, Input, Select } from '@hotel/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  cn,
+  EmptyState,
+  Input,
+  LoadingRegion,
+  PageHeader,
+  Select,
+  Skeleton,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BellRing, Check, Plus, Star } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
-const label = (value: string) => value.replaceAll('_', ' ').toLowerCase();
-
-const PRIORITY_STYLE: Record<ServiceRequest['priority'], string> = {
-  LOW: 'border-border',
-  NORMAL: 'border-primary/60',
-  HIGH: 'border-yellow-500/70',
-  URGENT: 'border-destructive/70',
+const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
+  LOW: 'before:bg-border',
+  NORMAL: 'before:bg-primary',
+  HIGH: 'before:bg-warning',
+  URGENT: 'before:bg-destructive',
 };
 
 /** Guest service queue (spec §26): guest and staff requests routed by department. */
@@ -60,65 +73,111 @@ export default function ServiceRequestsPage() {
       pms.updateServiceRequest(input.request.id, input.request.version, input.body),
     onSettled: refresh,
   });
+  /** Only the button that started the update shows a spinner. */
+  const running = (r: ServiceRequest, next: ServiceRequestUpdate['status']) =>
+    update.isPending &&
+    update.variables?.request.id === r.id &&
+    update.variables.body.status === next;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{t('sr.title')}</h1>
-      <div className="flex flex-wrap gap-2">
-        {(['ACTIVE', 'DONE'] as const).map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant={status === s ? 'default' : 'outline'}
-            onClick={() => setStatus(s)}
-          >
-            {t(s === 'ACTIVE' ? 'sr.active' : 'sr.done')}
-          </Button>
-        ))}
-        <Select
-          className="w-auto"
-          aria-label={t('sr.all')}
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-        >
-          <option value="">{t('sr.all')}</option>
-          {SERVICE_DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>
-              {label(d)}
-            </option>
-          ))}
-        </Select>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={t('sr.title')}
+        actions={
+          <>
+            <div className="flex rounded-lg border bg-card p-0.5">
+              {(['ACTIVE', 'DONE'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={status === s}
+                  onClick={() => setStatus(s)}
+                  className={cn(
+                    'h-8 rounded-md px-3 text-xs font-medium transition-all duration-200',
+                    status === s
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {t(s === 'ACTIVE' ? 'sr.active' : 'sr.done')}
+                </button>
+              ))}
+            </div>
+            <Select
+              className="h-9 w-auto"
+              aria-label={t('sr.all')}
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="">{t('sr.all')}</option>
+              {SERVICE_DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>
+                  {statusLabel(d)}
+                </option>
+              ))}
+            </Select>
+          </>
+        }
+      />
 
       {canUpdate && <NewRequest rooms={rooms.data ?? []} onCreated={refresh} />}
       {(list.error || update.error) && <Alert>{errorMessage(list.error ?? update.error)}</Alert>}
-      {list.data?.length === 0 && <p className="text-muted-foreground">{t('sr.empty')}</p>}
+      {list.isPending && (
+        <LoadingRegion label={t('loading')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Card key={i} className="flex flex-col gap-3 p-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+              <Skeleton className="h-9 w-full rounded-lg" />
+            </Card>
+          ))}
+        </LoadingRegion>
+      )}
+      {list.data?.length === 0 && <EmptyState icon={<BellRing />} title={t('sr.empty')} />}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {list.data?.map((r) => (
-          <Card key={r.id} className={cn('border-l-4', PRIORITY_STYLE[r.priority])}>
-            <CardContent className="flex flex-col gap-2 pt-4 text-sm">
-              <div className="flex items-center justify-between gap-2">
+          <Card
+            key={r.id}
+            className={cn(
+              'relative overflow-hidden before:absolute before:inset-y-0 before:left-0 before:w-1',
+              PRIORITY_STRIPE[r.priority],
+            )}
+          >
+            <CardContent className="flex flex-col gap-3 p-4 pl-5 text-sm">
+              <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold">
                   {r.roomNumber ? `${t('sr.room')} ${r.roomNumber}` : t('sr.noRoom')} ·{' '}
-                  {label(r.category)}
+                  {statusLabel(r.category).toLowerCase()}
                 </span>
-                <Badge>{label(r.status)}</Badge>
+                <Badge variant={statusVariant(r.status)} dot>
+                  {statusLabel(r.status)}
+                </Badge>
               </div>
-              <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
-                <span className="font-mono">{r.requestNo}</span>·<span>{label(r.department)}</span>·
-                <span>{label(r.priority)}</span>·
-                <span>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="font-mono">{r.requestNo}</span>·
+                <span>{statusLabel(r.department)}</span>·
+                <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
+                <span className="ml-auto tabular-nums">
                   {new Date(r.createdAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                 </span>
               </div>
-              {r.guestName && <span>{r.guestName}</span>}
-              {r.description && <p>{r.description}</p>}
+              {r.guestName && <span className="font-medium">{r.guestName}</span>}
+              {r.description && (
+                <p className="rounded-lg bg-muted/60 px-3 py-2 text-foreground/90">
+                  {r.description}
+                </p>
+              )}
               {r.rating && (
-                <span className="text-muted-foreground">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Star className="size-3.5 fill-warning text-warning" />
                   {t('sr.rating')}: {r.rating}/5 {r.feedback && `“${r.feedback}”`}
                 </span>
               )}
@@ -126,6 +185,7 @@ export default function ServiceRequestsPage() {
                 <>
                   <Select
                     aria-label={t('sr.assignee')}
+                    className="h-9"
                     value={r.assignee?.membershipId ?? ''}
                     disabled={update.isPending}
                     onChange={(e) =>
@@ -147,6 +207,7 @@ export default function ServiceRequestsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        loading={running(r, 'ACKNOWLEDGED')}
                         disabled={update.isPending}
                         onClick={() =>
                           update.mutate({ request: r, body: { status: 'ACKNOWLEDGED' } })
@@ -159,6 +220,7 @@ export default function ServiceRequestsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        loading={running(r, 'IN_PROGRESS')}
                         disabled={update.isPending}
                         onClick={() =>
                           update.mutate({ request: r, body: { status: 'IN_PROGRESS' } })
@@ -169,14 +231,18 @@ export default function ServiceRequestsPage() {
                     )}
                     <Button
                       size="sm"
+                      loading={running(r, 'DONE')}
                       disabled={update.isPending}
                       onClick={() => update.mutate({ request: r, body: { status: 'DONE' } })}
                     >
+                      {!running(r, 'DONE') && <Check />}
                       {t('sr.complete')}
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
+                      className="hover:text-destructive"
+                      loading={running(r, 'CANCELLED')}
                       disabled={update.isPending}
                       onClick={() => update.mutate({ request: r, body: { status: 'CANCELLED' } })}
                     >
@@ -223,8 +289,8 @@ function NewRequest({
     create.mutate();
   };
   return (
-    <Card>
-      <CardContent className="pt-4">
+    <Card className="animate-fade-in">
+      <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
           <Select
             className="w-auto"
@@ -249,7 +315,7 @@ function NewRequest({
           >
             {SERVICE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {label(c)}
+                {statusLabel(c)}
               </option>
             ))}
           </Select>
@@ -261,7 +327,8 @@ function NewRequest({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <Button type="submit" disabled={!description.trim() || create.isPending}>
+          <Button type="submit" loading={create.isPending} disabled={!description.trim()}>
+            {!create.isPending && <Plus />}
             {t('sr.create')}
           </Button>
         </form>

@@ -19,7 +19,7 @@ import {
   SkeletonText,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, LogIn, LogOut, Receipt } from 'lucide-react';
+import { ArrowLeft, Check, LogIn, LogOut, Mail, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -111,14 +111,17 @@ export default function ReservationPage() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={!r.booker.email || portalLink.isPending}
+                loading={portalLink.isPending}
+                disabled={!r.booker.email}
                 title={r.booker.email ? undefined : t('res.portalNoEmail')}
                 onClick={() => portalLink.mutate()}
               >
+                {!portalLink.isPending && <Mail />}
                 {t('res.sendPortalLink')}
               </Button>
               {portalLink.isSuccess && (
-                <span className="text-muted-foreground">
+                <span className="flex animate-fade-in items-center gap-1 text-success">
+                  <Check className="size-4" />
                   {t('res.portalLinkSent')} {r.booker.email}
                 </span>
               )}
