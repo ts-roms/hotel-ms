@@ -25,10 +25,11 @@ apps/
   api/        NestJS 12 + Fastify REST API (/api/v1, OpenAPI at /api/docs in dev)
   worker/     Outbox relay + BullMQ event consumers
   web/        Next.js 16 staff portal (proxies /api/v1 to the API)
+  guest/      Next.js 16 guest portal PWA (proxies only /api/v1/guest to the API)
 packages/
   contracts/  Zod schemas, permission catalog, error codes, event types (shared by all)
   database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed
-  api-client/ Typed client for the web app
+  api-client/ Typed clients for the staff and guest apps
   ui/         Shared shadcn-style components
 docs/         Architecture blueprint, ADRs, database conventions, generated OpenAPI
 infrastructure/docker/     Local Postgres roles, multi-target Dockerfile
@@ -60,7 +61,7 @@ pnpm build
 pnpm db:migrate && pnpm db:seed
 ```
 
-Then run the API, worker and web app (each in its own terminal):
+Then run the API, worker, web app and (optionally) the guest portal, each in its own terminal:
 
 ```bash
 pnpm --filter @hotel/api dev
@@ -74,6 +75,10 @@ pnpm --filter @hotel/worker dev
 pnpm --filter @hotel/web dev
 ```
 
+```bash
+pnpm --filter @hotel/guest dev
+```
+
 Open http://localhost:43100. With the worker running, emails (password reset, invitations)
 are written to `apps/worker/.mail/` instead of being sent.
 
@@ -84,7 +89,11 @@ multi-organization consultant). They are listed in `packages/database/src/demo-w
 together with the shared development password. Demo data is never seeded when
 `NODE_ENV=production`.
 
-Local ports: Postgres 55432, cache Redis 56379, queue Redis 56380, API 48100, web 43100.
+To try the guest portal, open a confirmed reservation with a booker email in the staff app
+and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
+
+Local ports: Postgres 55432, cache Redis 56379, queue Redis 56380, API 48100, web 43100,
+guest 43200.
 
 ## Checks
 

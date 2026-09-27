@@ -20,6 +20,7 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'reservations', label: 'nav.reservations', permission: 'reservation.read' },
   { href: 'availability', label: 'nav.availability', permission: 'reservation.read' },
   { href: 'housekeeping', label: 'nav.housekeeping', permission: 'housekeeping.read' },
+  { href: 'service-requests', label: 'nav.serviceRequests', permission: 'guest_service.read' },
   { href: 'rooms', label: 'nav.rooms', permission: 'room.read' },
   { href: 'night-audit', label: 'nav.nightAudit', permission: 'night_audit.run' },
 ];

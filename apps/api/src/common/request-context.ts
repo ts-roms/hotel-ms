@@ -31,4 +31,14 @@ export interface RequestContext extends ClsStore {
   grants?: GrantSet;
   /** Set by TenantGuard after verifying a :propertyId route param belongs to the org. */
   propertyId?: string;
+
+  /** Guest realm (GuestGuard): the session's reservation is the only thing a guest can reach. */
+  guest?: {
+    sessionId: string;
+    tokenHash: string;
+    reservationId: string;
+    reservationRoomId: string;
+    guestId: string;
+    verified: boolean;
+  };
 }

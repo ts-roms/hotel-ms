@@ -43,6 +43,7 @@ export default function ReservationPage() {
     onSuccess: update,
   });
   const [reason, setReason] = useState('');
+  const portalLink = useMutation({ mutationFn: () => pms.sendGuestPortalLink(reservationId) });
 
   const r = reservation.data;
   if (reservation.error) return <Alert>{errorMessage(reservation.error)}</Alert>;
@@ -88,6 +89,27 @@ export default function ReservationPage() {
             <span>
               {t('res.cancelled')}: {r.cancelReason}
             </span>
+          )}
+          {r.status === 'CONFIRMED' && hasPermission(session.data, 'guest_portal.invite') && (
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!r.booker.email || portalLink.isPending}
+                title={r.booker.email ? undefined : t('res.portalNoEmail')}
+                onClick={() => portalLink.mutate()}
+              >
+                {t('res.sendPortalLink')}
+              </Button>
+              {portalLink.isSuccess && (
+                <span className="text-muted-foreground">
+                  {t('res.portalLinkSent')} {r.booker.email}
+                </span>
+              )}
+              {portalLink.error && (
+                <span className="text-destructive">{errorMessage(portalLink.error)}</span>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

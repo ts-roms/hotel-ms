@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { actorOf } from '../../common/actor.js';
 import type { RequestContext } from '../../common/request-context.js';
 
 export interface AuditEntry {
@@ -39,8 +40,7 @@ export class AuditService {
       data: {
         organizationId,
         propertyId: entry.propertyId ?? null,
-        actorType: 'MEMBER',
-        actorId: this.cls.get('identityId') ?? null,
+        ...actorOf(this.cls),
         action: entry.action,
         entityType: entry.entityType,
         entityId: entry.entityId ?? null,

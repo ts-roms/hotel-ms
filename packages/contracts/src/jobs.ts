@@ -21,7 +21,15 @@ export type EmailTemplate =
       };
     }
   | { template: 'mfa-enabled'; data: { displayName: string } }
-  | { template: 'mfa-disabled'; data: { displayName: string } };
+  | { template: 'mfa-disabled'; data: { displayName: string } }
+  | {
+      template: 'guest-portal-link';
+      data: { guestName: string; propertyName: string; portalUrl: string; arrivalDate: string };
+    }
+  | {
+      template: 'guest-verification-code';
+      data: { propertyName: string; code: string; expiresInMinutes: number };
+    };
 
 export type EmailJob = EmailTemplate & {
   to: string;

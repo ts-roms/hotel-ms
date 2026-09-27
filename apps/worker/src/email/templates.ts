@@ -88,5 +88,30 @@ export function renderEmail(email: EmailTemplate): RenderedEmail {
         html: layout(lines),
       };
     }
+    case 'guest-portal-link': {
+      const { guestName, propertyName, portalUrl, arrivalDate } = email.data;
+      const lines = [
+        `Hello ${guestName},`,
+        `We look forward to welcoming you at ${propertyName} on ${arrivalDate}.`,
+        'Use your personal link to see your booking, tell us when you will arrive and, where offered, check in online. Do not forward this email: the link opens your booking.',
+      ];
+      return {
+        subject: `Your stay at ${propertyName}`,
+        text: `${lines.join('\n\n')}\n\n${portalUrl}\n`,
+        html: layout(lines, { label: 'Open my booking', url: portalUrl }),
+      };
+    }
+    case 'guest-verification-code': {
+      const { propertyName, code, expiresInMinutes } = email.data;
+      const lines = [
+        `Your ${propertyName} verification code is ${code}.`,
+        `It expires in ${expiresInMinutes} minutes. If you did not ask for it, you can ignore this email.`,
+      ];
+      return {
+        subject: `${code} is your ${propertyName} code`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
   }
 }

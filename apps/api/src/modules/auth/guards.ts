@@ -7,6 +7,7 @@ import type { RequestContext } from '../../common/request-context.js';
 import { PERMISSIONS } from '@hotel/contracts';
 import {
   ALLOW_MFA_PENDING,
+  GUEST_ROUTE,
   IS_PUBLIC,
   NO_ORGANIZATION,
   type PermissionRequirement,
@@ -31,6 +32,11 @@ function flag(reflector: Reflector, key: string, ctx: ExecutionContext): boolean
   return reflector.getAllAndOverride<boolean>(key, [ctx.getHandler(), ctx.getClass()]) === true;
 }
 
+/** Guest portal routes are authenticated by GuestGuard, not the staff pipeline. */
+export function isGuestRoute(reflector: Reflector, ctx: ExecutionContext): boolean {
+  return reflector.getAllAndOverride(GUEST_ROUTE, [ctx.getHandler(), ctx.getClass()]) !== undefined;
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
@@ -44,7 +50,7 @@ export class AuthGuard implements CanActivate {
     const unsafe = !SAFE_METHODS.has(req.method);
 
     if (unsafe && !this.sessions.isAllowedOrigin(req.headers.origin)) throw Problems.csrf();
-    if (flag(this.reflector, IS_PUBLIC, ctx)) return true;
+    if (flag(this.reflector, IS_PUBLIC, ctx) || isGuestRoute(this.reflector, ctx)) return true;
 
     const token = req.cookies[this.sessions.cookieName];
     const resolved = token ? await this.sessions.resolve(token) : null;
@@ -88,7 +94,11 @@ export class TenantGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    if (flag(this.reflector, IS_PUBLIC, ctx) || flag(this.reflector, NO_ORGANIZATION, ctx))
+    if (
+      flag(this.reflector, IS_PUBLIC, ctx) ||
+      flag(this.reflector, NO_ORGANIZATION, ctx) ||
+      isGuestRoute(this.reflector, ctx)
+    )
       return true;
 
     const identityId = this.cls.get('identityId')!;
@@ -142,7 +152,11 @@ export class PermissionGuard implements CanActivate {
   ) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    if (flag(this.reflector, IS_PUBLIC, ctx) || flag(this.reflector, NO_ORGANIZATION, ctx))
+    if (
+      flag(this.reflector, IS_PUBLIC, ctx) ||
+      flag(this.reflector, NO_ORGANIZATION, ctx) ||
+      isGuestRoute(this.reflector, ctx)
+    )
       return true;
 
     const requirement = this.reflector.getAllAndOverride<PermissionRequirement | undefined>(

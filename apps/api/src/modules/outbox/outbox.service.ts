@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { DomainEventPayloads, DomainEventType } from '@hotel/contracts';
 import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { actorOf } from '../../common/actor.js';
 import type { RequestContext } from '../../common/request-context.js';
 
 /**
@@ -30,8 +31,7 @@ export class OutboxService {
         type,
         version: options.version ?? 1,
         payload: payload as unknown as Prisma.InputJsonValue,
-        actorType: 'MEMBER',
-        actorId: this.cls.get('identityId') ?? null,
+        ...actorOf(this.cls),
         correlationId: this.cls.get('requestId') ?? null,
       },
     });

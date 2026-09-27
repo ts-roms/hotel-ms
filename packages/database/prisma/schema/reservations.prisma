@@ -52,6 +52,7 @@ model Guest {
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   bookings         Reservation[]
   reservationRooms ReservationRoom[]
+  serviceRequests  ServiceRequest[]
 
   @@unique([organizationId, id])
   @@index([organizationId, lastName, firstName])
@@ -79,9 +80,11 @@ model Reservation {
   createdBy       String?           @map("created_by") @db.Uuid
   updatedBy       String?           @map("updated_by") @db.Uuid
 
-  property Property          @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
-  booker   Guest             @relation(fields: [organizationId, bookerGuestId], references: [organizationId, id], onDelete: Restrict)
-  rooms    ReservationRoom[]
+  property         Property          @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  booker           Guest             @relation(fields: [organizationId, bookerGuestId], references: [organizationId, id], onDelete: Restrict)
+  rooms            ReservationRoom[]
+  guestPortalLinks GuestPortalLink[]
+  guestSessions    GuestSession[]
 
   @@unique([organizationId, id])
   @@unique([propertyId, confirmationNo])
@@ -90,22 +93,25 @@ model Reservation {
 }
 
 model ReservationRoom {
-  id             String                @id @default(uuid(7)) @db.Uuid
-  organizationId String                @map("organization_id") @db.Uuid
-  propertyId     String                @map("property_id") @db.Uuid
-  reservationId  String                @map("reservation_id") @db.Uuid
-  roomTypeId     String                @map("room_type_id") @db.Uuid
-  ratePlanId     String                @map("rate_plan_id") @db.Uuid
-  guestId        String                @map("guest_id") @db.Uuid
-  arrivalDate    DateTime              @map("arrival_date") @db.Date
+  id                  String                @id @default(uuid(7)) @db.Uuid
+  organizationId      String                @map("organization_id") @db.Uuid
+  propertyId          String                @map("property_id") @db.Uuid
+  reservationId       String                @map("reservation_id") @db.Uuid
+  roomTypeId          String                @map("room_type_id") @db.Uuid
+  ratePlanId          String                @map("rate_plan_id") @db.Uuid
+  guestId             String                @map("guest_id") @db.Uuid
+  arrivalDate         DateTime              @map("arrival_date") @db.Date
   /// Exclusive: the guest leaves on this date and does not stay its night.
-  departureDate  DateTime              @map("departure_date") @db.Date
-  adults         Int
-  children       Int                   @default(0)
-  status         ReservationRoomStatus @default(RESERVED)
-  version        Int                   @default(1)
-  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  departureDate       DateTime              @map("departure_date") @db.Date
+  adults              Int
+  children            Int                   @default(0)
+  status              ReservationRoomStatus @default(RESERVED)
+  /// Guest-provided before arrival (portal pre-check-in).
+  expectedArrivalTime String?               @map("expected_arrival_time") @db.VarChar(5)
+  preCheckInAt        DateTime?             @map("pre_check_in_at") @db.Timestamptz(3)
+  version             Int                   @default(1)
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   reservation Reservation        @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
   roomType    RoomType           @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)

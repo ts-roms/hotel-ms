@@ -1,0 +1,102 @@
+// Guest portal (blueprint §11): link tokens, guest sessions and service requests.
+//
+// Guests are not staff identities. A guest reaches the portal through a link token sent to
+// the booking's email; exchanging it creates a guest session bound to one reservation.
+// Without tenant context the database exposes exactly one link / session row, matched by
+// the SHA-256 of the presented token (RLS policies by_link_token / by_session_token).
+
+enum ServiceRequestSource {
+  GUEST
+  STAFF
+}
+
+enum ServiceRequestStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum ServiceRequestPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model GuestPortalLink {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  reservationId  String    @map("reservation_id") @db.Uuid
+  tokenHash      String    @unique @map("token_hash")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  reservation Reservation @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, reservationId])
+  @@map("guest_portal_links")
+}
+
+model GuestSession {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationId     String    @map("reservation_id") @db.Uuid
+  reservationRoomId String    @map("reservation_room_id") @db.Uuid
+  guestId           String    @map("guest_id") @db.Uuid
+  tokenHash         String    @unique @map("token_hash")
+  /// Email one-time code confirmed; required for check-in, the bill and requests.
+  verifiedAt        DateTime? @map("verified_at") @db.Timestamptz(3)
+  ip                String?   @db.Inet
+  userAgent         String?   @map("user_agent")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  reservation Reservation @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, reservationId])
+  @@map("guest_sessions")
+}
+
+model ServiceRequest {
+  id                   String                 @id @default(uuid(7)) @db.Uuid
+  organizationId       String                 @map("organization_id") @db.Uuid
+  propertyId           String                 @map("property_id") @db.Uuid
+  requestNo            String                 @map("request_no")
+  source               ServiceRequestSource
+  category             String
+  department           String
+  priority             ServiceRequestPriority @default(NORMAL)
+  description          String                 @default("")
+  status               ServiceRequestStatus   @default(OPEN)
+  reservationRoomId    String?                @map("reservation_room_id") @db.Uuid
+  roomId               String?                @map("room_id") @db.Uuid
+  guestId              String?                @map("guest_id") @db.Uuid
+  assignedMembershipId String?                @map("assigned_membership_id") @db.Uuid
+  rating               Int?
+  feedback             String?
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  acknowledgedAt       DateTime?              @map("acknowledged_at") @db.Timestamptz(3)
+  completedAt          DateTime?              @map("completed_at") @db.Timestamptz(3)
+  createdBy            String?                @map("created_by") @db.Uuid
+  version              Int                    @default(1)
+
+  room     Room?                   @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  guest    Guest?                  @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+  assignee OrganizationMembership? @relation(fields: [organizationId, assignedMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, requestNo])
+  @@index([organizationId, propertyId, status])
+  @@index([organizationId, reservationRoomId])
+  @@map("service_requests")
+}

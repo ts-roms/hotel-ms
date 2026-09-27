@@ -1,4 +1,14 @@
 import type {
+  FeatureFlag,
+  GuestBill,
+  GuestServiceRequestCreate,
+  GuestStay,
+  PreCheckInRequest,
+  SelfCheckInResult,
+  ServiceRequest,
+  ServiceRequestListQuery,
+  ServiceRequestUpdate,
+  StaffServiceRequestCreate,
   AcceptInvitationRequest,
   AdjustmentRequest,
   BusinessDayClosing,
@@ -90,7 +100,7 @@ export interface ApiClientOptions {
 
 type Method = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
-export function createApiClient(options: ApiClientOptions = {}) {
+function createCaller(options: ApiClientOptions) {
   const baseUrl = options.baseUrl ?? '/api/v1';
   const doFetch = options.fetch ?? fetch;
 
@@ -131,6 +141,11 @@ export function createApiClient(options: ApiClientOptions = {}) {
     const entries = Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][];
     return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : '';
   };
+  return { call, qs };
+}
+
+export function createApiClient(options: ApiClientOptions = {}) {
+  const { call, qs } = createCaller(options);
 
   return {
     auth: {
@@ -356,6 +371,25 @@ export function createApiClient(options: ApiClientOptions = {}) {
           ),
         businessDays: () =>
           call<BusinessDayClosing[]>('GET', `${p}/business-days`).then((r) => r.data),
+        sendGuestPortalLink: (reservationId: string) =>
+          call<void>('POST', `${p}/reservations/${id(reservationId)}/guest-portal-link`).then(
+            (r) => r.data,
+          ),
+        serviceRequests: (query: Partial<ServiceRequestListQuery> = {}) =>
+          call<{ items: ServiceRequest[] }>('GET', `${p}/service-requests${qs(query)}`).then(
+            (r) => r.data.items,
+          ),
+        serviceRequestAssignees: () =>
+          call<{ items: { membershipId: string; displayName: string }[] }>(
+            'GET',
+            `${p}/service-requests/assignees`,
+          ).then((r) => r.data.items),
+        createServiceRequest: (body: StaffServiceRequestCreate) =>
+          call<ServiceRequest>('POST', `${p}/service-requests`, body).then((r) => r.data),
+        updateServiceRequest: (requestId: string, version: number, body: ServiceRequestUpdate) =>
+          call<ServiceRequest>('PATCH', `${p}/service-requests/${id(requestId)}`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
         cancelReservationRoom: (reservationId: string, lineId: string, reason: string) =>
           call<Reservation>(
             'POST',
@@ -363,6 +397,16 @@ export function createApiClient(options: ApiClientOptions = {}) {
             { reason },
           ).then((r) => r.data),
       };
+    },
+    featureFlags: {
+      list: () =>
+        call<{ items: FeatureFlag[] }>('GET', '/organization/feature-flags').then(
+          (r) => r.data.items,
+        ),
+      set: (key: string, enabled: boolean) =>
+        call<FeatureFlag>('PUT', `/organization/feature-flags/${encodeURIComponent(key)}`, {
+          enabled,
+        }).then((r) => r.data),
     },
     guests: {
       search: (q: string, limit = 20) =>
@@ -383,3 +427,39 @@ export function createApiClient(options: ApiClientOptions = {}) {
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
+
+/**
+ * Guest portal client (the guest app). Same transport; the guest cookie and the CSRF token
+ * from the last stay response authenticate it.
+ */
+export function createGuestApiClient(options: ApiClientOptions = {}) {
+  const { call } = createCaller(options);
+  const data = <T>(r: { data: T }) => r.data;
+  return {
+    exchange: (token: string) => call<GuestStay>('POST', '/guest/session', { token }).then(data),
+    logout: () => call<void>('DELETE', '/guest/session').then(data),
+    stay: () => call<GuestStay>('GET', '/guest/stay').then(data),
+    requestCode: () => call<void>('POST', '/guest/verification').then(data),
+    verifyCode: (code: string) =>
+      call<GuestStay>('POST', '/guest/verification/confirm', { code }).then(data),
+    preCheckIn: (body: PreCheckInRequest) =>
+      call<GuestStay>('PUT', '/guest/pre-check-in', body).then(data),
+    selfCheckIn: () => call<SelfCheckInResult>('POST', '/guest/check-in').then(data),
+    bill: () => call<GuestBill>('GET', '/guest/bill').then(data),
+    serviceRequests: () =>
+      call<{ items: ServiceRequest[] }>('GET', '/guest/service-requests').then((r) => r.data.items),
+    createServiceRequest: (body: GuestServiceRequestCreate) =>
+      call<ServiceRequest>('POST', '/guest/service-requests', body).then(data),
+    rate: (requestId: string, rating: number, feedback = '') =>
+      call<ServiceRequest>(
+        'PUT',
+        `/guest/service-requests/${encodeURIComponent(requestId)}/rating`,
+        {
+          rating,
+          feedback,
+        },
+      ).then(data),
+  };
+}
+
+export type GuestApiClient = ReturnType<typeof createGuestApiClient>;

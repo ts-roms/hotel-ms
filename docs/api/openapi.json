@@ -180,6 +180,9 @@
                         "INVALID_STATE",
                         "ROOM_NOT_READY",
                         "BALANCE_OUTSTANDING",
+                        "FEATURE_DISABLED",
+                        "GUEST_VERIFICATION_REQUIRED",
+                        "SEE_FRONT_DESK",
                         "NO_ACTIVE_ORGANIZATION",
                         "FORBIDDEN",
                         "NOT_FOUND",
@@ -1202,6 +1205,122 @@
         ]
       }
     },
+    "/api/v1/organization/feature-flags": {
+      "get": {
+        "operationId": "OrganizationController_featureFlags",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "description",
+                          "enabled"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "organization"
+        ]
+      }
+    },
+    "/api/v1/organization/feature-flags/{flagKey}": {
+      "put": {
+        "operationId": "OrganizationController_setFeatureFlag",
+        "parameters": [
+          {
+            "name": "flagKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "description",
+                    "enabled"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "organization"
+        ]
+      }
+    },
     "/api/v1/properties": {
       "get": {
         "operationId": "PropertiesController_list",
@@ -2208,7 +2327,10 @@
                         "housekeeping.update",
                         "housekeeping.inspect",
                         "housekeeping.assign",
-                        "night_audit.run"
+                        "night_audit.run",
+                        "guest_service.read",
+                        "guest_service.update",
+                        "guest_portal.invite"
                       ]
                     }
                   }
@@ -2434,7 +2556,10 @@
                         "housekeeping.update",
                         "housekeeping.inspect",
                         "housekeeping.assign",
-                        "night_audit.run"
+                        "night_audit.run",
+                        "guest_service.read",
+                        "guest_service.update",
+                        "guest_portal.invite"
                       ]
                     }
                   }
@@ -12746,6 +12871,2280 @@
         },
         "tags": [
           "front office"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/reservations/{reservationId}/guest-portal-link": {
+      "post": {
+        "operationId": "GuestServiceController_sendLink",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/service-requests": {
+      "get": {
+        "operationId": "GuestServiceController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ACTIVE",
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "OPEN",
+                "ACKNOWLEDGED",
+                "IN_PROGRESS",
+                "DONE",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "department",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "HOUSEKEEPING",
+                "MAINTENANCE",
+                "FRONT_DESK",
+                "CONCIERGE"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "requestNo": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "TOWELS",
+                              "TOILETRIES",
+                              "PILLOWS_BLANKETS",
+                              "CLEANING",
+                              "MAINTENANCE",
+                              "LAUNDRY",
+                              "TRANSPORT",
+                              "LUGGAGE",
+                              "WAKE_UP_CALL",
+                              "OTHER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string",
+                            "enum": [
+                              "HOUSEKEEPING",
+                              "MAINTENANCE",
+                              "FRONT_DESK",
+                              "CONCIERGE"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "LOW",
+                              "NORMAL",
+                              "HIGH",
+                              "URGENT"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "ACKNOWLEDGED",
+                              "IN_PROGRESS",
+                              "DONE",
+                              "CANCELLED"
+                            ]
+                          },
+                          "roomNumber": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "guestName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "assignee": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "membershipId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "membershipId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "acknowledgedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "rating": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "feedback": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "requestNo",
+                          "category",
+                          "department",
+                          "priority",
+                          "description",
+                          "status",
+                          "roomNumber",
+                          "guestName",
+                          "assignee",
+                          "createdAt",
+                          "acknowledgedAt",
+                          "completedAt",
+                          "rating",
+                          "feedback",
+                          "version"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      },
+      "post": {
+        "operationId": "GuestServiceController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TOWELS",
+                      "TOILETRIES",
+                      "PILLOWS_BLANKETS",
+                      "CLEANING",
+                      "MAINTENANCE",
+                      "LAUNDRY",
+                      "TRANSPORT",
+                      "LUGGAGE",
+                      "WAKE_UP_CALL",
+                      "OTHER"
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "priority": {
+                    "default": "NORMAL",
+                    "type": "string",
+                    "enum": [
+                      "LOW",
+                      "NORMAL",
+                      "HIGH",
+                      "URGENT"
+                    ]
+                  },
+                  "roomId": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "category",
+                  "description"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/service-requests/assignees": {
+      "get": {
+        "operationId": "GuestServiceController_assignees",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "membershipId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "membershipId",
+                          "displayName"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/service-requests/{requestId}": {
+      "get": {
+        "operationId": "GuestServiceController_get",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      },
+      "patch": {
+        "operationId": "GuestServiceController_update",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACKNOWLEDGED",
+                      "IN_PROGRESS",
+                      "DONE",
+                      "CANCELLED"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "LOW",
+                      "NORMAL",
+                      "HIGH",
+                      "URGENT"
+                    ]
+                  },
+                  "assignedMembershipId": {
+                    "nullable": true,
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest service"
+        ]
+      }
+    },
+    "/api/v1/guest/session": {
+      "post": {
+        "operationId": "GuestPortalController_exchange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exchanges a portal link token for a guest session cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "property": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "phone": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "checkInTime": {
+                          "type": "string"
+                        },
+                        "checkOutTime": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "phone",
+                        "email",
+                        "checkInTime",
+                        "checkOutTime",
+                        "timezone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "confirmationNo": {
+                      "type": "string"
+                    },
+                    "guest": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "firstName",
+                        "lastName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "stay": {
+                      "type": "object",
+                      "properties": {
+                        "arrivalDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "departureDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "roomTypeName": {
+                          "type": "string"
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "children": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "RESERVED",
+                            "IN_HOUSE",
+                            "CHECKED_OUT",
+                            "CANCELLED",
+                            "NO_SHOW"
+                          ]
+                        },
+                        "roomNumber": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "preCheckInCompleted": {
+                          "type": "boolean"
+                        },
+                        "expectedArrivalTime": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "arrivalDate",
+                        "departureDate",
+                        "roomTypeName",
+                        "adults",
+                        "children",
+                        "status",
+                        "roomNumber",
+                        "preCheckInCompleted",
+                        "expectedArrivalTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    },
+                    "verificationDestination": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "selfCheckInAvailable": {
+                      "type": "boolean"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "property",
+                    "confirmationNo",
+                    "guest",
+                    "stay",
+                    "verified",
+                    "verificationDestination",
+                    "selfCheckInAvailable",
+                    "csrfToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      },
+      "delete": {
+        "operationId": "GuestPortalController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/stay": {
+      "get": {
+        "operationId": "GuestPortalController_stay",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "property": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "phone": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "checkInTime": {
+                          "type": "string"
+                        },
+                        "checkOutTime": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "phone",
+                        "email",
+                        "checkInTime",
+                        "checkOutTime",
+                        "timezone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "confirmationNo": {
+                      "type": "string"
+                    },
+                    "guest": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "firstName",
+                        "lastName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "stay": {
+                      "type": "object",
+                      "properties": {
+                        "arrivalDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "departureDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "roomTypeName": {
+                          "type": "string"
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "children": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "RESERVED",
+                            "IN_HOUSE",
+                            "CHECKED_OUT",
+                            "CANCELLED",
+                            "NO_SHOW"
+                          ]
+                        },
+                        "roomNumber": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "preCheckInCompleted": {
+                          "type": "boolean"
+                        },
+                        "expectedArrivalTime": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "arrivalDate",
+                        "departureDate",
+                        "roomTypeName",
+                        "adults",
+                        "children",
+                        "status",
+                        "roomNumber",
+                        "preCheckInCompleted",
+                        "expectedArrivalTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    },
+                    "verificationDestination": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "selfCheckInAvailable": {
+                      "type": "boolean"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "property",
+                    "confirmationNo",
+                    "guest",
+                    "stay",
+                    "verified",
+                    "verificationDestination",
+                    "selfCheckInAvailable",
+                    "csrfToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/verification": {
+      "post": {
+        "operationId": "GuestPortalController_requestCode",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/verification/confirm": {
+      "post": {
+        "operationId": "GuestPortalController_verifyCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{6}$"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "property": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "phone": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "checkInTime": {
+                          "type": "string"
+                        },
+                        "checkOutTime": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "phone",
+                        "email",
+                        "checkInTime",
+                        "checkOutTime",
+                        "timezone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "confirmationNo": {
+                      "type": "string"
+                    },
+                    "guest": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "firstName",
+                        "lastName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "stay": {
+                      "type": "object",
+                      "properties": {
+                        "arrivalDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "departureDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "roomTypeName": {
+                          "type": "string"
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "children": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "RESERVED",
+                            "IN_HOUSE",
+                            "CHECKED_OUT",
+                            "CANCELLED",
+                            "NO_SHOW"
+                          ]
+                        },
+                        "roomNumber": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "preCheckInCompleted": {
+                          "type": "boolean"
+                        },
+                        "expectedArrivalTime": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "arrivalDate",
+                        "departureDate",
+                        "roomTypeName",
+                        "adults",
+                        "children",
+                        "status",
+                        "roomNumber",
+                        "preCheckInCompleted",
+                        "expectedArrivalTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    },
+                    "verificationDestination": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "selfCheckInAvailable": {
+                      "type": "boolean"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "property",
+                    "confirmationNo",
+                    "guest",
+                    "stay",
+                    "verified",
+                    "verificationDestination",
+                    "selfCheckInAvailable",
+                    "csrfToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/pre-check-in": {
+      "put": {
+        "operationId": "GuestPortalController_preCheckIn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "expectedArrivalTime": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  },
+                  "phone": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "specialRequests": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "expectedArrivalTime"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "property": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "city": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "phone": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "checkInTime": {
+                          "type": "string"
+                        },
+                        "checkOutTime": {
+                          "type": "string"
+                        },
+                        "timezone": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "city",
+                        "phone",
+                        "email",
+                        "checkInTime",
+                        "checkOutTime",
+                        "timezone"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "confirmationNo": {
+                      "type": "string"
+                    },
+                    "guest": {
+                      "type": "object",
+                      "properties": {
+                        "firstName": {
+                          "type": "string"
+                        },
+                        "lastName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "firstName",
+                        "lastName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "stay": {
+                      "type": "object",
+                      "properties": {
+                        "arrivalDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "departureDate": {
+                          "type": "string",
+                          "format": "date",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                        },
+                        "roomTypeName": {
+                          "type": "string"
+                        },
+                        "adults": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "children": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "RESERVED",
+                            "IN_HOUSE",
+                            "CHECKED_OUT",
+                            "CANCELLED",
+                            "NO_SHOW"
+                          ]
+                        },
+                        "roomNumber": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "preCheckInCompleted": {
+                          "type": "boolean"
+                        },
+                        "expectedArrivalTime": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "arrivalDate",
+                        "departureDate",
+                        "roomTypeName",
+                        "adults",
+                        "children",
+                        "status",
+                        "roomNumber",
+                        "preCheckInCompleted",
+                        "expectedArrivalTime"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "verified": {
+                      "type": "boolean"
+                    },
+                    "verificationDestination": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "selfCheckInAvailable": {
+                      "type": "boolean"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "property",
+                    "confirmationNo",
+                    "guest",
+                    "stay",
+                    "verified",
+                    "verificationDestination",
+                    "selfCheckInAvailable",
+                    "csrfToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/check-in": {
+      "post": {
+        "operationId": "GuestPortalController_selfCheckIn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "roomNumber": {
+                      "type": "string"
+                    },
+                    "access": {
+                      "type": "object",
+                      "properties": {
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "FRONT_DESK_KEY",
+                            "MOBILE_KEY",
+                            "PIN"
+                          ]
+                        },
+                        "instructions": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "method",
+                        "instructions"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "roomNumber",
+                    "access"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/bill": {
+      "get": {
+        "operationId": "GuestPortalController_bill",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "date": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "date",
+                          "description",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "currency",
+                    "balanceMinor",
+                    "lines"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/service-requests": {
+      "get": {
+        "operationId": "GuestPortalController_listRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "requestNo": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "TOWELS",
+                              "TOILETRIES",
+                              "PILLOWS_BLANKETS",
+                              "CLEANING",
+                              "MAINTENANCE",
+                              "LAUNDRY",
+                              "TRANSPORT",
+                              "LUGGAGE",
+                              "WAKE_UP_CALL",
+                              "OTHER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string",
+                            "enum": [
+                              "HOUSEKEEPING",
+                              "MAINTENANCE",
+                              "FRONT_DESK",
+                              "CONCIERGE"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "LOW",
+                              "NORMAL",
+                              "HIGH",
+                              "URGENT"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "ACKNOWLEDGED",
+                              "IN_PROGRESS",
+                              "DONE",
+                              "CANCELLED"
+                            ]
+                          },
+                          "roomNumber": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "guestName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "assignee": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "membershipId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "membershipId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "acknowledgedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "rating": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "feedback": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "requestNo",
+                          "category",
+                          "department",
+                          "priority",
+                          "description",
+                          "status",
+                          "roomNumber",
+                          "guestName",
+                          "assignee",
+                          "createdAt",
+                          "acknowledgedAt",
+                          "completedAt",
+                          "rating",
+                          "feedback",
+                          "version"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      },
+      "post": {
+        "operationId": "GuestPortalController_createRequest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TOWELS",
+                      "TOILETRIES",
+                      "PILLOWS_BLANKETS",
+                      "CLEANING",
+                      "MAINTENANCE",
+                      "LAUNDRY",
+                      "TRANSPORT",
+                      "LUGGAGE",
+                      "WAKE_UP_CALL",
+                      "OTHER"
+                    ]
+                  },
+                  "description": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "category"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/service-requests/{requestId}/rating": {
+      "put": {
+        "operationId": "GuestPortalController_rate",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "feedback": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "rating"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
         ]
       }
     }

@@ -56,6 +56,14 @@ export interface DomainEventPayloads {
   GuestCheckedOut: { reservationRoomId: string; stayId: string; roomId: string; folioId: string };
   FolioLinePosted: { folioId: string; lineId: string; type: string; amountMinor: number };
   PaymentRecorded: { folioId: string; paymentId: string; method: string; amountMinor: number };
+  GuestPortalLinkSent: { reservationId: string };
+  GuestPreCheckedIn: { reservationRoomId: string };
+  ServiceRequestCreated: {
+    serviceRequestId: string;
+    department: string;
+    source: 'GUEST' | 'STAFF';
+  };
+  ServiceRequestUpdated: { serviceRequestId: string; status: string };
   BusinessDateClosed: { businessDate: string; nextBusinessDate: string };
 }
 

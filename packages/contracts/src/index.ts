@@ -10,3 +10,4 @@ export * from './access.js';
 export * from './jobs.js';
 export * from './pms.js';
 export * from './front-office.js';
+export * from './guest.js';
