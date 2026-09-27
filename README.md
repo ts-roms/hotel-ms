@@ -105,6 +105,14 @@ discount profiles (senior citizen and PWD are seeded), and an optional card hold
 authorize before self check-in (ADR-0018). In the sandbox, refunds ending in 13 centavos stay
 pending until a refund webhook arrives.
 
+HR keeps employee documents (contracts, IDs, certificates) on the employee page. They need the
+`employee.documents` permission with two-step verification. Files go to `.data/storage` locally,
+and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019).
+
+Kitchen tablets: a manager adds a device under **Devices** and gets a pairing code. On the tablet,
+open http://localhost:43100/kiosk and enter the code. Staff then sign in there with the PIN they
+set under **Security**, and see the kitchen board with the device's permissions only (ADR-0020).
+
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
 

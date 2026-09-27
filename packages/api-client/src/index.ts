@@ -1,4 +1,10 @@
 import type {
+  CreateDeviceRequest,
+  Device,
+  DevicePairing,
+  KioskState,
+  PinStatus,
+  EmployeeDocument,
   ApplyDiscountRequest,
   CreateDiscountProfileRequest,
   DiscountProfile,
@@ -165,16 +171,22 @@ function createCaller(options: ApiClientOptions) {
     headers: Record<string, string> = {},
   ): Promise<{ data: T; etag: string | null }> {
     const csrf = method === 'GET' ? undefined : options.getCsrfToken?.();
+    // A file (Blob) is sent as-is with its own type; anything else as JSON.
+    const file = typeof Blob !== 'undefined' && body instanceof Blob ? body : null;
     const res = await doFetch(`${baseUrl}${path}`, {
       method,
       credentials: 'same-origin',
       headers: {
         accept: 'application/json',
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(body === undefined
+          ? {}
+          : {
+              'content-type': file ? file.type || 'application/octet-stream' : 'application/json',
+            }),
         ...(csrf ? { 'x-csrf-token': csrf } : {}),
         ...headers,
       },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(body === undefined ? {} : { body: file ?? JSON.stringify(body) }),
     });
     if (!res.ok) {
       const problem = (await res.json().catch(() => null)) as Problem | null;
@@ -602,6 +614,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'if-match': `W/"${version}"`,
             },
           ).then((r) => r.data),
+        devices: () => call<{ items: Device[] }>('GET', `${p}/devices`).then((r) => r.data.items),
+        createDevice: (body: CreateDeviceRequest) =>
+          call<DevicePairing>('POST', `${p}/devices`, body).then((r) => r.data),
+        repairDevice: (deviceId: string) =>
+          call<DevicePairing>('POST', `${p}/devices/${id(deviceId)}/pairing`).then((r) => r.data),
+        revokeDevice: (deviceId: string) =>
+          call<Device>('POST', `${p}/devices/${id(deviceId)}/revoke`).then((r) => r.data),
         /** Server-Sent Events URL for the outlet's kitchen board. */
         orderStreamUrl: (outletId: string) =>
           `${baseUrl}${p}/outlets/${id(outletId)}/orders/stream`,
@@ -691,6 +710,29 @@ export function createApiClient(options: ApiClientOptions = {}) {
         call<Employee>('POST', `/employees/${encodeURIComponent(id)}/terminate`, {
           terminatedOn,
         }).then((r) => r.data),
+      documents: (id: string) =>
+        call<{ items: EmployeeDocument[] }>(
+          'GET',
+          `/employees/${encodeURIComponent(id)}/documents`,
+        ).then((r) => r.data.items),
+      uploadDocument: (
+        id: string,
+        file: Blob,
+        meta: { category: string; title: string; fileName: string; expiresOn?: string },
+      ) =>
+        call<EmployeeDocument>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
+          file,
+        ).then((r) => r.data),
+      /** Same-origin download link; the session cookie authenticates. */
+      documentUrl: (id: string, documentId: string) =>
+        `${baseUrl}/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/content`,
+      deleteDocument: (id: string, documentId: string) =>
+        call<void>(
+          'DELETE',
+          `/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`,
+        ).then((r) => r.data),
       employeeLeave: (id: string) =>
         call<EmployeeLeave>('GET', `/employees/${encodeURIComponent(id)}/leave`).then(
           (r) => r.data,
@@ -711,6 +753,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ),
     },
     me: {
+      pin: () => call<PinStatus>('GET', '/me/pin').then((r) => r.data),
+      setPin: (pin: string, currentPassword: string) =>
+        call<PinStatus>('PUT', '/me/pin', { pin, currentPassword }).then((r) => r.data),
+      removePin: () => call<PinStatus>('DELETE', '/me/pin').then((r) => r.data),
       employee: () => call<MyEmployee>('GET', '/me/employee').then((r) => r.data),
       shifts: (from: string, to: string) =>
         call<{ items: Shift[] }>('GET', `/me/shifts${qs({ from, to })}`).then((r) => r.data.items),
@@ -766,6 +812,19 @@ export type ApiClient = ReturnType<typeof createApiClient>;
  * Guest portal client (the guest app). Same transport; the guest cookie and the CSRF token
  * from the last stay response authenticate it.
  */
+/** A shared device's own endpoints (ADR-0020); its cookies authenticate it. */
+export function createKioskApiClient(options: ApiClientOptions = {}) {
+  const { call } = createCaller(options);
+  const data = <T>(r: { data: T }) => r.data;
+  return {
+    state: () => call<KioskState>('GET', '/kiosk').then(data),
+    pair: (code: string) => call<KioskState>('POST', '/kiosk/pair', { code }).then(data),
+    signIn: (membershipId: string, pin: string) =>
+      call<KioskState>('POST', '/kiosk/sign-in', { membershipId, pin }).then(data),
+    signOut: () => call<KioskState>('POST', '/kiosk/sign-out').then(data),
+  };
+}
+
 export function createGuestApiClient(options: ApiClientOptions = {}) {
   const { call } = createCaller(options);
   const data = <T>(r: { data: T }) => r.data;

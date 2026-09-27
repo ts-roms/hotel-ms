@@ -29,6 +29,8 @@ model OrganizationMembership {
   organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   identity          Identity                 @relation(fields: [identityId], references: [id], onDelete: Restrict)
   roleAssignments   RoleAssignment[]
+  staffPin          StaffPin?
+  deviceSessions    DeviceSession[]
   invitations       OrganizationInvitation[]
   housekeepingTasks HousekeepingTask[]
   serviceRequests   ServiceRequest[]

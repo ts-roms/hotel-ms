@@ -15,7 +15,8 @@ import {
   NO_ORGANIZATION,
   REQUIRED_PERMISSION,
 } from '../src/common/route-metadata.js';
-import { startTestApp, type TestContext, TestClient } from './harness.js';
+import { DEMO_PASSWORD } from '@hotel/database';
+import { startTestApp, type TestContext, TestClient, WEB_ORIGIN } from './harness.js';
 
 interface RouteInfo {
   controller: string;
@@ -135,6 +136,91 @@ describe('guest realm routes', () => {
       const body = route.method === 'GET' ? undefined : {};
       expect((await anonymous.request(route.method, route.path, body)).status).toBe(401);
       expect((await clients.abcAdmin.request(route.method, route.path, body)).status).toBe(401);
+    },
+  );
+});
+
+describe('shared-device realm (ADR-0020)', () => {
+  /** Staff-session routes a device must never reach: account, org-level, other property. */
+  const OFF_LIMITS = ROUTES.filter(
+    (r) => !r.isPublic && !r.guest && (r.noOrganization || !r.path.includes(':propertyId')),
+  );
+  let cookie: string;
+  let csrf: string;
+
+  beforeAll(async () => {
+    // John (GM @ MNL) signs in on a kitchen tablet paired to MNL.
+    const john = clients.john;
+    expect(
+      (await john.request('PUT', '/api/v1/me/pin', { pin: '8642', currentPassword: DEMO_PASSWORD }))
+        .status,
+    ).toBe(200);
+    const created = await john.request(
+      'POST',
+      `/api/v1/properties/${ctx.world.abc.properties.MNL}/devices`,
+      { name: 'Isolation tablet', permissions: ['fnb.order.read', 'fnb.order.update'] },
+    );
+    const headers = { origin: WEB_ORIGIN, 'x-forwarded-for': '10.77.7.7' };
+    const paired = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/kiosk/pair',
+      payload: { code: created.body.pairingCode },
+      headers,
+    });
+    const device = paired.cookies.find((c) => c.name === 'hotel_device')!.value;
+    csrf = JSON.parse(paired.body).csrfToken;
+    const members = (await john.get('/api/v1/members')).body as {
+      email: string;
+      membershipId: string;
+    }[];
+    const signedIn = await ctx.app.inject({
+      method: 'POST',
+      url: '/api/v1/kiosk/sign-in',
+      payload: {
+        membershipId: members.find((m) => m.email === 'john.gm@abc.test')!.membershipId,
+        pin: '8642',
+      },
+      headers: { ...headers, cookie: `hotel_device=${device}`, 'x-csrf-token': csrf },
+    });
+    expect(signedIn.statusCode, signedIn.body).toBe(200);
+    const operator = signedIn.cookies.find((c) => c.name === 'hotel_kiosk')!.value;
+    cookie = `hotel_device=${device}; hotel_kiosk=${operator}`;
+  });
+
+  it('can use its own property routes', async () => {
+    const res = await ctx.app.inject({
+      method: 'GET',
+      url: `/api/v1/properties/${ctx.world.abc.properties.MNL}/orders`,
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it.each(OFF_LIMITS.map((r) => [`${r.method} ${r.path}`, r] as const))(
+    '%s is out of reach for a signed-in device',
+    async (_label, route) => {
+      const res = await ctx.app.inject({
+        method: route.method,
+        url: route.path.replace(/:[A-Za-z]+/g, '00000000-0000-4000-8000-000000000000'),
+        ...(route.method === 'GET' ? {} : { payload: {} }),
+        headers: { origin: WEB_ORIGIN, cookie, 'x-csrf-token': csrf },
+      });
+      expect([401, 404]).toContain(res.statusCode);
+    },
+  );
+
+  it.each(PROPERTY_ROUTES.map((r) => [`${r.method} ${r.path}`, r] as const))(
+    '%s at another property is out of reach for the device',
+    async (_label, route) => {
+      const res = await ctx.app.inject({
+        method: route.method,
+        url: route.path
+          .replace(':propertyId', ctx.world.abc.properties.CEB)
+          .replace(/:[A-Za-z]+/g, '00000000-0000-4000-8000-000000000000'),
+        ...(route.method === 'GET' ? {} : { payload: {} }),
+        headers: { origin: WEB_ORIGIN, cookie, 'x-csrf-token': csrf },
+      });
+      expect(res.statusCode).toBe(404);
     },
   );
 });

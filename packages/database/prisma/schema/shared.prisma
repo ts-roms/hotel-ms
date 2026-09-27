@@ -29,6 +29,8 @@ model AuditLog {
   requestId      String?   @map("request_id")
   ip             String?   @db.Inet
   userAgent      String?   @map("user_agent")
+  /// The shared device the action was taken on, if any (ADR-0020).
+  deviceId       String?   @map("device_id") @db.Uuid
   occurredAt     DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(3)
 
   @@index([organizationId, occurredAt(sort: Desc)])

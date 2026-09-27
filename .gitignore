@@ -11,6 +11,7 @@ packages/database/src/generated/
 next-env.d.ts
 *.log
 .mail/
+.data/
 .terraform/
 *.tfstate
 *.tfstate.*

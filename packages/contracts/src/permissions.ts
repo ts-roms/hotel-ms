@@ -153,6 +153,10 @@ export const PERMISSIONS = {
 
   // ---- F&B: outlets, menus, orders (blueprint §14) -------------------------------------
   'fnb.menu.manage': { description: 'Manage outlets and menus', scopes: ORG_OR_PROPERTY },
+  'device.manage': {
+    description: 'Register, pair and revoke shared devices (kitchen tablets)',
+    scopes: ORG_OR_PROPERTY,
+  },
   'fnb.menu.availability': {
     description: 'Mark menu items sold out or available again',
     scopes: ORG_OR_PROPERTY,
@@ -181,6 +185,11 @@ export const PERMISSIONS = {
   },
   'employee.personal.read': {
     description: 'View and edit personal details (birth date, personal contacts)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'employee.documents': {
+    description: 'View, upload and delete employee documents (contracts, IDs, medical)',
     scopes: ORG_OR_PROPERTY,
     sensitive: true,
   },

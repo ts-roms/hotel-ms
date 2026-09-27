@@ -4,7 +4,7 @@ import type { FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
-import { PERMISSIONS } from '@hotel/contracts';
+import { PERMISSIONS, type PermissionCode } from '@hotel/contracts';
 import {
   ALLOW_MFA_PENDING,
   GUEST_ROUTE,
@@ -16,6 +16,7 @@ import {
 } from '../../common/route-metadata.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { GrantsService } from '../access/grants.service.js';
+import { KioskAuth } from '../devices/kiosk-auth.js';
 import { SessionService } from './session.service.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -43,8 +44,44 @@ export class AuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly sessions: SessionService,
+    private readonly kiosk: KioskAuth,
     private readonly cls: ClsService<RequestContext>,
   ) {}
+
+  /**
+   * Shared-device realm (ADR-0020): a paired device with a staff operator signed in. It
+   * reaches tenant routes only (never account, session or organization routes); the
+   * operator's grants are narrowed in TenantGuard.
+   */
+  private async deviceRealm(ctx: ExecutionContext, req: FastifyRequest): Promise<boolean> {
+    if (flag(this.reflector, NO_ORGANIZATION, ctx) || flag(this.reflector, ALLOW_MFA_PENDING, ctx))
+      throw Problems.unauthenticated();
+    const device = await this.kiosk.device(req);
+    const operator = device ? await this.kiosk.operator(req, device) : null;
+    if (!device || !operator) throw Problems.unauthenticated();
+    if (
+      !SAFE_METHODS.has(req.method) &&
+      !this.kiosk.verifyCsrf(device.tokenHash, req.headers['x-csrf-token'])
+    )
+      throw Problems.csrf();
+
+    this.cls.set('mfaEnabled', false);
+    this.cls.set('mfaVerified', false);
+    this.cls.set('identityId', operator.identityId);
+    // Trusted: the organization of the device row the token resolved to.
+    this.cls.set('sessionOrganizationId', device.organizationId);
+    this.cls.set('device', {
+      id: device.id,
+      propertyId: device.propertyId,
+      permissions: device.permissions,
+      operatorSessionId: operator.sessionId,
+    });
+    this.cls.set(
+      'log',
+      this.cls.get('log').child({ identityId: operator.identityId, deviceId: device.id }),
+    );
+    return true;
+  }
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
@@ -60,6 +97,10 @@ export class AuthGuard implements CanActivate {
     if (flag(this.reflector, IS_PUBLIC, ctx) || isGuestRoute(this.reflector, ctx)) return true;
 
     const token = req.cookies[this.sessions.cookieName];
+    // A signed-in kiosk operator wins over a staff session in the same browser: device
+    // browsers are dedicated, and the device realm can only narrow what is allowed.
+    if (this.kiosk.hasOperatorCookie(req) || (!token && this.kiosk.hasDeviceCookie(req)))
+      return this.deviceRealm(ctx, req);
     const resolved = token ? await this.sessions.resolve(token) : null;
     if (!resolved) throw Problems.unauthenticated();
 
@@ -142,9 +183,20 @@ export class TenantGuard implements CanActivate {
     // Property of another organization is indistinguishable from a missing one (404).
     if (!propertyFound) throw Problems.notFound('Property');
 
+    // A shared device works at its own property only, with its own permissions only.
+    const device = this.cls.get('device');
+    if (device && routePropertyId !== device.propertyId) throw Problems.notFound('Property');
+    const effective = device
+      ? grants.restrictTo(
+          // property.read keeps "not allowed here" a 403 at the device's own property.
+          ['property.read', ...(device.permissions as PermissionCode[])],
+          device.propertyId,
+        )
+      : grants;
+
     this.cls.set('organizationId', organizationId);
     this.cls.set('membershipId', membership.id);
-    this.cls.set('grants', grants);
+    this.cls.set('grants', effective);
     if (routePropertyId) this.cls.set('propertyId', routePropertyId);
     this.cls.set('log', this.cls.get('log').child({ organizationId, propertyId: routePropertyId }));
     return true;

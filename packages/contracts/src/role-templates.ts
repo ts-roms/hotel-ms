@@ -88,6 +88,7 @@ const PEOPLE_MANAGE = [
 const HR_ADMIN = [
   ...PEOPLE_MANAGE,
   'employee.personal.read',
+  'employee.documents',
   'leave.manage',
   'leave.configure',
   'department.manage',
@@ -105,6 +106,7 @@ const FNB_MANAGE = [
   'fnb.order.create',
   'fnb.order.cancel_override',
   'fnb.menu.manage',
+  'device.manage',
 ] as const satisfies readonly PermissionCode[];
 
 const FINANCE = [
