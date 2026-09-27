@@ -20,6 +20,16 @@
         "dev"
       ],
       "port": 43100
+    },
+    {
+      "name": "guest",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@hotel/guest",
+        "dev"
+      ],
+      "port": 43200
     }
   ]
 }
