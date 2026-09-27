@@ -9,10 +9,15 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  EmptyState,
   Input,
+  LoadingRegion,
   Select,
+  Skeleton,
+  SkeletonTable,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Receipt } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
@@ -20,6 +25,7 @@ import { formatDate, formatMoney, minorToInput, parseMoney } from '@/lib/format'
 import { t } from '@/lib/i18n';
 import { usePms, useProperty } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();
@@ -39,7 +45,23 @@ export default function FolioPage() {
 
   const f = folio.data;
   if (folio.error) return <Alert>{errorMessage(folio.error)}</Alert>;
-  if (!f) return <p className="text-muted-foreground">{t('loading')}</p>;
+  if (!f)
+    return (
+      <LoadingRegion label={t('loading')} className="flex max-w-3xl flex-col gap-4">
+        <Card className="p-6">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-7 w-32 rounded-full" />
+          </div>
+          <SkeletonTable rows={5} columns={4} />
+        </Card>
+        <Card className="flex gap-2 p-6">
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <Skeleton className="h-10 w-28 rounded-lg" />
+        </Card>
+      </LoadingRegion>
+    );
   const open = f.status === 'OPEN';
   const today = property.data?.currentBusinessDate;
 
@@ -48,28 +70,51 @@ export default function FolioPage() {
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>
-              {t('folio.title')}{' '}
-              <span className="font-mono text-sm text-muted-foreground">{f.folioNo}</span>
+            <CardTitle className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Receipt className="size-4" />
+              </span>
+              {t('folio.title')}
+              <span className="font-mono text-sm font-normal text-muted-foreground">
+                {f.folioNo}
+              </span>
             </CardTitle>
-            <div className="flex items-center gap-2">
-              {!open && <Badge>{t('folio.closed')}</Badge>}
-              <strong>
-                {t('fd.balance')}: {formatMoney(f.balanceMinor, f.currency)}
-              </strong>
+            <div className="flex items-center gap-3">
+              {!open && <Badge variant={statusVariant(f.status)}>{t('folio.closed')}</Badge>}
+              <div className="flex flex-col items-end leading-tight">
+                <span className="text-xs text-muted-foreground">{t('fd.balance')}</span>
+                <strong
+                  className={
+                    f.balanceMinor === 0
+                      ? 'text-lg tabular-nums text-success'
+                      : 'text-lg tabular-nums'
+                  }
+                >
+                  {formatMoney(f.balanceMinor, f.currency)}
+                </strong>
+              </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
+          {f.lines.length === 0 && (
+            <EmptyState icon={<Receipt />} title={t('folio.noLines')} className="border-0" />
+          )}
           <table className="w-full text-sm">
-            <tbody>
+            <tbody className="stagger">
               {f.lines.map((line) => (
                 <tr
                   key={line.id}
-                  className={line.reversed ? 'text-muted-foreground line-through' : ''}
+                  className={
+                    line.reversed
+                      ? 'border-t text-muted-foreground line-through'
+                      : 'border-t transition-colors hover:bg-accent/40'
+                  }
                 >
-                  <td className="whitespace-nowrap py-1 pr-2">{formatDate(line.businessDate)}</td>
-                  <td className="py-1 pr-2">
+                  <td className="whitespace-nowrap px-2 py-2.5 text-muted-foreground">
+                    {formatDate(line.businessDate)}
+                  </td>
+                  <td className="px-2 py-2.5">
                     {line.parentLineId ? (
                       <span className="pl-4 text-muted-foreground">{line.description}</span>
                     ) : (
@@ -77,13 +122,15 @@ export default function FolioPage() {
                     )}
                     {line.reason && <span className="text-muted-foreground"> · {line.reason}</span>}
                   </td>
-                  <td className="py-1 pr-2 text-xs text-muted-foreground">
-                    {line.type.toLowerCase()}
+                  <td className="px-2 py-2.5">
+                    <Badge variant={line.type === 'PAYMENT' ? 'success' : 'neutral'}>
+                      {statusLabel(line.type)}
+                    </Badge>
                   </td>
-                  <td className="whitespace-nowrap py-1 text-right">
+                  <td className="whitespace-nowrap px-2 py-2.5 text-right font-medium tabular-nums">
                     {formatMoney(line.amountMinor, f.currency)}
                   </td>
-                  <td className="py-1 pl-2 text-right">
+                  <td className="py-1.5 pl-2 text-right">
                     {open &&
                       can('folio.void') &&
                       line.type === 'CHARGE' &&
@@ -92,6 +139,7 @@ export default function FolioPage() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="hover:text-destructive"
                           disabled={action.isPending}
                           onClick={() => {
                             const reason = window.prompt(t('folio.voidReason'));
@@ -234,7 +282,7 @@ function AmountForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
-          <Button type="submit" variant="outline" disabled={busy}>
+          <Button type="submit" variant="outline" loading={busy}>
             {title}
           </Button>
         </form>

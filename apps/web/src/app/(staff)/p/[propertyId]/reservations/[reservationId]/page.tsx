@@ -10,10 +10,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Avatar,
   Input,
+  LoadingRegion,
   Select,
+  Skeleton,
+  SkeletonCard,
+  SkeletonText,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, LogIn, LogOut, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -22,6 +28,7 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 export default function ReservationPage() {
   const { propertyId, reservationId } = useParams<{ propertyId: string; reservationId: string }>();
@@ -47,7 +54,7 @@ export default function ReservationPage() {
 
   const r = reservation.data;
   if (reservation.error) return <Alert>{errorMessage(reservation.error)}</Alert>;
-  if (!r) return <p className="text-muted-foreground">{t('loading')}</p>;
+  if (!r) return <DetailSkeleton />;
 
   const canUpdate = hasPermission(session.data, 'reservation.update');
   const canCancel = hasPermission(session.data, 'reservation.cancel');
@@ -57,28 +64,37 @@ export default function ReservationPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <Link
         href={`/p/${propertyId}/reservations`}
-        className="text-sm text-muted-foreground underline"
+        className="group flex items-center gap-1 self-start text-sm text-muted-foreground transition-colors hover:text-primary"
       >
+        <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <CardTitle>
-                {r.booker.firstName} {r.booker.lastName}
-              </CardTitle>
-              <CardDescription className="font-mono">{r.confirmationNo}</CardDescription>
+            <div className="flex items-center gap-3">
+              <Avatar name={`${r.booker.firstName} ${r.booker.lastName}`} className="size-12" />
+              <div className="flex flex-col gap-1">
+                <CardTitle>
+                  {r.booker.firstName} {r.booker.lastName}
+                </CardTitle>
+                <CardDescription className="font-mono">{r.confirmationNo}</CardDescription>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge>{r.status}</Badge>
-              <strong>{formatMoney(r.totalMinor, r.currency)}</strong>
+            <div className="flex items-center gap-3">
+              <Badge variant={statusVariant(r.status)} dot>
+                {statusLabel(r.status)}
+              </Badge>
+              <strong className="text-lg tabular-nums">
+                {formatMoney(r.totalMinor, r.currency)}
+              </strong>
             </div>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
           <span>
-            {t('res.source')}: {r.source.replace('_', ' ').toLowerCase()}
+            <span className="text-muted-foreground">{t('res.source')}:</span>{' '}
+            {r.source.replace('_', ' ').toLowerCase()}
           </span>
           {r.specialRequests && (
             <span>
@@ -162,7 +178,8 @@ export default function ReservationPage() {
             />
             <Button
               variant="destructive"
-              disabled={!reason.trim() || action.isPending}
+              loading={action.isPending}
+              disabled={!reason.trim()}
               onClick={() => action.mutate(() => pms.cancelReservation(r.id, reason))}
             >
               {t('res.cancel')}
@@ -171,6 +188,30 @@ export default function ReservationPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+/** Placeholder shaped like a detail page: a header card and two section cards. */
+function DetailSkeleton() {
+  return (
+    <LoadingRegion label={t('loading')} className="flex max-w-3xl flex-col gap-4">
+      <Skeleton className="h-4 w-16" />
+      <Card className="flex flex-col gap-4 p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-12 rounded-full" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+        <SkeletonText lines={2} />
+      </Card>
+      <SkeletonCard lines={4} />
+      <SkeletonCard lines={3} />
+    </LoadingRegion>
   );
 }
 
@@ -211,7 +252,9 @@ function RoomLine({
           <CardTitle className="text-base">
             {line.roomTypeCode} · {line.ratePlanCode}
           </CardTitle>
-          <Badge>{line.status.replace('_', ' ')}</Badge>
+          <Badge variant={statusVariant(line.status)} dot>
+            {statusLabel(line.status)}
+          </Badge>
         </div>
         <CardDescription>
           {formatDate(line.arrivalDate)} → {formatDate(line.departureDate)} · {line.nights.length}{' '}
@@ -222,9 +265,9 @@ function RoomLine({
       <CardContent className="flex flex-col gap-3 text-sm">
         <ul className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">
           {line.nights.map((n) => (
-            <li key={n.date} className="flex justify-between gap-2">
+            <li key={n.date} className="flex justify-between gap-2 border-b border-dashed py-1">
               <span className="text-muted-foreground">{formatDate(n.date)}</span>
-              <span>{formatMoney(n.amountMinor, currency)}</span>
+              <span className="tabular-nums">{formatMoney(n.amountMinor, currency)}</span>
             </li>
           ))}
         </ul>
@@ -269,16 +312,21 @@ function RoomLine({
           )}
           {onCheckIn && upcoming && line.assignedRoom && (
             <Button size="sm" disabled={busy} onClick={onCheckIn}>
+              <LogIn />
               {t('fd.checkIn')}
             </Button>
           )}
           {folioHref && (
             <Button size="sm" variant="outline" asChild>
-              <Link href={folioHref}>{t('fd.folio')}</Link>
+              <Link href={folioHref}>
+                <Receipt />
+                {t('fd.folio')}
+              </Link>
             </Button>
           )}
           {onCheckOut && line.status === 'IN_HOUSE' && (
             <Button size="sm" disabled={busy} onClick={onCheckOut}>
+              <LogOut />
               {t('fd.checkOut')}
             </Button>
           )}

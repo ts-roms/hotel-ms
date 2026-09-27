@@ -1,12 +1,28 @@
 'use client';
 
-import type { HousekeepingBoard } from '@hotel/contracts';
-import { Alert, Badge, Button, Card, CardContent, cn, Notice, Select } from '@hotel/ui';
+import { HOUSEKEEPING_STATUSES, type HousekeepingBoard } from '@hotel/contracts';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  cn,
+  EmptyState,
+  LoadingRegion,
+  Notice,
+  PageHeader,
+  Select,
+  Skeleton,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BedDouble } from 'lucide-react';
+import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 type BoardRoom = HousekeepingBoard['rooms'][number];
 type Status = BoardRoom['housekeepingStatus'];
@@ -24,18 +40,24 @@ const NEXT_ACTIONS: Record<Status, { to: Status; label: MessageKey; permission: 
   INSPECTED: [{ to: 'DIRTY', label: 'hk.markDirty', permission: 'housekeeping.update' }],
 };
 
-const STATUS_STYLE: Record<Status, string> = {
-  DIRTY: 'border-destructive/60',
-  CLEANING: 'border-yellow-500/70',
-  CLEAN: 'border-primary/60',
-  INSPECTED: 'border-green-600/70',
+const STATUS_STRIPE: Record<Status, string> = {
+  DIRTY: 'before:bg-destructive',
+  CLEANING: 'before:bg-warning',
+  CLEAN: 'before:bg-info',
+  INSPECTED: 'before:bg-success',
 };
+
+interface Action {
+  key: string;
+  run: () => Promise<unknown>;
+}
 
 export default function HousekeepingPage() {
   const propertyId = useRoutePropertyId()!;
   const pms = usePms(propertyId);
   const session = useSession();
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<Status | null>(null);
   const board = useQuery({
     queryKey: ['housekeeping', propertyId],
     queryFn: pms.housekeeping,
@@ -48,54 +70,108 @@ export default function HousekeepingPage() {
     enabled: canAssign,
   });
   const action = useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
+    mutationFn: (a: Action) => a.run(),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['housekeeping', propertyId] }),
   });
+  const running = (key: string) => action.isPending && action.variables?.key === key;
+
+  const rooms = board.data?.rooms ?? [];
+  const counts = Object.fromEntries(
+    HOUSEKEEPING_STATUSES.map((s) => [s, rooms.filter((r) => r.housekeepingStatus === s).length]),
+  ) as Record<Status, number>;
+  const visible = filter ? rooms.filter((r) => r.housekeepingStatus === filter) : rooms;
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{t('hk.title')}</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={t('hk.title')} />
       {board.data && !board.data.fullBoard && <Notice>{t('hk.mine')}</Notice>}
       {(board.error || action.error) && <Alert>{errorMessage(board.error ?? action.error)}</Alert>}
-      {board.data?.rooms.length === 0 && <p className="text-muted-foreground">{t('hk.noRooms')}</p>}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {board.data?.rooms.map((room) => (
+      {board.data && rooms.length > 0 && (
+        <div
+          role="group"
+          aria-label={t('hk.summary')}
+          className="flex animate-fade-in flex-wrap gap-2"
+        >
+          <FilterChip active={filter === null} onClick={() => setFilter(null)}>
+            {t('hk.all')} <span className="tabular-nums opacity-70">{rooms.length}</span>
+          </FilterChip>
+          {HOUSEKEEPING_STATUSES.map((s) => (
+            <FilterChip key={s} active={filter === s} onClick={() => setFilter(s)}>
+              <Badge variant={statusVariant(s)} dot className="border-0 bg-transparent p-0">
+                {statusLabel(s)}
+              </Badge>
+              <span className="tabular-nums opacity-70">{counts[s]}</span>
+            </FilterChip>
+          ))}
+        </div>
+      )}
+
+      {board.isPending && (
+        <LoadingRegion label={t('loading')} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <Card key={i} className="flex flex-col gap-3 p-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-14" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-1/2" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-24 rounded-md" />
+                <Skeleton className="h-8 w-20 rounded-md" />
+              </div>
+            </Card>
+          ))}
+        </LoadingRegion>
+      )}
+      {board.data?.rooms.length === 0 && (
+        <EmptyState icon={<BedDouble />} title={t('hk.noRooms')} />
+      )}
+
+      <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {visible.map((room) => (
           <Card
             key={room.roomId}
-            className={cn('border-l-4', STATUS_STYLE[room.housekeepingStatus])}
+            className={cn(
+              'relative overflow-hidden before:absolute before:inset-y-0 before:left-0 before:w-1 before:transition-colors',
+              STATUS_STRIPE[room.housekeepingStatus],
+            )}
           >
-            <CardContent className="flex flex-col gap-2 pt-4 text-sm">
+            <CardContent className="flex flex-col gap-3 p-4 pl-5 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold">{room.number}</span>
-                <Badge>{room.housekeepingStatus.toLowerCase()}</Badge>
+                <span className="text-xl font-semibold tracking-tight">{room.number}</span>
+                <Badge variant={statusVariant(room.housekeepingStatus)} dot>
+                  {statusLabel(room.housekeepingStatus)}
+                </Badge>
               </div>
-              <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
-                <span>{room.roomTypeCode}</span>·
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="font-mono">{room.roomTypeCode}</span>·
                 <span>{room.occupied ? t('hk.occupied') : t('hk.vacant')}</span>
-                {room.arrivalToday && <Badge>{t('hk.arriving')}</Badge>}
-                {room.departureToday && <Badge>{t('hk.departing')}</Badge>}
+                {room.arrivalToday && <Badge variant="info">{t('hk.arriving')}</Badge>}
+                {room.departureToday && <Badge variant="warning">{t('hk.departing')}</Badge>}
                 {room.serviceStatus !== 'IN_SERVICE' && (
-                  <Badge className="text-destructive">
-                    {room.serviceStatus.replaceAll('_', ' ').toLowerCase()}
+                  <Badge variant={statusVariant(room.serviceStatus)}>
+                    {statusLabel(room.serviceStatus)}
                   </Badge>
                 )}
               </div>
               {room.openTask && (
-                <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 px-2.5 py-2 text-xs">
                   <span>
-                    {room.openTask.type.replace('_', ' ').toLowerCase()} ·{' '}
-                    {room.openTask.status.replace('_', ' ').toLowerCase()}
+                    {statusLabel(room.openTask.type)} · {statusLabel(room.openTask.status)}
                   </span>
                   {canAssign ? (
                     <Select
-                      className="h-8 w-auto text-xs"
+                      className="ml-auto h-8 w-auto text-xs"
                       aria-label={t('hk.assignTo')}
                       value={room.openTask.assignee?.membershipId ?? ''}
+                      disabled={running(`assign:${room.roomId}`)}
                       onChange={(e) =>
-                        action.mutate(() =>
-                          pms.assignHousekeepingTask(room.openTask!.id, e.target.value || null),
-                        )
+                        action.mutate({
+                          key: `assign:${room.roomId}`,
+                          run: () =>
+                            pms.assignHousekeepingTask(room.openTask!.id, e.target.value || null),
+                        })
                       }
                     >
                       <option value="">{t('hk.unassigned')}</option>
@@ -106,7 +182,7 @@ export default function HousekeepingPage() {
                       ))}
                     </Select>
                   ) : (
-                    <span className="text-muted-foreground">
+                    <span className="ml-auto text-muted-foreground">
                       {room.openTask.assignee?.displayName ?? t('hk.unassigned')}
                     </span>
                   )}
@@ -115,26 +191,58 @@ export default function HousekeepingPage() {
               <div className="flex flex-wrap gap-2">
                 {NEXT_ACTIONS[room.housekeepingStatus]
                   .filter((a) => hasPermission(session.data, a.permission))
-                  .map((a) => (
-                    <Button
-                      key={a.to}
-                      size="sm"
-                      variant={a.to === 'DIRTY' ? 'ghost' : 'outline'}
-                      disabled={action.isPending}
-                      onClick={() =>
-                        action.mutate(() =>
-                          pms.setHousekeepingStatus(room.roomId, { status: a.to, reason: '' }),
-                        )
-                      }
-                    >
-                      {t(a.label)}
-                    </Button>
-                  ))}
+                  .map((a) => {
+                    const key = `${room.roomId}:${a.to}`;
+                    return (
+                      <Button
+                        key={a.to}
+                        size="sm"
+                        variant={a.to === 'DIRTY' ? 'ghost' : 'outline'}
+                        loading={running(key)}
+                        disabled={action.isPending}
+                        onClick={() =>
+                          action.mutate({
+                            key,
+                            run: () =>
+                              pms.setHousekeepingStatus(room.roomId, { status: a.to, reason: '' }),
+                          })
+                        }
+                      >
+                        {t(a.label)}
+                      </Button>
+                    );
+                  })}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
     </div>
+  );
+}
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all duration-200 active:scale-95',
+        active
+          ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
+          : 'bg-card text-muted-foreground hover:border-ring/40 hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
   );
 }

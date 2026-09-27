@@ -1,20 +1,11 @@
 'use client';
 
 import { passwordSchema } from '@hotel/contracts';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-  Notice,
-} from '@hotel/ui';
+import { Alert, Button, CardContent, Input, Label, Notice } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
+import { AuthShell } from '@/components/auth-shell';
 import { api } from '@/lib/api';
 import { errorMessage, tokenFromHash } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -41,43 +32,41 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{t('reset.title')}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {token === null && <Alert>{t('reset.invalid')}</Alert>}
-          {reset.isSuccess ? (
-            <Notice>{t('reset.done')}</Notice>
-          ) : (
-            token && (
-              <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
-                {(clientError || reset.error) && (
-                  <Alert>{clientError ?? errorMessage(reset.error)}</Alert>
-                )}
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="password">{t('reset.newPassword')}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="new-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">{t('reset.hint')}</p>
-                </div>
-                <Button type="submit" disabled={reset.isPending}>
-                  {t('reset.submit')}
-                </Button>
-              </form>
-            )
-          )}
-          <Link href="/login" className="text-center text-sm text-muted-foreground underline">
-            {t('login.title')}
-          </Link>
-        </CardContent>
-      </Card>
-    </main>
+    <AuthShell title={t('reset.title')}>
+      <CardContent className="flex flex-col gap-4">
+        {token === null && <Alert>{t('reset.invalid')}</Alert>}
+        {reset.isSuccess ? (
+          <Notice>{t('reset.done')}</Notice>
+        ) : (
+          token && (
+            <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+              {(clientError || reset.error) && (
+                <Alert>{clientError ?? errorMessage(reset.error)}</Alert>
+              )}
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password">{t('reset.newPassword')}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">{t('reset.hint')}</p>
+              </div>
+              <Button type="submit" size="lg" loading={reset.isPending}>
+                {t('reset.submit')}
+              </Button>
+            </form>
+          )
+        )}
+        <Link
+          href="/login"
+          className="text-center text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+        >
+          {t('login.title')}
+        </Link>
+      </CardContent>
+    </AuthShell>
   );
 }

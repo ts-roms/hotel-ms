@@ -14,6 +14,11 @@
   --primary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.96 0.005 260);
   --muted-foreground: oklch(0.5 0.02 260);
+  --secondary: oklch(0.955 0.01 250);
+  --secondary-foreground: oklch(0.3 0.05 250);
+  --success: oklch(0.56 0.14 155);
+  --warning: oklch(0.64 0.15 65);
+  --info: oklch(0.56 0.15 240);
   --accent: oklch(0.95 0.01 250);
   --accent-foreground: oklch(0.25 0.05 250);
   --destructive: oklch(0.55 0.2 27);
@@ -33,6 +38,11 @@
     --primary-foreground: oklch(0.15 0.02 260);
     --muted: oklch(0.25 0.01 260);
     --muted-foreground: oklch(0.7 0.01 260);
+    --secondary: oklch(0.26 0.02 250);
+    --secondary-foreground: oklch(0.92 0.01 250);
+    --success: oklch(0.74 0.15 155);
+    --warning: oklch(0.8 0.14 75);
+    --info: oklch(0.74 0.13 240);
     --accent: oklch(0.28 0.02 250);
     --accent-foreground: oklch(0.95 0 0);
     --destructive: oklch(0.65 0.2 27);
@@ -52,6 +62,11 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
@@ -61,6 +76,30 @@
   --color-ring: var(--ring);
 }
 
+/* Animation tokens used by the shared UI kit (skeleton shimmer, alert fade-in). */
+@theme {
+  --animate-fade-in: fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-scale-in: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+}
+
 @layer base {
   * {
     border-color: var(--border);
@@ -68,5 +107,15 @@
   body {
     background: var(--background);
     color: var(--foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
