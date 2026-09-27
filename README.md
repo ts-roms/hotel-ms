@@ -114,7 +114,8 @@ Kitchen tablets: a manager adds a device under **Devices** and gets a pairing co
 open http://localhost:43100/kiosk and enter the code. Staff then sign in there with the PIN they
 set under **Security**, and see the kitchen board with the device's permissions only (ADR-0020).
 A **time clock** device (same pairing) lets staff clock in and out with their Employee ID; the
-camera takes a selfie with each punch, reviewed on the Attendance page and deleted after 90 days
+camera takes a selfie with each punch (web punches under **My time** need one too), reviewed on the
+Attendance page and deleted after 90 days
 (ADR-0022).
 
 To try the guest portal, open a confirmed reservation with a booker email in the staff app

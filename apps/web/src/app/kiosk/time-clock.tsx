@@ -4,8 +4,9 @@ import type { createKioskApiClient } from '@hotel/api-client';
 import type { ClockPunchResult, KioskState, PunchType } from '@hotel/contracts';
 import { Alert, Button, Card, CardContent, Input } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
-import { Camera, CheckCircle2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { SelfiePreview, useSelfieCamera } from '@/components/selfie-camera';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 
@@ -18,26 +19,12 @@ const ACTIONS: { type: PunchType; label: Parameters<typeof t>[0]; primary?: bool
   { type: 'OUT', label: 'clock.out', primary: true },
 ];
 
-/** One frame from the camera, as a JPEG (a selfie is taken at the moment of the punch). */
-function snapshot(video: HTMLVideoElement): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  const scale = Math.min(1, 640 / (video.videoWidth || 640));
-  canvas.width = Math.round((video.videoWidth || 640) * scale);
-  canvas.height = Math.round((video.videoHeight || 480) * scale);
-  canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No image'))), 'image/jpeg', 0.8),
-  );
-}
-
 /**
  * Time clock screen (ADR-0022): Employee ID, then In / Break / Out. The camera takes a
  * selfie with every punch; the photo goes to HR, never shown back on this shared screen.
  */
 export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const camera = useSelfieCamera();
   const [employeeNo, setEmployeeNo] = useState('');
   const [done, setDone] = useState<ClockPunchResult | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -47,23 +34,9 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-    navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false })
-      .then((s) => {
-        stream = s;
-        if (video.current) video.current.srcObject = s;
-        setReady(true);
-      })
-      .catch(() => setCameraError(t('clock.noCamera')));
-    if (!navigator.mediaDevices) setCameraError(t('clock.noCamera'));
-    return () => stream?.getTracks().forEach((track) => track.stop());
-  }, []);
-
   const punch = useMutation({
     mutationFn: async (type: PunchType) =>
-      kiosk.clock(employeeNo.trim(), type, await snapshot(video.current!)),
+      kiosk.clock(employeeNo.trim(), type, await camera.capture()),
     onSuccess: (result) => {
       setDone(result);
       setEmployeeNo('');
@@ -83,20 +56,8 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
               {state.device.name} · {state.device.propertyName}
             </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
-            <video
-              ref={video}
-              autoPlay
-              playsInline
-              muted
-              className="size-full -scale-x-100 object-cover"
-              aria-label={t('clock.camera')}
-            />
-            {!ready && !cameraError && (
-              <Camera className="absolute inset-0 m-auto size-10 text-muted-foreground" />
-            )}
-          </div>
-          {cameraError && <Alert>{cameraError}</Alert>}
+          <SelfiePreview camera={camera} />
+          {camera.error && <Alert>{camera.error}</Alert>}
           {done ? (
             <div
               role="status"
@@ -133,7 +94,7 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
                     key={a.type}
                     size="lg"
                     variant={a.primary ? 'default' : 'outline'}
-                    disabled={!ready || !employeeNo.trim() || punch.isPending}
+                    disabled={!camera.ready || !employeeNo.trim() || punch.isPending}
                     loading={punch.isPending && punch.variables === a.type}
                     onClick={() => punch.mutate(a.type)}
                   >

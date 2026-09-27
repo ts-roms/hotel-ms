@@ -124,7 +124,7 @@ export const clockPunchResultSchema = z.object({
 });
 export type ClockPunchResult = z.infer<typeof clockPunchResultSchema>;
 
-/** A punch with its selfie, for managers reviewing time clock punches. */
+/** A punch with its selfie, for managers reviewing punches. */
 export const clockPhotoSchema = z.object({
   punchId: z.uuid(),
   employeeId: z.uuid(),
@@ -133,5 +133,7 @@ export const clockPhotoSchema = z.object({
   type: z.enum(PUNCH_TYPES),
   at: z.iso.datetime(),
   deviceName: z.string().nullable(),
+  /** WEB: the employee's own session; KIOSK: a time clock. */
+  source: z.enum(['WEB', 'KIOSK']),
 });
 export type ClockPhoto = z.infer<typeof clockPhotoSchema>;

@@ -4,7 +4,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TenantJobsProcessor } from '../src/modules/jobs/tenant-jobs.processor.js';
-import { startTestApp, type TestContext, TestClient } from './harness.js';
+import { startTestApp, type TestContext, TestClient, webPunch } from './harness.js';
 
 let ctx: TestContext;
 let admin: TestClient;
@@ -157,8 +157,7 @@ describe('scheduled jobs', () => {
 
 describe('payroll export', () => {
   it('is a CSV of attendance and leave, for HR with MFA only', async () => {
-    const punch = (type: string) =>
-      reception.request('POST', `${mnl()}/attendance/punches`, { type });
+    const punch = (type: string) => webPunch(reception, mnl(), type);
     expect((await punch('IN')).status).toBe(201);
     expect((await punch('OUT')).status).toBe(201);
 

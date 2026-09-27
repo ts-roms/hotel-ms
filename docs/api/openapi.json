@@ -20221,6 +20221,13 @@
                           "deviceName": {
                             "nullable": true,
                             "type": "string"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "WEB",
+                              "KIOSK"
+                            ]
                           }
                         },
                         "required": [
@@ -20230,7 +20237,8 @@
                           "employeeName",
                           "type",
                           "at",
-                          "deviceName"
+                          "deviceName",
+                          "source"
                         ],
                         "additionalProperties": false
                       }
@@ -22994,29 +23002,41 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "IN",
+                "OUT",
+                "BREAK_START",
+                "BREAK_END"
+              ]
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
+            "image/jpeg": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "IN",
-                      "OUT",
-                      "BREAK_START",
-                      "BREAK_END"
-                    ]
-                  }
-                },
-                "required": [
-                  "type"
-                ],
-                "additionalProperties": false
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
               }
             }
           }

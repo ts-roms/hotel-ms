@@ -102,7 +102,7 @@ export default function AttendancePage() {
               >
                 <span>
                   <strong>{c.employeeName}</strong> · {statusLabel(c.type).toLowerCase()} ·{' '}
-                  {formatDate(c.at.slice(0, 10))} {clock(c.at)} ·{' '}
+                  {formatDate(new Date(c.at).toLocaleDateString('en-CA'))} {clock(c.at)} ·{' '}
                   <span className="text-muted-foreground">{c.reason}</span>
                 </span>
                 {canDecide && (

@@ -17,7 +17,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState } from '../pms/reservations.service.js';
 import { computeAttendanceDays } from './attendance-rules.js';
-import { activeOn, employeeName, HrAccess, toEmployeeSummary } from './hr-access.js';
+import { employeeName, HrAccess, toEmployeeSummary } from './hr-access.js';
 
 /** A shift left open longer than this no longer blocks clocking in (it shows incomplete). */
 const STALE_OPEN_HOURS = 18;
@@ -31,7 +31,7 @@ const NEXT: Record<PunchType | 'NONE', PunchType[]> = {
   BREAK_END: ['OUT', 'BREAK_START'],
 };
 
-const toPunchDto = (p: {
+export const toPunchDto = (p: {
   id: string;
   propertyId: string;
   type: PunchType;
@@ -88,28 +88,6 @@ export class AttendanceService {
         orderBy: [{ at: 'desc' }, { recordedAt: 'desc' }],
       });
       return { employee: toEmployeeSummary(employee), lastPunch: last ? toPunchDto(last) : null };
-    });
-  }
-
-  /**
-   * Clock in/out (blueprint §13.2) from the employee's own session.
-   */
-  async punch(propertyId: string, type: PunchType): Promise<Punch> {
-    return this.db.run(async (tx) => {
-      const me = await this.access.myEmployee(tx);
-      const property = await this.access.property(tx, propertyId);
-      const assigned = await tx.employmentAssignment.count({
-        where: { employeeId: me.id, propertyId, ...activeOn(property.today) },
-      });
-      if (!assigned) throw Problems.forbidden('You are not assigned to this property today.');
-      const punch = await this.punchInTx(tx, {
-        employeeId: me.id,
-        propertyId,
-        type,
-        source: 'WEB',
-        recordedBy: this.access.actorId,
-      });
-      return toPunchDto(punch);
     });
   }
 

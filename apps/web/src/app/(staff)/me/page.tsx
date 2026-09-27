@@ -20,8 +20,9 @@ import {
   Skeleton,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, Clock as ClockIcon, Plane, Timer } from 'lucide-react';
+import { CalendarClock, Camera, Clock as ClockIcon, Plane, Timer } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { SelfiePreview, useSelfieCamera } from '@/components/selfie-camera';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { addDays, formatDate } from '@/lib/format';
@@ -73,10 +74,15 @@ export default function MyTimePage() {
 function Clock() {
   const queryClient = useQueryClient();
   const me = useQuery({ queryKey: ['me', 'employee'], queryFn: api.me.employee });
+  // A punch needs a selfie taken now (ADR-0022): the button opens the camera first.
+  const [pending, setPending] = useState<{ propertyId: string; type: PunchType } | null>(null);
   const punch = useMutation({
-    mutationFn: (input: { propertyId: string; type: PunchType }) =>
-      api.pms(input.propertyId).punch(input.type),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    mutationFn: (input: { propertyId: string; type: PunchType; selfie: Blob }) =>
+      api.pms(input.propertyId).punch(input.type, input.selfie),
+    onSuccess: () => {
+      setPending(null);
+      return queryClient.invalidateQueries({ queryKey: ['me'] });
+    },
   });
   const employee = me.data?.employee;
   if (!employee) return null;
@@ -102,7 +108,7 @@ function Clock() {
             }
           />
           {last
-            ? `${t(PUNCH_LABEL[last.type])} · ${formatDate(last.at.slice(0, 10))} ${clock(last.at)}`
+            ? `${t(PUNCH_LABEL[last.type])} · ${formatDate(new Date(last.at).toLocaleDateString('en-CA'))} ${clock(last.at)}`
             : t('hr.noPunches')}
         </p>
         {employee.assignments.map((a) => (
@@ -113,21 +119,63 @@ function Clock() {
                 key={type}
                 size="sm"
                 variant={type === 'IN' || type === 'OUT' ? 'default' : 'outline'}
-                loading={
-                  punch.isPending &&
-                  punch.variables?.propertyId === a.propertyId &&
-                  punch.variables.type === type
-                }
-                disabled={punch.isPending}
-                onClick={() => punch.mutate({ propertyId: a.propertyId, type })}
+                disabled={punch.isPending || pending !== null}
+                onClick={() => {
+                  punch.reset();
+                  setPending({ propertyId: a.propertyId, type });
+                }}
               >
                 {t(PUNCH_LABEL[type])}
               </Button>
             ))}
           </div>
         ))}
+        {pending && (
+          <SelfiePunch
+            label={t(PUNCH_LABEL[pending.type])}
+            busy={punch.isPending}
+            onCapture={(selfie) => punch.mutate({ ...pending, selfie })}
+            onCancel={() => setPending(null)}
+          />
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Camera panel for one punch; the stream stops when it closes. */
+function SelfiePunch({
+  label,
+  busy,
+  onCapture,
+  onCancel,
+}: {
+  label: string;
+  busy: boolean;
+  onCapture: (selfie: Blob) => void;
+  onCancel: () => void;
+}) {
+  const camera = useSelfieCamera();
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border p-3">
+      <SelfiePreview camera={camera} className="max-w-sm" />
+      {camera.error && <Alert>{camera.error}</Alert>}
+      <p className="text-xs text-muted-foreground">{t('clock.photoNotice')}</p>
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          loading={busy}
+          disabled={!camera.ready}
+          onClick={() => void camera.capture().then(onCapture)}
+        >
+          <Camera className="size-4" />
+          {t('clock.takePhoto')} · {label}
+        </Button>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
+          {t('fin.cancel')}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -292,7 +340,8 @@ function MyAttendance() {
         {corrections.data?.slice(0, 5).map((c) => (
           <div key={c.id} className="flex justify-between gap-2 text-muted-foreground">
             <span>
-              {t(PUNCH_LABEL[c.type])} · {formatDate(c.at.slice(0, 10))} {clock(c.at)}
+              {t(PUNCH_LABEL[c.type])} · {formatDate(new Date(c.at).toLocaleDateString('en-CA'))}{' '}
+              {clock(c.at)}
             </span>
             <Badge variant={statusVariant(c.status)} dot>
               {statusLabel(c.status)}

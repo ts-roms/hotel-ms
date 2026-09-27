@@ -11,7 +11,7 @@ import { usePms } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 
 /**
- * Time clock punches with their selfies (ADR-0022). A photo loads only when asked for:
+ * Punches with their selfies, from the web and time clocks (ADR-0022). A photo loads only when asked for:
  * every view is audited.
  */
 export function ClockPhotos({
@@ -47,7 +47,10 @@ export function ClockPhotos({
                 <span className="font-mono text-xs text-muted-foreground">{p.employeeNo}</span>{' '}
                 {p.employeeName} · {statusLabel(p.type)} ·{' '}
                 {formatDate(new Date(p.at).toLocaleDateString('en-CA'))} {clock(p.at)}
-                {p.deviceName && <span className="text-muted-foreground"> · {p.deviceName}</span>}
+                <span className="text-muted-foreground">
+                  {' '}
+                  · {p.source === 'WEB' ? t('clock.web') : (p.deviceName ?? t('dev.timeClock'))}
+                </span>
               </span>
               <Button
                 size="sm"

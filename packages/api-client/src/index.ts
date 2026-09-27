@@ -633,8 +633,9 @@ export function createApiClient(options: ApiClientOptions = {}) {
         /** Server-Sent Events URL for the outlet's kitchen board. */
         orderStreamUrl: (outletId: string) =>
           `${baseUrl}${p}/outlets/${id(outletId)}/orders/stream`,
-        punch: (type: PunchType) =>
-          call<Punch>('POST', `${p}/attendance/punches`, { type }).then((r) => r.data),
+        /** Web punch: the selfie taken now is the body (ADR-0022). */
+        punch: (type: PunchType, selfie: Blob) =>
+          call<Punch>('POST', `${p}/attendance/punches${qs({ type })}`, selfie).then((r) => r.data),
         attendance: (from: string, to: string) =>
           call<{ items: AttendanceDay[] }>('GET', `${p}/attendance${qs({ from, to })}`).then(
             (r) => r.data.items,

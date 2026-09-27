@@ -9,7 +9,7 @@ import { ClsService } from 'nestjs-cls';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { RequestContext } from '../src/common/request-context.js';
 import { TimeClockService } from '../src/modules/hr/time-clock.service.js';
-import { startTestApp, type TestContext, TestClient, WEB_ORIGIN } from './harness.js';
+import { startTestApp, type TestContext, TestClient, WEB_ORIGIN, webPunch } from './harness.js';
 
 let ctx: TestContext;
 let john: TestClient;
@@ -177,13 +177,46 @@ describe('punching with Employee ID and a selfie', () => {
   });
 });
 
+describe('web punches need a selfie too', () => {
+  it('refuses a punch without a real photo, and records one with it', async () => {
+    const url = `/api/v1/properties/${MNL()}/attendance/punches`;
+    // The old JSON punch is no longer accepted.
+    expect((await reception.request('POST', `${url}?type=IN`, { type: 'IN' })).status).toBe(415);
+    expect(
+      (await reception.request('POST', `${url}?type=IN`, PNG, { 'content-type': 'image/jpeg' }))
+        .status,
+    ).toBe(415);
+    expect(
+      (await reception.request('POST', url, JPEG, { 'content-type': 'image/jpeg' })).status,
+    ).toBe(400);
+    const res = await webPunch(reception, `/api/v1/properties/${MNL()}`, 'IN');
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    expect(res.body).toMatchObject({ type: 'IN', source: 'WEB' });
+
+    const list = await john.get(
+      `/api/v1/properties/${MNL()}/attendance/photos?from=${today()}&to=${today()}`,
+    );
+    expect(list.body.items).toContainEqual(
+      expect.objectContaining({ punchId: res.body.id, source: 'WEB', deviceName: null }),
+    );
+    // A refused punch keeps no photo.
+    const before = (await photoFiles()).length;
+    expect((await webPunch(reception, `/api/v1/properties/${MNL()}`, 'IN')).status).toBe(409);
+    expect((await photoFiles()).length).toBe(before);
+    expect((await webPunch(reception, `/api/v1/properties/${MNL()}`, 'OUT')).status).toBe(201);
+  });
+});
+
 describe('reviewing and expiring selfies', () => {
   it('managers see who punched with which photo; every view is audited', async () => {
     const list = await john.get(
       `/api/v1/properties/${MNL()}/attendance/photos?from=${today()}&to=${today()}`,
     );
     expect(list.status, JSON.stringify(list.body)).toBe(200);
-    const mine = list.body.items.filter((p: { employeeId: string }) => p.employeeId === E('E001'));
+    const mine = list.body.items.filter(
+      (p: { employeeId: string; source: string }) =>
+        p.employeeId === E('E001') && p.source === 'KIOSK',
+    );
     expect(mine.map((p: { type: string }) => p.type).sort()).toEqual(
       ['BREAK_END', 'BREAK_START', 'IN', 'OUT'].sort(),
     );
