@@ -1,4 +1,9 @@
 import type {
+  ApplyDiscountRequest,
+  CreateDiscountProfileRequest,
+  DiscountProfile,
+  ExchangeRate,
+  PaymentSettings,
   CreateLeaveTypeRequest,
   ReconciliationRun,
   UpdateLeaveTypeRequest,
@@ -463,6 +468,35 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'idempotency-key': idempotencyKey,
             },
           ).then((r) => r.data),
+        paymentSettings: () =>
+          call<PaymentSettings>('GET', `${p}/payment-settings`).then((r) => r.data),
+        updatePaymentSettings: (body: PaymentSettings) =>
+          call<PaymentSettings>('PUT', `${p}/payment-settings`, body).then((r) => r.data),
+        captureHold: (intentId: string, amountMinor: number, idempotencyKey: string) =>
+          call<PaymentIntent>(
+            'POST',
+            `${p}/holds/${id(intentId)}/capture`,
+            { amountMinor },
+            { 'idempotency-key': idempotencyKey },
+          ).then((r) => r.data),
+        releaseHold: (intentId: string) =>
+          call<PaymentIntent>('POST', `${p}/holds/${id(intentId)}/release`).then((r) => r.data),
+        exchangeRates: () =>
+          call<{ items: ExchangeRate[] }>('GET', `${p}/exchange-rates`).then((r) => r.data.items),
+        setExchangeRate: (currency: string, rate: string) =>
+          call<ExchangeRate>('POST', `${p}/exchange-rates`, { currency, rate }).then((r) => r.data),
+        discountProfiles: () =>
+          call<{ items: DiscountProfile[] }>('GET', `${p}/discount-profiles`).then(
+            (r) => r.data.items,
+          ),
+        createDiscountProfile: (body: CreateDiscountProfileRequest) =>
+          call<DiscountProfile>('POST', `${p}/discount-profiles`, body).then((r) => r.data),
+        archiveDiscountProfile: (profileId: string) =>
+          call<void>('POST', `${p}/discount-profiles/${id(profileId)}/archive`).then((r) => r.data),
+        applyDiscount: (folioId: string, body: ApplyDiscountRequest) =>
+          call<Folio>('PUT', `${p}/folios/${id(folioId)}/discount`, body).then((r) => r.data),
+        removeDiscount: (folioId: string) =>
+          call<Folio>('DELETE', `${p}/folios/${id(folioId)}/discount`).then((r) => r.data),
         accounts: () =>
           call<{ items: AccountFolio[] }>('GET', `${p}/accounts`).then((r) => r.data.items),
         createAccount: (label: string) =>
@@ -759,6 +793,11 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
       ).then(data),
     payments: () =>
       call<{ items: PaymentIntent[] }>('GET', '/guest/payments').then((r) => r.data.items),
+    /** Card hold (pre-authorization) for self check-in; returns the hosted checkout. */
+    hold: (idempotencyKey: string) =>
+      call<PaymentIntent>('POST', '/guest/holds', {}, { 'idempotency-key': idempotencyKey }).then(
+        data,
+      ),
     menus: () => call<{ items: Menu[] }>('GET', '/guest/menus').then((r) => r.data.items),
     orders: () => call<{ items: Order[] }>('GET', '/guest/orders').then((r) => r.data.items),
     placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>

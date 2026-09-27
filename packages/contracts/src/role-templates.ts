@@ -40,6 +40,7 @@ const FRONT_OFFICE = [
   'folio.post',
   'folio.void',
   'payment.create',
+  'folio.discount',
   'housekeeping.read',
 ] as const satisfies readonly PermissionCode[];
 
@@ -114,6 +115,8 @@ const FINANCE = [
   'payment.refund',
   'invoice.issue',
   'finance.report.read',
+  'exchange_rate.manage',
+  'folio.discount',
 ] as const satisfies readonly PermissionCode[];
 
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];

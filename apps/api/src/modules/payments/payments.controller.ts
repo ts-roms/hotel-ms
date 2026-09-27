@@ -8,6 +8,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Put,
   Req,
   Res,
 } from '@nestjs/common';
@@ -15,7 +16,13 @@ import type { RawBodyRequest } from '@nestjs/common';
 import { ApiExcludeController, ApiHeader, ApiTags } from '@nestjs/swagger';
 import {
   accountFolioSchema,
+  type ApplyDiscountRequest,
+  applyDiscountRequestSchema,
+  type CaptureHoldRequest,
+  captureHoldRequestSchema,
   cashierShiftSchema,
+  type CreateDiscountProfileRequest,
+  createDiscountProfileRequestSchema,
   type CloseShiftRequest,
   closeShiftRequestSchema,
   type CreateAccountFolioRequest,
@@ -27,6 +34,8 @@ import {
   dailyReportQuerySchema,
   type DailyReportQuery,
   dailyReportSchema,
+  discountProfileSchema,
+  exchangeRateSchema,
   folioDocumentSchema,
   folioSchema,
   type GuestPaymentRequest,
@@ -36,12 +45,16 @@ import {
   type OpenShiftRequest,
   openShiftRequestSchema,
   paymentIntentSchema,
+  type PaymentSettings,
+  paymentSettingsSchema,
   reconciliationRunSchema,
   reconciliationSchema,
   type RefundRequest,
   refundRequestSchema,
   refundSchema,
   routingRuleSchema,
+  type SetExchangeRateRequest,
+  setExchangeRateRequestSchema,
   type TransferRequest,
   transferRequestSchema,
 } from '@hotel/contracts';
@@ -57,6 +70,7 @@ import { FolioService } from '../folio/folio.service.js';
 import { toMinor } from '../pms/pricing.js';
 import { CashierService } from './cashier.service.js';
 import { DocumentsService } from './documents.service.js';
+import { FinanceSettingsService } from './finance-settings.service.js';
 import { PaymentsService } from './payments.service.js';
 import { PAYMENT_PROVIDERS, type PaymentProviders, SandboxProvider } from './providers.js';
 import { ReportsService } from './reports.service.js';
@@ -77,6 +91,7 @@ export class FinanceController {
     private readonly cashier: CashierService,
     private readonly documents: DocumentsService,
     private readonly reports: ReportsService,
+    private readonly settings: FinanceSettingsService,
     private readonly idempotency: IdempotencyService,
   ) {}
 
@@ -141,6 +156,121 @@ export class FinanceController {
   @ZodResponse(200, items(refundSchema))
   async refunds(@Param('propertyId') propertyId: string, @Param('paymentId') paymentId: string) {
     return { items: await this.payments.refunds(propertyId, uuidParam(paymentId)) };
+  }
+
+  // ---- Card holds ------------------------------------------------------------------------
+
+  @Get('payment-settings')
+  @RequirePermission('folio.read')
+  @ZodResponse(200, paymentSettingsSchema)
+  paymentSettings(@Param('propertyId') propertyId: string) {
+    return this.payments.settings(propertyId);
+  }
+
+  @Put('payment-settings')
+  @RequirePermission('property.settings.manage')
+  @ZodResponse(200, paymentSettingsSchema)
+  updatePaymentSettings(
+    @Param('propertyId') propertyId: string,
+    @ZodBody(paymentSettingsSchema.strict()) body: PaymentSettings,
+  ) {
+    return this.payments.updateSettings(propertyId, body);
+  }
+
+  @Post('holds/:intentId/capture')
+  @RequirePermission('payment.create')
+  @idempotencyHeader
+  @HttpCode(200)
+  @ZodResponse(200, paymentIntentSchema)
+  async captureHold(
+    @Param('propertyId') propertyId: string,
+    @Param('intentId') intentId: string,
+    @Headers('idempotency-key') key: string | undefined,
+    @ZodBody(captureHoldRequestSchema) body: CaptureHoldRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const result = await this.idempotency.run(
+      'payment.hold_capture',
+      key,
+      { intentId, ...body },
+      async () => ({
+        status: 200,
+        body: await this.payments.captureHold(propertyId, uuidParam(intentId), body.amountMinor),
+      }),
+    );
+    if (result.replayed) reply.header('idempotent-replayed', 'true');
+    return result.body;
+  }
+
+  @Post('holds/:intentId/release')
+  @RequirePermission('payment.create')
+  @HttpCode(200)
+  @ZodResponse(200, paymentIntentSchema)
+  releaseHold(@Param('propertyId') propertyId: string, @Param('intentId') intentId: string) {
+    return this.payments.releaseHold(propertyId, uuidParam(intentId));
+  }
+
+  // ---- Foreign cash and statutory discounts ----------------------------------------------
+
+  @Get('exchange-rates')
+  @RequirePermission('folio.read')
+  @ZodResponse(200, items(exchangeRateSchema))
+  async exchangeRates(@Param('propertyId') propertyId: string) {
+    return { items: await this.settings.exchangeRates(propertyId) };
+  }
+
+  @Post('exchange-rates')
+  @RequirePermission('exchange_rate.manage')
+  @ZodResponse(201, exchangeRateSchema)
+  setExchangeRate(
+    @Param('propertyId') propertyId: string,
+    @ZodBody(setExchangeRateRequestSchema) body: SetExchangeRateRequest,
+  ) {
+    return this.settings.setExchangeRate(propertyId, body);
+  }
+
+  @Get('discount-profiles')
+  @RequirePermission('folio.read')
+  @ZodResponse(200, items(discountProfileSchema))
+  async discountProfiles(@Param('propertyId') propertyId: string) {
+    return { items: await this.settings.discountProfiles(propertyId) };
+  }
+
+  @Post('discount-profiles')
+  @RequirePermission('tax.manage')
+  @ZodResponse(201, discountProfileSchema)
+  createDiscountProfile(
+    @Param('propertyId') propertyId: string,
+    @ZodBody(createDiscountProfileRequestSchema) body: CreateDiscountProfileRequest,
+  ) {
+    return this.settings.createDiscountProfile(propertyId, body);
+  }
+
+  @Post('discount-profiles/:profileId/archive')
+  @RequirePermission('tax.manage')
+  @HttpCode(204)
+  async archiveDiscountProfile(
+    @Param('propertyId') propertyId: string,
+    @Param('profileId') profileId: string,
+  ): Promise<void> {
+    await this.settings.archiveDiscountProfile(propertyId, uuidParam(profileId));
+  }
+
+  @Put('folios/:folioId/discount')
+  @RequirePermission('folio.discount')
+  @ZodResponse(200, folioSchema)
+  applyDiscount(
+    @Param('folioId') folioId: string,
+    @ZodBody(applyDiscountRequestSchema) body: ApplyDiscountRequest,
+  ) {
+    return this.folios.applyDiscount(uuidParam(folioId), body);
+  }
+
+  @Delete('folios/:folioId/discount')
+  @RequirePermission('folio.discount')
+  @ZodResponse(200, folioSchema)
+  removeDiscount(@Param('folioId') folioId: string) {
+    return this.folios.removeDiscount(uuidParam(folioId));
   }
 
   // ---- Accounts, routing, transfers ------------------------------------------------------
@@ -330,6 +460,22 @@ export class GuestPaymentsController {
   async list() {
     return { items: await this.payments.guestIntents() };
   }
+
+  /** Card hold (pre-authorization) the property asks for before self check-in. */
+  @Post('holds')
+  @idempotencyHeader
+  @ZodResponse(201, paymentIntentSchema)
+  async hold(
+    @Headers('idempotency-key') key: string | undefined,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ) {
+    const result = await this.idempotency.run('guest.hold', key, {}, async () => ({
+      status: 201,
+      body: await this.payments.guestHold(),
+    }));
+    if (result.replayed) reply.header('idempotent-replayed', 'true');
+    return result.body;
+  }
 }
 
 /** Provider → us. Authenticated by the provider's signature over the raw body. */
@@ -386,12 +532,13 @@ export class SandboxGatewayController {
       currency: intent.currency,
     }).format(toMinor(intent.amountMinor) / 100);
     const base = `/api/v1/sandbox-gateway/checkout/${encodeURIComponent(reference)}`;
+    const verb = intent.kind === 'HOLD' ? 'Authorize a hold of' : 'Pay';
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sandbox checkout</title></head>
 <body><h1>Sandbox checkout</h1><p>Test payments only. No money moves.</p>
 <p>Amount: <strong>${escapeHtml(amount)}</strong></p><p>Status: ${escapeHtml(intent.status)}</p>
 ${
   intent.status === 'PENDING'
-    ? `<form method="post" action="${base}/pay"><label>Method <select name="method"><option value="CARD">Card</option><option value="EWALLET">E-wallet</option></select></label> <button type="submit">Pay ${escapeHtml(amount)}</button></form>
+    ? `<form method="post" action="${base}/pay"><label>Method <select name="method"><option value="CARD">Card</option><option value="EWALLET">E-wallet</option></select></label> <button type="submit">${verb} ${escapeHtml(amount)}</button></form>
 <form method="post" action="${base}/decline"><button type="submit">Decline</button></form>`
     : ''
 }
@@ -410,7 +557,12 @@ ${
     if (!intent) throw new NotFoundException();
     if (intent.status === 'PENDING') {
       const event = sandbox.event({
-        type: outcome === 'pay' ? 'payment.succeeded' : 'payment.failed',
+        type:
+          outcome === 'decline'
+            ? 'payment.failed'
+            : intent.kind === 'HOLD'
+              ? 'payment.authorized'
+              : 'payment.succeeded',
         reference,
         amountMinor: toMinor(intent.amountMinor),
         currency: intent.currency,

@@ -45,6 +45,23 @@ export class CashierService {
     return { cashIn: cashIn._sum.amountMinor ?? 0n, cashOut: cashOut._sum.amountMinor ?? 0n };
   }
 
+  /** Foreign notes in the drawer, per currency (their converted value is in cashIn). */
+  private async foreignCash(
+    tx: Tx,
+    shiftId: string,
+  ): Promise<{ currency: string; amountMinor: number }[]> {
+    const rows = await tx.payment.groupBy({
+      by: ['tenderedCurrency'],
+      where: { cashierShiftId: shiftId, method: 'CASH', tenderedCurrency: { not: null } },
+      _sum: { tenderedAmountMinor: true },
+      orderBy: { tenderedCurrency: 'asc' },
+    });
+    return rows.map((r) => ({
+      currency: r.tenderedCurrency!,
+      amountMinor: toMinor(r._sum.tenderedAmountMinor ?? 0n),
+    }));
+  }
+
   private async toDto(tx: Tx, s: ShiftRow): Promise<CashierShift> {
     const { cashIn, cashOut } = await this.totals(tx, s.id);
     const expected = s.expectedCashMinor ?? s.openingFloatMinor + cashIn - cashOut;
@@ -57,6 +74,7 @@ export class CashierService {
       openingFloatMinor: toMinor(s.openingFloatMinor),
       cashInMinor: toMinor(cashIn),
       cashOutMinor: toMinor(cashOut),
+      foreignCash: await this.foreignCash(tx, s.id),
       expectedCashMinor: signed(expected),
       countedCashMinor: s.countedCashMinor === null ? null : toMinor(s.countedCashMinor),
       varianceMinor: s.varianceMinor === null ? null : signed(s.varianceMinor),

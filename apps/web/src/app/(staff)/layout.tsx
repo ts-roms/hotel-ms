@@ -27,6 +27,7 @@ import {
   Sparkles,
   Timer,
   Users,
+  Landmark,
   Wallet,
   X,
 } from 'lucide-react';
@@ -88,6 +89,12 @@ const PROPERTY_NAV: NavItem[] = [
   { href: 'cashier', label: 'nav.cashier', icon: Wallet, permission: 'cashier.shift' },
   { href: 'accounts', label: 'nav.accounts', icon: Building2, permission: 'folio.transfer' },
   { href: 'reports', label: 'nav.reports', icon: ChartColumn, permission: 'finance.report.read' },
+  {
+    href: 'finance-settings',
+    label: 'nav.financeSettings',
+    icon: Landmark,
+    permission: 'exchange_rate.manage',
+  },
   { href: 'night-audit', label: 'nav.nightAudit', icon: MoonStar, permission: 'night_audit.run' },
 ];
 

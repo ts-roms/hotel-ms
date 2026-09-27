@@ -13,6 +13,8 @@ const positiveMinor = z.number().int().min(1).max(10_000_000_000);
 
 export const PAYMENT_INTENT_STATUSES = [
   'PENDING',
+  /** A card hold (pre-authorization) is in place; nothing is captured yet. */
+  'AUTHORIZED',
   'SUCCEEDED',
   'FAILED',
   'CANCELLED',
@@ -21,7 +23,13 @@ export const PAYMENT_INTENT_STATUSES = [
 
 export const paymentIntentSchema = z.object({
   id: z.uuid(),
-  folioId: z.uuid(),
+  /** PAYMENT collects money; HOLD authorizes a card for later capture (self check-in). */
+  kind: z.enum(['PAYMENT', 'HOLD']),
+  /** Null for a hold placed before the stay's folio exists. */
+  folioId: z.uuid().nullable(),
+  reservationRoomId: z.uuid().nullable(),
+  /** For holds: what was captured at check-out. */
+  capturedMinor: z.number().int(),
   provider: z.string(),
   amountMinor: z.number().int(),
   currency: z.string(),
@@ -83,6 +91,8 @@ export const cashierShiftSchema = z.object({
   countedCashMinor: z.number().int().nullable(),
   varianceMinor: z.number().int().nullable(),
   notes: z.string(),
+  /** Foreign cash taken in this shift, per currency (not part of the drawer count). */
+  foreignCash: z.array(z.object({ currency: z.string(), amountMinor: z.number().int() })),
   version: z.number().int(),
 });
 export type CashierShift = z.infer<typeof cashierShiftSchema>;
@@ -223,6 +233,7 @@ export const reconciliationSchema = z.object({
         'UNAPPLIED_ONLINE_PAYMENT',
         'STALE_PAYMENT_INTENT',
         'STALE_CASHIER_SHIFT',
+        'STALE_HOLD',
         'PENDING_REFUND',
       ]),
       message: z.string(),
@@ -244,3 +255,78 @@ export type ReconciliationRun = z.infer<typeof reconciliationRunSchema>;
 
 export const dailyReportQuerySchema = z.object({ date: localDateSchema.optional() });
 export type DailyReportQuery = z.infer<typeof dailyReportQuerySchema>;
+
+// ---- Exchange rates ------------------------------------------------------------------------
+
+const rate = z
+  .string()
+  .regex(/^\d{1,9}(\.\d{1,6})?$/, 'Up to 6 decimals, e.g. 56.25')
+  .refine((v) => Number(v) > 0, 'Must be greater than zero');
+
+export const exchangeRateSchema = z.object({
+  id: z.uuid(),
+  currency: z.string(),
+  /** Units of the property currency per 1 unit of `currency`. */
+  rate: z.string(),
+  effectiveFrom: z.iso.datetime(),
+});
+export type ExchangeRate = z.infer<typeof exchangeRateSchema>;
+
+export const setExchangeRateRequestSchema = z.strictObject({
+  currency: z.string().regex(/^[A-Z]{3}$/, 'Must be an ISO 4217 code'),
+  rate,
+});
+export type SetExchangeRateRequest = z.infer<typeof setExchangeRateRequestSchema>;
+
+// ---- Statutory discounts -------------------------------------------------------------------
+
+export const discountProfileSchema = z.object({
+  id: z.uuid(),
+  code: z.string(),
+  name: z.string(),
+  /** e.g. 20 for 20%. */
+  discountPercent: z.number(),
+  /** Tax codes the holder is exempt from (e.g. VAT). */
+  exemptTaxCodes: z.array(z.string()),
+  departments: z.array(z.string()),
+  active: z.boolean(),
+});
+export type DiscountProfile = z.infer<typeof discountProfileSchema>;
+
+export const createDiscountProfileRequestSchema = z.strictObject({
+  code: z
+    .string()
+    .trim()
+    .regex(/^[A-Z0-9_-]{1,20}$/, 'Use 1–20 capital letters, digits, "-" or "_"'),
+  name: z.string().trim().min(1).max(100),
+  discountPercent: z
+    .number()
+    .min(0)
+    .max(100)
+    .refine((v) => Number.isInteger(v * 100), 'At most two decimals'),
+  exemptTaxCodes: z.array(z.string().trim().min(1).max(20)).max(10).default([]),
+  departments: z.array(z.enum(DEPARTMENTS)).min(1),
+});
+export type CreateDiscountProfileRequest = z.infer<typeof createDiscountProfileRequestSchema>;
+
+export const applyDiscountRequestSchema = z.strictObject({
+  profileId: z.uuid(),
+  holderName: z.string().trim().min(1).max(100),
+  /** Government-issued ID (e.g. OSCA or PWD ID). Stored encrypted. */
+  idNumber: z.string().trim().min(4).max(40),
+});
+export type ApplyDiscountRequest = z.infer<typeof applyDiscountRequestSchema>;
+
+// ---- Card holds (pre-authorization) --------------------------------------------------------
+
+export const paymentSettingsSchema = z.object({
+  /** Card hold required before guest self check-in; 0 = none. */
+  selfCheckInHoldMinor: z.number().int().min(0).max(1_000_000_000),
+});
+export type PaymentSettings = z.infer<typeof paymentSettingsSchema>;
+
+export const captureHoldRequestSchema = z.strictObject({
+  /** Up to the authorized amount; the rest is released. */
+  amountMinor: positiveMinor,
+});
+export type CaptureHoldRequest = z.infer<typeof captureHoldRequestSchema>;

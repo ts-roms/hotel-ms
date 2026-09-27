@@ -5,7 +5,12 @@ import type { Env } from '../../config/env.js';
 /** A provider event, verified and normalized. */
 export interface ProviderEvent {
   eventId: string;
-  type: 'payment.succeeded' | 'payment.failed' | 'refund.succeeded' | 'refund.failed';
+  type:
+    | 'payment.succeeded'
+    | 'payment.authorized'
+    | 'payment.failed'
+    | 'refund.succeeded'
+    | 'refund.failed';
   /** Checkout reference for payment events, refund reference for refund events. */
   reference: string;
   amountMinor: number;
@@ -23,6 +28,8 @@ export interface PaymentProvider {
   readonly code: string;
   createCheckout(input: {
     intentId: string;
+    /** MANUAL = a card hold (pre-authorization), captured or released later. */
+    capture: 'AUTOMATIC' | 'MANUAL';
     amountMinor: number;
     currency: string;
     description: string;
@@ -38,6 +45,10 @@ export interface PaymentProvider {
     reference: string;
     status: 'SUCCEEDED' | 'PENDING';
   }>;
+  /** Captures (part of) an authorized hold; the rest is released. */
+  capture(input: { reference: string; amountMinor: number; currency: string }): Promise<void>;
+  /** Releases an authorized hold without capturing. */
+  release(input: { reference: string }): Promise<void>;
 }
 
 export const invalidSignature = () =>
@@ -116,7 +127,13 @@ export class SandboxProvider implements PaymentProvider {
     } catch {
       throw invalidSignature();
     }
-    const types = ['payment.succeeded', 'payment.failed', 'refund.succeeded', 'refund.failed'];
+    const types = [
+      'payment.succeeded',
+      'payment.authorized',
+      'payment.failed',
+      'refund.succeeded',
+      'refund.failed',
+    ];
     const methods = ['CARD', 'EWALLET', 'BANK_TRANSFER'];
     const data = body.data ?? {};
     if (
@@ -141,8 +158,25 @@ export class SandboxProvider implements PaymentProvider {
     };
   }
 
-  async refund(): Promise<{ reference: string; status: 'SUCCEEDED' }> {
-    return { reference: `sbx_re_${randomBytes(10).toString('hex')}`, status: 'SUCCEEDED' };
+  /**
+   * Refunds complete at once, except "magic" amounts ending in 13 minor units, which stay
+   * pending until a refund webhook arrives (like test amounts at real gateways).
+   */
+  async refund(input: {
+    amountMinor: number;
+  }): Promise<{ reference: string; status: 'SUCCEEDED' | 'PENDING' }> {
+    return {
+      reference: `sbx_re_${randomBytes(10).toString('hex')}`,
+      status: input.amountMinor % 100 === 13 ? 'PENDING' : 'SUCCEEDED',
+    };
+  }
+
+  async capture(): Promise<void> {
+    // The sandbox captures authorized holds immediately.
+  }
+
+  async release(): Promise<void> {
+    // Nothing is held in the sandbox beyond our own record.
   }
 
   /** Builds a signed event, as the sandbox's hosted page does after the payer decides. */

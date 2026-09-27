@@ -72,6 +72,12 @@ export default function CashierPage() {
               <strong>
                 {t('fin.expected')}: {formatMoney(s.expectedCashMinor, currency)}
               </strong>
+              {s.foreignCash.length > 0 && (
+                <span className="col-span-2 text-muted-foreground sm:col-span-4">
+                  {t('fin.foreignNotes')}:{' '}
+                  {s.foreignCash.map((c) => formatMoney(c.amountMinor, c.currency)).join(' · ')}
+                </span>
+              )}
             </div>
           )}
           <div className="flex flex-wrap gap-2">

@@ -13,6 +13,8 @@ import { CacheRedis, RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FrontOfficeService } from '../front-office/front-office.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
+import { cardHoldStateInTx } from '../payments/holds.js';
+import { toMinor } from '../pms/pricing.js';
 import { ReservationsService } from '../pms/reservations.service.js';
 import { GuestSessions, newToken, sha256 } from './guest-session.js';
 import { ROOM_ACCESS_PROVIDER, type RoomAccessProvider } from './room-access.js';
@@ -281,6 +283,19 @@ export class GuestPortalService {
     return flag?.enabled ?? false;
   }
 
+  private async cardHold(
+    tx: Tx,
+    line: { id: string; propertyId: string; reservation: { currency: string } },
+  ): Promise<GuestStay['cardHold']> {
+    const state = await cardHoldStateInTx(tx, line.propertyId, line.id);
+    if (state.requiredMinor === 0n) return null;
+    return {
+      requiredMinor: toMinor(state.requiredMinor),
+      currency: line.reservation.currency,
+      authorized: state.authorized,
+    };
+  }
+
   async stay(): Promise<GuestStay> {
     return this.db.run(async (tx) => {
       const line = await this.loadLine(tx);
@@ -318,6 +333,7 @@ export class GuestPortalService {
           line.status === 'RESERVED' &&
           fromDbDate(line.arrivalDate) === businessDate &&
           (await this.selfCheckInEnabled(tx)),
+        cardHold: await this.cardHold(tx, line),
         csrfToken: this.sessions.csrfTokenFor(this.guest.tokenHash),
       };
     });
@@ -373,7 +389,7 @@ export class GuestPortalService {
    * with all its rules. Any failure sends the guest to the front desk; nothing bypasses it.
    */
   async selfCheckIn(): Promise<SelfCheckInResult> {
-    const { line, property } = await this.db.run(async (tx) => {
+    const { line, property, hold } = await this.db.run(async (tx) => {
       const line = await this.loadLine(tx);
       const property = await tx.property.findUniqueOrThrow({ where: { id: line.propertyId } });
       if (!(await this.selfCheckInEnabled(tx))) {
@@ -384,7 +400,8 @@ export class GuestPortalService {
           'Please check in at the front desk.',
         );
       }
-      return { line, property };
+      const hold = await cardHoldStateInTx(tx, line.propertyId, line.id);
+      return { line, property, hold };
     });
     if (line.status !== 'RESERVED') throw seeFrontDesk('This booking cannot be checked in online.');
     if (fromDbDate(line.arrivalDate) !== fromDbDate(property.currentBusinessDate)) {
@@ -395,6 +412,15 @@ export class GuestPortalService {
     if (localTimeNow(property.timezone) < property.checkInTime) {
       throw seeFrontDesk(
         `Check-in starts at ${property.checkInTime}. Early arrival? The front desk will help.`,
+      );
+    }
+
+    if (!hold.authorized) {
+      throw new ProblemException(
+        409,
+        'HOLD_REQUIRED',
+        'Card hold required',
+        'Authorize a card hold for incidentals, then check in.',
       );
     }
 

@@ -100,7 +100,10 @@ service from the guest portal; delivered room charges land on their folio.
 Finance: folios take online payments through the built-in **sandbox gateway** (payment links for
 staff, **Pay now** for guests; no money moves), refunds, invoices and receipts. Cash needs an open
 shift on the **Cashier** page; **Accounts** holds company folios; **Reports** has the daily report
-and reconciliation.
+and reconciliation. **Finance settings** holds exchange rates for foreign cash, the statutory
+discount profiles (senior citizen and PWD are seeded), and an optional card hold that guests
+authorize before self check-in (ADR-0018). In the sandbox, refunds ending in 13 centavos stay
+pending until a refund webhook arrives.
 
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.

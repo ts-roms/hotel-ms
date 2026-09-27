@@ -87,25 +87,32 @@ model TaxRule {
 }
 
 model Folio {
-  id                String      @id @default(uuid(7)) @db.Uuid
-  organizationId    String      @map("organization_id") @db.Uuid
-  propertyId        String      @map("property_id") @db.Uuid
-  folioNo           String      @map("folio_no")
-  reservationRoomId String?     @map("reservation_room_id") @db.Uuid
+  id                  String      @id @default(uuid(7)) @db.Uuid
+  organizationId      String      @map("organization_id") @db.Uuid
+  propertyId          String      @map("property_id") @db.Uuid
+  folioNo             String      @map("folio_no")
+  reservationRoomId   String?     @map("reservation_room_id") @db.Uuid
   /// Company / group account name; null for guest folios.
-  label             String?
-  status            FolioStatus @default(OPEN)
-  currency          String      @db.Char(3)
+  label               String?
+  /// Statutory discount applied to this folio's charges.
+  discountProfileId   String?     @map("discount_profile_id") @db.Uuid
+  discountHolderName  String?     @map("discount_holder_name")
+  discountIdLast4     String?     @map("discount_id_last4") @db.VarChar(4)
+  /// The holder's ID number, encrypted (SecretBox, blueprint §20.3).
+  discountIdEncrypted Bytes?      @map("discount_id_encrypted")
+  status              FolioStatus @default(OPEN)
+  currency            String      @db.Char(3)
   /// Cached SUM(folio_lines.amount_minor), updated in the posting transaction.
-  balanceMinor      BigInt      @default(0) @map("balance_minor")
-  openedAt          DateTime    @default(now()) @map("opened_at") @db.Timestamptz(3)
-  closedAt          DateTime?   @map("closed_at") @db.Timestamptz(3)
-  version           Int         @default(1)
+  balanceMinor        BigInt      @default(0) @map("balance_minor")
+  openedAt            DateTime    @default(now()) @map("opened_at") @db.Timestamptz(3)
+  closedAt            DateTime?   @map("closed_at") @db.Timestamptz(3)
+  version             Int         @default(1)
 
   reservationRoom ReservationRoom?   @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
   lines           FolioLine[]
   payments        Payment[]
   paymentIntents  PaymentIntent[]
+  discountProfile DiscountProfile?   @relation(fields: [organizationId, discountProfileId], references: [organizationId, id], onDelete: Restrict)
   documents       FolioDocument[]
   routingRules    FolioRoutingRule[] @relation("RoutingSource")
   routedFrom      FolioRoutingRule[] @relation("RoutingTarget")
@@ -150,23 +157,27 @@ model FolioLine {
 }
 
 model Payment {
-  id             String        @id @default(uuid(7)) @db.Uuid
-  organizationId String        @map("organization_id") @db.Uuid
-  propertyId     String        @map("property_id") @db.Uuid
-  folioId        String        @map("folio_id") @db.Uuid
-  folioLineId    String        @map("folio_line_id") @db.Uuid
-  method         PaymentMethod
-  amountMinor    BigInt        @map("amount_minor")
-  currency       String        @db.Char(3)
+  id                  String        @id @default(uuid(7)) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  propertyId          String        @map("property_id") @db.Uuid
+  folioId             String        @map("folio_id") @db.Uuid
+  folioLineId         String        @map("folio_line_id") @db.Uuid
+  method              PaymentMethod
+  amountMinor         BigInt        @map("amount_minor")
+  currency            String        @db.Char(3)
   /// Card terminal / transfer / e-wallet reference. Never card numbers.
-  reference      String?
-  businessDate   DateTime      @map("business_date") @db.Date
-  receivedBy     String?       @map("received_by") @db.Uuid
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  reference           String?
+  businessDate        DateTime      @map("business_date") @db.Date
+  receivedBy          String?       @map("received_by") @db.Uuid
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   /// Online gateway and its reference, for payments taken through a payment intent.
-  provider       String?
-  intentId       String?       @unique @map("intent_id") @db.Uuid
-  cashierShiftId String?       @map("cashier_shift_id") @db.Uuid
+  provider            String?
+  intentId            String?       @unique @map("intent_id") @db.Uuid
+  cashierShiftId      String?       @map("cashier_shift_id") @db.Uuid
+  /// Foreign cash: what was handed over, and the rate used (property currency x 1e6).
+  tenderedCurrency    String?       @map("tendered_currency") @db.Char(3)
+  tenderedAmountMinor BigInt?       @map("tendered_amount_minor")
+  exchangeRateMicros  BigInt?       @map("exchange_rate_micros")
 
   folio        Folio         @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
   cashierShift CashierShift? @relation(fields: [organizationId, cashierShiftId], references: [organizationId, id], onDelete: Restrict)
