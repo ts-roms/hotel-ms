@@ -23,6 +23,13 @@ export type TenantJob =
       organizationId: string;
       /** "YYYY-MM" in the organization's time zone. */
       period: string;
+    }
+  | {
+      /** Document housekeeping (ADR-0021): unfinished uploads, then retention. */
+      type: 'organization.daily-documents';
+      organizationId: string;
+      /** Organization-local date the run is for. */
+      localDate: string;
     };
 
 export type EmailTemplate =

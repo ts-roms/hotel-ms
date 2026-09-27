@@ -2,12 +2,14 @@
  * Employee documents (ADR-0019): sensitive, scoped like employee records, files checked
  * by content, stored under opaque keys, every view audited, deletion removes the file.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { TenantJobsProcessor } from '../src/modules/jobs/tenant-jobs.processor.js';
 import { startTestApp, type TestContext, TestClient } from './harness.js';
 
 let ctx: TestContext;
@@ -215,5 +217,143 @@ describe('employee documents', () => {
         'employee.document_deleted',
       ]),
     );
+  });
+});
+
+describe('document lifecycle (ADR-0021)', () => {
+  const org = () => ({ organizationId: ctx.world.abc.organizationId, identityId: null });
+  const runDaily = (localDate: string) =>
+    ctx.app.get(TenantJobsProcessor).run({
+      type: 'organization.daily-documents',
+      organizationId: ctx.world.abc.organizationId,
+      localDate,
+    }) as Promise<{ swept: number; purged: number }>;
+  const fileOf = (key: string) => join(ctx.env.STORAGE_LOCAL_DIR, ...key.split('/'));
+
+  it('retention rules are organization settings for HR with organization scope', async () => {
+    expect((await admin.get('/api/v1/document-retention')).body.rules).toMatchObject({
+      CONTRACT: null,
+      MEDICAL: null,
+    });
+    const rules = {
+      CONTRACT: 60,
+      GOVERNMENT_ID: 12,
+      TAX: 120,
+      MEDICAL: 12,
+      CERTIFICATE: null,
+      OTHER: null,
+    };
+    // Maria's HR grants are property-scoped: an organization policy is not hers to set.
+    expect((await maria.request('PUT', '/api/v1/document-retention', { rules })).status).toBe(403);
+    expect(
+      (
+        await admin.request('PUT', '/api/v1/document-retention', {
+          rules: { ...rules, TAX: 0 },
+        })
+      ).status,
+    ).toBe(400);
+    const saved = await admin.request('PUT', '/api/v1/document-retention', { rules });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    expect(saved.body.rules).toEqual(rules);
+  });
+
+  it('documents of terminated employees are deleted when their retention runs out', async () => {
+    const employee = E('E006');
+    const id = (
+      await upload(admin, employee, PNG, 'image/png', {
+        category: 'GOVERNMENT_ID',
+        title: 'ID card',
+        fileName: 'id.png',
+      })
+    ).body.id as string;
+    const cert = (
+      await upload(admin, employee, PDF, 'application/pdf', {
+        category: 'CERTIFICATE',
+        title: 'Training',
+      })
+    ).body.id as string;
+    expect((await admin.get(docs(employee))).body.items[0].purgeOn).toBeNull();
+
+    const current = await admin.get(`/api/v1/employees/${employee}`);
+    const terminated = await admin.request(
+      'POST',
+      `/api/v1/employees/${employee}/terminate`,
+      { terminatedOn: '2026-10-31' },
+      { 'if-match': String(current.headers.etag) },
+    );
+    expect(terminated.status, JSON.stringify(terminated.body)).toBe(200);
+    const listed = (await admin.get(docs(employee))).body.items as {
+      id: string;
+      purgeOn: string | null;
+    }[];
+    // 12 months after 31 October: the last day of the target month, never a rollover.
+    expect(listed.find((d) => d.id === id)!.purgeOn).toBe('2027-10-31');
+    expect(listed.find((d) => d.id === cert)!.purgeOn).toBeNull();
+
+    expect((await runDaily('2027-10-30')).purged).toBe(0);
+    const result = await runDaily('2027-10-31');
+    expect(result.purged).toBe(1);
+    const after = (await admin.get(docs(employee))).body.items.map((d: { id: string }) => d.id);
+    expect(after).toEqual([cert]);
+    expect(existsSync(fileOf(`${ctx.world.abc.organizationId}/employee-documents/${id}`))).toBe(
+      false,
+    );
+    const audit = await admin.get(`/api/v1/audit-logs?entityType=employee&entityId=${employee}`);
+    expect(audit.body.items).toContainEqual(
+      expect.objectContaining({ action: 'employee.document_expired', actorType: 'SYSTEM' }),
+    );
+  });
+
+  it('sweeps uploads that never finished, and never hard-deletes a stored document', async () => {
+    const app = createPrismaClient({ connectionString: testDatabaseUrls().app, maxConnections: 1 });
+    const orgId = ctx.world.abc.organizationId;
+    const stale = randomUUID();
+    const fresh = randomUUID();
+    try {
+      await withDbContext(app, org(), async (tx) => {
+        for (const [id, createdAt] of [
+          [stale, new Date(Date.now() - 2 * 3_600_000)],
+          [fresh, new Date()],
+        ] as const) {
+          await tx.employeeDocument.create({
+            data: {
+              id,
+              organizationId: orgId,
+              employeeId: E('E002'),
+              category: 'OTHER',
+              title: 'Interrupted',
+              fileName: 'x.pdf',
+              contentType: 'application/pdf',
+              sizeBytes: PDF.length,
+              sha256: createHash('sha256').update(PDF).digest('hex'),
+              storageKey: `${orgId}/employee-documents/${id}`,
+              createdAt,
+            },
+          });
+        }
+      });
+      // The file of the stale upload made it to storage before the crash.
+      const key = `${orgId}/employee-documents/${stale}`;
+      await mkdir(dirname(fileOf(key)), { recursive: true });
+      await writeFile(fileOf(key), PDF);
+      // Pending uploads are invisible.
+      const ids = (await maria.get(docs(E('E002')))).body.items.map((d: { id: string }) => d.id);
+      expect(ids).not.toContain(stale);
+
+      expect((await runDaily('2026-10-02')).swept).toBe(1);
+      expect(existsSync(fileOf(key))).toBe(false);
+      const left = await withDbContext(app, org(), (tx) =>
+        tx.employeeDocument.findMany({ where: { id: { in: [stale, fresh] } } }),
+      );
+      expect(left.map((d) => d.id)).toEqual([fresh]);
+
+      // Stored documents are only ever soft-deleted.
+      const stored = (await maria.get(docs(E('E002')))).body.items[0].id as string;
+      await expect(
+        withDbContext(app, org(), (tx) => tx.employeeDocument.delete({ where: { id: stored } })),
+      ).rejects.toThrow();
+    } finally {
+      await app.$disconnect();
+    }
   });
 });

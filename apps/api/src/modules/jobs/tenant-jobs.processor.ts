@@ -5,6 +5,7 @@ import { Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 import type { RequestContext } from '../../common/request-context.js';
 import { ENV, type Env } from '../../config/env.js';
+import { EmployeeDocumentsService } from '../hr/documents.service.js';
 import { LeaveService } from '../hr/leave.service.js';
 import { ReportsService } from '../payments/reports.service.js';
 
@@ -22,6 +23,7 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly cls: ClsService<RequestContext>,
     private readonly reports: ReportsService,
     private readonly leave: LeaveService,
+    private readonly documents: EmployeeDocumentsService,
     @Inject(ENV) private readonly env: Env,
   ) {}
 
@@ -58,6 +60,8 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
           return this.reports.recordNightly(job.propertyId, job.localDate);
         case 'organization.monthly-accrual':
           return this.leave.accrueMonth(job.period);
+        case 'organization.daily-documents':
+          return this.documents.runDaily(job.localDate);
       }
     });
   }

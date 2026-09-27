@@ -384,8 +384,12 @@ model EmployeeDocument {
   expiresOn      DateTime? @map("expires_on") @db.Date
   uploadedBy     String?   @map("uploaded_by") @db.Uuid
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Null while the upload is in flight; the daily sweep removes those left behind.
+  storedAt       DateTime? @map("stored_at") @db.Timestamptz(3)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
   deletedBy      String?   @map("deleted_by") @db.Uuid
+  /// USER (deleted by HR) or RETENTION (retention rules, ADR-0021).
+  deletionReason String?   @map("deletion_reason")
 
   employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
 
