@@ -154,3 +154,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "deleted_document_retention_days" {
+  description = "Days a deleted employee document stays recoverable (noncurrent S3 version)."
+  type        = number
+  default     = 30
+}

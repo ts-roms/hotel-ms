@@ -88,6 +88,7 @@ const PEOPLE_MANAGE = [
 const HR_ADMIN = [
   ...PEOPLE_MANAGE,
   'employee.personal.read',
+  'employee.documents',
   'leave.manage',
   'leave.configure',
   'department.manage',

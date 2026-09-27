@@ -75,6 +75,7 @@ export interface DomainEventPayloads {
   OrderStatusChanged: { orderId: string; outletId: string; from: string; to: string };
   OrderCharged: { orderId: string; folioId: string; lineId: string; totalMinor: number };
   EmployeeHired: { employeeId: string };
+  EmployeeDocumentAdded: { employeeId: string; documentId: string; category: string };
   EmployeeTerminated: { employeeId: string; terminatedOn: string };
   EmployeeClockedIn: { employeeId: string; punchId: string };
   EmployeeClockedOut: { employeeId: string; punchId: string };

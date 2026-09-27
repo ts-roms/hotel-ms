@@ -29,6 +29,7 @@ import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
+import { EmployeeDocuments } from './documents';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -130,6 +131,7 @@ export default function EmployeePage() {
         </CardContent>
       </Card>
 
+      {hasPermission(session.data, 'employee.documents') && <EmployeeDocuments employeeId={e.id} />}
       {hasPermission(session.data, 'leave.read') && <EmployeeLeave employeeId={e.id} />}
     </div>
   );

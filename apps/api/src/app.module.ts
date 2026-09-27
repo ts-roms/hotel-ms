@@ -9,6 +9,7 @@ import { RealtimeService } from './infrastructure/realtime.js';
 import { CacheRedis, RateLimiter } from './infrastructure/redis.js';
 import { NotificationsQueue } from './infrastructure/queue.js';
 import { SecretBox } from './infrastructure/secret-box.js';
+import { createObjectStorage, OBJECT_STORAGE } from './infrastructure/storage.js';
 import { AccessController } from './modules/access/access.controller.js';
 import { GrantsService } from './modules/access/grants.service.js';
 import { InvitationsService } from './modules/access/invitations.service.js';
@@ -38,6 +39,8 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-port
 import { ServiceRequestsService } from './modules/guest-portal/service-requests.service.js';
 import { AttendanceService } from './modules/hr/attendance.service.js';
 import { HrAccess } from './modules/hr/hr-access.js';
+import { EmployeeDocumentsController } from './modules/hr/documents.controller.js';
+import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
 import { PayrollService } from './modules/hr/payroll.service.js';
@@ -92,6 +95,7 @@ export const CONTROLLERS = [
   GuestServiceController,
   GuestPortalController,
   HrController,
+  EmployeeDocumentsController,
   MeController,
   PropertyHrController,
   FnbController,
@@ -113,6 +117,8 @@ export class AppModule {
       providers: [
         { provide: ENV, useValue: env },
         { provide: SECRET_BOX, useValue: new SecretBox(env.DATA_ENCRYPTION_KEYS) },
+        { provide: OBJECT_STORAGE, useValue: createObjectStorage(env) },
+        EmployeeDocumentsService,
         NotificationsQueue,
         PrismaService,
         TenantDb,

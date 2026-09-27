@@ -117,6 +117,7 @@ model Employee {
   leaveLedger   LeaveLedgerEntry[]
   leaveBalances LeaveBalance[]
   leaveRequests LeaveRequest[]
+  documents     EmployeeDocument[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, employeeNo])
@@ -365,4 +366,31 @@ model LeaveApproval {
   @@unique([organizationId, id])
   @@unique([leaveRequestId, step])
   @@map("leave_approvals")
+}
+
+/// Employee documents (ADR-0019): metadata here, the file in object storage (S3 with
+/// SSE-KMS in the cloud) under an opaque key. Deleting keeps the row for the audit trail.
+model EmployeeDocument {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  category       String
+  title          String
+  fileName       String    @map("file_name")
+  contentType    String    @map("content_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  storageKey     String    @map("storage_key")
+  expiresOn      DateTime? @map("expires_on") @db.Date
+  uploadedBy     String?   @map("uploaded_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([storageKey])
+  @@index([organizationId, employeeId])
+  @@map("employee_documents")
 }

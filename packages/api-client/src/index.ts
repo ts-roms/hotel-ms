@@ -1,4 +1,5 @@
 import type {
+  EmployeeDocument,
   ApplyDiscountRequest,
   CreateDiscountProfileRequest,
   DiscountProfile,
@@ -165,16 +166,22 @@ function createCaller(options: ApiClientOptions) {
     headers: Record<string, string> = {},
   ): Promise<{ data: T; etag: string | null }> {
     const csrf = method === 'GET' ? undefined : options.getCsrfToken?.();
+    // A file (Blob) is sent as-is with its own type; anything else as JSON.
+    const file = typeof Blob !== 'undefined' && body instanceof Blob ? body : null;
     const res = await doFetch(`${baseUrl}${path}`, {
       method,
       credentials: 'same-origin',
       headers: {
         accept: 'application/json',
-        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(body === undefined
+          ? {}
+          : {
+              'content-type': file ? file.type || 'application/octet-stream' : 'application/json',
+            }),
         ...(csrf ? { 'x-csrf-token': csrf } : {}),
         ...headers,
       },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(body === undefined ? {} : { body: file ?? JSON.stringify(body) }),
     });
     if (!res.ok) {
       const problem = (await res.json().catch(() => null)) as Problem | null;
@@ -691,6 +698,29 @@ export function createApiClient(options: ApiClientOptions = {}) {
         call<Employee>('POST', `/employees/${encodeURIComponent(id)}/terminate`, {
           terminatedOn,
         }).then((r) => r.data),
+      documents: (id: string) =>
+        call<{ items: EmployeeDocument[] }>(
+          'GET',
+          `/employees/${encodeURIComponent(id)}/documents`,
+        ).then((r) => r.data.items),
+      uploadDocument: (
+        id: string,
+        file: Blob,
+        meta: { category: string; title: string; fileName: string; expiresOn?: string },
+      ) =>
+        call<EmployeeDocument>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
+          file,
+        ).then((r) => r.data),
+      /** Same-origin download link; the session cookie authenticates. */
+      documentUrl: (id: string, documentId: string) =>
+        `${baseUrl}/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/content`,
+      deleteDocument: (id: string, documentId: string) =>
+        call<void>(
+          'DELETE',
+          `/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`,
+        ).then((r) => r.data),
       employeeLeave: (id: string) =>
         call<EmployeeLeave>('GET', `/employees/${encodeURIComponent(id)}/leave`).then(
           (r) => r.data,

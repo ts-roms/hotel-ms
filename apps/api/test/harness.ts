@@ -1,4 +1,6 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { type EmailJob, NOTIFICATIONS_QUEUE } from '@hotel/contracts';
 import { DEMO_PASSWORD, type DemoWorld } from '@hotel/database';
@@ -53,6 +55,8 @@ export async function startTestApp(): Promise<TestContext> {
     COOKIE_SECURE: 'false',
     OPENAPI_ENABLED: 'false',
     TENANT_JOBS_ENABLED: 'false',
+    STORAGE_DRIVER: 'local',
+    STORAGE_LOCAL_DIR: join(tmpdir(), 'hotel-test-storage', randomUUID()),
   });
   const app = await createApp(env);
   await app.init();

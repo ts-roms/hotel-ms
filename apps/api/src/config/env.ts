@@ -62,6 +62,17 @@ const envSchema = z.object({
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
   PAYMENT_SANDBOX_SECRET: z.string().min(16).default('sandbox-webhook-secret-dev-only'),
+  /**
+   * Where uploaded files (employee documents, ADR-0019) live: 'local' disk for development
+   * and tests, 's3' (SSE-KMS) in the cloud. Production requires 's3'.
+   */
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  /** Directory for the local driver. */
+  STORAGE_LOCAL_DIR: z.string().default('.data/storage'),
+  STORAGE_BUCKET: z.string().optional(),
+  /** KMS key (id, alias or ARN) every object is encrypted with. */
+  STORAGE_KMS_KEY_ID: z.string().optional(),
+  AWS_REGION: z.string().optional(),
   /** Run scheduled tenant jobs planned by the worker (ADR-0017). Off in tests. */
   TENANT_JOBS_ENABLED: z
     .enum(['true', 'false'])
@@ -96,6 +107,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   }
   if (sandbox && !isLocal && env.PAYMENT_SANDBOX_SECRET.endsWith('dev-only')) {
     throw new Error('PAYMENT_SANDBOX_SECRET must be set to a real secret outside development');
+  }
+  if (env.STORAGE_DRIVER === 's3' && (!env.STORAGE_BUCKET || !env.STORAGE_KMS_KEY_ID)) {
+    throw new Error('STORAGE_DRIVER=s3 needs STORAGE_BUCKET and STORAGE_KMS_KEY_ID');
+  }
+  if (!isLocal && env.STORAGE_DRIVER === 'local') {
+    throw new Error('STORAGE_DRIVER=local is for development only; use s3 in production');
   }
   return {
     ...env,

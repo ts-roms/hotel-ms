@@ -36,6 +36,10 @@ locals {
         COOKIE_SECURE           = "true"
         OPENAPI_ENABLED         = "false"
         LOG_LEVEL               = "info"
+        STORAGE_DRIVER          = "s3"
+        STORAGE_BUCKET          = aws_s3_bucket.documents.bucket
+        STORAGE_KMS_KEY_ID      = aws_kms_key.platform.arn
+        AWS_REGION              = local.region
       }
       secrets = concat(
         ["DATABASE_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS"],

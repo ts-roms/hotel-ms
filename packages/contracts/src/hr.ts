@@ -104,6 +104,65 @@ export type Employee = z.infer<typeof employeeSchema>;
 
 const optionalText = (max: number) => z.string().trim().max(max).nullable();
 
+// ---- Employee documents (ADR-0019) -----------------------------------------------------------
+
+export const EMPLOYEE_DOCUMENT_CATEGORIES = [
+  'CONTRACT',
+  'GOVERNMENT_ID',
+  'TAX',
+  'MEDICAL',
+  'CERTIFICATE',
+  'OTHER',
+] as const;
+
+/** File types accepted for employee documents (checked against the file's own bytes). */
+export const EMPLOYEE_DOCUMENT_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+
+/** Largest accepted file: 8 MiB. */
+export const EMPLOYEE_DOCUMENT_MAX_BYTES = 8 * 1024 * 1024;
+
+export const employeeDocumentSchema = z.object({
+  id: z.uuid(),
+  employeeId: z.uuid(),
+  category: z.enum(EMPLOYEE_DOCUMENT_CATEGORIES),
+  title: z.string(),
+  fileName: z.string(),
+  contentType: z.enum(EMPLOYEE_DOCUMENT_TYPES),
+  sizeBytes: z.number().int(),
+  /** Hex SHA-256 of the file, for integrity checks. */
+  sha256: z.string(),
+  /** e.g. when a government ID or permit expires. */
+  expiresOn: localDateSchema.nullable(),
+  uploadedByName: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type EmployeeDocument = z.infer<typeof employeeDocumentSchema>;
+
+/**
+ * Upload metadata travels in the query string; the request body is the file itself, with
+ * its Content-Type (no multipart parsing).
+ */
+export const uploadEmployeeDocumentQuerySchema = z.strictObject({
+  category: z.enum(EMPLOYEE_DOCUMENT_CATEGORIES),
+  title: z.string().trim().min(1).max(120),
+  fileName: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .refine(
+      (v) => ![...v].some((c) => c === '/' || c === '\\' || c.charCodeAt(0) < 0x20),
+      'Not a valid file name',
+    ),
+  expiresOn: localDateSchema.optional(),
+});
+export type UploadEmployeeDocumentQuery = z.infer<typeof uploadEmployeeDocumentQuerySchema>;
+
 export const newAssignmentSchema = z.strictObject({
   propertyId: z.uuid(),
   departmentId: z.uuid(),

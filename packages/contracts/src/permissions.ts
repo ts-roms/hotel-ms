@@ -184,6 +184,11 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
     sensitive: true,
   },
+  'employee.documents': {
+    description: 'View, upload and delete employee documents (contracts, IDs, medical)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
   'schedule.read': { description: 'View the staff schedule', scopes: ORG_OR_PROPERTY },
   'schedule.manage': {
     description: 'Create, change and publish shifts',
