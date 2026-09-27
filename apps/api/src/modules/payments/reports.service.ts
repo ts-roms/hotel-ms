@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import type { DailyReport, Reconciliation } from '@hotel/contracts';
+import type { DailyReport, Reconciliation, ReconciliationRun } from '@hotel/contracts';
+import type { Prisma } from '@hotel/database';
+import { ClsService } from 'nestjs-cls';
+import type { RequestContext } from '../../common/request-context.js';
+import { OutboxService } from '../outbox/outbox.service.js';
 import { fromDbDate, toDbDate } from '../../common/dates.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { toMinor } from '../pms/pricing.js';
@@ -13,7 +17,59 @@ const signed = (v: bigint | null) => (v === null ? 0 : v < 0n ? -toMinor(-v) : t
  */
 @Injectable()
 export class ReportsService {
-  constructor(private readonly db: TenantDb) {}
+  constructor(
+    private readonly db: TenantDb,
+    private readonly outbox: OutboxService,
+    private readonly cls: ClsService<RequestContext>,
+  ) {}
+
+  /**
+   * The nightly automatic run (ADR-0017): reconciles and records the result once per
+   * property and local date. A rerun for the same date is a no-op.
+   */
+  async recordNightly(propertyId: string, localDate: string): Promise<boolean> {
+    const result = await this.reconciliation(propertyId);
+    return this.db.run(async (tx) => {
+      const { count } = await tx.reconciliationRun.createMany({
+        data: [
+          {
+            organizationId: this.cls.get('organizationId')!,
+            propertyId,
+            runDate: toDbDate(localDate),
+            ok: result.ok,
+            issues: result.issues as unknown as Prisma.InputJsonValue,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (count === 1) {
+        await this.outbox.enqueue(
+          tx,
+          'ReconciliationCompleted',
+          { runDate: localDate, ok: result.ok, issueCount: result.issues.length },
+          { propertyId },
+        );
+      }
+      return count === 1;
+    });
+  }
+
+  async runs(propertyId: string, limit = 30): Promise<ReconciliationRun[]> {
+    const rows = await this.db.run((tx) =>
+      tx.reconciliationRun.findMany({
+        where: { propertyId },
+        orderBy: { runDate: 'desc' },
+        take: limit,
+      }),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      runDate: fromDbDate(r.runDate),
+      ok: r.ok,
+      issues: r.issues as ReconciliationRun['issues'],
+      createdAt: r.createdAt.toISOString(),
+    }));
+  }
 
   async daily(propertyId: string, date?: string): Promise<DailyReport> {
     return this.db.run(async (tx) => {

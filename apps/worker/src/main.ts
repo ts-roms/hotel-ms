@@ -1,5 +1,11 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { type DomainEventEnvelope, type EmailJob, NOTIFICATIONS_QUEUE } from '@hotel/contracts';
+import {
+  type DomainEventEnvelope,
+  type EmailJob,
+  NOTIFICATIONS_QUEUE,
+  TENANT_JOBS_QUEUE,
+  type TenantJob,
+} from '@hotel/contracts';
 import { createPrismaClient } from '@hotel/database';
 import { Queue, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
@@ -9,6 +15,7 @@ import { deliverEmail } from './email/deliver.js';
 import { createTransport } from './email/transports.js';
 import { dispatch } from './handlers.js';
 import { DOMAIN_EVENTS_QUEUE, relayOutboxBatch } from './outbox-relay.js';
+import { planTenantJobs } from './scheduler.js';
 
 const env = z
   .object({
@@ -17,6 +24,12 @@ const env = z
     REDIS_QUEUE_URL: z.url(),
     LOG_LEVEL: z.string().default('info'),
     OUTBOX_POLL_MS: z.coerce.number().int().min(50).default(500),
+    /** How often the scheduler checks the clock for due tenant jobs (ADR-0017). */
+    SCHEDULER_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .min(10_000)
+      .default(5 * 60_000),
     EMAIL_TRANSPORT: z.enum(['file', 'ses']).default('file'),
     EMAIL_FROM: z.string().min(3),
     MAIL_DIR: z.string().default('.mail'),
@@ -87,12 +100,25 @@ async function relayLoop(): Promise<void> {
 }
 
 const relay = relayLoop();
+
+const tenantJobs = new Queue<TenantJob>(TENANT_JOBS_QUEUE, { connection });
+async function plan(): Promise<void> {
+  try {
+    await planTenantJobs(system, tenantJobs, log);
+  } catch (error) {
+    log.error({ err: error }, 'scheduler planning failed');
+  }
+}
+void plan();
+const scheduler = setInterval(() => void plan(), env.SCHEDULER_INTERVAL_MS);
 log.info({ emailTransport: transport.name }, 'worker started');
 
 async function shutdown(signal: string): Promise<void> {
   log.info({ signal }, 'shutting down');
   running = false;
+  clearInterval(scheduler);
   await relay;
+  await tenantJobs.close();
   await worker.close();
   await mailer.close();
   await queue.close();

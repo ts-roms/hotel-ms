@@ -40,6 +40,7 @@ import { AttendanceService } from './modules/hr/attendance.service.js';
 import { HrAccess } from './modules/hr/hr-access.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
+import { PayrollService } from './modules/hr/payroll.service.js';
 import { PeopleService } from './modules/hr/people.service.js';
 import { ScheduleService } from './modules/hr/schedule.service.js';
 import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
@@ -60,6 +61,7 @@ import {
   SandboxProvider,
 } from './modules/payments/providers.js';
 import { ReportsService } from './modules/payments/reports.service.js';
+import { TenantJobsProcessor } from './modules/jobs/tenant-jobs.processor.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
@@ -143,6 +145,7 @@ export class AppModule {
         ScheduleService,
         AttendanceService,
         LeaveService,
+        PayrollService,
         RealtimeService,
         MenuService,
         OrdersService,
@@ -150,6 +153,7 @@ export class AppModule {
         CashierService,
         DocumentsService,
         ReportsService,
+        TenantJobsProcessor,
         {
           provide: PAYMENT_PROVIDERS,
           useValue: new Map<string, PaymentProvider>(

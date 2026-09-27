@@ -176,3 +176,18 @@ model FolioRoutingRule {
   @@index([organizationId, sourceFolioId])
   @@map("folio_routing_rules")
 }
+
+/// Result of the nightly automatic reconciliation (one per property and local date).
+model ReconciliationRun {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  runDate        DateTime @map("run_date") @db.Date
+  ok             Boolean
+  issues         Json
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, runDate])
+  @@map("reconciliation_runs")
+}

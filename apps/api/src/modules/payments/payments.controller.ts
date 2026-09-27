@@ -36,6 +36,7 @@ import {
   type OpenShiftRequest,
   openShiftRequestSchema,
   paymentIntentSchema,
+  reconciliationRunSchema,
   reconciliationSchema,
   type RefundRequest,
   refundRequestSchema,
@@ -281,6 +282,13 @@ export class FinanceController {
     @ZodQuery(dailyReportQuerySchema) query: DailyReportQuery,
   ) {
     return this.reports.daily(propertyId, query.date);
+  }
+
+  @Get('reports/reconciliation-runs')
+  @RequirePermission('finance.report.read')
+  @ZodResponse(200, items(reconciliationRunSchema))
+  async reconciliationRuns(@Param('propertyId') propertyId: string) {
+    return { items: await this.reports.runs(propertyId) };
   }
 
   @Get('reports/reconciliation')

@@ -52,6 +52,7 @@ export async function startTestApp(): Promise<TestContext> {
     WEB_ORIGIN,
     COOKIE_SECURE: 'false',
     OPENAPI_ENABLED: 'false',
+    TENANT_JOBS_ENABLED: 'false',
   });
   const app = await createApp(env);
   await app.init();

@@ -62,6 +62,11 @@ const envSchema = z.object({
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
   PAYMENT_SANDBOX_SECRET: z.string().min(16).default('sandbox-webhook-secret-dev-only'),
+  /** Run scheduled tenant jobs planned by the worker (ADR-0017). Off in tests. */
+  TENANT_JOBS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 export type Env = Omit<

@@ -110,7 +110,23 @@ export default function LeavePage() {
                 <Badge variant={statusVariant(r.status)} dot>
                   {statusLabel(r.status)}
                 </Badge>
+                {r.status === 'PENDING' && r.approvalsRequired === 2 && (
+                  <Badge variant="outline">
+                    {r.approvalStep === 1 ? t('hr.awaitingManager') : t('hr.awaitingHr')}
+                  </Badge>
+                )}
               </div>
+              {r.approvals.length > 0 && (
+                <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  {r.approvals.map((a) => (
+                    <li key={a.step}>
+                      {a.decision === 'APPROVE' ? t('hr.approvedBy') : t('hr.rejectedBy')}{' '}
+                      {a.decidedBy}
+                      {a.note && ` · ${a.note}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {r.reason && (
                 <p className="rounded-lg bg-muted/60 px-3 py-2 text-muted-foreground">{r.reason}</p>
               )}

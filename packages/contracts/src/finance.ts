@@ -232,5 +232,15 @@ export const reconciliationSchema = z.object({
 });
 export type Reconciliation = z.infer<typeof reconciliationSchema>;
 
+/** The nightly automatic reconciliation, one run per property and local date. */
+export const reconciliationRunSchema = z.object({
+  id: z.uuid(),
+  runDate: localDateSchema,
+  ok: z.boolean(),
+  issues: reconciliationSchema.shape.issues,
+  createdAt: z.iso.datetime(),
+});
+export type ReconciliationRun = z.infer<typeof reconciliationRunSchema>;
+
 export const dailyReportQuerySchema = z.object({ date: localDateSchema.optional() });
 export type DailyReportQuery = z.infer<typeof dailyReportQuerySchema>;
