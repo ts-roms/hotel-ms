@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "dev": "node --env-file-if-exists=../../.env --watch dist/main.js",
+    "dev": "tsc -p tsconfig.build.json && node --env-file-if-exists=../../.env --watch dist/main.js",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:integration": "vitest run --config vitest.integration.config.ts",
