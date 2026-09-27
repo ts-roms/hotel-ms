@@ -10,10 +10,14 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  Badge,
   Label,
   Notice,
+  PageHeader,
+  Skeleton,
 } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
+import { KeyRound, ShieldCheck } from 'lucide-react';
 import QRCode from 'qrcode';
 import { type FormEvent, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
@@ -24,9 +28,11 @@ import { useSession, useSetSession } from '@/lib/session';
 export default function SecurityPage() {
   return (
     <div className="flex max-w-xl flex-col gap-6">
-      <h1 className="text-xl font-semibold">{t('security.title')}</h1>
-      <MfaCard />
-      <ChangePasswordCard />
+      <PageHeader title={t('security.title')} />
+      <div className="stagger flex flex-col gap-6">
+        <MfaCard />
+        <ChangePasswordCard />
+      </div>
     </div>
   );
 }
@@ -70,7 +76,17 @@ function MfaCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('security.mfa')}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShieldCheck className="size-4 text-primary" />
+            {t('security.mfa')}
+          </CardTitle>
+          {session.data && (
+            <Badge variant={enabled ? 'success' : 'neutral'} dot>
+              {enabled ? 'on' : 'off'}
+            </Badge>
+          )}
+        </div>
         <CardDescription>{enabled ? t('security.mfaOn') : t('security.mfaOff')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -89,7 +105,7 @@ function MfaCard() {
         )}
 
         {!enabled && !enrollment && (
-          <Button onClick={() => start.mutate()} disabled={start.isPending} className="self-start">
+          <Button onClick={() => start.mutate()} loading={start.isPending} className="self-start">
             {t('security.enable')}
           </Button>
         )}
@@ -103,8 +119,16 @@ function MfaCard() {
             }}
           >
             <p className="text-sm">{t('security.scan')}</p>
-            {qr && (
-              <img src={qr} alt="" width={192} height={192} className="rounded-md bg-white p-2" />
+            {qr ? (
+              <img
+                src={qr}
+                alt=""
+                width={192}
+                height={192}
+                className="animate-scale-in rounded-xl border bg-white p-2 shadow-sm"
+              />
+            ) : (
+              <Skeleton className="size-48 rounded-xl" />
             )}
             <code className="break-all rounded bg-muted px-2 py-1 text-sm">
               {enrollment.secret}
@@ -120,7 +144,8 @@ function MfaCard() {
             />
             <Button
               type="submit"
-              disabled={confirm.isPending || code.length !== 6}
+              loading={confirm.isPending}
+              disabled={code.length !== 6}
               className="self-start"
             >
               {t('security.confirm')}
@@ -149,7 +174,8 @@ function MfaCard() {
               <Button
                 type="submit"
                 variant="outline"
-                disabled={disable.isPending || code.length !== 6}
+                loading={disable.isPending}
+                disabled={code.length !== 6}
               >
                 {t('security.disable')}
               </Button>
@@ -176,7 +202,10 @@ function ChangePasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('security.changePassword')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <KeyRound className="size-4 text-primary" />
+          {t('security.changePassword')}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -209,7 +238,7 @@ function ChangePasswordCard() {
             onChange={(e) => setNew(e.target.value)}
           />
           <p className="text-xs text-muted-foreground">{t('reset.hint')}</p>
-          <Button type="submit" disabled={change.isPending} className="self-start">
+          <Button type="submit" loading={change.isPending} className="self-start">
             {t('security.changePassword')}
           </Button>
         </form>

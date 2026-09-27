@@ -11,8 +11,12 @@ import {
   CardTitle,
   Input,
   Label,
+  LoadingRegion,
   Notice,
+  PageHeader,
   Select,
+  Skeleton,
+  SkeletonTable,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -21,6 +25,7 @@ import { addDays, formatMoney, minorToInput, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 export default function RoomsPage() {
   const propertyId = useRoutePropertyId()!;
@@ -47,19 +52,37 @@ export default function RoomsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">{t('rooms.title')}</h1>
+      <PageHeader title={t('rooms.title')} />
 
-      <Card>
+      <Card className="animate-fade-in">
         <CardHeader>
-          <CardTitle>{t('rooms.roomTypes')}</CardTitle>
+          <CardTitle className="text-base">{t('rooms.roomTypes')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <ul className="flex flex-col gap-1 text-sm">
+          {roomTypes.isPending && (
+            <LoadingRegion
+              label={t('loading')}
+              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-16 rounded-lg" />
+              ))}
+            </LoadingRegion>
+          )}
+          <ul className="stagger grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
             {roomTypes.data?.map((rt) => (
-              <li key={rt.id} className="flex flex-wrap gap-2">
-                <span className="font-mono">{rt.code}</span> {rt.name}
-                <span className="text-muted-foreground">
-                  · {rt.roomCount} {t('rooms.rooms').toLowerCase()} · {rt.baseOccupancy}–
+              <li
+                key={rt.id}
+                className="flex flex-col gap-1 rounded-lg border p-3 transition-colors hover:border-ring/40"
+              >
+                <span className="flex items-center gap-2">
+                  <Badge variant="primary" className="font-mono">
+                    {rt.code}
+                  </Badge>
+                  <span className="font-medium">{rt.name}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {rt.roomCount} {t('rooms.rooms').toLowerCase()} · {rt.baseOccupancy}–
                   {rt.maxOccupancy}
                 </span>
               </li>
@@ -69,40 +92,46 @@ export default function RoomsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="animate-fade-in">
         <CardHeader>
-          <CardTitle>{t('rooms.rooms')}</CardTitle>
+          <CardTitle className="text-base">{t('rooms.rooms')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {rooms.isPending && (
+            <LoadingRegion label={t('loading')}>
+              <SkeletonTable rows={5} columns={4} />
+            </LoadingRegion>
+          )}
+          {rooms.data?.filter((r) => !r.archived).length === 0 && (
+            <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
+              {t('rooms.none')}
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="p-2">{t('rooms.number')}</th>
-                  <th className="p-2">{t('res.roomType')}</th>
-                  <th className="p-2">{t('rooms.housekeeping')}</th>
-                  <th className="p-2">{t('rooms.service')}</th>
+              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b">
+                  <th className="p-2 font-semibold">{t('rooms.number')}</th>
+                  <th className="p-2 font-semibold">{t('res.roomType')}</th>
+                  <th className="p-2 font-semibold">{t('rooms.housekeeping')}</th>
+                  <th className="p-2 font-semibold">{t('rooms.service')}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="stagger">
                 {rooms.data
                   ?.filter((r) => !r.archived)
                   .map((room) => (
-                    <tr key={room.id} className="border-t">
-                      <td className="p-2 font-medium">{room.number}</td>
-                      <td className="p-2">{room.roomTypeCode}</td>
-                      <td className="p-2">
-                        <Badge>{room.housekeepingStatus}</Badge>
+                    <tr key={room.id} className="border-t transition-colors hover:bg-accent/40">
+                      <td className="p-2.5 font-semibold">{room.number}</td>
+                      <td className="p-2.5 font-mono text-muted-foreground">{room.roomTypeCode}</td>
+                      <td className="p-2.5">
+                        <Badge variant={statusVariant(room.housekeepingStatus)} dot>
+                          {statusLabel(room.housekeepingStatus)}
+                        </Badge>
                       </td>
-                      <td className="p-2">
-                        <Badge
-                          className={
-                            room.serviceStatus === 'OUT_OF_ORDER'
-                              ? 'border-destructive text-destructive'
-                              : ''
-                          }
-                        >
-                          {room.serviceStatus.replaceAll('_', ' ')}
+                      <td className="p-2.5">
+                        <Badge variant={statusVariant(room.serviceStatus)}>
+                          {statusLabel(room.serviceStatus)}
                         </Badge>
                       </td>
                     </tr>
@@ -127,11 +156,11 @@ export default function RoomsPage() {
       </Card>
 
       {ratePlans.data && roomTypes.data && (
-        <Card>
+        <Card className="animate-fade-in">
           <CardHeader>
-            <CardTitle>{t('rooms.ratePlans')}</CardTitle>
+            <CardTitle className="text-base">{t('rooms.ratePlans')}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="stagger flex flex-col gap-6 divide-y [&>*:not(:first-child)]:pt-6">
             {ratePlans.data.map((plan) => (
               <RatePlanPrices
                 key={`${plan.id}-${plan.version}`}
@@ -198,7 +227,7 @@ function AddRoomTypeForm({ propertyId, onDone }: { propertyId: string; onDone: (
         value={form.maxOccupancy}
         onChange={(e) => setForm({ ...form, maxOccupancy: Number(e.target.value) })}
       />
-      <Button type="submit" variant="outline" disabled={action.isPending}>
+      <Button type="submit" variant="outline" loading={action.isPending}>
         {t('rooms.addType')}
       </Button>
     </form>
@@ -252,7 +281,7 @@ function AddRoomForm({
           </option>
         ))}
       </Select>
-      <Button type="submit" variant="outline" disabled={action.isPending}>
+      <Button type="submit" variant="outline" loading={action.isPending}>
         {t('rooms.addRoom')}
       </Button>
     </form>
@@ -288,7 +317,7 @@ function BlockRoomForm({
       }}
       className="grid gap-2 sm:grid-cols-5"
     >
-      <Label className="sm:col-span-5">{t('rooms.block')}</Label>
+      <Label className="pt-2 sm:col-span-5">{t('rooms.block')}</Label>
       {action.error && <Alert className="sm:col-span-5">{errorMessage(action.error)}</Alert>}
       {action.isSuccess && <Notice className="sm:col-span-5">{t('rooms.saved')}</Notice>}
       <Select
@@ -323,7 +352,7 @@ function BlockRoomForm({
         value={form.reason}
         onChange={(e) => setForm({ ...form, reason: e.target.value })}
       />
-      <Button type="submit" variant="outline" disabled={action.isPending}>
+      <Button type="submit" variant="outline" loading={action.isPending}>
         {t('rooms.blockSave')}
       </Button>
     </form>
@@ -408,7 +437,7 @@ function RatePlanPrices({
           size="sm"
           variant="outline"
           className="self-start"
-          disabled={action.isPending}
+          loading={action.isPending}
         >
           {t('rooms.savePrices')}
         </Button>

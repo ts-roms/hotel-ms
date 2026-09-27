@@ -3,6 +3,7 @@
 import type { Member, RoleDto } from '@hotel/contracts';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -11,15 +12,20 @@ import {
   CardTitle,
   Input,
   Label,
+  LoadingRegion,
   Notice,
+  PageHeader,
   Select,
+  SkeletonRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ShieldCheck, UserPlus, X } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 const ORG_SCOPE = '__organization__';
 
@@ -89,15 +95,30 @@ export default function MembersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">{t('members.title')}</h1>
+      <PageHeader
+        title={t('members.title')}
+        description={
+          members.data && (
+            <>
+              {members.data.length} {t('members.count')}
+            </>
+          )
+        }
+      />
       {hasPermission(session.data, 'member.invite') && roles.data && (
         <InviteForm roles={roles.data} allowOrganization={orgAdmin} onInvited={refresh} />
       )}
       {mutate.error && <Alert>{errorMessage(mutate.error)}</Alert>}
       {members.error && <Alert>{errorMessage(members.error)}</Alert>}
-      {members.isPending && <p className="text-muted-foreground">{t('loading')}</p>}
+      {members.isPending && (
+        <LoadingRegion label={t('loading')} className="flex flex-col gap-3">
+          {Array.from({ length: 4 }, (_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </LoadingRegion>
+      )}
 
-      <ul className="flex flex-col gap-3">
+      <ul className="stagger flex flex-col gap-3">
         {members.data?.map((member) => (
           <MemberRow
             key={member.membershipId}
@@ -147,7 +168,10 @@ function InviteForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('members.invite')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <UserPlus className="size-4 text-primary" />
+          {t('members.invite')}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
@@ -186,7 +210,7 @@ function InviteForm({
             <Label>{t('members.scope')}</Label>
             <ScopeSelect value={scope} onChange={setScope} allowOrganization={allowOrganization} />
           </div>
-          <Button type="submit" disabled={invite.isPending} className="self-start">
+          <Button type="submit" loading={invite.isPending} className="self-start">
             {t('members.send')}
           </Button>
         </form>
@@ -221,28 +245,43 @@ function MemberRow({
   return (
     <li>
       <Card>
-        <CardContent className="flex flex-col gap-3 pt-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{member.displayName}</span>
-            <span className="text-sm text-muted-foreground">{member.email}</span>
-            <Badge>{member.status}</Badge>
-            {member.mfaEnabled && <Badge>{t('members.mfa')}</Badge>}
+        <CardContent className="flex flex-col gap-4 pt-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <Avatar name={member.displayName} />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="font-medium">{member.displayName}</span>
+              <span className="truncate text-sm text-muted-foreground">{member.email}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant={statusVariant(member.status)} dot>
+                {statusLabel(member.status)}
+              </Badge>
+              {member.mfaEnabled && (
+                <Badge variant="success">
+                  <ShieldCheck />
+                  {t('members.mfa')}
+                </Badge>
+              )}
+            </div>
           </div>
           <ul className="flex flex-wrap gap-2 text-sm">
             {member.assignments.map((a) => (
-              <li key={a.id} className="flex items-center gap-1 rounded-md border px-2 py-1">
+              <li
+                key={a.id}
+                className="flex items-center gap-1 rounded-full border bg-muted/50 py-1 pl-3 pr-2 text-xs"
+              >
                 {a.roleName} · {nameOf(a.propertyId)}
                 {canAssign && (
                   <button
                     type="button"
-                    className="ml-1 text-muted-foreground hover:text-destructive"
+                    className="ml-1 rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     aria-label={`${t('members.remove')} ${a.roleName}`}
                     disabled={busy}
                     onClick={() =>
                       run(() => api.access.removeAssignment(member.membershipId, a.id))
                     }
                   >
-                    ×
+                    <X className="size-3" />
                   </button>
                 )}
               </li>

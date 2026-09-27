@@ -92,7 +92,7 @@ export default function AttendancePage() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-180 text-left text-sm">
           <thead className="text-xs text-muted-foreground">
             <tr>
               <th className="py-2">{t('hr.employee')}</th>
