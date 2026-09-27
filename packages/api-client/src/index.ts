@@ -1,4 +1,14 @@
 import type {
+  CreateMenuItemRequest,
+  GuestOrderRequest,
+  Menu,
+  MenuItem,
+  Order,
+  OrderListQuery,
+  OrderStatus,
+  Outlet,
+  StaffOrderRequest,
+  UpdateMenuItemRequest,
   AttendanceCorrection,
   AttendanceDay,
   Birthday,
@@ -173,6 +183,7 @@ function createCaller(options: ApiClientOptions) {
 
 export function createApiClient(options: ApiClientOptions = {}) {
   const { call, qs } = createCaller(options);
+  const baseUrl = options.baseUrl ?? '/api/v1';
 
   return {
     auth: {
@@ -417,6 +428,50 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<ServiceRequest>('PATCH', `${p}/service-requests/${id(requestId)}`, body, {
             'if-match': `W/"${version}"`,
           }).then((r) => r.data),
+        outlets: () => call<{ items: Outlet[] }>('GET', `${p}/outlets`).then((r) => r.data.items),
+        menu: (outletId: string) =>
+          call<Menu>('GET', `${p}/outlets/${id(outletId)}/menu`).then((r) => r.data),
+        createCategory: (outletId: string, name: string) =>
+          call<Menu>('POST', `${p}/outlets/${id(outletId)}/menu/categories`, { name }).then(
+            (r) => r.data,
+          ),
+        createMenuItem: (outletId: string, body: CreateMenuItemRequest) =>
+          call<MenuItem>('POST', `${p}/outlets/${id(outletId)}/menu/items`, body).then(
+            (r) => r.data,
+          ),
+        updateMenuItem: (itemId: string, body: UpdateMenuItemRequest) =>
+          call<MenuItem>('PATCH', `${p}/menu-items/${id(itemId)}`, body).then((r) => r.data),
+        setItemAvailability: (itemId: string, available: boolean) =>
+          call<MenuItem>('PUT', `${p}/menu-items/${id(itemId)}/availability`, { available }).then(
+            (r) => r.data,
+          ),
+        orders: (query: Partial<OrderListQuery> = {}) =>
+          call<{ items: Order[] }>('GET', `${p}/orders${qs(query)}`).then((r) => r.data.items),
+        placeOrder: (body: StaffOrderRequest, idempotencyKey: string) =>
+          call<Order>('POST', `${p}/orders`, body, { 'idempotency-key': idempotencyKey }).then(
+            (r) => r.data,
+          ),
+        setOrderStatus: (orderId: string, version: number, status: OrderStatus) =>
+          call<Order>(
+            'POST',
+            `${p}/orders/${id(orderId)}/status`,
+            { status },
+            {
+              'if-match': `W/"${version}"`,
+            },
+          ).then((r) => r.data),
+        cancelOrder: (orderId: string, version: number, reason: string) =>
+          call<Order>(
+            'POST',
+            `${p}/orders/${id(orderId)}/cancel`,
+            { reason },
+            {
+              'if-match': `W/"${version}"`,
+            },
+          ).then((r) => r.data),
+        /** Server-Sent Events URL for the outlet's kitchen board. */
+        orderStreamUrl: (outletId: string) =>
+          `${baseUrl}${p}/outlets/${id(outletId)}/orders/stream`,
         punch: (type: PunchType) =>
           call<Punch>('POST', `${p}/attendance/punches`, { type }).then((r) => r.data),
         attendance: (from: string, to: string) =>
@@ -590,6 +645,12 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
       call<{ items: ServiceRequest[] }>('GET', '/guest/service-requests').then((r) => r.data.items),
     createServiceRequest: (body: GuestServiceRequestCreate) =>
       call<ServiceRequest>('POST', '/guest/service-requests', body).then(data),
+    menus: () => call<{ items: Menu[] }>('GET', '/guest/menus').then((r) => r.data.items),
+    orders: () => call<{ items: Order[] }>('GET', '/guest/orders').then((r) => r.data.items),
+    placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>
+      call<Order>('POST', '/guest/orders', body, { 'idempotency-key': idempotencyKey }).then(data),
+    cancelOrder: (orderId: string) =>
+      call<Order>('POST', `/guest/orders/${encodeURIComponent(orderId)}/cancel`).then(data),
     rate: (requestId: string, rating: number, feedback = '') =>
       call<ServiceRequest>(
         'PUT',

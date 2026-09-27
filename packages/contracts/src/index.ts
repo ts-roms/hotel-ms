@@ -12,3 +12,4 @@ export * from './pms.js';
 export * from './front-office.js';
 export * from './guest.js';
 export * from './hr.js';
+export * from './fnb.js';

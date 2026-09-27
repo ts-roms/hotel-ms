@@ -192,6 +192,11 @@ export class TestClient {
     return { status: res.statusCode, body: parsed, headers: res.headers };
   }
 
+  /** Session cookie, for raw requests (e.g. streaming over a real socket). */
+  get cookieHeader(): string | undefined {
+    return this.cookie;
+  }
+
   get(url: string, headers?: Record<string, string>) {
     return this.request('GET', url, undefined, headers);
   }

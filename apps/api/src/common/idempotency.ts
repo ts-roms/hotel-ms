@@ -20,7 +20,7 @@ export interface IdempotentResult<T> {
 /**
  * Idempotency-Key handling (ADR-0009): the first request with a key runs; repeats with the
  * same key and body get the stored response; the same key with a different body is 422.
- * Keys are scoped per member and operation, so two users cannot collide.
+ * Keys are scoped per member (or guest session) and operation, so two users cannot collide.
  */
 @Injectable()
 export class IdempotencyService {
@@ -44,7 +44,11 @@ export class IdempotencyService {
       ]);
     }
     const organizationId = this.cls.get('organizationId')!;
-    const scope = `${this.cls.get('membershipId')}:${operation}`;
+    // Scoped per principal: a staff member, or one guest session.
+    const guest = this.cls.get('guest');
+    const principal = this.cls.get('membershipId') ?? (guest ? `guest:${guest.sessionId}` : null);
+    if (!principal) throw new Error('Idempotency requires an authenticated principal');
+    const scope = `${principal}:${operation}`;
     const requestHash = createHash('sha256')
       .update(JSON.stringify(requestBody ?? null))
       .digest('hex');
