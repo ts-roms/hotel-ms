@@ -1,9 +1,11 @@
 'use client';
 
-import { Alert, Card, CardContent, CardHeader, CardTitle } from '@hotel/ui';
+import { Alert, buttonVariants, CardContent, Spinner } from '@hotel/ui';
 import { useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { GuestShell } from '@/components/guest-shell';
 import { api, errorMessage, rememberStay, tokenFromHash } from '@/lib/api';
 
 /** Landing page of the emailed link: trades the token for a session, then opens the stay. */
@@ -33,19 +35,25 @@ export default function WelcomePage() {
   }, [queryClient, router]);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Welcome</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error ? (
+    <GuestShell title="Welcome">
+      <CardContent className="flex flex-col gap-4">
+        {error ? (
+          <>
             <Alert>{error}</Alert>
-          ) : (
-            <p className="text-muted-foreground">Opening your booking…</p>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+            <Link href="/" className={buttonVariants({ variant: 'outline' })}>
+              Back
+            </Link>
+          </>
+        ) : (
+          <div
+            role="status"
+            className="flex flex-col items-center gap-3 py-4 text-muted-foreground"
+          >
+            <Spinner className="size-7 text-primary" />
+            Opening your booking…
+          </div>
+        )}
+      </CardContent>
+    </GuestShell>
   );
 }

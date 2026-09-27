@@ -5,51 +5,54 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Guest brand: the blue of the app icon and theme color (#1d4ed8). Dark mode follows the OS. */
 :root {
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.2 0.02 260);
+  color-scheme: light;
+  --background: oklch(0.985 0.004 262);
+  --foreground: oklch(0.21 0.03 262);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 260);
-  --primary: oklch(0.42 0.12 250);
-  --primary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.96 0.005 260);
-  --muted-foreground: oklch(0.5 0.02 260);
-  --secondary: oklch(0.955 0.01 250);
-  --secondary-foreground: oklch(0.3 0.05 250);
+  --card-foreground: oklch(0.21 0.03 262);
+  --primary: oklch(0.49 0.21 263);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.015 262);
+  --secondary-foreground: oklch(0.3 0.08 262);
+  --muted: oklch(0.955 0.008 262);
+  --muted-foreground: oklch(0.52 0.025 262);
+  --accent: oklch(0.955 0.02 262);
+  --accent-foreground: oklch(0.3 0.1 262);
+  --destructive: oklch(0.58 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.56 0.14 155);
   --warning: oklch(0.64 0.15 65);
   --info: oklch(0.56 0.15 240);
-  --accent: oklch(0.95 0.01 250);
-  --accent-foreground: oklch(0.25 0.05 250);
-  --destructive: oklch(0.55 0.2 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.9 0.01 260);
-  --input: oklch(0.88 0.01 260);
-  --ring: oklch(0.55 0.12 250);
+  --border: oklch(0.915 0.01 262);
+  --input: oklch(0.89 0.012 262);
+  --ring: oklch(0.55 0.2 263);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.17 0.01 260);
-    --foreground: oklch(0.95 0 0);
-    --card: oklch(0.21 0.01 260);
-    --card-foreground: oklch(0.95 0 0);
-    --primary: oklch(0.7 0.12 250);
-    --primary-foreground: oklch(0.15 0.02 260);
-    --muted: oklch(0.25 0.01 260);
-    --muted-foreground: oklch(0.7 0.01 260);
-    --secondary: oklch(0.26 0.02 250);
-    --secondary-foreground: oklch(0.92 0.01 250);
+    color-scheme: dark;
+    --background: oklch(0.155 0.015 262);
+    --foreground: oklch(0.96 0.005 262);
+    --card: oklch(0.195 0.018 262);
+    --card-foreground: oklch(0.96 0.005 262);
+    --primary: oklch(0.7 0.16 263);
+    --primary-foreground: oklch(0.16 0.03 263);
+    --secondary: oklch(0.26 0.025 262);
+    --secondary-foreground: oklch(0.92 0.01 262);
+    --muted: oklch(0.245 0.018 262);
+    --muted-foreground: oklch(0.7 0.02 262);
+    --accent: oklch(0.27 0.035 262);
+    --accent-foreground: oklch(0.95 0.01 262);
+    --destructive: oklch(0.68 0.19 25);
+    --destructive-foreground: oklch(0.16 0.02 25);
     --success: oklch(0.74 0.15 155);
     --warning: oklch(0.8 0.14 75);
     --info: oklch(0.74 0.13 240);
-    --accent: oklch(0.28 0.02 250);
-    --accent-foreground: oklch(0.95 0 0);
-    --destructive: oklch(0.65 0.2 27);
-    --destructive-foreground: oklch(0.98 0 0);
-    --border: oklch(0.3 0.01 260);
-    --input: oklch(0.32 0.01 260);
-    --ring: oklch(0.7 0.12 250);
+    --border: oklch(0.285 0.02 262);
+    --input: oklch(0.33 0.02 262);
+    --ring: oklch(0.7 0.16 263);
   }
 }
 
@@ -76,15 +79,24 @@
   --color-ring: var(--ring);
 }
 
-/* Animation tokens used by the shared UI kit (skeleton shimmer, alert fade-in). */
+/* Motion: short, eased-out entrances. Everything is disabled under reduced motion. */
 @theme {
-  --animate-fade-in: fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-scale-in: scale-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 0.35s var(--ease-out-expo) both;
+  --animate-slide-up: slide-up 0.45s var(--ease-out-expo) both;
+  --animate-scale-in: scale-in 0.35s var(--ease-out-expo) both;
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-progress: progress 1.2s ease-in-out infinite;
 
   @keyframes fade-in {
     from {
       opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
   }
   @keyframes scale-in {
@@ -98,15 +110,75 @@
       transform: translateX(100%);
     }
   }
+  @keyframes progress {
+    from {
+      transform: translateX(-100%) scaleX(0.4);
+    }
+    50% {
+      transform: translateX(30%) scaleX(0.6);
+    }
+    to {
+      transform: translateX(110%) scaleX(0.4);
+    }
+  }
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     background: var(--background);
     color: var(--foreground);
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 25%, transparent);
+  }
+}
+
+@layer utilities {
+  /* Children enter one after another. Add to a list or stack container. */
+  .stagger > * {
+    animation: var(--animate-slide-up);
+  }
+  .stagger > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .stagger > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .stagger > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .stagger > :nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .stagger > :nth-child(6) {
+    animation-delay: 250ms;
+  }
+  .stagger > :nth-child(n + 7) {
+    animation-delay: 300ms;
+  }
+
+  /* Soft brand gradient behind the page top and the signed-out screens. */
+  .guest-backdrop {
+    background:
+      radial-gradient(
+        50rem 30rem at 50% -10%,
+        color-mix(in oklch, var(--primary) 18%, transparent),
+        transparent 70%
+      ),
+      var(--background);
+  }
+  /* Hero card for the stay overview: deep brand blue with white text in both themes. */
+  .guest-hero {
+    color: white;
+    background:
+      radial-gradient(30rem 16rem at 100% 0%, oklch(0.62 0.16 240 / 0.55), transparent 70%),
+      linear-gradient(135deg, oklch(0.49 0.21 263), oklch(0.33 0.15 265));
   }
 }
 
@@ -116,6 +188,7 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
 }

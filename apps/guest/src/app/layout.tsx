@@ -13,13 +13,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1d4ed8',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#1d4ed8' },
+    { media: '(prefers-color-scheme: dark)', color: '#101320' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-dvh antialiased">
+      <body className="guest-backdrop min-h-dvh antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
