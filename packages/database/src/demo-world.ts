@@ -1,5 +1,6 @@
 import type { PrismaClient } from './generated/prisma/client.js';
 import { withDbContext } from './context.js';
+import { type DemoFnb, seedDemoFnb } from './demo-fnb.js';
 import { DEMO_EMPLOYEES, type DemoHr, seedDemoHr } from './demo-hr.js';
 import { DEMO_INVENTORY, type DemoInventory, seedDemoInventory } from './demo-pms.js';
 import { hashPassword } from './password.js';
@@ -36,6 +37,8 @@ export interface DemoWorld {
   inventory: Record<'MNL' | 'CEB' | 'DVO' | 'BOR', DemoInventory>;
   /** Departments, positions, leave types, employees and shift templates per organization. */
   hr: Record<'abc' | 'xyz', DemoHr>;
+  /** Outlets, menu items and modifiers at MNL and BOR. */
+  fnb: Record<'MNL' | 'BOR', DemoFnb>;
 }
 
 /**
@@ -50,6 +53,8 @@ export interface DemoWorld {
  *     frontdesk@abc.test     staff            @ PROPERTY(CEB)
  *     reception@abc.test     front_desk       @ PROPERTY(MNL)
  *     hk@abc.test            housekeeper      @ PROPERTY(MNL)
+ *     kitchen@abc.test       kitchen          @ PROPERTY(MNL)
+ *     runner@abc.test        room_service_runner @ PROPERTY(MNL)
  *   XYZ Resorts: Boracay
  *     admin@xyz.test         org_admin        @ ORGANIZATION
  *   consultant@shared.test   auditor          @ ORGANIZATION in both (multi-org identity)
@@ -76,6 +81,8 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
   const frontDesk = await identity('frontdesk@abc.test', 'Faye Desk');
   const reception = await identity('reception@abc.test', 'Rey Reception');
   const housekeeper = await identity('hk@abc.test', 'Hana Housekeeper');
+  const kitchen = await identity('kitchen@abc.test', 'Kai Kitchen');
+  const runner = await identity('runner@abc.test', 'Rudy Runner');
   const xyzAdmin = await identity('admin@xyz.test', 'Xavier Admin');
   const consultant = await identity('consultant@shared.test', 'Casey Consultant');
 
@@ -115,16 +122,21 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     { identityId: frontDesk, role: 'staff', propertyIds: [abcProps.CEB!] },
     { identityId: reception, role: 'front_desk', propertyIds: [abcProps.MNL!] },
     { identityId: housekeeper, role: 'housekeeper', propertyIds: [abcProps.MNL!] },
+    { identityId: kitchen, role: 'kitchen', propertyIds: [abcProps.MNL!] },
+    { identityId: runner, role: 'room_service_runner', propertyIds: [abcProps.MNL!] },
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
   await grant(prisma, xyz.organizationId, xyz.roleIdsByKey, [
     { identityId: consultant, role: 'auditor', propertyIds: null },
   ]);
 
-  // ABC offers guest self check-in; XYZ does not (both states are exercised by tests).
+  // ABC offers guest self check-in and food ordering; XYZ does not (both states are exercised by tests).
   await withDbContext(prisma, { organizationId: abc.organizationId, identityId: null }, (tx) =>
-    tx.organizationFeatureFlag.create({
-      data: { organizationId: abc.organizationId, flagKey: 'self_checkin', enabled: true },
+    tx.organizationFeatureFlag.createMany({
+      data: [
+        { organizationId: abc.organizationId, flagKey: 'self_checkin', enabled: true },
+        { organizationId: abc.organizationId, flagKey: 'guest_food_ordering', enabled: true },
+      ],
     }),
   );
 
@@ -149,7 +161,13 @@ export async function seedDemoWorld(prisma: PrismaClient): Promise<DemoWorld> {
     xyz: (await seedDemoHr(prisma, xyz.organizationId, xyzProps, DEMO_EMPLOYEES.xyz))!,
   };
 
+  const fnb = {
+    MNL: (await seedDemoFnb(prisma, abc.organizationId, abcProps.MNL!))!,
+    BOR: (await seedDemoFnb(prisma, xyz.organizationId, xyzProps.BOR!))!,
+  };
+
   return {
+    fnb,
     hr,
     inventory,
     abc: {

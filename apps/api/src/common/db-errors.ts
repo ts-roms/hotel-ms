@@ -23,6 +23,13 @@ const CONSTRAINT_PROBLEMS: Record<string, () => ProblemException> = {
     ),
   room_assignments_one_active_per_reservation_room: () =>
     new ProblemException(409, 'CONFLICT', 'Conflict', 'This booking already has a room assigned.'),
+  outlets_hours: () =>
+    new ProblemException(
+      400,
+      'VALIDATION_FAILED',
+      'Invalid opening hours',
+      'Give both opening and closing times, or neither.',
+    ),
   shifts_no_overlap: () =>
     new ProblemException(
       409,

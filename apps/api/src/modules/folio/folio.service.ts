@@ -18,7 +18,7 @@ import { OutboxService } from '../outbox/outbox.service.js';
 import { toMinor } from '../pms/pricing.js';
 import { invalidState, nextNumber } from '../pms/reservations.service.js';
 import { businessDateOf } from '../pms/rooms.service.js';
-import { computeTaxes } from './tax-engine.js';
+import { computeTaxes, type TaxRuleInput } from './tax-engine.js';
 
 export interface PostingInput {
   department: string;
@@ -30,6 +30,8 @@ export interface PostingInput {
   sourceKey?: string;
   reason?: string;
   businessDate?: string;
+  /** Tax rules snapshotted by the caller (e.g. at order time) instead of today's rules. */
+  taxRules?: readonly TaxRuleInput[];
 }
 
 const folioInclude = {
@@ -164,10 +166,7 @@ export class FolioService {
       if (existing) return existing.id;
     }
     const businessDate = input.businessDate ?? (await businessDateOf(tx, propertyId));
-    const rules = await tx.taxRule.findMany({
-      where: { propertyId, archivedAt: null, departments: { has: input.department } },
-      orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
-    });
+    const rules = input.taxRules ?? (await this.taxRulesFor(tx, propertyId, input.department));
     const breakdown = computeTaxes(input.amountMinor, rules);
     const type = input.type ?? 'CHARGE';
 
@@ -212,6 +211,99 @@ export class FolioService {
       { propertyId },
     );
     return line.id;
+  }
+
+  /** Active tax rules for a department, in posting order. */
+  async taxRulesFor(tx: Tx, propertyId: string, department: string): Promise<TaxRuleInput[]> {
+    const rules = await tx.taxRule.findMany({
+      where: { propertyId, archivedAt: null, departments: { has: department } },
+      orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+    });
+    return rules.map((r) => ({
+      code: r.code,
+      name: r.name,
+      rateBps: r.rateBps,
+      inclusive: r.inclusive,
+    }));
+  }
+
+  /** Exact negation of a charge and its taxes (same business day only). */
+  private async reverseLinesInTx(
+    tx: Tx,
+    folioId: string,
+    line: {
+      id: string;
+      department: string;
+      description: string;
+      amountMinor: bigint;
+      currency: string;
+      taxCode: string | null;
+    },
+    businessDate: string,
+    reason: string,
+  ): Promise<void> {
+    const { organizationId, propertyId, actorId } = this.ctx;
+    const taxes = await tx.folioLine.findMany({ where: { parentLineId: line.id } });
+    for (const original of [line, ...taxes]) {
+      await tx.folioLine.create({
+        data: {
+          organizationId,
+          propertyId,
+          folioId,
+          businessDate: toDbDate(businessDate),
+          type: 'REVERSAL',
+          department: original.department,
+          description: `Void: ${original.description}`,
+          amountMinor: -original.amountMinor,
+          currency: original.currency,
+          reversesLineId: original.id,
+          taxCode: original.taxCode,
+          reason,
+          postedBy: actorId,
+        },
+      });
+    }
+  }
+
+  /**
+   * Takes back a sourced posting (e.g. a cancelled order), once: a reversal on the same
+   * business day, otherwise a negative adjustment with the same tax rules.
+   */
+  async reverseSourceInTx(
+    tx: Tx,
+    folioId: string,
+    input: {
+      sourceKey: string;
+      amountMinor: bigint;
+      reason: string;
+      taxRules?: readonly TaxRuleInput[];
+    },
+  ): Promise<void> {
+    const folio = await this.requireFolio(tx, folioId);
+    if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
+    const line = await tx.folioLine.findFirst({ where: { folioId, sourceKey: input.sourceKey } });
+    if (!line) return;
+    const reversed = await tx.folioLine.count({
+      where: {
+        folioId,
+        OR: [{ reversesLineId: line.id }, { sourceKey: `${input.sourceKey}:reversal` }],
+      },
+    });
+    if (reversed > 0) return;
+    const businessDate = await businessDateOf(tx, this.ctx.propertyId);
+    if (fromDbDate(line.businessDate) === businessDate) {
+      await this.reverseLinesInTx(tx, folioId, line, businessDate, input.reason);
+    } else {
+      await this.postInTx(tx, folioId, {
+        department: line.department,
+        description: `Reversal: ${line.description}`,
+        amountMinor: -input.amountMinor,
+        type: 'ADJUSTMENT',
+        reason: input.reason,
+        sourceKey: `${input.sourceKey}:reversal`,
+        taxRules: input.taxRules,
+      });
+    }
   }
 
   async postCharge(folioId: string, input: PostChargeRequest): Promise<Folio> {
@@ -313,7 +405,7 @@ export class FolioService {
    * After the business day has closed, corrections are adjustments instead.
    */
   async voidLine(folioId: string, lineId: string, reason: string): Promise<Folio> {
-    const { organizationId, propertyId, actorId } = this.ctx;
+    const { propertyId } = this.ctx;
     return this.db.run(async (tx) => {
       const folio = await this.requireFolio(tx, folioId);
       const line = await tx.folioLine.findFirst({ where: { id: lineId, folioId } });
@@ -333,26 +425,7 @@ export class FolioService {
       const already = await tx.folioLine.count({ where: { reversesLineId: lineId } });
       if (already > 0) throw invalidState('This charge has already been voided.');
 
-      const taxes = await tx.folioLine.findMany({ where: { parentLineId: lineId } });
-      for (const original of [line, ...taxes]) {
-        await tx.folioLine.create({
-          data: {
-            organizationId,
-            propertyId,
-            folioId,
-            businessDate: toDbDate(businessDate),
-            type: 'REVERSAL',
-            department: original.department,
-            description: `Void: ${original.description}`,
-            amountMinor: -original.amountMinor,
-            currency: original.currency,
-            reversesLineId: original.id,
-            taxCode: original.taxCode,
-            reason,
-            postedBy: actorId,
-          },
-        });
-      }
+      await this.reverseLinesInTx(tx, folioId, line, businessDate, reason);
       await this.audit.record(tx, {
         action: 'folio.line_voided',
         entityType: 'folio',

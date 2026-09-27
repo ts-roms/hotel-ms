@@ -24,6 +24,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api, errorMessage, formatDate, formatMoney, rememberStay } from '@/lib/api';
+import { RoomService } from './room-service';
 
 const CATEGORY_LABELS: Record<(typeof SERVICE_CATEGORIES)[number], string> = {
   TOWELS: 'Towels',
@@ -88,6 +89,7 @@ export default function StayPage() {
       {s.stay.status === 'RESERVED' && <PreCheckIn stay={s} />}
       {checkedIn && <RoomAccess result={checkedIn} />}
       {s.selfCheckInAvailable && !checkedIn && <SelfCheckIn stay={s} onCheckedIn={setCheckedIn} />}
+      {s.verified && s.stay.status === 'IN_HOUSE' && <RoomService />}
       {s.verified && s.stay.status === 'IN_HOUSE' && <Requests />}
       {s.verified && (s.stay.status === 'IN_HOUSE' || s.stay.status === 'CHECKED_OUT') && <Bill />}
       <Contact stay={s} />

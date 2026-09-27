@@ -92,6 +92,19 @@ const HR_ADMIN = [
   'department.manage',
 ] as const satisfies readonly PermissionCode[];
 
+const FNB_KITCHEN = [
+  'fnb.order.read',
+  'fnb.order.update',
+  'fnb.menu.availability',
+] as const satisfies readonly PermissionCode[];
+
+const FNB_MANAGE = [
+  ...FNB_KITCHEN,
+  'fnb.order.create',
+  'fnb.order.cancel_override',
+  'fnb.menu.manage',
+] as const satisfies readonly PermissionCode[];
+
 const PMS_CONFIGURE = ['room.manage', 'rate.manage'] as const satisfies readonly PermissionCode[];
 
 const PMS_MANAGE = [
@@ -130,6 +143,7 @@ export const ROLE_TEMPLATES = [
       PMS_OPERATE,
       PMS_MANAGE,
       HR_ADMIN,
+      FNB_MANAGE,
       SELF_SERVICE,
     ),
   },
@@ -153,6 +167,7 @@ export const ROLE_TEMPLATES = [
       PMS_OPERATE,
       PMS_MANAGE,
       PEOPLE_MANAGE,
+      FNB_MANAGE,
       SELF_SERVICE,
     ),
   },
@@ -171,6 +186,7 @@ export const ROLE_TEMPLATES = [
       PMS_OPERATE,
       FRONT_OFFICE,
       GUEST_SERVICE,
+      ['fnb.order.read', 'fnb.order.create'],
       SELF_SERVICE,
     ),
   },
@@ -208,6 +224,22 @@ export const ROLE_TEMPLATES = [
       ],
       PMS_READ,
       HR_READ,
+      ['fnb.order.read'],
+    ),
+  },
+  {
+    key: 'kitchen',
+    name: 'Kitchen',
+    description: 'Works the kitchen board: confirms, prepares and marks orders ready.',
+    permissions: uniq(['organization.read', 'property.read'], FNB_KITCHEN, SELF_SERVICE),
+  },
+  {
+    key: 'room_service_runner',
+    name: 'Room Service Runner',
+    description: 'Delivers room-service orders.',
+    permissions: uniq(
+      ['organization.read', 'property.read', 'fnb.order.read', 'fnb.order.update'],
+      SELF_SERVICE,
     ),
   },
   {

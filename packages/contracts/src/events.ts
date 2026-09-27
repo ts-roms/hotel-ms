@@ -57,6 +57,9 @@ export interface DomainEventPayloads {
   FolioLinePosted: { folioId: string; lineId: string; type: string; amountMinor: number };
   PaymentRecorded: { folioId: string; paymentId: string; method: string; amountMinor: number };
   GuestPortalLinkSent: { reservationId: string };
+  OrderPlaced: { orderId: string; outletId: string; source: 'GUEST' | 'STAFF' };
+  OrderStatusChanged: { orderId: string; outletId: string; from: string; to: string };
+  OrderCharged: { orderId: string; folioId: string; lineId: string; totalMinor: number };
   EmployeeHired: { employeeId: string };
   EmployeeTerminated: { employeeId: string; terminatedOn: string };
   EmployeeClockedIn: { employeeId: string; punchId: string };

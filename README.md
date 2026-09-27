@@ -93,6 +93,10 @@ HR (employees, schedule, attendance, leave) is under **Employees**, **My time** 
 property **Schedule**, **Attendance** and **Leave** pages; `maria.hr@abc.test` is the demo HR
 manager and most demo staff logins are linked to employee records.
 
+F&B lives under the property **Kitchen**, **Orders** and **Menus** pages (`kitchen@abc.test` and
+`runner@abc.test` are the demo kitchen and room-service runner). Checked-in guests order room
+service from the guest portal; delivered room charges land on their folio.
+
 To try the guest portal, open a confirmed reservation with a booker email in the staff app
 and choose **Send guest portal link**; the link in the email opens http://localhost:43200.
 
