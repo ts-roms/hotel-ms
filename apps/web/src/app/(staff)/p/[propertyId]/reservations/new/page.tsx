@@ -11,8 +11,12 @@ import {
   Input,
   Label,
   Select,
+  Skeleton,
+  Spinner,
 } from '@hotel/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
@@ -125,165 +129,194 @@ export default function NewReservationPage() {
   };
 
   return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <CardTitle>{t('res.new')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-          {create.error && <Alert className="sm:col-span-2">{errorMessage(create.error)}</Alert>}
-          <Field label={t('res.firstName')} id="firstName">
-            <Input
-              id="firstName"
-              required
-              value={form.firstName}
-              onChange={(e) => set('firstName', e.target.value)}
-            />
-          </Field>
-          <Field label={t('res.lastName')} id="lastName">
-            <Input
-              id="lastName"
-              required
-              value={form.lastName}
-              onChange={(e) => set('lastName', e.target.value)}
-            />
-          </Field>
-          <Field label={t('login.email')} id="email">
-            <Input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => set('email', e.target.value)}
-            />
-          </Field>
-          <Field label={t('res.phone')} id="phone">
-            <Input
-              id="phone"
-              type="tel"
-              value={form.phone}
-              onChange={(e) => set('phone', e.target.value)}
-            />
-          </Field>
-          <Field label={t('res.arrival')} id="arrival">
-            <Input
-              id="arrival"
-              type="date"
-              required
-              min={property.data?.currentBusinessDate}
-              value={form.arrivalDate}
-              onChange={(e) => set('arrivalDate', e.target.value)}
-            />
-          </Field>
-          <Field label={t('res.departure')} id="departure">
-            <Input
-              id="departure"
-              type="date"
-              required
-              min={form.arrivalDate ? addDays(form.arrivalDate, 1) : undefined}
-              value={form.departureDate}
-              onChange={(e) => set('departureDate', e.target.value)}
-            />
-          </Field>
-          <Field label={t('res.roomType')} id="roomType">
-            <Select
-              id="roomType"
-              value={form.roomTypeId}
-              onChange={(e) => set('roomTypeId', e.target.value)}
-            >
-              {roomTypes.data
-                ?.filter((rt) => !rt.archived)
-                .map((rt) => (
-                  <option key={rt.id} value={rt.id}>
-                    {rt.name} (max {rt.maxOccupancy})
+    <div className="flex max-w-2xl flex-col gap-4">
+      <Link
+        href={`/p/${propertyId}/reservations`}
+        className="group flex items-center gap-1 self-start text-sm text-muted-foreground transition-colors hover:text-primary"
+      >
+        <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
+        {t('common.back')}
+      </Link>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">{t('res.new')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
+            {create.error && <Alert className="sm:col-span-2">{errorMessage(create.error)}</Alert>}
+            <Field label={t('res.firstName')} id="firstName">
+              <Input
+                id="firstName"
+                required
+                value={form.firstName}
+                onChange={(e) => set('firstName', e.target.value)}
+              />
+            </Field>
+            <Field label={t('res.lastName')} id="lastName">
+              <Input
+                id="lastName"
+                required
+                value={form.lastName}
+                onChange={(e) => set('lastName', e.target.value)}
+              />
+            </Field>
+            <Field label={t('login.email')} id="email">
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+              />
+            </Field>
+            <Field label={t('res.phone')} id="phone">
+              <Input
+                id="phone"
+                type="tel"
+                value={form.phone}
+                onChange={(e) => set('phone', e.target.value)}
+              />
+            </Field>
+            <Field label={t('res.arrival')} id="arrival">
+              <Input
+                id="arrival"
+                type="date"
+                required
+                min={property.data?.currentBusinessDate}
+                value={form.arrivalDate}
+                onChange={(e) => set('arrivalDate', e.target.value)}
+              />
+            </Field>
+            <Field label={t('res.departure')} id="departure">
+              <Input
+                id="departure"
+                type="date"
+                required
+                min={form.arrivalDate ? addDays(form.arrivalDate, 1) : undefined}
+                value={form.departureDate}
+                onChange={(e) => set('departureDate', e.target.value)}
+              />
+            </Field>
+            <Field label={t('res.roomType')} id="roomType" loading={roomTypes.isPending}>
+              <Select
+                id="roomType"
+                value={form.roomTypeId}
+                onChange={(e) => set('roomTypeId', e.target.value)}
+              >
+                {roomTypes.data
+                  ?.filter((rt) => !rt.archived)
+                  .map((rt) => (
+                    <option key={rt.id} value={rt.id}>
+                      {rt.name} (max {rt.maxOccupancy})
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Field label={t('res.ratePlan')} id="ratePlan" loading={ratePlans.isPending}>
+              <Select
+                id="ratePlan"
+                value={form.ratePlanId}
+                onChange={(e) => set('ratePlanId', e.target.value)}
+              >
+                {ratePlans.data
+                  ?.filter((p) => !p.archived)
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+            <Field label={t('res.adults')} id="adults">
+              <Input
+                id="adults"
+                type="number"
+                min={1}
+                max={20}
+                value={form.adults}
+                onChange={(e) => set('adults', Number(e.target.value))}
+              />
+            </Field>
+            <Field label={t('res.children')} id="children">
+              <Input
+                id="children"
+                type="number"
+                min={0}
+                max={20}
+                value={form.children}
+                onChange={(e) => set('children', Number(e.target.value))}
+              />
+            </Field>
+            <Field label={t('res.source')} id="source">
+              <Select
+                id="source"
+                value={form.source}
+                onChange={(e) => set('source', e.target.value as typeof form.source)}
+              >
+                {BOOKING_SOURCES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace('_', ' ').toLowerCase()}
                   </option>
                 ))}
-            </Select>
-          </Field>
-          <Field label={t('res.ratePlan')} id="ratePlan">
-            <Select
-              id="ratePlan"
-              value={form.ratePlanId}
-              onChange={(e) => set('ratePlanId', e.target.value)}
-            >
-              {ratePlans.data
-                ?.filter((p) => !p.archived)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </Select>
-          </Field>
-          <Field label={t('res.adults')} id="adults">
-            <Input
-              id="adults"
-              type="number"
-              min={1}
-              max={20}
-              value={form.adults}
-              onChange={(e) => set('adults', Number(e.target.value))}
-            />
-          </Field>
-          <Field label={t('res.children')} id="children">
-            <Input
-              id="children"
-              type="number"
-              min={0}
-              max={20}
-              value={form.children}
-              onChange={(e) => set('children', Number(e.target.value))}
-            />
-          </Field>
-          <Field label={t('res.source')} id="source">
-            <Select
-              id="source"
-              value={form.source}
-              onChange={(e) => set('source', e.target.value as typeof form.source)}
-            >
-              {BOOKING_SOURCES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace('_', ' ').toLowerCase()}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t('res.specialRequests')} id="requests">
-            <Input
-              id="requests"
-              value={form.specialRequests}
-              onChange={(e) => set('specialRequests', e.target.value)}
-            />
-          </Field>
+              </Select>
+            </Field>
+            <Field label={t('res.specialRequests')} id="requests">
+              <Input
+                id="requests"
+                value={form.specialRequests}
+                onChange={(e) => set('specialRequests', e.target.value)}
+              />
+            </Field>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:col-span-2">
-            <span className="text-sm">
-              {t('res.quote')}:{' '}
-              {quote.data ? (
-                <strong>
-                  {formatMoney(quote.data.totalMinor, quote.data.currency)} (
-                  {quote.data.nights.length} {t('res.nights')})
-                </strong>
-              ) : quote.error ? (
-                errorMessage(quote.error)
-              ) : (
-                '—'
-              )}
-            </span>
-            <Button type="submit" disabled={create.isPending || !quote.data}>
-              {create.isPending ? t('res.creating') : t('res.create')}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 p-4 sm:col-span-2">
+              <div className="flex flex-col" aria-live="polite">
+                <span className="text-xs text-muted-foreground">{t('res.quote')}</span>
+                {quote.isFetching ? (
+                  <span className="flex items-center gap-2 py-1">
+                    <Spinner className="size-4 text-primary" />
+                    <Skeleton className="h-6 w-28" />
+                  </span>
+                ) : quote.data ? (
+                  <span key={quote.data.totalMinor} className="animate-fade-in">
+                    <strong className="text-xl tabular-nums">
+                      {formatMoney(quote.data.totalMinor, quote.data.currency)}
+                    </strong>{' '}
+                    <span className="text-sm text-muted-foreground">
+                      · {quote.data.nights.length} {t('res.nights')}
+                    </span>
+                  </span>
+                ) : quote.error ? (
+                  <span className="text-sm text-destructive">{errorMessage(quote.error)}</span>
+                ) : (
+                  <span className="text-xl text-muted-foreground">—</span>
+                )}
+              </div>
+              <Button type="submit" size="lg" loading={create.isPending} disabled={!quote.data}>
+                {create.isPending ? t('res.creating') : t('res.create')}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
+function Field({
+  label,
+  id,
+  loading,
+  children,
+}: {
+  label: string;
+  id: string;
+  /** Options are still loading: show a placeholder in place of the control. */
+  loading?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      {children}
+      {loading ? <Skeleton className="h-10 w-full rounded-lg" /> : children}
     </div>
   );
 }

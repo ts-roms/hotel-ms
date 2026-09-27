@@ -11,10 +11,16 @@ import {
   CardTitle,
   Input,
   Label,
+  LoadingRegion,
   Notice,
+  PageHeader,
   Select,
+  SkeletonCard,
+  SkeletonTable,
+  Skeleton,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarClock, Clock as ClockIcon, Plane, Timer } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
@@ -22,6 +28,7 @@ import { addDays, formatDate } from '@/lib/format';
 import { clock, duration, mondayOf, PUNCH_NEXT, today } from '@/lib/hr';
 import { type MessageKey, t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel, statusVariant } from '@/lib/status';
 
 const PUNCH_LABEL: Record<PunchType, MessageKey> = {
   IN: 'hr.clockIn',
@@ -35,20 +42,30 @@ export default function MyTimePage() {
   const me = useQuery({ queryKey: ['me', 'employee'], queryFn: api.me.employee });
   const session = useSession();
 
-  if (me.isPending) return <p className="text-muted-foreground">{t('loading')}</p>;
+  if (me.isPending)
+    return (
+      <LoadingRegion label={t('loading')} className="flex flex-col gap-6">
+        <Skeleton className="h-8 w-64" />
+        <SkeletonCard lines={2} />
+        <SkeletonCard lines={4} />
+      </LoadingRegion>
+    );
   if (me.error) return <Alert>{errorMessage(me.error)}</Alert>;
   if (!me.data.employee) return <Notice>{t('hr.notEmployee')}</Notice>;
 
   const employee = me.data.employee;
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">
-        {t('hr.myTime')} · {employee.preferredName || employee.firstName} {employee.lastName}
-      </h1>
-      {hasPermission(session.data, 'attendance.punch.own') && <Clock />}
-      {hasPermission(session.data, 'schedule.read.own') && <MyShifts />}
-      {hasPermission(session.data, 'attendance.punch.own') && <MyAttendance />}
-      {hasPermission(session.data, 'leave.request.own') && <MyLeave />}
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={t('hr.myTime')}
+        description={`${employee.preferredName || employee.firstName} ${employee.lastName}`}
+      />
+      <div className="stagger flex flex-col gap-4">
+        {hasPermission(session.data, 'attendance.punch.own') && <Clock />}
+        {hasPermission(session.data, 'schedule.read.own') && <MyShifts />}
+        {hasPermission(session.data, 'attendance.punch.own') && <MyAttendance />}
+        {hasPermission(session.data, 'leave.request.own') && <MyLeave />}
+      </div>
     </div>
   );
 }
@@ -68,23 +85,39 @@ function Clock() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('hr.clock')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Timer className="size-4 text-primary" />
+          {t('hr.clock')}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {punch.error && <Alert>{errorMessage(punch.error)}</Alert>}
-        <p className="text-muted-foreground">
+        <p className="flex items-center gap-2 text-muted-foreground">
+          <span
+            aria-hidden="true"
+            className={
+              state === 'IN' || state === 'BREAK_END'
+                ? 'size-2 animate-pulse rounded-full bg-success'
+                : 'size-2 rounded-full bg-muted-foreground/40'
+            }
+          />
           {last
             ? `${t(PUNCH_LABEL[last.type])} · ${formatDate(last.at.slice(0, 10))} ${clock(last.at)}`
             : t('hr.noPunches')}
         </p>
         {employee.assignments.map((a) => (
-          <div key={a.id} className="flex flex-wrap items-center gap-2">
-            <span className="min-w-40">{a.propertyName}</span>
+          <div key={a.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+            <span className="min-w-40 font-medium">{a.propertyName}</span>
             {PUNCH_NEXT[state]!.map((type) => (
               <Button
                 key={type}
                 size="sm"
                 variant={type === 'IN' || type === 'OUT' ? 'default' : 'outline'}
+                loading={
+                  punch.isPending &&
+                  punch.variables?.propertyId === a.propertyId &&
+                  punch.variables.type === type
+                }
                 disabled={punch.isPending}
                 onClick={() => punch.mutate({ propertyId: a.propertyId, type })}
               >
@@ -107,13 +140,28 @@ function MyShifts() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('hr.myShifts')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <CalendarClock className="size-4 text-primary" />
+          {t('hr.myShifts')}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1 text-sm">
-        {shifts.data?.length === 0 && <p className="text-muted-foreground">{t('hr.noShifts')}</p>}
+        {shifts.isPending && <SkeletonTable rows={3} columns={3} />}
+        {shifts.data?.length === 0 && (
+          <p className="rounded-lg border border-dashed py-6 text-center text-muted-foreground">
+            {t('hr.noShifts')}
+          </p>
+        )}
         {shifts.data?.map((s) => (
-          <div key={s.id} className="flex justify-between gap-2">
-            <span>{formatDate(s.date)}</span>
+          <div
+            key={s.id}
+            className={
+              s.date === today()
+                ? 'flex justify-between gap-2 rounded-lg bg-primary/10 px-3 py-2 text-primary'
+                : 'flex justify-between gap-2 border-b px-3 py-2 last:border-0'
+            }
+          >
+            <span className="font-medium">{formatDate(s.date)}</span>
             <span className="tabular-nums">
               {s.startTime}–{s.endTime}
             </span>
@@ -157,36 +205,51 @@ function MyAttendance() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('hr.myAttendance')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ClockIcon className="size-4 text-primary" />
+          {t('hr.myAttendance')}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
-        <table className="w-full text-left">
-          <thead className="text-xs text-muted-foreground">
-            <tr>
-              <th className="py-1">{t('hr.date')}</th>
-              <th>{t('hr.status')}</th>
-              <th>{t('hr.in')}</th>
-              <th>{t('hr.out')}</th>
-              <th>{t('hr.worked')}</th>
-              <th>{t('hr.late')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {days.data?.map((d) => (
-              <tr key={`${d.date}-${d.shift?.startsAt ?? ''}`} className="border-t">
-                <td className="py-1">{formatDate(d.date)}</td>
-                <td>
-                  <Badge>{d.status.toLowerCase().replace('_', ' ')}</Badge>
-                </td>
-                <td>{clock(d.firstIn)}</td>
-                <td>{clock(d.lastOut)}</td>
-                <td>{duration(d.workedMinutes)}</td>
-                <td>{duration(d.lateMinutes)}</td>
+        {days.isPending && <SkeletonTable rows={4} columns={6} />}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b">
+                <th className="py-2">{t('hr.date')}</th>
+                <th>{t('hr.status')}</th>
+                <th>{t('hr.in')}</th>
+                <th>{t('hr.out')}</th>
+                <th>{t('hr.worked')}</th>
+                <th>{t('hr.late')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2" noValidate>
+            </thead>
+            <tbody className="tabular-nums">
+              {days.data?.map((d) => (
+                <tr
+                  key={`${d.date}-${d.shift?.startsAt ?? ''}`}
+                  className="border-t transition-colors hover:bg-accent/40"
+                >
+                  <td className="py-2">{formatDate(d.date)}</td>
+                  <td>
+                    <Badge variant={statusVariant(d.status)} dot>
+                      {statusLabel(d.status)}
+                    </Badge>
+                  </td>
+                  <td>{clock(d.firstIn)}</td>
+                  <td>{clock(d.lastOut)}</td>
+                  <td>{duration(d.workedMinutes)}</td>
+                  <td>{duration(d.lateMinutes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-wrap items-end gap-2 rounded-lg bg-muted/40 p-3"
+          noValidate
+        >
           <div className="flex flex-col gap-1">
             <Label htmlFor="corr-type">{t('hr.missedPunch')}</Label>
             <Select
@@ -219,7 +282,8 @@ function MyAttendance() {
           <Button
             type="submit"
             variant="outline"
-            disabled={!form.at || form.reason.trim().length < 3 || !propertyId || request.isPending}
+            loading={request.isPending}
+            disabled={!form.at || form.reason.trim().length < 3 || !propertyId}
           >
             {t('hr.requestCorrection')}
           </Button>
@@ -230,7 +294,9 @@ function MyAttendance() {
             <span>
               {t(PUNCH_LABEL[c.type])} · {formatDate(c.at.slice(0, 10))} {clock(c.at)}
             </span>
-            <Badge>{c.status.toLowerCase()}</Badge>
+            <Badge variant={statusVariant(c.status)} dot>
+              {statusLabel(c.status)}
+            </Badge>
           </div>
         ))}
       </CardContent>
@@ -243,10 +309,12 @@ function MyLeave() {
   const leave = useQuery({ queryKey: ['me', 'leave'], queryFn: api.me.leave });
   const types = useQuery({ queryKey: ['leave-types'], queryFn: api.hr.leaveTypes });
   const [form, setForm] = useState({ leaveTypeId: '', startDate: '', endDate: '', reason: '' });
+  // '' means "not chosen yet": show and submit the first active type (types load after mount).
+  const activeTypes = types.data?.filter((lt) => !lt.archived) ?? [];
+  const leaveTypeId = form.leaveTypeId || activeTypes[0]?.id || '';
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['me', 'leave'] });
   const request = useMutation({
-    mutationFn: () =>
-      api.me.requestLeave({ ...form, leaveTypeId: form.leaveTypeId || types.data![0]!.id }),
+    mutationFn: () => api.me.requestLeave({ ...form, leaveTypeId }),
     onSuccess: () => {
       setForm({ leaveTypeId: form.leaveTypeId, startDate: '', endDate: '', reason: '' });
       return refresh();
@@ -257,25 +325,37 @@ function MyLeave() {
     event.preventDefault();
     request.mutate();
   };
-  const activeTypes = types.data?.filter((lt) => !lt.archived) ?? [];
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('hr.myLeave')}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Plane className="size-4 text-primary" />
+          {t('hr.myLeave')}
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
         <div className="flex flex-wrap gap-2">
+          {leave.isPending && (
+            <>
+              <Skeleton className="h-6 w-28 rounded-full" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </>
+          )}
           {leave.data?.balances.map((b) => (
-            <Badge key={b.leaveTypeId}>
+            <Badge key={b.leaveTypeId} variant="primary">
               {b.leaveTypeName}: {b.days} {t('hr.days')}
             </Badge>
           ))}
         </div>
-        <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2" noValidate>
+        <form
+          onSubmit={onSubmit}
+          className="flex flex-wrap items-end gap-2 rounded-lg bg-muted/40 p-3"
+          noValidate
+        >
           <Select
             aria-label={t('hr.leaveType')}
             className="w-auto"
-            value={form.leaveTypeId}
+            value={leaveTypeId}
             onChange={(e) => setForm({ ...form, leaveTypeId: e.target.value })}
           >
             {activeTypes.map((lt) => (
@@ -311,7 +391,11 @@ function MyLeave() {
             value={form.reason}
             onChange={(e) => setForm({ ...form, reason: e.target.value })}
           />
-          <Button type="submit" disabled={!form.startDate || !form.endDate || request.isPending}>
+          <Button
+            type="submit"
+            loading={request.isPending}
+            disabled={!leaveTypeId || !form.startDate || !form.endDate}
+          >
             {t('hr.requestLeave')}
           </Button>
         </form>
@@ -328,9 +412,18 @@ function MyLeave() {
               {t('hr.days')})
             </span>
             <span className="flex items-center gap-2">
-              <Badge>{r.status.toLowerCase()}</Badge>
+              <Badge variant={statusVariant(r.status)} dot>
+                {statusLabel(r.status)}
+              </Badge>
               {(r.status === 'PENDING' || (r.status === 'APPROVED' && r.startDate > today())) && (
-                <Button size="sm" variant="ghost" onClick={() => cancel.mutate(r.id)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hover:text-destructive"
+                  loading={cancel.isPending && cancel.variables === r.id}
+                  disabled={cancel.isPending}
+                  onClick={() => cancel.mutate(r.id)}
+                >
                   {t('hr.cancel')}
                 </Button>
               )}

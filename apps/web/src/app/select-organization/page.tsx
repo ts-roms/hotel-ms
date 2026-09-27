@@ -1,8 +1,10 @@
 'use client';
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@hotel/ui';
+import { Avatar, CardContent, cn, Skeleton, Spinner } from '@hotel/ui';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { AuthShell } from '@/components/auth-shell';
 import { t } from '@/lib/i18n';
 import { useSession, useSwitchOrganization } from '@/lib/session';
 
@@ -10,40 +12,54 @@ export default function SelectOrganizationPage() {
   const router = useRouter();
   const session = useSession();
   const switchOrg = useSwitchOrganization();
+  const [choosing, setChoosing] = useState<string | null>(null);
 
   useEffect(() => {
     if (session.data === null) router.replace('/login');
     else if (session.data?.mfaPending) router.replace('/login/verify');
   }, [session.data, router]);
 
-  if (!session.data) return <p className="p-6 text-muted-foreground">{t('loading')}</p>;
-
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{t('org.select.title')}</CardTitle>
-          <CardDescription>{t('org.select.subtitle')}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {session.data.memberships.map((m) => (
-            <Button
+    <AuthShell
+      title={t('org.select.title')}
+      description={t('org.select.subtitle')}
+      className="max-w-md"
+    >
+      <CardContent className="stagger flex flex-col gap-2">
+        {!session.data &&
+          Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+        {session.data?.memberships.map((m) => {
+          const active = m.organizationId === session.data?.activeOrganizationId;
+          return (
+            <button
               key={m.organizationId}
-              variant={
-                m.organizationId === session.data?.activeOrganizationId ? 'default' : 'outline'
-              }
-              className="justify-start"
+              type="button"
+              className={cn(
+                'hover-lift flex items-center gap-3 rounded-xl border bg-card p-3 text-left text-sm font-medium disabled:pointer-events-none disabled:opacity-60',
+                active && 'border-primary/40 bg-primary/5',
+              )}
               disabled={switchOrg.isPending}
               onClick={async () => {
-                await switchOrg.mutateAsync(m.organizationId);
-                router.replace('/dashboard');
+                setChoosing(m.organizationId);
+                const ok = await switchOrg.mutateAsync(m.organizationId).then(
+                  () => true,
+                  () => false,
+                );
+                setChoosing(null);
+                if (ok) router.replace('/dashboard');
               }}
             >
-              {m.organizationName}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
-    </main>
+              <Avatar name={m.organizationName} />
+              <span className="flex-1 truncate">{m.organizationName}</span>
+              {choosing === m.organizationId ? (
+                <Spinner className="size-4 text-primary" />
+              ) : (
+                active && <Check className="size-4 text-primary" />
+              )}
+            </button>
+          );
+        })}
+      </CardContent>
+    </AuthShell>
   );
 }
