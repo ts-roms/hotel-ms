@@ -3,6 +3,14 @@
 import type { ShiftWarning } from '@hotel/contracts';
 import {
   Alert,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Avatar,
   Badge,
   Button,
@@ -14,8 +22,14 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -173,22 +187,20 @@ export default function SchedulePage() {
       {!!data?.employees.length && (
         <Card
           className={cn(
-            'animate-fade-in overflow-x-auto transition-opacity duration-300',
+            'animate-fade-in overflow-hidden transition-opacity duration-300',
             paging && 'opacity-50',
           )}
           aria-busy={paging}
         >
-          <table className="w-full min-w-205 border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <th className="sticky left-0 z-10 bg-card px-3 py-3 font-semibold uppercase tracking-wider">
-                  {t('hr.employee')}
-                </th>
+          <Table className="min-w-205 border-collapse">
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="sticky left-0 z-10 bg-card">{t('hr.employee')}</TableHead>
                 {days.map((d) => (
-                  <th
+                  <TableHead
                     key={d}
                     className={cn(
-                      'whitespace-nowrap px-2 py-3 font-medium',
+                      'px-2 font-medium normal-case tracking-normal',
                       d === todayDate && 'text-primary',
                     )}
                   >
@@ -201,14 +213,14 @@ export default function SchedulePage() {
                         />
                       )}
                     </span>
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.employees.map((e) => (
-                <tr key={e.id} className="border-t align-top transition-colors hover:bg-accent/20">
-                  <td className="sticky left-0 z-10 bg-card px-3 py-3">
+                <TableRow key={e.id} className="align-top hover:bg-accent/20">
+                  <TableCell className="sticky left-0 z-10 bg-card py-3 align-top">
                     <div className="flex items-center gap-2">
                       <Avatar name={e.name} className="size-8 text-xs" />
                       <div className="flex flex-col">
@@ -216,14 +228,17 @@ export default function SchedulePage() {
                         <span className="text-xs text-muted-foreground">{e.departmentName}</span>
                       </div>
                     </div>
-                  </td>
+                  </TableCell>
                   {days.map((d) => {
                     const shifts = data.shifts.filter((s) => s.employeeId === e.id && s.date === d);
                     const away = data.unavailability.find(
                       (u) => u.employeeId === e.id && u.from <= d && u.to >= d,
                     );
                     return (
-                      <td key={d} className={cn('px-1.5 py-2', d === todayDate && 'bg-primary/3')}>
+                      <TableCell
+                        key={d}
+                        className={cn('px-1.5 py-2 align-top', d === todayDate && 'bg-primary/3')}
+                      >
                         {away && (
                           <Badge variant="info" className="mb-1">
                             {away.label}
@@ -248,45 +263,67 @@ export default function SchedulePage() {
                               )}
                             </div>
                             {canManage && s.seriesId && (
-                              <button
-                                type="button"
-                                aria-label={t('sched.cancelSeries')}
-                                title={t('sched.cancelSeries')}
-                                disabled={cancelSeries.isPending}
-                                className="rounded p-0.5 text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                                onClick={() => {
-                                  if (window.confirm(t('sched.cancelSeriesConfirm')))
-                                    cancelSeries.mutate({
-                                      seriesId: s.seriesId!,
-                                      date: s.date,
-                                      employeeId: s.employeeId,
-                                    });
-                                }}
-                              >
-                                <Repeat className="size-3" />
-                              </button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t('sched.cancelSeries')}
+                                    title={t('sched.cancelSeries')}
+                                    disabled={cancelSeries.isPending}
+                                    className="size-4 rounded p-0.5 opacity-60 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
+                                  >
+                                    <Repeat />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      {t('sched.cancelSeriesConfirm')}
+                                    </AlertDialogTitle>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('sched.keepShifts')}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      variant="destructive"
+                                      onClick={() =>
+                                        cancelSeries.mutate({
+                                          seriesId: s.seriesId!,
+                                          date: s.date,
+                                          employeeId: s.employeeId,
+                                        })
+                                      }
+                                    >
+                                      {t('sched.cancelShifts')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                             {canManage && (
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon"
                                 aria-label={t('hr.cancel')}
                                 title={t('hr.cancel')}
                                 disabled={cancel.isPending}
-                                className="rounded p-0.5 text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                                className="size-4 rounded p-0.5 opacity-60 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
                                 onClick={() => cancel.mutate(s)}
                               >
-                                <X className="size-3" />
-                              </button>
+                                <X />
+                              </Button>
                             )}
                           </div>
                         ))}
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </Card>
       )}
 
@@ -339,7 +376,7 @@ function NewShift({
     <Card className="animate-fade-in">
       <CardContent className="flex flex-col gap-2 pt-5">
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
-          <Select
+          <NativeSelect
             className="w-auto"
             aria-label={t('hr.employee')}
             value={employeeId}
@@ -350,7 +387,7 @@ function NewShift({
                 {e.name}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Input
             type="date"
             className="w-auto"
@@ -358,7 +395,7 @@ function NewShift({
             value={form.date}
             onChange={(e) => setForm({ ...form, date: e.target.value })}
           />
-          <Select
+          <NativeSelect
             className="w-auto"
             aria-label={t('hr.shiftTemplate')}
             value={templateId}
@@ -369,7 +406,7 @@ function NewShift({
                 {tpl.name} {tpl.startTime}–{tpl.endTime}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Button type="submit" loading={create.isPending} disabled={!employeeId || !templateId}>
             {!create.isPending && <Plus />}
             {t('hr.addShift')}

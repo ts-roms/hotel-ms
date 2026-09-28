@@ -15,7 +15,7 @@ import {
   Input,
   LoadingRegion,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonRow,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -185,7 +185,7 @@ function NewEmployee() {
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
           />
-          <Select
+          <NativeSelect
             className="w-auto"
             aria-label={t('hrx.employmentType')}
             value={form.employmentType}
@@ -198,8 +198,8 @@ function NewEmployee() {
                 {statusLabel(x)}
               </option>
             ))}
-          </Select>
-          <Select
+          </NativeSelect>
+          <NativeSelect
             className="w-auto"
             aria-label={t('hr.property')}
             value={propertyId}
@@ -210,8 +210,8 @@ function NewEmployee() {
                 {p.name}
               </option>
             ))}
-          </Select>
-          <Select
+          </NativeSelect>
+          <NativeSelect
             className="w-auto"
             aria-label={t('hr.department')}
             value={departmentId}
@@ -222,8 +222,8 @@ function NewEmployee() {
                 {d.name}
               </option>
             ))}
-          </Select>
-          <Select
+          </NativeSelect>
+          <NativeSelect
             className="w-auto"
             aria-label={t('hr.position')}
             value={form.positionId}
@@ -235,7 +235,7 @@ function NewEmployee() {
                 {p.name}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Button
             type="submit"
             loading={create.isPending}

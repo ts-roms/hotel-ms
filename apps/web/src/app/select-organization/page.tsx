@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, CardContent, cn, Skeleton, Spinner } from '@hotel/ui';
+import { Avatar, Button, CardContent, cn, Skeleton, Spinner } from '@hotel/ui';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -31,11 +31,12 @@ export default function SelectOrganizationPage() {
         {session.data?.memberships.map((m) => {
           const active = m.organizationId === session.data?.activeOrganizationId;
           return (
-            <button
+            <Button
               key={m.organizationId}
               type="button"
+              variant="outline"
               className={cn(
-                'hover-lift flex items-center gap-3 rounded-xl border bg-card p-3 text-left text-sm font-medium disabled:pointer-events-none disabled:opacity-60',
+                'hover-lift h-auto justify-start gap-3 rounded-xl p-3 text-left text-foreground disabled:opacity-60',
                 active && 'border-primary/40 bg-primary/5',
               )}
               disabled={switchOrg.isPending}
@@ -56,7 +57,7 @@ export default function SelectOrganizationPage() {
               ) : (
                 active && <Check className="size-4 text-primary" />
               )}
-            </button>
+            </Button>
           );
         })}
       </CardContent>

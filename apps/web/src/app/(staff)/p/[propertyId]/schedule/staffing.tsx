@@ -8,11 +8,12 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  cn,
+  Checkbox,
   Input,
   Label,
   Notice,
-  Select,
+  NativeSelect,
+  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Repeat, TriangleAlert, Trash2, Users } from 'lucide-react';
@@ -43,18 +44,16 @@ function WeekdayPicker({
       {WEEKDAYS.map((d) => {
         const on = value.includes(d);
         return (
-          <button
+          <Toggle
             key={d}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onChange(on ? value.filter((x) => x !== d) : [...value, d])}
-            className={cn(
-              'rounded-md border px-2 py-1 text-xs transition-colors',
-              on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent',
-            )}
+            variant="outline"
+            size="sm"
+            pressed={on}
+            onPressedChange={() => onChange(on ? value.filter((x) => x !== d) : [...value, d])}
+            className="h-7 rounded-md px-2 font-normal data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90"
           >
             {weekdayName(d)}
-          </button>
+          </Toggle>
         );
       })}
     </div>
@@ -133,13 +132,13 @@ export function RecurringShifts({
           <div className="grid gap-3 sm:grid-cols-3">
             <Label className="flex flex-col gap-1">
               {t('hr.shiftTemplate')}
-              <Select value={template} onChange={(e) => setTemplateId(e.target.value)}>
+              <NativeSelect value={template} onChange={(e) => setTemplateId(e.target.value)}>
                 {templates.data?.map((tpl) => (
                   <option key={tpl.id} value={tpl.id}>
                     {tpl.name} {tpl.startTime}–{tpl.endTime}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Label>
             <Label className="flex flex-col gap-1">
               {t('sched.from')}
@@ -166,11 +165,10 @@ export function RecurringShifts({
             <legend className="mb-1 font-medium">{t('sched.people')}</legend>
             <div className="grid max-h-48 gap-1 overflow-y-auto rounded-md border p-2 sm:grid-cols-2">
               {employees.map((e) => (
-                <label key={e.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                <Label key={e.id} className="flex items-center gap-2 font-normal">
+                  <Checkbox
                     checked={people.includes(e.id)}
-                    onChange={() =>
+                    onCheckedChange={() =>
                       setPeople(
                         people.includes(e.id)
                           ? people.filter((p) => p !== e.id)
@@ -180,7 +178,7 @@ export function RecurringShifts({
                   />
                   {e.name}
                   <span className="text-xs text-muted-foreground">{e.departmentName}</span>
-                </label>
+                </Label>
               ))}
             </div>
           </fieldset>
@@ -341,7 +339,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
             }}
           >
             <div className="flex flex-wrap items-center gap-2">
-              <Select
+              <NativeSelect
                 className="w-auto"
                 aria-label={t('hr.department')}
                 value={departmentId}
@@ -354,7 +352,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
                       {d.name}
                     </option>
                   ))}
-              </Select>
+              </NativeSelect>
               <Input
                 type="time"
                 className="w-auto"

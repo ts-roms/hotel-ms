@@ -14,11 +14,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   cn,
   EmptyState,
   Input,
+  Label,
   PageHeader,
-  Select,
+  NativeSelect,
   Textarea,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -73,13 +75,14 @@ export default function MaintenancePage() {
         <div className="flex flex-col gap-2">
           {list.data?.length === 0 && <EmptyState icon={<Wrench />} title={t('mnt.none')} />}
           {list.data?.map((r) => (
-            <button
+            <Button
               key={r.id}
               type="button"
+              variant="outline"
               onClick={() => setSelected(r.id)}
               className={cn(
-                'flex flex-col gap-1 rounded-xl border bg-card p-3 text-left text-sm transition-colors hover:bg-accent/40',
-                selected === r.id && 'border-primary',
+                'h-auto flex-col items-stretch justify-start gap-1 whitespace-normal rounded-xl p-3 text-left font-normal text-foreground hover:bg-accent/40 hover:text-foreground active:scale-100',
+                selected === r.id && 'border-primary hover:border-primary',
               )}
             >
               <span className="flex flex-wrap items-center gap-2">
@@ -98,7 +101,7 @@ export default function MaintenancePage() {
                 {statusLabel(r.category)}
                 {r.assignedName && ` · ${r.assignedName}`}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex flex-col gap-4">
@@ -170,7 +173,7 @@ function Report({
           }}
         >
           {report.error && <Alert className="sm:col-span-2">{errorMessage(report.error)}</Alert>}
-          <Select
+          <NativeSelect
             aria-label={t('mnt.room')}
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
@@ -183,7 +186,7 @@ function Report({
                   {t('mnt.room')} {r.number}
                 </option>
               ))}
-          </Select>
+          </NativeSelect>
           {!roomId && (
             <Input
               required
@@ -193,7 +196,7 @@ function Report({
               onChange={(e) => setLocation(e.target.value)}
             />
           )}
-          <Select
+          <NativeSelect
             aria-label={t('mnt.category')}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -203,8 +206,8 @@ function Report({
                 {statusLabel(c)}
               </option>
             ))}
-          </Select>
-          <Select
+          </NativeSelect>
+          <NativeSelect
             aria-label={t('mnt.priority')}
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
@@ -214,7 +217,7 @@ function Report({
                 {statusLabel(p)}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Input
             required
             maxLength={120}
@@ -233,14 +236,10 @@ function Report({
           />
           {manage && roomId && (
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={outOfOrder}
-                  onChange={(e) => setOutOfOrder(e.target.checked)}
-                />
+              <Label className="flex items-center gap-2 font-normal">
+                <Checkbox checked={outOfOrder} onCheckedChange={(v) => setOutOfOrder(v === true)} />
                 {t('mnt.takeOutOfOrder')}
-              </label>
+              </Label>
               {outOfOrder && (
                 <>
                   <Input
@@ -361,7 +360,7 @@ function Detail({
         {act.error && <Alert>{errorMessage(act.error)}</Alert>}
 
         {open && can('maintenance.manage') && (
-          <Select
+          <NativeSelect
             aria-label={t('mnt.assign')}
             value={r.assignedMembershipId ?? ''}
             onChange={(e) =>
@@ -374,7 +373,7 @@ function Detail({
                 {m.displayName}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         )}
         {open && (works || can('maintenance.work')) && (
           <div className="flex flex-col gap-2">

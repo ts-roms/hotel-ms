@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, Button } from '@hotel/ui';
+import { Alert, Button, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
@@ -48,17 +48,21 @@ export default function DocumentPage() {
           <strong className="tabular-nums">{money(c.payment.amountMinor)}</strong>
         </div>
       ) : (
-        <table className="w-full">
-          <tbody>
+        <Table className="border-t">
+          <TableBody>
             {c.lines.map((l, i) => (
-              <tr key={i} className="border-t">
-                <td className="py-1 pr-2 whitespace-nowrap">{formatDate(l.date)}</td>
-                <td className="py-1 pr-2">{l.description}</td>
-                <td className="py-1 text-right tabular-nums">{money(l.amountMinor)}</td>
-              </tr>
+              <TableRow key={i} className="hover:bg-transparent">
+                <TableCell className="whitespace-nowrap py-1 pl-0 pr-2">
+                  {formatDate(l.date)}
+                </TableCell>
+                <TableCell className="py-1 pl-0 pr-2">{l.description}</TableCell>
+                <TableCell className="py-1 pl-0 pr-0 text-right tabular-nums">
+                  {money(l.amountMinor)}
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
       <div className="ml-auto flex w-64 flex-col gap-1">
         {c.taxes.map((tax) => (

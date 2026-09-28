@@ -7,6 +7,14 @@ import {
 } from '@hotel/contracts';
 import {
   Alert,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Badge,
   Button,
   Card,
@@ -14,7 +22,8 @@ import {
   CardHeader,
   CardTitle,
   Input,
-  Select,
+  Label,
+  NativeSelect,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
@@ -111,30 +120,42 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 {d.purgeOn && ` · ${t('hr.deletedOn')} ${formatDate(d.purgeOn)}`}
               </span>
             </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="hover:text-destructive"
-              disabled={remove.isPending}
-              onClick={() => {
-                if (window.confirm(t('hr.deleteDocumentConfirm'))) remove.mutate(d.id);
-              }}
-            >
-              {t('hr.delete')}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hover:text-destructive"
+                  disabled={remove.isPending}
+                >
+                  {t('hr.delete')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('hr.deleteDocumentConfirm')}</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('hr.cancel')}</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={() => remove.mutate(d.id)}>
+                    {t('hr.delete')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ))}
         {remove.error && <Alert>{errorMessage(remove.error)}</Alert>}
 
         {!documents.error && (
           <form onSubmit={submit} className="grid gap-2 border-t pt-3 sm:grid-cols-2">
-            <input
+            <Input
               ref={fileInput}
               type="file"
               required
               aria-label={t('hr.file')}
               accept={EMPLOYEE_DOCUMENT_TYPES.join(',')}
-              className="text-sm sm:col-span-2"
+              className="sm:col-span-2 file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium"
               onChange={(e) => {
                 const chosen = e.target.files?.[0] ?? null;
                 setTooLarge(!!chosen && chosen.size > EMPLOYEE_DOCUMENT_MAX_BYTES);
@@ -142,7 +163,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 if (chosen && !title) setTitle(chosen.name.replace(/\.[^.]+$/, ''));
               }}
             />
-            <Select
+            <NativeSelect
               aria-label={t('hr.category')}
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -152,7 +173,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                   {CATEGORY_LABELS[c]}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Input
               required
               maxLength={120}
@@ -161,10 +182,10 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-            <label className="flex items-center gap-2 text-muted-foreground">
+            <Label className="flex items-center gap-2 font-normal text-muted-foreground">
               {t('hr.expiresOptional')}
               <Input type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
-            </label>
+            </Label>
             <Button
               type="submit"
               variant="outline"

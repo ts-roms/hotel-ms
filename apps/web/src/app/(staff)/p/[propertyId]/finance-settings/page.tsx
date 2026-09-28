@@ -9,7 +9,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
+  Label,
   Notice,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -208,18 +210,17 @@ function DiscountProfiles({ propertyId, canManage }: { propertyId: string; canMa
             <fieldset className="flex flex-wrap gap-3 sm:col-span-3">
               <legend className="sr-only">{t('fin.departments')}</legend>
               {DEPARTMENTS.map((d) => (
-                <label key={d} className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
+                <Label key={d} className="flex items-center gap-1 font-normal">
+                  <Checkbox
                     checked={departments.includes(d)}
-                    onChange={(e) =>
+                    onCheckedChange={(v) =>
                       setDepartments(
-                        e.target.checked ? [...departments, d] : departments.filter((x) => x !== d),
+                        v === true ? [...departments, d] : departments.filter((x) => x !== d),
                       )
                     }
                   />
                   {d.toLowerCase()}
-                </label>
+                </Label>
               ))}
             </fieldset>
             <Button type="submit" variant="outline" loading={act.isPending}>

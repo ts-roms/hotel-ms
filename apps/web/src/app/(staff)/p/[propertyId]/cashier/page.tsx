@@ -1,6 +1,22 @@
 'use client';
 
-import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@hotel/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  cn,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
@@ -112,40 +128,40 @@ export default function CashierPage() {
       </Card>
 
       {history.data && (
-        <table className="w-full text-left text-sm">
-          <thead className="text-xs text-muted-foreground">
-            <tr>
-              <th className="py-2">{t('fin.cashierName')}</th>
-              <th>{t('fin.opened')}</th>
-              <th>{t('fin.status')}</th>
-              <th className="text-right">{t('fin.expected')}</th>
-              <th className="text-right">{t('fin.counted')}</th>
-              <th className="text-right">{t('fin.variance')}</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('fin.cashierName')}</TableHead>
+              <TableHead>{t('fin.opened')}</TableHead>
+              <TableHead>{t('fin.status')}</TableHead>
+              <TableHead className="text-right">{t('fin.expected')}</TableHead>
+              <TableHead className="text-right">{t('fin.counted')}</TableHead>
+              <TableHead className="text-right">{t('fin.variance')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {history.data.map((h) => (
-              <tr key={h.id} className="border-t">
-                <td className="py-2">{h.cashierName}</td>
-                <td>{new Date(h.openedAt).toLocaleString()}</td>
-                <td>
+              <TableRow key={h.id}>
+                <TableCell>{h.cashierName}</TableCell>
+                <TableCell>{new Date(h.openedAt).toLocaleString()}</TableCell>
+                <TableCell>
                   <Badge>{h.status.toLowerCase()}</Badge>
-                </td>
-                <td className="text-right tabular-nums">
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
                   {formatMoney(h.expectedCashMinor, currency)}
-                </td>
-                <td className="text-right tabular-nums">
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
                   {h.countedCashMinor === null ? '—' : formatMoney(h.countedCashMinor, currency)}
-                </td>
-                <td
-                  className={`text-right tabular-nums ${h.varianceMinor ? 'text-destructive' : ''}`}
+                </TableCell>
+                <TableCell
+                  className={cn('text-right tabular-nums', h.varianceMinor && 'text-destructive')}
                 >
                   {h.varianceMinor === null ? '—' : formatMoney(h.varianceMinor, currency)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </div>
   );

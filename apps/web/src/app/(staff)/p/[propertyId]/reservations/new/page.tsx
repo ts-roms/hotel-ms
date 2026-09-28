@@ -10,7 +10,7 @@ import {
   CardTitle,
   Input,
   Label,
-  Select,
+  NativeSelect,
   Skeleton,
   Spinner,
 } from '@hotel/ui';
@@ -197,7 +197,7 @@ export default function NewReservationPage() {
               />
             </Field>
             <Field label={t('res.roomType')} id="roomType" loading={roomTypes.isPending}>
-              <Select
+              <NativeSelect
                 id="roomType"
                 value={form.roomTypeId}
                 onChange={(e) => set('roomTypeId', e.target.value)}
@@ -209,10 +209,10 @@ export default function NewReservationPage() {
                       {rt.name} (max {rt.maxOccupancy})
                     </option>
                   ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <Field label={t('res.ratePlan')} id="ratePlan" loading={ratePlans.isPending}>
-              <Select
+              <NativeSelect
                 id="ratePlan"
                 value={form.ratePlanId}
                 onChange={(e) => set('ratePlanId', e.target.value)}
@@ -224,7 +224,7 @@ export default function NewReservationPage() {
                       {p.name}
                     </option>
                   ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <Field label={t('res.adults')} id="adults">
               <Input
@@ -247,7 +247,7 @@ export default function NewReservationPage() {
               />
             </Field>
             <Field label={t('res.source')} id="source">
-              <Select
+              <NativeSelect
                 id="source"
                 value={form.source}
                 onChange={(e) => set('source', e.target.value as typeof form.source)}
@@ -257,7 +257,7 @@ export default function NewReservationPage() {
                     {s.replace('_', ' ').toLowerCase()}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Field>
             <Field label={t('res.specialRequests')} id="requests">
               <Input

@@ -9,9 +9,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
+  Label,
   Notice,
-  Select,
+  NativeSelect,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -272,7 +274,7 @@ function Transfers({ propertyId, folio }: { propertyId: string; folio: Folio }) 
         {(transfer.error || routing.error) && (
           <Alert>{errorMessage(transfer.error ?? routing.error)}</Alert>
         )}
-        <Select
+        <NativeSelect
           aria-label={t('fin.targetAccount')}
           value={targetId}
           onChange={(e) => setTarget(e.target.value)}
@@ -282,14 +284,13 @@ function Transfers({ propertyId, folio }: { propertyId: string; folio: Folio }) 
               {a.label} · {a.folioNo}
             </option>
           ))}
-        </Select>
+        </NativeSelect>
         <div className="flex flex-col gap-1">
           {movable.map((l) => (
-            <label key={l.id} className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            <Label key={l.id} className="flex items-center gap-2 font-normal">
+              <Checkbox
                 checked={selected.includes(l.id)}
-                onChange={() =>
+                onCheckedChange={() =>
                   setSelected(
                     selected.includes(l.id)
                       ? selected.filter((x) => x !== l.id)
@@ -298,7 +299,7 @@ function Transfers({ propertyId, folio }: { propertyId: string; folio: Folio }) 
                 }
               />
               {l.description} · {formatMoney(l.amountMinor, folio.currency)}
-            </label>
+            </Label>
           ))}
         </div>
         <Button
@@ -325,7 +326,7 @@ function Transfers({ propertyId, folio }: { propertyId: string; folio: Folio }) 
             </div>
           ))}
           <div className="flex flex-wrap gap-2">
-            <Select
+            <NativeSelect
               className="w-auto"
               aria-label={t('folio.department')}
               value={department}
@@ -336,7 +337,7 @@ function Transfers({ propertyId, folio }: { propertyId: string; folio: Folio }) 
                   {d.toLowerCase()}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Button
               size="sm"
               variant="outline"

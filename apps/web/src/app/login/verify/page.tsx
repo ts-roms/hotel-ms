@@ -50,16 +50,17 @@ export default function VerifyPage() {
           <Button type="submit" size="lg" loading={challenge.isPending} disabled={value.length < 6}>
             {t('mfa.verify')}
           </Button>
-          <button
+          <Button
             type="button"
-            className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+            variant="link"
+            className="h-auto p-0 font-normal text-muted-foreground hover:text-primary"
             onClick={() => {
               setUseRecovery(!useRecovery);
               setValue('');
             }}
           >
             {useRecovery ? t('mfa.useApp') : t('mfa.useRecovery')}
-          </button>
+          </Button>
         </form>
       </CardContent>
     </AuthShell>

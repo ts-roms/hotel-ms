@@ -22,12 +22,14 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   cn,
   Input,
   Label,
   PageHeader,
-  Select,
+  NativeSelect,
   Textarea,
+  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -113,22 +115,20 @@ function UnifiedCalendar() {
       />
       <div className="flex flex-wrap gap-2" role="group" aria-label={t('cal.show')}>
         {CALENDAR_KINDS.map((kind) => (
-          <button
+          <Toggle
             key={kind}
-            type="button"
-            aria-pressed={!hidden.has(kind)}
-            onClick={() => toggle(kind)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs',
-              hidden.has(kind) && 'opacity-40',
-            )}
+            variant="outline"
+            size="sm"
+            pressed={!hidden.has(kind)}
+            onPressedChange={() => toggle(kind)}
+            className={cn('gap-1.5 rounded-full px-3', hidden.has(kind) && 'opacity-40')}
           >
             <span
               className="size-2.5 rounded-full"
               style={{ backgroundColor: KIND_COLORS[kind] }}
             />
             {statusLabel(kind)}
-          </button>
+          </Toggle>
         ))}
       </div>
       {calendar.error && <Alert>{errorMessage(calendar.error)}</Alert>}
@@ -413,7 +413,7 @@ function EventForm({
       </Label>
       <Label className="flex flex-col gap-1">
         {t('cal.categoryLabel')}
-        <Select
+        <NativeSelect
           value={category}
           onChange={(v) => setCategory(v.target.value as HotelEvent['category'])}
         >
@@ -422,12 +422,12 @@ function EventForm({
               {statusLabel(c)}
             </option>
           ))}
-        </Select>
+        </NativeSelect>
       </Label>
-      <label className="flex items-center gap-2">
-        <input type="checkbox" checked={allDay} onChange={(v) => setAllDay(v.target.checked)} />
+      <Label className="flex items-center gap-2 font-normal">
+        <Checkbox checked={allDay} onCheckedChange={(v) => setAllDay(v === true)} />
         {t('cal.allDay')}
-      </label>
+      </Label>
       <div className="grid grid-cols-2 gap-2">
         <Label className="flex flex-col gap-1">
           {t('cal.starts')}
@@ -486,26 +486,21 @@ function EventForm({
           onChange={(v) => setDescription(v.target.value)}
         />
       </Label>
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={guestVisible}
-          onChange={(v) => setGuestVisible(v.target.checked)}
-        />
+      <Label className="flex items-center gap-2 font-normal">
+        <Checkbox checked={guestVisible} onCheckedChange={(v) => setGuestVisible(v === true)} />
         {t('cal.guestVisible')}
-      </label>
+      </Label>
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 font-medium">{t('cal.participants')}</legend>
         <div className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border p-2">
           {people.map((p) => (
-            <label key={p.membershipId} className="flex items-center gap-2">
-              <input
-                type="checkbox"
+            <Label key={p.membershipId} className="flex items-center gap-2 font-normal">
+              <Checkbox
                 checked={invited.has(p.membershipId)}
-                onChange={() => toggle(p.membershipId)}
+                onCheckedChange={() => toggle(p.membershipId)}
               />
               {p.displayName}
-            </label>
+            </Label>
           ))}
         </div>
       </fieldset>

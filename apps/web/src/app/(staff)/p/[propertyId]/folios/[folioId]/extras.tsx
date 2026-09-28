@@ -11,7 +11,7 @@ import {
   CardTitle,
   Input,
   Notice,
-  Select,
+  NativeSelect,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -78,7 +78,7 @@ export function ForeignCash({ propertyId, folio }: { propertyId: string; folio: 
           <Notice>{t('fin.noRates')}</Notice>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            <Select
+            <NativeSelect
               className="w-40"
               aria-label={t('fin.currency')}
               value={chosen}
@@ -89,7 +89,7 @@ export function ForeignCash({ propertyId, folio }: { propertyId: string; folio: 
                   {c} @ {latest.get(c)}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Input
               className="w-32"
               inputMode="decimal"
@@ -175,7 +175,7 @@ export function StatutoryDiscount({ propertyId, folio }: { propertyId: string; f
               );
             }}
           >
-            <Select
+            <NativeSelect
               aria-label={t('fin.discount')}
               value={chosen}
               onChange={(e) => setProfileId(e.target.value)}
@@ -185,7 +185,7 @@ export function StatutoryDiscount({ propertyId, folio }: { propertyId: string; f
                   {p.name} ({p.discountPercent}%)
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Input
               required
               aria-label={t('fin.discountHolder')}

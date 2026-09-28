@@ -1,12 +1,25 @@
 'use client';
 
 import { GUEST_ID_TYPES, type GuestIdType, type GuestStay } from '@hotel/contracts';
-import { Alert, Badge, Button, CardContent, Input, Label, Notice, Select } from '@hotel/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  CardContent,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Input,
+  Label,
+  Notice,
+  NativeSelect,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Bell,
   Building2,
   Check,
+  ChevronDown,
   Clock,
   IdCard,
   LogOut,
@@ -156,7 +169,7 @@ export function IdUpload({ stay: s }: { stay: GuestStay }) {
         {upload.error && <Alert>{errorMessage(upload.error)}</Alert>}
         <div className="flex flex-col gap-2">
           <Label htmlFor="id-type">Type of ID</Label>
-          <Select
+          <NativeSelect
             id="id-type"
             value={type}
             onChange={(e) => setType(e.target.value as GuestIdType)}
@@ -166,7 +179,7 @@ export function IdUpload({ stay: s }: { stay: GuestStay }) {
                 {ID_LABELS[t]}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         </div>
         <input
           ref={input}
@@ -256,10 +269,15 @@ export function HotelInfo({ stay: s }: { stay: GuestStay }) {
           </ul>
         )}
         {h.houseRules && (
-          <details className="rounded-xl border p-3">
-            <summary className="cursor-pointer font-medium">House rules</summary>
-            <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{h.houseRules}</p>
-          </details>
+          <Collapsible className="group rounded-xl border p-3">
+            <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-md text-left font-medium focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25">
+              House rules
+              <ChevronDown className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="animate-fade-in">
+              <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{h.houseRules}</p>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </CardContent>
     </Section>

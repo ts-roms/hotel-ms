@@ -13,7 +13,7 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,7 +59,7 @@ export default function LeavePage() {
       <PageHeader
         title={t('hr.leave')}
         actions={
-          <Select
+          <NativeSelect
             className="h-9 w-auto"
             aria-label={t('hr.status')}
             value={status}
@@ -70,7 +70,7 @@ export default function LeavePage() {
                 {statusLabel(s)}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         }
       />
       {(requests.error || decide.error) && (

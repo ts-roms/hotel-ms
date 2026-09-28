@@ -11,8 +11,9 @@ import {
   EmptyState,
   LoadingRegion,
   PageHeader,
-  Select,
+  NativeSelect,
   Skeleton,
+  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChefHat, Clock } from 'lucide-react';
@@ -137,7 +138,7 @@ export function KitchenBoard({
               />
               {live ? t('fnb.live') : t('fnb.polling')}
             </Badge>
-            <Select
+            <NativeSelect
               className="h-9 w-auto"
               aria-label={t('fnb.outlet')}
               value={outlet}
@@ -148,7 +149,7 @@ export function KitchenBoard({
                   {o.name}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </>
         }
       />
@@ -315,21 +316,17 @@ function SoldOut({
           c.items
             .filter((i) => !i.archived)
             .map((i) => (
-              <button
+              <Toggle
                 key={i.id}
-                type="button"
-                aria-pressed={!i.available}
+                variant="outline"
+                size="sm"
+                pressed={!i.available}
                 disabled={toggle.isPending}
-                onClick={() => toggle.mutate({ id: i.id, available: !i.available })}
-                className={cn(
-                  'inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-all duration-200 active:scale-95 disabled:opacity-60',
-                  i.available
-                    ? 'bg-card text-muted-foreground hover:border-ring/40 hover:text-foreground'
-                    : 'border-destructive/30 bg-destructive/10 text-destructive line-through',
-                )}
+                onPressedChange={() => toggle.mutate({ id: i.id, available: !i.available })}
+                className="rounded-full px-3 text-muted-foreground active:scale-95 disabled:opacity-60 hover:border-ring/40 hover:bg-card hover:text-foreground data-[state=on]:border-destructive/30 data-[state=on]:bg-destructive/10 data-[state=on]:text-destructive data-[state=on]:line-through"
               >
                 {i.name}
-              </button>
+              </Toggle>
             )),
         )}
       </CardContent>
