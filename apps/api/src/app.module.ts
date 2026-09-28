@@ -98,6 +98,12 @@ import { GuestMessagesService } from './modules/notifications/guest-messages.ser
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { RemindersService } from './modules/notifications/reminders.service.js';
+import {
+  ManagementController,
+  PropertyReportsController,
+} from './modules/management/management.controller.js';
+import { ManagementService } from './modules/management/management.service.js';
+import { SearchService } from './modules/management/search.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';
 import { PropertiesService } from './modules/tenancy/properties.service.js';
@@ -122,6 +128,8 @@ export const CONTROLLERS = [
   HrController,
   EmployeeDocumentsController,
   DocumentRetentionController,
+  ManagementController,
+  PropertyReportsController,
   NotificationsController,
   MaintenanceController,
   LostFoundController,
@@ -178,6 +186,8 @@ export class AppModule {
         NotificationsService,
         GuestMessagesService,
         RemindersService,
+        ManagementService,
+        SearchService,
         LostFoundService,
         RatesService,
         GuestsService,

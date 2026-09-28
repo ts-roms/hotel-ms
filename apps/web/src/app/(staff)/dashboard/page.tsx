@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Building2, CalendarDays, Clock, Coins, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { GroupOverview } from '@/components/group-overview';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -67,6 +68,8 @@ export default function DashboardPage() {
           tone="info"
         />
       </div>
+
+      <GroupOverview />
 
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold tracking-tight">{t('dashboard.properties')}</h2>
@@ -155,6 +158,7 @@ export default function DashboardPage() {
 }
 
 const LANDING_PAGES = [
+  { href: 'overview', permission: 'property.read' },
   { href: 'front-desk', permission: 'reservation.read' },
   { href: 'housekeeping', permission: 'housekeeping.read' },
   { href: 'rooms', permission: 'room.read' },
