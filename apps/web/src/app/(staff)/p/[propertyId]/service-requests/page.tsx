@@ -22,6 +22,7 @@ import {
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Check, Plus, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -68,6 +69,24 @@ export default function ServiceRequestsPage() {
   });
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ['service-requests', propertyId] });
+  // A guest's "something is broken" becomes a maintenance request, linked back to it.
+  const router = useRouter();
+  const canReportMaintenance = hasPermission(session.data, 'maintenance.report');
+  const toMaintenance = useMutation({
+    mutationFn: (r: ServiceRequest) => {
+      const roomId = rooms.data?.find((room) => room.number === r.roomNumber)?.id ?? null;
+      return pms.reportMaintenance({
+        roomId,
+        location: roomId ? null : t('sr.guestRequest'),
+        category: 'OTHER',
+        priority: r.priority === 'URGENT' ? 'URGENT' : r.priority === 'HIGH' ? 'HIGH' : 'NORMAL',
+        title: (r.description || t('sr.guestRequest')).slice(0, 120),
+        description: `${r.requestNo}: ${r.description}`.slice(0, 2000),
+        serviceRequestId: r.id,
+      });
+    },
+    onSuccess: () => router.push(`/p/${propertyId}/maintenance`),
+  });
   const update = useMutation({
     mutationFn: (input: { request: ServiceRequest; body: ServiceRequestUpdate }) =>
       pms.updateServiceRequest(input.request.id, input.request.version, input.body),
@@ -248,6 +267,17 @@ export default function ServiceRequestsPage() {
                     >
                       {t('sr.cancel')}
                     </Button>
+                    {r.category === 'MAINTENANCE' && canReportMaintenance && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={toMaintenance.isPending && toMaintenance.variables?.id === r.id}
+                        disabled={toMaintenance.isPending}
+                        onClick={() => toMaintenance.mutate(r)}
+                      >
+                        {t('sr.toMaintenance')}
+                      </Button>
+                    )}
                   </div>
                 </>
               )}

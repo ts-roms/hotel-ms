@@ -162,6 +162,7 @@ model RoomAssignment {
 
   room            Room             @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
   reservationRoom ReservationRoom? @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  maintenance     MaintenanceRequest[]
 
   @@index([organizationId, roomId, startDate])
   @@index([organizationId, reservationRoomId])

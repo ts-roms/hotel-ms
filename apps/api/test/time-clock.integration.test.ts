@@ -274,3 +274,32 @@ describe('reviewing and expiring selfies', () => {
     ).not.toBeNull();
   });
 });
+
+describe('photo retention setting', () => {
+  it('is 90 days by default, set by HR at organization scope, and drives the purge', async () => {
+    const admin = await TestClient.withMfa(ctx.app, 'admin@abc.test');
+    const url = '/api/v1/attendance-photo-retention';
+    expect((await john.get(url)).body).toEqual({ days: 90 });
+    expect((await reception.get(url)).status).toBe(403);
+    // John manages attendance at Manila only: an organization policy is not his to set.
+    expect((await john.request('PUT', url, { days: 30 })).status).toBe(403);
+    expect((await admin.request('PUT', url, { days: 3 })).status).toBe(400);
+    expect((await admin.request('PUT', url, { days: 400 })).status).toBe(400);
+    const set = await admin.request('PUT', url, { days: 30 });
+    expect(set.status, JSON.stringify(set.body)).toBe(200);
+    expect((await john.get(url)).body).toEqual({ days: 30 });
+    expect((await reception.get('/api/v1/me/employee')).body.photoRetentionDays).toBe(30);
+    expect((await clock.request('GET', '/api/v1/kiosk')).body.photoRetentionDays).toBe(30);
+
+    expect((await webPunch(reception, `/api/v1/properties/${MNL()}`, 'IN')).status).toBe(201);
+    const cls = ctx.app.get<ClsService<RequestContext>>(ClsService);
+    const purge = (days: number) =>
+      cls.run(async () => {
+        cls.set('organizationId', ctx.world.abc.organizationId);
+        cls.set('system', true);
+        return ctx.app.get(TimeClockService).purgePhotos(new Date(Date.now() + days * 86_400_000));
+      });
+    expect(await purge(29)).toBe(0);
+    expect(await purge(31)).toBe(1);
+  });
+});

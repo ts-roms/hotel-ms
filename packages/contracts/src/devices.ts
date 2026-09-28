@@ -82,6 +82,8 @@ export const kioskStateSchema = z.object({
     .nullable(),
   /** Who can sign in here: members with a PIN and a device permission at this property. */
   operators: z.array(z.object({ membershipId: z.uuid(), name: z.string() })),
+  /** Days punch selfies are kept, for the notice on time clocks. */
+  photoRetentionDays: z.number().int(),
   csrfToken: z.string(),
 });
 export type KioskState = z.infer<typeof kioskStateSchema>;
@@ -137,3 +139,10 @@ export const clockPhotoSchema = z.object({
   source: z.enum(['WEB', 'KIOSK']),
 });
 export type ClockPhoto = z.infer<typeof clockPhotoSchema>;
+
+/** How long punch selfies are kept, per organization (default 90 days). */
+export const PHOTO_RETENTION_DEFAULT_DAYS = 90;
+export const photoRetentionSchema = z.strictObject({
+  days: z.number().int().min(7).max(365),
+});
+export type PhotoRetention = z.infer<typeof photoRetentionSchema>;

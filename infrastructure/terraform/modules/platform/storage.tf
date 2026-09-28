@@ -59,8 +59,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
     }
   }
 
-  # Time clock selfies (ADR-0022): the API deletes them after 90 days; this backstop also
-  # removes any a crash left without a punch.
+  # Punch selfies (ADR-0022): the API deletes them after the organization's retention
+  # period (7-365 days); this backstop also removes any a crash left without a punch.
   rule {
     id     = "expire-attendance-photos"
     status = "Enabled"

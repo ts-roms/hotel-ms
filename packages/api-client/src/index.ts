@@ -1,4 +1,14 @@
 import type {
+  CloseLostFoundItem,
+  CreateLostFoundInput,
+  CreateMaintenanceInput,
+  LostFoundItem,
+  LostFoundListQuery,
+  MaintenanceAction,
+  MaintenanceDetail,
+  MaintenanceListQuery,
+  MaintenanceRequest,
+  PhotoRetention,
   ClockPhoto,
   ClockPunchResult,
   DocumentRetention,
@@ -617,6 +627,44 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'if-match': `W/"${version}"`,
             },
           ).then((r) => r.data),
+        maintenance: (query: Partial<MaintenanceListQuery> = {}) =>
+          call<{ items: MaintenanceRequest[] }>(
+            'GET',
+            `${p}/maintenance${qs({
+              status: query.status,
+              roomId: query.roomId,
+              assignedToMe: query.assignedToMe ? 'true' : undefined,
+            })}`,
+          ).then((r) => r.data.items),
+        maintenanceRequest: (requestId: string) =>
+          call<MaintenanceDetail>('GET', `${p}/maintenance/${id(requestId)}`).then((r) => r.data),
+        maintenanceTechnicians: () =>
+          call<{ items: { membershipId: string; displayName: string }[] }>(
+            'GET',
+            `${p}/maintenance/technicians`,
+          ).then((r) => r.data.items),
+        reportMaintenance: (body: CreateMaintenanceInput) =>
+          call<MaintenanceRequest>('POST', `${p}/maintenance`, body).then((r) => r.data),
+        maintenanceAction: (requestId: string, version: number, body: MaintenanceAction) =>
+          call<MaintenanceRequest>('POST', `${p}/maintenance/${id(requestId)}/actions`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
+        addMaintenancePhoto: (requestId: string, photo: Blob) =>
+          call<MaintenanceDetail>('POST', `${p}/maintenance/${id(requestId)}/photos`, photo).then(
+            (r) => r.data,
+          ),
+        maintenancePhotoUrl: (requestId: string, photoId: string) =>
+          `${baseUrl}${p}/maintenance/${id(requestId)}/photos/${id(photoId)}`,
+        lostFound: (query: Partial<LostFoundListQuery> = {}) =>
+          call<{ items: LostFoundItem[] }>('GET', `${p}/lost-found${qs(query)}`).then(
+            (r) => r.data.items,
+          ),
+        logLostItem: (body: CreateLostFoundInput) =>
+          call<LostFoundItem>('POST', `${p}/lost-found`, body).then((r) => r.data),
+        closeLostItem: (itemId: string, version: number, body: CloseLostFoundItem) =>
+          call<LostFoundItem>('POST', `${p}/lost-found/${id(itemId)}/close`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
         clockPhotos: (from: string, to: string) =>
           call<{ items: ClockPhoto[] }>('GET', `${p}/attendance/photos${qs({ from, to })}`).then(
             (r) => r.data.items,
@@ -735,6 +783,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
           `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
           file,
         ).then((r) => r.data),
+      photoRetention: () =>
+        call<PhotoRetention>('GET', '/attendance-photo-retention').then((r) => r.data),
+      setPhotoRetention: (days: number) =>
+        call<PhotoRetention>('PUT', '/attendance-photo-retention', { days }).then((r) => r.data),
       documentRetention: () =>
         call<DocumentRetention>('GET', '/document-retention').then((r) => r.data),
       setDocumentRetention: (rules: DocumentRetention['rules']) =>

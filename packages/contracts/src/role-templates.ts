@@ -42,18 +42,26 @@ const FRONT_OFFICE = [
   'payment.create',
   'folio.discount',
   'housekeeping.read',
+  'maintenance.read',
+  'maintenance.report',
+  'lost_found.log',
+  'lost_found.manage',
 ] as const satisfies readonly PermissionCode[];
 
 const HOUSEKEEPING = [
   'room.read',
   'housekeeping.read',
   'housekeeping.update',
+  'maintenance.read',
+  'maintenance.report',
+  'lost_found.log',
 ] as const satisfies readonly PermissionCode[];
 
 const HOUSEKEEPING_LEAD = [
   ...HOUSEKEEPING,
   'housekeeping.inspect',
   'housekeeping.assign',
+  'lost_found.manage',
 ] as const satisfies readonly PermissionCode[];
 
 const GUEST_SERVICE = [
@@ -131,6 +139,8 @@ const PMS_MANAGE = [
   'tax.manage',
   'night_audit.run',
   ...GUEST_SERVICE,
+  'maintenance.work',
+  'maintenance.manage',
 ] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [
@@ -226,6 +236,27 @@ export const ROLE_TEMPLATES = [
     name: 'Housekeeper',
     description: 'Cleans assigned rooms. Sees only their own tasks.',
     permissions: uniq(['organization.read', 'property.read'], HOUSEKEEPING, SELF_SERVICE),
+  },
+  {
+    key: 'maintenance_technician',
+    name: 'Maintenance Technician',
+    description: 'Works on maintenance requests at their properties.',
+    permissions: uniq(
+      ['organization.read', 'property.read', 'room.read', 'housekeeping.read'],
+      ['maintenance.read', 'maintenance.report', 'maintenance.work', 'lost_found.log'],
+      SELF_SERVICE,
+    ),
+  },
+  {
+    key: 'maintenance_supervisor',
+    name: 'Maintenance Supervisor',
+    description: 'Runs maintenance: assigns work and takes rooms out of order.',
+    permissions: uniq(
+      ['organization.read', 'property.read', 'room.read', 'housekeeping.read', 'schedule.read'],
+      ['maintenance.read', 'maintenance.report', 'maintenance.work', 'maintenance.manage'],
+      ['lost_found.log'],
+      SELF_SERVICE,
+    ),
   },
   {
     key: 'auditor',

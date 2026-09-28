@@ -603,5 +603,7 @@ export const myEmployeeSchema = z.object({
   employee: employeeSummarySchema.nullable(),
   /** Latest punch, for the clock-in / clock-out button state. */
   lastPunch: punchSchema.nullable(),
+  /** Days punch selfies are kept (organization setting, ADR-0022). */
+  photoRetentionDays: z.number().int(),
 });
 export type MyEmployee = z.infer<typeof myEmployeeSchema>;

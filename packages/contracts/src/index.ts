@@ -15,3 +15,4 @@ export * from './hr.js';
 export * from './fnb.js';
 export * from './finance.js';
 export * from './devices.js';
+export * from './maintenance.js';

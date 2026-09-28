@@ -7,10 +7,11 @@ import {
   type ClockPhoto,
   type ClockPunchQuery,
   type ClockPunchResult,
+  type PhotoRetention,
   type Punch,
   type PunchType,
 } from '@hotel/contracts';
-import { uuidv7 } from '@hotel/database';
+import { type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { addDays } from '../../common/dates.js';
 import { ProblemException, Problems } from '../../common/problem.js';
@@ -27,10 +28,9 @@ import { AuditService } from '../audit/audit.service.js';
 import type { ResolvedDevice } from '../devices/kiosk-auth.js';
 import { AttendanceService, toPunchDto } from './attendance.service.js';
 import { matchesType } from './documents.service.js';
+import { PHOTO_RETENTION_KEY, photoRetentionDaysInTx } from './photo-retention.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 
-/** Selfies are kept this long, then deleted (the punch itself stays). */
-export const CLOCK_PHOTO_DAYS = 90;
 const PHOTO_TAGS = { retention: 'attendance-photo' };
 /** Selfies are required with every punch, from the web and from time clocks (ADR-0022). */
 
@@ -40,7 +40,7 @@ const unsupported = (detail: string) =>
 /**
  * Time clock (ADR-0022): a paired TIME_CLOCK device records punches for employees who
  * enter their Employee ID, each with a selfie taken at that moment. Managers review the
- * photos; they are deleted after CLOCK_PHOTO_DAYS.
+ * photos; they are deleted after the organization's retention period (default 90 days).
  */
 @Injectable()
 export class TimeClockService {
@@ -279,10 +279,43 @@ export class TimeClockService {
     }
   }
 
-  /** Daily job: selfies older than CLOCK_PHOTO_DAYS are deleted. */
+  /** Days selfies are kept in the current organization. */
+  private retentionDaysInTx(tx: Tx): Promise<number> {
+    return photoRetentionDaysInTx(tx, this.cls.get('organizationId')!);
+  }
+
+  async retention(): Promise<PhotoRetention> {
+    return this.db.run(async (tx) => ({ days: await this.retentionDaysInTx(tx) }));
+  }
+
+  /** Shorter periods apply at the next daily run, to photos already taken too. */
+  async setRetention(input: PhotoRetention): Promise<PhotoRetention> {
+    return this.db.run(async (tx) => {
+      const before = await this.retentionDaysInTx(tx);
+      const organizationId = this.cls.get('organizationId')!;
+      const updatedBy = this.cls.get('identityId') ?? null;
+      const value = { days: input.days };
+      await tx.organizationSetting.upsert({
+        where: { organizationId_key: { organizationId, key: PHOTO_RETENTION_KEY } },
+        create: { organizationId, key: PHOTO_RETENTION_KEY, value, updatedBy },
+        update: { value, updatedBy },
+      });
+      await this.audit.record(tx, {
+        action: 'organization.photo_retention_changed',
+        entityType: 'organization',
+        entityId: organizationId,
+        before: { days: before },
+        after: { days: input.days },
+      });
+      return { days: input.days };
+    });
+  }
+
+  /** Daily job: selfies older than the organization's retention period are deleted. */
   async purgePhotos(now = new Date()): Promise<number> {
-    const cutoff = new Date(now.getTime() - CLOCK_PHOTO_DAYS * 86_400_000);
     const due = await this.db.run(async (tx) => {
+      const days = await this.retentionDaysInTx(tx);
+      const cutoff = new Date(now.getTime() - days * 86_400_000);
       const rows = await tx.attendancePhoto.findMany({
         where: { deletedAt: null, createdAt: { lt: cutoff } },
         select: { punchId: true, storageKey: true },

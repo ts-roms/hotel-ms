@@ -116,6 +116,8 @@ model Room {
   housekeepingTasks HousekeepingTask[]
   serviceRequests   ServiceRequest[]
   orders            Order[]
+  maintenance       MaintenanceRequest[]
+  lostFoundItems    LostFoundItem[]
 
   @@unique([organizationId, id])
   @@unique([propertyId, number])

@@ -51,7 +51,10 @@ import {
   EmployeeDocumentsController,
 } from './modules/hr/documents.controller.js';
 import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
-import { ClockPhotosController } from './modules/hr/time-clock.controller.js';
+import {
+  ClockPhotosController,
+  PhotoRetentionController,
+} from './modules/hr/time-clock.controller.js';
 import { TimeClockService } from './modules/hr/time-clock.service.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
@@ -85,6 +88,12 @@ import { RatesService } from './modules/pms/rates.service.js';
 import { GuestsController, ReservationsController } from './modules/pms/reservations.controller.js';
 import { ReservationsService } from './modules/pms/reservations.service.js';
 import { RoomsService } from './modules/pms/rooms.service.js';
+import { LostFoundService } from './modules/maintenance/lost-found.service.js';
+import {
+  LostFoundController,
+  MaintenanceController,
+} from './modules/maintenance/maintenance.controller.js';
+import { MaintenanceService } from './modules/maintenance/maintenance.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';
 import { PropertiesService } from './modules/tenancy/properties.service.js';
@@ -109,7 +118,10 @@ export const CONTROLLERS = [
   HrController,
   EmployeeDocumentsController,
   DocumentRetentionController,
+  MaintenanceController,
+  LostFoundController,
   ClockPhotosController,
+  PhotoRetentionController,
   DevicesController,
   PinController,
   KioskController,
@@ -157,6 +169,8 @@ export class AppModule {
         InvitationsService,
         IdempotencyService,
         RoomsService,
+        MaintenanceService,
+        LostFoundService,
         RatesService,
         GuestsService,
         ReservationsService,
