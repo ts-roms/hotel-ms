@@ -51,7 +51,10 @@ import {
   EmployeeDocumentsController,
 } from './modules/hr/documents.controller.js';
 import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
-import { ClockPhotosController } from './modules/hr/time-clock.controller.js';
+import {
+  ClockPhotosController,
+  PhotoRetentionController,
+} from './modules/hr/time-clock.controller.js';
 import { TimeClockService } from './modules/hr/time-clock.service.js';
 import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
@@ -110,6 +113,7 @@ export const CONTROLLERS = [
   EmployeeDocumentsController,
   DocumentRetentionController,
   ClockPhotosController,
+  PhotoRetentionController,
   DevicesController,
   PinController,
   KioskController,

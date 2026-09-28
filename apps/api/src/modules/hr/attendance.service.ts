@@ -17,6 +17,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState } from '../pms/reservations.service.js';
 import { computeAttendanceDays } from './attendance-rules.js';
+import { photoRetentionDaysInTx } from './photo-retention.js';
 import { employeeName, HrAccess, toEmployeeSummary } from './hr-access.js';
 
 /** A shift left open longer than this no longer blocks clocking in (it shows incomplete). */
@@ -81,13 +82,18 @@ export class AttendanceService {
 
   async me(): Promise<MyEmployee> {
     return this.db.run(async (tx) => {
+      const photoRetentionDays = await photoRetentionDaysInTx(tx, this.access.organizationId);
       const employee = await this.access.findMyEmployee(tx);
-      if (!employee) return { employee: null, lastPunch: null };
+      if (!employee) return { employee: null, lastPunch: null, photoRetentionDays };
       const last = await tx.attendancePunch.findFirst({
         where: { employeeId: employee.id },
         orderBy: [{ at: 'desc' }, { recordedAt: 'desc' }],
       });
-      return { employee: toEmployeeSummary(employee), lastPunch: last ? toPunchDto(last) : null };
+      return {
+        employee: toEmployeeSummary(employee),
+        lastPunch: last ? toPunchDto(last) : null,
+        photoRetentionDays,
+      };
     });
   }
 

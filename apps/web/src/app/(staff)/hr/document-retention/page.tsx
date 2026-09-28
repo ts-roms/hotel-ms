@@ -88,6 +88,65 @@ export default function DocumentRetentionPage() {
           </form>
         </CardContent>
       </Card>
+      <PhotoRetention />
     </div>
+  );
+}
+
+/** Days punch selfies are kept (ADR-0022); HR with organization-wide attendance.manage. */
+function PhotoRetention() {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const retention = useQuery({ queryKey: ['photo-retention'], queryFn: api.hr.photoRetention });
+  const [draft, setDraft] = useState<string | null>(null);
+  const value = draft ?? String(retention.data?.days ?? '');
+  const save = useMutation({
+    mutationFn: () => api.hr.setPhotoRetention(Number(value)),
+    onSuccess: (data) => {
+      setDraft(null);
+      queryClient.setQueryData(['photo-retention'], data);
+    },
+  });
+  const canEdit = !!session.data?.grants.some(
+    (g) => g.permission === 'attendance.manage' && g.scopeType === 'ORGANIZATION',
+  );
+  const days = Number(value);
+  if (retention.error) return null;
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 pt-5 text-sm">
+        <strong>{t('clock.retentionTitle')}</strong>
+        <p className="text-muted-foreground">{t('clock.retentionHint')}</p>
+        {save.error && <Alert>{errorMessage(save.error)}</Alert>}
+        {save.isSuccess && <Notice>{t('clock.retentionSaved')}</Notice>}
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            save.mutate();
+          }}
+        >
+          <span>{t('clock.keepDays')}</span>
+          <Input
+            className="w-24 text-right"
+            inputMode="numeric"
+            aria-label={t('clock.retentionTitle')}
+            disabled={!canEdit}
+            value={value}
+            onChange={(e) => setDraft(e.target.value.trim())}
+          />
+          <span className="text-muted-foreground">{t('clock.days')}</span>
+          {canEdit && (
+            <Button
+              type="submit"
+              loading={save.isPending}
+              disabled={!draft || !Number.isInteger(days) || days < 7 || days > 365}
+            >
+              {t('hr.save')}
+            </Button>
+          )}
+        </form>
+      </CardContent>
+    </Card>
   );
 }

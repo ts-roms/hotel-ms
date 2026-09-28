@@ -1,4 +1,5 @@
 import type {
+  PhotoRetention,
   ClockPhoto,
   ClockPunchResult,
   DocumentRetention,
@@ -735,6 +736,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
           `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
           file,
         ).then((r) => r.data),
+      photoRetention: () =>
+        call<PhotoRetention>('GET', '/attendance-photo-retention').then((r) => r.data),
+      setPhotoRetention: (days: number) =>
+        call<PhotoRetention>('PUT', '/attendance-photo-retention', { days }).then((r) => r.data),
       documentRetention: () =>
         call<DocumentRetention>('GET', '/document-retention').then((r) => r.data),
       setDocumentRetention: (rules: DocumentRetention['rules']) =>

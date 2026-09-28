@@ -1,16 +1,18 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
+import { Controller, Get, Param, Put, Res } from '@nestjs/common';
 import { ApiProduces, ApiTags } from '@nestjs/swagger';
 import {
   CLOCK_PHOTO_TYPES,
   clockPhotoSchema,
   type DateRangeQuery,
   dateRangeQuerySchema,
+  type PhotoRetention,
+  photoRetentionSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
-import { ZodQuery, ZodResponse } from '../../common/zod.js';
+import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { TimeClockService } from './time-clock.service.js';
 
 /** Managers review time clock selfies (ADR-0022). */
@@ -44,5 +46,26 @@ export class ClockPhotosController {
       .header('cache-control', 'private, no-store')
       .header('content-security-policy', "sandbox; default-src 'none'")
       .send(photo.stream);
+  }
+}
+
+/** How long punch selfies are kept in this organization (ADR-0022). */
+@ApiTags('hr')
+@Controller('attendance-photo-retention')
+export class PhotoRetentionController {
+  constructor(private readonly timeClock: TimeClockService) {}
+
+  @Get()
+  @RequirePermission('attendance.read', 'any')
+  @ZodResponse(200, photoRetentionSchema)
+  get() {
+    return this.timeClock.retention();
+  }
+
+  @Put()
+  @RequirePermission('attendance.manage', 'organization')
+  @ZodResponse(200, photoRetentionSchema)
+  set(@ZodBody(photoRetentionSchema) body: PhotoRetention) {
+    return this.timeClock.setRetention(body);
   }
 }

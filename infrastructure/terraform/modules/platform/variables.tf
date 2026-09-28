@@ -162,7 +162,7 @@ variable "deleted_document_retention_days" {
 }
 
 variable "attendance_photo_expiry_days" {
-  description = "Backstop expiry for time clock selfies in S3; the API deletes them after 90 days."
+  description = "Backstop expiry for punch selfies in S3; must exceed the longest retention HR can set (365 days)."
   type        = number
-  default     = 100
+  default     = 400
 }

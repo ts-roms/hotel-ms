@@ -14,6 +14,7 @@ import type { RequestContext } from '../../common/request-context.js';
 import { PrismaService, TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
+import { photoRetentionDaysInTx } from '../hr/photo-retention.js';
 import {
   KioskAuth,
   newToken,
@@ -357,6 +358,7 @@ export class DevicesService {
                 }
               : null,
           operators,
+          photoRetentionDays: await photoRetentionDaysInTx(tx, device.organizationId),
           csrfToken: this.kiosk.csrfTokenFor(device.tokenHash),
         };
       },

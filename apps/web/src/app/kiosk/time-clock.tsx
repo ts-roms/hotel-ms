@@ -102,7 +102,9 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
                   </Button>
                 ))}
               </div>
-              <p className="text-center text-xs text-muted-foreground">{t('clock.photoNotice')}</p>
+              <p className="text-center text-xs text-muted-foreground">
+                {t('clock.photoNotice')} {state.photoRetentionDays} {t('clock.days')}
+              </p>
             </>
           )}
         </CardContent>

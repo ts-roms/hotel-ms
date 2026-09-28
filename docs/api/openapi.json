@@ -20289,6 +20289,89 @@
         ]
       }
     },
+    "/api/v1/attendance-photo-retention": {
+      "get": {
+        "operationId": "PhotoRetentionController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "days": {
+                      "type": "integer",
+                      "minimum": 7,
+                      "maximum": 365
+                    }
+                  },
+                  "required": [
+                    "days"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "hr"
+        ]
+      },
+      "put": {
+        "operationId": "PhotoRetentionController_set",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "days": {
+                    "type": "integer",
+                    "minimum": 7,
+                    "maximum": 365
+                  }
+                },
+                "required": [
+                  "days"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "days": {
+                      "type": "integer",
+                      "minimum": 7,
+                      "maximum": 365
+                    }
+                  },
+                  "required": [
+                    "days"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "hr"
+        ]
+      }
+    },
     "/api/v1/properties/{propertyId}/devices": {
       "get": {
         "operationId": "DevicesController_list",
@@ -21035,6 +21118,11 @@
                         "additionalProperties": false
                       }
                     },
+                    "photoRetentionDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -21043,6 +21131,7 @@
                     "device",
                     "operator",
                     "operators",
+                    "photoRetentionDays",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -21162,6 +21251,11 @@
                         "additionalProperties": false
                       }
                     },
+                    "photoRetentionDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -21170,6 +21264,7 @@
                     "device",
                     "operator",
                     "operators",
+                    "photoRetentionDays",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -21315,6 +21410,11 @@
                         "additionalProperties": false
                       }
                     },
+                    "photoRetentionDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -21323,6 +21423,7 @@
                     "device",
                     "operator",
                     "operators",
+                    "photoRetentionDays",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -21442,6 +21543,11 @@
                         "additionalProperties": false
                       }
                     },
+                    "photoRetentionDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
                     "csrfToken": {
                       "type": "string"
                     }
@@ -21450,6 +21556,7 @@
                     "device",
                     "operator",
                     "operators",
+                    "photoRetentionDays",
                     "csrfToken"
                   ],
                   "additionalProperties": false
@@ -21721,11 +21828,17 @@
                         "source"
                       ],
                       "additionalProperties": false
+                    },
+                    "photoRetentionDays": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
                     "employee",
-                    "lastPunch"
+                    "lastPunch",
+                    "photoRetentionDays"
                   ],
                   "additionalProperties": false
                 }

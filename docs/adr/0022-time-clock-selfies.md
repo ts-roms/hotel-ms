@@ -44,7 +44,7 @@ matching.
   - the storage key and the SHA-256;
   - the device;
   - `deleted_at`, the one mutable column.
-- The daily housekeeping job (ADR-0021) deletes photos older than **90 days**. The punches
+- The daily housekeeping job (ADR-0021) deletes photos older than the retention period (**90 days** by default; see the amendment below). The punches
   themselves stay.
 - In S3, photo objects are tagged `retention=attendance-photo`, and a lifecycle rule
   expires them after 100 days. That backstop also removes any object a crash left
@@ -65,5 +65,9 @@ matching.
   - It is recorded with source `WEB` and audited as `attendance.web_punch`.
   - The My time page opens the front camera when a punch button is pressed, and the stream
     stops as soon as the punch is sent or cancelled.
-- The 90-day period is a constant for now. Making it an organization setting is a small
-  follow-up if HR policy differs by country.
+- Amended 2026-09-29: the retention period is an organization setting
+  (`attendancePhotos.days`, 7–365, default 90).
+  - HR with organization-wide `attendance.manage` sets it on the Retention page.
+  - A shorter period applies at the next daily run, to photos already taken as well.
+  - The notices on the time clock and on My time show the current number of days.
+  - The S3 backstop moved to 400 days, past the longest period HR can set.
