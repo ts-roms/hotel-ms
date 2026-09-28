@@ -76,6 +76,7 @@ const SELF_SERVICE = [
   'attendance.punch.own',
   'leave.request.own',
   'birthday.read',
+  'event.read',
 ] as const satisfies readonly PermissionCode[];
 
 const HR_READ = [
@@ -97,6 +98,7 @@ const HR_ADMIN = [
   ...PEOPLE_MANAGE,
   'employee.personal.read',
   'employee.documents',
+  'event.manage',
   'leave.manage',
   'leave.configure',
   'department.manage',
@@ -141,6 +143,7 @@ const PMS_MANAGE = [
   ...GUEST_SERVICE,
   'maintenance.work',
   'maintenance.manage',
+  'event.manage',
 ] as const satisfies readonly PermissionCode[];
 
 export const ROLE_TEMPLATES = [

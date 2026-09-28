@@ -7,6 +7,7 @@ import {
   BellRing,
   BookOpen,
   Building2,
+  CalendarCheck,
   CalendarClock,
   CalendarDays,
   CalendarRange,
@@ -75,6 +76,7 @@ const PROPERTY_NAV: NavItem[] = [
     icon: CalendarRange,
     permission: 'reservation.read',
   },
+  { href: 'calendar', label: 'nav.calendar', icon: CalendarCheck, permission: 'property.read' },
   {
     href: 'housekeeping',
     label: 'nav.housekeeping',

@@ -109,6 +109,7 @@ model Property {
   devices               Device[]
   maintenanceRequests   MaintenanceRequest[]
   lostFoundItems        LostFoundItem[]
+  events                HotelEvent[]
   outlets               Outlet[]
 
   @@unique([organizationId, id])

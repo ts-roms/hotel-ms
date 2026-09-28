@@ -567,3 +567,43 @@ describe('service requests', () => {
     expect(Array.isArray(bill.body.lines)).toBe(true);
   });
 });
+
+describe('hotel events', () => {
+  it('guests see upcoming guest-visible events only, without staff details', async () => {
+    const at = (days: number, hour: number) =>
+      new Date(Date.now() + days * 86_400_000 + hour * 3_600_000).toISOString();
+    const create = (title: string, guestVisible: boolean, startsAt: string, endsAt: string) =>
+      admin.request('POST', `${base()}/events`, {
+        title,
+        category: 'GUEST_ACTIVITY',
+        startsAt,
+        endsAt,
+        guestVisible,
+        location: 'Pool deck',
+      });
+    const shown = await create('Pool party', true, at(2, 0), at(2, 3));
+    expect(shown.status, JSON.stringify(shown.body)).toBe(201);
+    expect((await create('Staff meeting', false, at(2, 0), at(2, 1))).status).toBe(201);
+    expect((await create('Next season', true, at(45, 0), at(45, 1))).status).toBe(201);
+    const cancelled = await create('Rained out', true, at(3, 0), at(3, 1));
+    expect(
+      (
+        await admin.request(
+          'PATCH',
+          `${base()}/events/${cancelled.body.id}`,
+          { status: 'CANCELLED' },
+          { 'if-match': 'W/"1"' },
+        )
+      ).status,
+    ).toBe(200);
+
+    const { guest } = await guestFor(...later());
+    const res = await guest.request('GET', '/guest/events');
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.items.map((e: { title: string }) => e.title)).toEqual(['Pool party']);
+    expect(res.body.items[0]).not.toHaveProperty('participants');
+    expect(res.body.items[0]).not.toHaveProperty('organizerName');
+    // Not without a guest session.
+    expect((await new GuestClient(ctx.app).request('GET', '/guest/events')).status).toBe(401);
+  });
+});

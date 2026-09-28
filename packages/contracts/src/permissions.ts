@@ -100,6 +100,11 @@ export const PERMISSIONS = {
     sensitive: true,
   },
   'housekeeping.read': { description: 'View the housekeeping board', scopes: ORG_OR_PROPERTY },
+  'event.read': { description: 'View hotel events and the calendar', scopes: ORG_OR_PROPERTY },
+  'event.manage': {
+    description: 'Create, change and cancel hotel events',
+    scopes: ORG_OR_PROPERTY,
+  },
   'maintenance.read': { description: 'View maintenance requests', scopes: ORG_OR_PROPERTY },
   'maintenance.report': {
     description: 'Report maintenance problems (rooms, equipment, public areas)',

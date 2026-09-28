@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
+import { fromLocal, toLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { GuestPortalService } from '../guest-portal/guest-portal.service.js';
@@ -9,7 +10,8 @@ import { NotificationsService } from './notifications.service.js';
  * Daily reminders for one property (scheduled job after 09:00 local time, ADR-0024):
  * - arrivals tomorrow: an online check-in invitation with a fresh portal link;
  * - departures today: a check-out reminder;
- * - birthdays today: an in-app note to HR at the property.
+ * - birthdays today: an in-app note to HR at the property;
+ * - events today: an in-app note to each participant (ADR-0026).
  * Every message is reserved in the message log first, so reruns send nothing twice.
  */
 @Injectable()
@@ -30,7 +32,7 @@ export class RemindersService {
   async run(
     propertyId: string,
     localDate: string,
-  ): Promise<{ checkIn: number; checkOut: number; birthdays: number }> {
+  ): Promise<{ checkIn: number; checkOut: number; birthdays: number; events: number }> {
     let checkIn = 0;
     let checkOut = 0;
 
@@ -123,6 +125,40 @@ export class RemindersService {
       return today.length;
     });
 
-    return { checkIn, checkOut, birthdays };
+    // Events today: each participant hears once per event and day.
+    const events = await this.db.run(async (tx) => {
+      const { timezone } = await tx.property.findUniqueOrThrow({
+        where: { id: propertyId },
+        select: { timezone: true },
+      });
+      const rows = await tx.hotelEvent.findMany({
+        where: {
+          propertyId,
+          status: 'SCHEDULED',
+          startsAt: { lt: fromLocal(addDays(localDate, 1), '00:00', timezone) },
+          endsAt: { gt: fromLocal(localDate, '00:00', timezone) },
+          participants: { some: {} },
+        },
+        include: { participants: { select: { membershipId: true } } },
+      });
+      let sent = 0;
+      for (const e of rows) {
+        if (!(await this.inbox.reserveMessage(tx, `event-today:${e.id}:${localDate}`, 'IN_APP')))
+          continue;
+        const at = e.allDay ? 'All day' : toLocal(e.startsAt, timezone).time;
+        await this.inbox.notifyInTx(tx, {
+          membershipIds: e.participants.map((p) => p.membershipId),
+          propertyId,
+          kind: 'EVENTS_TODAY',
+          title: `Today: ${e.title}`,
+          body: e.location ? `${at} · ${e.location}` : at,
+          link: `/p/${propertyId}/calendar`,
+        });
+        sent++;
+      }
+      return sent;
+    });
+
+    return { checkIn, checkOut, birthdays, events };
   }
 }

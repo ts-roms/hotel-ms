@@ -49,6 +49,8 @@ export interface DomainEventPayloads {
   MaintenanceRequested: { requestId: string; roomId: string | null; priority: string };
   MaintenanceStatusChanged: { requestId: string; from: string; to: string };
   LostItemLogged: { itemId: string };
+  EventScheduled: { eventId: string };
+  EventCancelled: { eventId: string };
   RoomStatusChanged: {
     roomId: string;
     dimension: 'HOUSEKEEPING' | 'SERVICE';

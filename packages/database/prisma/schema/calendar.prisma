@@ -1,0 +1,39 @@
+/// Hotel events (spec §38, ADR-0026): meetings, training, guest activities and more.
+model HotelEvent {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  title          String
+  description    String    @default("")
+  category       String
+  startsAt       DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt         DateTime  @map("ends_at") @db.Timestamptz(3)
+  allDay         Boolean   @default(false) @map("all_day")
+  location       String    @default("")
+  guestVisible   Boolean   @default(false) @map("guest_visible")
+  status         String    @default("SCHEDULED")
+  organizerId    String?   @map("organizer_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version        Int       @default(1)
+
+  property     Property           @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  participants EventParticipant[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, startsAt])
+  @@map("events")
+}
+
+model EventParticipant {
+  organizationId String @map("organization_id") @db.Uuid
+  eventId        String @map("event_id") @db.Uuid
+  membershipId   String @map("membership_id") @db.Uuid
+
+  event      HotelEvent             @relation(fields: [organizationId, eventId], references: [organizationId, id], onDelete: Cascade)
+  membership OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([eventId, membershipId])
+  @@index([organizationId, membershipId])
+  @@map("event_participants")
+}

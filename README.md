@@ -114,6 +114,11 @@ The dashboard shows today across the group; each property has an **Overview**, a
 has occupancy (ADR/RevPAR), F&B, guest-service and people reports with CSV export. The search box
 finds guests, bookings, rooms, staff, orders and documents you may see (ADR-0025).
 
+Each property has a **Calendar**: arrivals, departures, shifts, leave, birthdays, events and
+rooms out of order in one month, week or list view, each shown as far as your permissions reach.
+Managers schedule events there and invite staff; guest-visible events appear in the guest portal
+under "What's on" (ADR-0026).
+
 Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
 birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
 on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.
