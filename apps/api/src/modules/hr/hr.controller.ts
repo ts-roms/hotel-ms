@@ -58,6 +58,7 @@ import {
   type NewAssignment,
   newAssignmentSchema,
   type PublishScheduleRequest,
+  publishResultSchema,
   publishScheduleRequestSchema,
   type PunchRequest,
   punchRequestSchema,
@@ -87,6 +88,7 @@ import { AttendanceService } from './attendance.service.js';
 import { LeaveService } from './leave.service.js';
 import { PayrollService } from './payroll.service.js';
 import { PeopleService } from './people.service.js';
+import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
 
@@ -345,6 +347,7 @@ export class PropertyHrController {
     private readonly people: PeopleService,
     private readonly payroll: PayrollService,
     private readonly timeClock: TimeClockService,
+    private readonly staffing: StaffingService,
   ) {}
 
   /** CSV of attendance and leave for payroll (decision D7). */
@@ -449,12 +452,14 @@ export class PropertyHrController {
   @Post('schedule/publish')
   @RequirePermission('schedule.manage')
   @HttpCode(200)
-  @ZodResponse(200, z.object({ published: z.number().int() }))
-  publish(
+  @ZodResponse(200, publishResultSchema)
+  async publish(
     @Param('propertyId') propertyId: string,
     @ZodBody(publishScheduleRequestSchema) body: PublishScheduleRequest,
   ) {
-    return this.schedule.publish(propertyId, body.from, body.to);
+    const { published } = await this.schedule.publish(propertyId, body.from, body.to);
+    // Understaffed windows left in the published range (ADR-0028).
+    return { published, gaps: await this.staffing.coverage(propertyId, body.from, body.to) };
   }
 
   @Post('shifts')

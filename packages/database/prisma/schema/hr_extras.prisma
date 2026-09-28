@@ -1,0 +1,93 @@
+/// Pay history (ADR-0028): start-dated records, never edited; the latest one on or before
+/// a date is the pay in effect. Sensitive: employee.compensation.
+model EmployeeCompensation {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  employeeId     String   @map("employee_id") @db.Uuid
+  effectiveFrom  DateTime @map("effective_from") @db.Date
+  /// MONTHLY | DAILY | HOURLY
+  payBasis       String   @map("pay_basis")
+  amountMinor    BigInt   @map("amount_minor")
+  currency       String   @db.Char(3)
+  notes          String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, effectiveFrom])
+  @@map("employee_compensations")
+}
+
+/// Trainings attended and certifications held (ADR-0028).
+model EmployeeTraining {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  /// TRAINING | CERTIFICATION
+  kind           String
+  title          String
+  provider       String    @default("")
+  completedOn    DateTime? @map("completed_on") @db.Date
+  expiresOn      DateTime? @map("expires_on") @db.Date
+  notes          String    @default("")
+  /// An employee document (not a foreign key: retention may delete the document).
+  documentId     String?   @map("document_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId])
+  @@index([organizationId, expiresOn])
+  @@map("employee_trainings")
+}
+
+/// Performance reviews (ADR-0028). Sensitive: employee.performance.
+model EmployeeReview {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  reviewDate     DateTime  @map("review_date") @db.Date
+  periodFrom     DateTime? @map("period_from") @db.Date
+  periodTo       DateTime? @map("period_to") @db.Date
+  rating         Int
+  summary        String
+  strengths      String    @default("")
+  improvements   String    @default("")
+  goals          String    @default("")
+  reviewerId     String?   @map("reviewer_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, reviewDate])
+  @@map("employee_reviews")
+}
+
+/// Minimum staffing for a department and time window on given weekdays (ADR-0028).
+model StaffingRequirement {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  departmentId   String    @map("department_id") @db.Uuid
+  /// 0 = Sunday … 6 = Saturday.
+  weekdays       Int[]
+  /// Property-local "HH:mm"; an end at or before the start ends the next day.
+  startTime      String    @map("start_time") @db.VarChar(5)
+  endTime        String    @map("end_time") @db.VarChar(5)
+  minStaff       Int       @map("min_staff")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId])
+  @@map("staffing_requirements")
+}

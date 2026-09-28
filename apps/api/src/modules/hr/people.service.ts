@@ -34,6 +34,15 @@ const employeeInclude = {
 
 type EmployeeRow = Prisma.EmployeeGetPayload<{ include: typeof employeeInclude }>;
 
+/** The emergency contact's columns; null clears them. */
+function emergencyColumns(contact: { name: string; relationship: string; phone: string } | null) {
+  return {
+    emergencyContactName: contact?.name ?? null,
+    emergencyContactRelationship: contact?.relationship || null,
+    emergencyContactPhone: contact?.phone ?? null,
+  };
+}
+
 @Injectable()
 export class PeopleService {
   constructor(
@@ -167,6 +176,7 @@ export class PeopleService {
       workPhone: e.workPhone,
       hireDate: fromDbDate(e.hireDate),
       terminatedOn: e.terminatedOn ? fromDbDate(e.terminatedOn) : null,
+      employmentType: e.employmentType as Employee['employmentType'],
       birthdayVisibility: e.birthdayVisibility,
       membershipId: e.membershipId,
       assignmentHistory: e.assignments.map(toAssignmentDto),
@@ -175,6 +185,14 @@ export class PeopleService {
             birthDate: e.birthDate ? fromDbDate(e.birthDate) : null,
             personalEmail: e.personalEmail,
             personalPhone: e.personalPhone,
+            emergencyContact:
+              e.emergencyContactName && e.emergencyContactPhone
+                ? {
+                    name: e.emergencyContactName,
+                    relationship: e.emergencyContactRelationship ?? '',
+                    phone: e.emergencyContactPhone,
+                  }
+                : null,
           }
         : null,
       version: e.version,
@@ -235,6 +253,7 @@ export class PeopleService {
                     birthDate: personal.birthDate ? toDbDate(personal.birthDate) : null,
                     personalEmail: personal.personalEmail,
                     personalPhone: personal.personalPhone,
+                    ...emergencyColumns(personal.emergencyContact),
                   }
                 : {}),
               createdBy: this.access.actorId,
@@ -304,6 +323,9 @@ export class PeopleService {
             : {}),
           ...(personal?.personalPhone !== undefined
             ? { personalPhone: personal.personalPhone }
+            : {}),
+          ...(personal?.emergencyContact !== undefined
+            ? emergencyColumns(personal.emergencyContact)
             : {}),
           version: { increment: 1 },
         },

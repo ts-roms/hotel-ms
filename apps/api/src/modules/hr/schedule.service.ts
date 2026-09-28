@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type {
+  CreateRecurringShiftsRequest,
   CreateShiftRequest,
   CreateShiftTemplateRequest,
+  RecurringShiftsResult,
   Schedule,
   Shift,
   ShiftTemplate,
@@ -9,7 +11,7 @@ import type {
   ShiftWithWarnings,
   UpdateShiftRequest,
 } from '@hotel/contracts';
-import type { Prisma, Tx } from '@hotel/database';
+import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
 import { withConstraintMapping } from '../../common/db-errors.js';
 import { Problems } from '../../common/problem.js';
@@ -48,6 +50,7 @@ export function toShiftDto(s: ShiftRow, timeZone: string): Shift {
     breakMinutes: s.breakMinutes,
     status: s.status,
     notes: s.notes,
+    seriesId: s.seriesId,
     version: s.version,
   };
 }
@@ -476,6 +479,206 @@ export class ScheduleService {
       });
     }
     return { published: count };
+  }
+
+  /**
+   * Recurring shifts (spec §35, ADR-0028): the same shift for several employees on chosen
+   * weekdays across a date range, created as drafts sharing a series id. Days an employee
+   * is not assigned here, is on approved leave, or already has an overlapping shift are
+   * skipped and reported, not failed.
+   */
+  async createRecurring(
+    propertyId: string,
+    input: CreateRecurringShiftsRequest,
+  ): Promise<RecurringShiftsResult> {
+    return withConstraintMapping(() =>
+      this.db.run(async (tx) => {
+        const property = await this.access.property(tx, propertyId);
+        let { startTime, endTime, breakMinutes } = input;
+        let templateDepartment: string | null = null;
+        if (input.templateId) {
+          const template = await tx.shiftTemplate.findFirst({
+            where: { id: input.templateId, propertyId, archivedAt: null },
+          });
+          if (!template)
+            throw Problems.validation([{ path: 'templateId', message: 'Unknown template' }]);
+          startTime ??= template.startTime;
+          endTime ??= template.endTime;
+          breakMinutes ??= template.breakMinutes;
+          templateDepartment = template.departmentId;
+        }
+        if (
+          input.departmentId &&
+          !(await tx.department.count({ where: { id: input.departmentId } }))
+        ) {
+          throw Problems.validation([{ path: 'departmentId', message: 'Unknown department' }]);
+        }
+        const employeeIds = [...new Set(input.employeeIds)];
+        const employees = await tx.employee.findMany({
+          where: { id: { in: employeeIds }, status: 'ACTIVE' },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            preferredName: true,
+            assignments: {
+              where: {
+                propertyId,
+                startDate: { lte: toDbDate(input.to) },
+                OR: [{ endDate: null }, { endDate: { gte: toDbDate(input.from) } }],
+              },
+              select: { startDate: true, endDate: true, departmentId: true },
+            },
+          },
+        });
+        if (employees.length !== employeeIds.length || employees.some((e) => !e.assignments.length))
+          throw Problems.validation([
+            { path: 'employeeIds', message: 'Every employee must work at this property' },
+          ]);
+        const existing = await tx.shift.findMany({
+          where: {
+            employeeId: { in: employeeIds },
+            status: { not: 'CANCELLED' },
+            shiftDate: {
+              gte: toDbDate(addDays(input.from, -1)),
+              lte: toDbDate(addDays(input.to, 1)),
+            },
+          },
+          select: { employeeId: true, startsAt: true, endsAt: true },
+        });
+        const leave = await tx.leaveRequest.findMany({
+          where: {
+            employeeId: { in: employeeIds },
+            status: 'APPROVED',
+            startDate: { lte: toDbDate(input.to) },
+            endDate: { gte: toDbDate(input.from) },
+          },
+          select: { employeeId: true, startDate: true, endDate: true },
+        });
+
+        const seriesId = uuidv7();
+        const planned: Prisma.ShiftCreateManyInput[] = [];
+        const skipped: RecurringShiftsResult['skipped'] = [];
+        const busy = new Map<string, { startsAt: Date; endsAt: Date }[]>();
+        for (const s of existing) busy.set(s.employeeId, [...(busy.get(s.employeeId) ?? []), s]);
+
+        for (let date = input.from; date <= input.to; date = addDays(date, 1)) {
+          if (!input.weekdays.includes(new Date(`${date}T00:00:00Z`).getUTCDay())) continue;
+          const { startsAt, endsAt } = shiftInstants(date, startTime!, endTime!, property.timezone);
+          for (const e of employees) {
+            const skip = (reason: RecurringShiftsResult['skipped'][number]['reason']) =>
+              skipped.push({ employeeId: e.id, employeeName: employeeName(e), date, reason });
+            const assignment = e.assignments.find(
+              (a) =>
+                fromDbDate(a.startDate) <= date && (!a.endDate || fromDbDate(a.endDate) >= date),
+            );
+            if (!assignment) {
+              skip('NOT_ASSIGNED');
+              continue;
+            }
+            if (
+              leave.some(
+                (l) =>
+                  l.employeeId === e.id &&
+                  fromDbDate(l.startDate) <= date &&
+                  fromDbDate(l.endDate) >= date,
+              )
+            ) {
+              skip('ON_LEAVE');
+              continue;
+            }
+            const mine = busy.get(e.id) ?? [];
+            if (mine.some((b) => b.startsAt < endsAt && b.endsAt > startsAt)) {
+              skip('OVERLAP');
+              continue;
+            }
+            busy.set(e.id, [...mine, { startsAt, endsAt }]);
+            planned.push({
+              organizationId: this.access.organizationId,
+              propertyId,
+              employeeId: e.id,
+              departmentId: input.departmentId ?? templateDepartment ?? assignment.departmentId,
+              templateId: input.templateId,
+              seriesId,
+              shiftDate: toDbDate(date),
+              startsAt,
+              endsAt,
+              breakMinutes: breakMinutes ?? 0,
+              notes: input.notes,
+              createdBy: this.access.actorId,
+            });
+          }
+        }
+        if (planned.length > 0) await tx.shift.createMany({ data: planned });
+        await this.audit.record(tx, {
+          action: 'shift.series_created',
+          entityType: 'shift_series',
+          entityId: seriesId,
+          propertyId,
+          after: {
+            employees: employeeIds.length,
+            from: input.from,
+            to: input.to,
+            weekdays: input.weekdays,
+            created: planned.length,
+            skipped: skipped.length,
+          },
+        });
+        return { seriesId, created: planned.length, skipped };
+      }),
+    );
+  }
+
+  /**
+   * Cancels a series from a date on (never shifts already started or past). Employees
+   * whose published shifts are cancelled are told, as for a single shift.
+   */
+  async cancelSeries(
+    propertyId: string,
+    seriesId: string,
+    fromDate: string | undefined,
+    employeeId?: string,
+  ): Promise<{ cancelled: number }> {
+    return this.db.run(async (tx) => {
+      const property = await this.access.property(tx, propertyId);
+      const from = fromDate && fromDate > property.today ? fromDate : property.today;
+      const shifts = await tx.shift.findMany({
+        where: {
+          propertyId,
+          seriesId,
+          ...(employeeId ? { employeeId } : {}),
+          status: { not: 'CANCELLED' },
+          shiftDate: { gte: toDbDate(from) },
+          startsAt: { gt: new Date() },
+        },
+        select: { id: true, employeeId: true, status: true },
+      });
+      if (shifts.length === 0) {
+        const known = await tx.shift.count({ where: { propertyId, seriesId } });
+        if (!known) throw Problems.notFound('Shift series');
+        return { cancelled: 0 };
+      }
+      await tx.shift.updateMany({
+        where: { id: { in: shifts.map((s) => s.id) } },
+        data: { status: 'CANCELLED', version: { increment: 1 } },
+      });
+      for (const s of shifts.filter((x) => x.status === 'PUBLISHED')) {
+        await this.outbox.enqueue(
+          tx,
+          'ShiftChanged',
+          { shiftId: s.id, employeeId: s.employeeId, status: 'CANCELLED' },
+          { propertyId },
+        );
+      }
+      await this.audit.record(tx, {
+        action: 'shift.series_cancelled',
+        entityType: 'shift_series',
+        entityId: seriesId,
+        propertyId,
+        after: { from, employeeId, cancelled: shifts.length },
+      });
+      return { cancelled: shifts.length };
+    });
   }
 
   /** The caller's own published shifts, at every property. */

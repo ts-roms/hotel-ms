@@ -103,6 +103,7 @@ model Property {
   employmentAssignments EmploymentAssignment[]
   shiftTemplates        ShiftTemplate[]
   shifts                Shift[]
+  staffingRequirements  StaffingRequirement[]
   attendancePunches     AttendancePunch[]
   attendanceCorrections AttendanceCorrection[]
   leaveRequests         LeaveRequest[]

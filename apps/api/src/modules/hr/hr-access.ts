@@ -91,6 +91,10 @@ export class HrAccess {
     return this.cls.get('identityId') ?? null;
   }
 
+  get membershipId(): string | null {
+    return this.cls.get('membershipId') ?? null;
+  }
+
   private get grants() {
     return this.cls.get('grants')!;
   }

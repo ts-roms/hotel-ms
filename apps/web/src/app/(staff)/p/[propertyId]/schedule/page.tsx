@@ -18,7 +18,17 @@ import {
   SkeletonTable,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, Cake, ChevronLeft, ChevronRight, Plus, Send, X } from 'lucide-react';
+import {
+  CalendarClock,
+  Cake,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Repeat,
+  Send,
+  TriangleAlert,
+  X,
+} from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { addDays, formatDate } from '@/lib/format';
@@ -26,6 +36,7 @@ import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
+import { CoverageGaps, RecurringShifts, StaffingRequirements } from './staffing';
 
 /** Weekly staff schedule (blueprint §13.3): plan in drafts, then publish. */
 export default function SchedulePage() {
@@ -44,7 +55,16 @@ export default function SchedulePage() {
     // Keep the grid on screen while another week loads.
     placeholderData: keepPreviousData,
   });
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['schedule', propertyId] });
+  const coverage = useQuery({
+    queryKey: ['coverage', propertyId, monday],
+    queryFn: () => pms.coverage(monday, sunday),
+    placeholderData: keepPreviousData,
+  });
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['schedule', propertyId] }),
+      queryClient.invalidateQueries({ queryKey: ['coverage', propertyId] }),
+    ]);
   const publish = useMutation({
     mutationFn: () => pms.publishSchedule(monday, sunday),
     onSuccess: refresh,
@@ -53,6 +73,13 @@ export default function SchedulePage() {
     mutationFn: (s: { id: string; version: number }) => pms.cancelShift(s.id, s.version),
     onSettled: refresh,
   });
+  const cancelSeries = useMutation({
+    mutationFn: (s: { seriesId: string; date: string; employeeId: string }) =>
+      pms.cancelShiftSeries(s.seriesId, { fromDate: s.date, employeeId: s.employeeId }),
+    onSettled: refresh,
+  });
+  const gaps = coverage.data ?? [];
+  const gapDays = new Set(gaps.map((g) => g.date));
 
   const data = schedule.data;
   const paging = schedule.isPlaceholderData;
@@ -113,13 +140,25 @@ export default function SchedulePage() {
       {publish.isSuccess && (
         <Notice>
           {publish.data.published} {t('hr.published')}
+          {publish.data.gaps.length > 0 && ` · ${publish.data.gaps.length} ${t('sched.gapsLeft')}`}
         </Notice>
       )}
-      {(schedule.error || publish.error || cancel.error) && (
-        <Alert>{errorMessage(schedule.error ?? publish.error ?? cancel.error)}</Alert>
+      {cancelSeries.isSuccess && (
+        <Notice>
+          {cancelSeries.data.cancelled} {t('sched.seriesCancelled')}
+        </Notice>
       )}
+      {(schedule.error || publish.error || cancel.error || cancelSeries.error) && (
+        <Alert>
+          {errorMessage(schedule.error ?? publish.error ?? cancel.error ?? cancelSeries.error)}
+        </Alert>
+      )}
+      <CoverageGaps gaps={gaps} />
 
       {canManage && data && <NewShift employees={data.employees} days={days} onCreated={refresh} />}
+      {canManage && data && (
+        <RecurringShifts employees={data.employees} from={monday} onCreated={refresh} />
+      )}
 
       {schedule.isPending && (
         <Card className="p-4">
@@ -153,7 +192,15 @@ export default function SchedulePage() {
                       d === todayDate && 'text-primary',
                     )}
                   >
-                    {formatDate(d)}
+                    <span className="flex items-center gap-1">
+                      {formatDate(d)}
+                      {gapDays.has(d) && (
+                        <TriangleAlert
+                          className="size-3.5 text-warning"
+                          aria-label={t('sched.understaffed')}
+                        />
+                      )}
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -200,6 +247,25 @@ export default function SchedulePage() {
                                 <span className="text-muted-foreground">{t('hr.draft')}</span>
                               )}
                             </div>
+                            {canManage && s.seriesId && (
+                              <button
+                                type="button"
+                                aria-label={t('sched.cancelSeries')}
+                                title={t('sched.cancelSeries')}
+                                disabled={cancelSeries.isPending}
+                                className="rounded p-0.5 text-muted-foreground opacity-60 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                                onClick={() => {
+                                  if (window.confirm(t('sched.cancelSeriesConfirm')))
+                                    cancelSeries.mutate({
+                                      seriesId: s.seriesId!,
+                                      date: s.date,
+                                      employeeId: s.employeeId,
+                                    });
+                                }}
+                              >
+                                <Repeat className="size-3" />
+                              </button>
+                            )}
                             {canManage && (
                               <button
                                 type="button"
@@ -224,6 +290,7 @@ export default function SchedulePage() {
         </Card>
       )}
 
+      <StaffingRequirements canManage={canManage} />
       {hasPermission(session.data, 'birthday.read') && <Birthdays />}
     </div>
   );
