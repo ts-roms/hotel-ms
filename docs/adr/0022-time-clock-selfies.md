@@ -44,8 +44,8 @@ matching.
   - the storage key and the SHA-256;
   - the device;
   - `deleted_at`, the one mutable column.
-- The daily housekeeping job (ADR-0021) deletes photos older than the retention period (**90 days** by default; see the amendment below). The punches
-  themselves stay.
+- The daily housekeeping job (ADR-0021) deletes photos older than the retention period
+  (**90 days** by default; see the amendment below). The punches themselves stay.
 - In S3, photo objects are tagged `retention=attendance-photo`, and a lifecycle rule
   expires them after 100 days. That backstop also removes any object a crash left
   without a punch, without listing the bucket.
