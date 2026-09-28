@@ -15,6 +15,7 @@ export const NOTIFICATION_KINDS = [
   'EVENTS_TODAY',
   'GUEST_ID_SUBMITTED',
   'CHECKOUT_REQUESTED',
+  'CERTIFICATIONS_EXPIRING',
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

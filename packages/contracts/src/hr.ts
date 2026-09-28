@@ -80,11 +80,28 @@ export const employeeSummarySchema = z.object({
 });
 export type EmployeeSummary = z.infer<typeof employeeSummarySchema>;
 
+export const EMPLOYMENT_TYPES = [
+  'FULL_TIME',
+  'PART_TIME',
+  'PROBATIONARY',
+  'CONTRACTUAL',
+  'SEASONAL',
+  'INTERN',
+] as const;
+
+export const emergencyContactSchema = z.object({
+  name: z.string(),
+  relationship: z.string(),
+  phone: z.string(),
+});
+export type EmergencyContact = z.infer<typeof emergencyContactSchema>;
+
 /** Present only for callers with employee.personal.read covering the employee. */
 export const employeePersonalSchema = z.object({
   birthDate: localDateSchema.nullable(),
   personalEmail: z.string().nullable(),
   personalPhone: z.string().nullable(),
+  emergencyContact: emergencyContactSchema.nullable(),
 });
 export type EmployeePersonal = z.infer<typeof employeePersonalSchema>;
 
@@ -93,6 +110,7 @@ export const employeeSchema = employeeSummarySchema.extend({
   workPhone: z.string().nullable(),
   hireDate: localDateSchema,
   terminatedOn: localDateSchema.nullable(),
+  employmentType: z.enum(EMPLOYMENT_TYPES),
   birthdayVisibility: z.enum(BIRTHDAY_VISIBILITIES),
   membershipId: z.uuid().nullable(),
   /** All assignments, past and future included. */
@@ -103,6 +121,14 @@ export const employeeSchema = employeeSummarySchema.extend({
 export type Employee = z.infer<typeof employeeSchema>;
 
 const optionalText = (max: number) => z.string().trim().max(max).nullable();
+
+const emergencyContactInput = z
+  .strictObject({
+    name: z.string().trim().min(1).max(120),
+    relationship: z.string().trim().max(60).default(''),
+    phone: z.string().trim().min(3).max(40),
+  })
+  .nullable();
 
 // ---- Employee documents (ADR-0019) -----------------------------------------------------------
 
@@ -196,12 +222,14 @@ export const createEmployeeRequestSchema = z.strictObject({
   workEmail: z.email().max(254).nullable().default(null),
   workPhone: optionalText(40).default(null),
   hireDate: localDateSchema,
+  employmentType: z.enum(EMPLOYMENT_TYPES).default('FULL_TIME'),
   birthdayVisibility: z.enum(BIRTHDAY_VISIBILITIES).default('HIDDEN'),
   personal: z
     .strictObject({
       birthDate: localDateSchema.nullable().default(null),
       personalEmail: z.email().max(254).nullable().default(null),
       personalPhone: optionalText(40).default(null),
+      emergencyContact: emergencyContactInput.default(null),
     })
     .optional(),
   /** Every employee starts with an assignment, so someone in scope can see them. */
@@ -216,12 +244,14 @@ export const updateEmployeeRequestSchema = z
     preferredName: optionalText(100),
     workEmail: z.email().max(254).nullable(),
     workPhone: optionalText(40),
+    employmentType: z.enum(EMPLOYMENT_TYPES),
     birthdayVisibility: z.enum(BIRTHDAY_VISIBILITIES),
     personal: z
       .strictObject({
         birthDate: localDateSchema.nullable(),
         personalEmail: z.email().max(254).nullable(),
         personalPhone: optionalText(40),
+        emergencyContact: emergencyContactInput,
       })
       .partial(),
   })
@@ -285,6 +315,8 @@ export const shiftSchema = z.object({
   breakMinutes: z.number().int(),
   status: z.enum(SHIFT_STATUSES),
   notes: z.string(),
+  /** Shifts created together as a recurring series (ADR-0028). */
+  seriesId: z.uuid().nullable(),
   version: z.number().int(),
 });
 export type Shift = z.infer<typeof shiftSchema>;
@@ -607,3 +639,224 @@ export const myEmployeeSchema = z.object({
   photoRetentionDays: z.number().int(),
 });
 export type MyEmployee = z.infer<typeof myEmployeeSchema>;
+
+// ---- Profile extensions, recurring shifts, staffing (ADR-0028) -----------------------------
+
+export const PAY_BASES = ['MONTHLY', 'DAILY', 'HOURLY'] as const;
+
+/** Pay records: sensitive (employee.compensation), start-dated, never edited. */
+export const compensationSchema = z.object({
+  id: z.uuid(),
+  effectiveFrom: localDateSchema,
+  payBasis: z.enum(PAY_BASES),
+  amountMinor: z.number().int(),
+  currency: z.string(),
+  notes: z.string(),
+  createdByName: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type Compensation = z.infer<typeof compensationSchema>;
+
+export const compensationHistorySchema = z.object({
+  /** In effect today (the latest start on or before today). */
+  current: compensationSchema.nullable(),
+  history: z.array(compensationSchema),
+});
+export type CompensationHistory = z.infer<typeof compensationHistorySchema>;
+
+export const createCompensationRequestSchema = z.strictObject({
+  effectiveFrom: localDateSchema,
+  payBasis: z.enum(PAY_BASES),
+  amountMinor: z.number().int().min(0).max(1_000_000_000_00),
+  currency: z
+    .string()
+    .trim()
+    .regex(/^[A-Z]{3}$/, 'Three-letter currency code'),
+  notes: z.string().trim().max(500).default(''),
+});
+export type CreateCompensationRequest = z.infer<typeof createCompensationRequestSchema>;
+export type CreateCompensationInput = z.input<typeof createCompensationRequestSchema>;
+
+export const TRAINING_KINDS = ['TRAINING', 'CERTIFICATION'] as const;
+
+export const trainingRecordSchema = z.object({
+  id: z.uuid(),
+  kind: z.enum(TRAINING_KINDS),
+  title: z.string(),
+  provider: z.string(),
+  completedOn: localDateSchema.nullable(),
+  expiresOn: localDateSchema.nullable(),
+  /** Expired, or expiring within 30 days. */
+  expiry: z.enum(['VALID', 'EXPIRING', 'EXPIRED']).nullable(),
+  notes: z.string(),
+  documentId: z.uuid().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type TrainingRecord = z.infer<typeof trainingRecordSchema>;
+
+export const createTrainingRequestSchema = z
+  .strictObject({
+    kind: z.enum(TRAINING_KINDS),
+    title: z.string().trim().min(1).max(160),
+    provider: z.string().trim().max(160).default(''),
+    completedOn: localDateSchema.nullable().default(null),
+    expiresOn: localDateSchema.nullable().default(null),
+    notes: z.string().trim().max(1000).default(''),
+    /** An uploaded employee document (e.g. the certificate). */
+    documentId: z.uuid().nullable().default(null),
+  })
+  .refine((t) => !t.completedOn || !t.expiresOn || t.expiresOn >= t.completedOn, {
+    message: 'Expires before it was completed',
+    path: ['expiresOn'],
+  });
+export type CreateTrainingRequest = z.infer<typeof createTrainingRequestSchema>;
+export type CreateTrainingInput = z.input<typeof createTrainingRequestSchema>;
+
+/** Performance records: sensitive (employee.performance). */
+export const performanceReviewSchema = z.object({
+  id: z.uuid(),
+  reviewDate: localDateSchema,
+  periodFrom: localDateSchema.nullable(),
+  periodTo: localDateSchema.nullable(),
+  /** 1 (unsatisfactory) to 5 (outstanding). */
+  rating: z.number().int().min(1).max(5),
+  summary: z.string(),
+  strengths: z.string(),
+  improvements: z.string(),
+  goals: z.string(),
+  reviewerName: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+export type PerformanceReview = z.infer<typeof performanceReviewSchema>;
+
+export const createPerformanceReviewRequestSchema = z
+  .strictObject({
+    reviewDate: localDateSchema,
+    periodFrom: localDateSchema.nullable().default(null),
+    periodTo: localDateSchema.nullable().default(null),
+    rating: z.number().int().min(1).max(5),
+    summary: z.string().trim().min(1).max(4000),
+    strengths: z.string().trim().max(4000).default(''),
+    improvements: z.string().trim().max(4000).default(''),
+    goals: z.string().trim().max(4000).default(''),
+  })
+  .refine((r) => !r.periodFrom || !r.periodTo || r.periodTo >= r.periodFrom, {
+    message: 'The period ends before it starts',
+    path: ['periodTo'],
+  });
+export type CreatePerformanceReviewRequest = z.infer<typeof createPerformanceReviewRequestSchema>;
+export type CreatePerformanceReviewInput = z.input<typeof createPerformanceReviewRequestSchema>;
+
+/** 0 = Sunday … 6 = Saturday. */
+const weekdaysSchema = z
+  .array(z.number().int().min(0).max(6))
+  .min(1)
+  .max(7)
+  .refine((d) => new Set(d).size === d.length, 'Each weekday once');
+
+export const createRecurringShiftsRequestSchema = z
+  .strictObject({
+    employeeIds: z.array(z.uuid()).min(1).max(50),
+    from: localDateSchema,
+    to: localDateSchema,
+    weekdays: weekdaysSchema,
+    templateId: z.uuid().nullable().default(null),
+    startTime: localTimeSchema.optional(),
+    endTime: localTimeSchema.optional(),
+    breakMinutes: z.number().int().min(0).max(240).optional(),
+    departmentId: z.uuid().nullable().default(null),
+    notes: z.string().trim().max(500).default(''),
+  })
+  .refine((v) => v.templateId !== null || (v.startTime && v.endTime), {
+    message: 'Give a template or both start and end times',
+    path: ['startTime'],
+  })
+  .refine((v) => v.from <= v.to, { message: 'from must not be after to', path: ['to'] })
+  .refine((v) => Date.parse(v.to) - Date.parse(v.from) < 92 * 86_400_000, {
+    message: 'At most 92 days',
+    path: ['to'],
+  });
+export type CreateRecurringShiftsRequest = z.infer<typeof createRecurringShiftsRequestSchema>;
+export type CreateRecurringShiftsInput = z.input<typeof createRecurringShiftsRequestSchema>;
+
+export const recurringShiftsResultSchema = z.object({
+  seriesId: z.uuid(),
+  created: z.number().int(),
+  skipped: z.array(
+    z.object({
+      employeeId: z.uuid(),
+      employeeName: z.string(),
+      date: localDateSchema,
+      reason: z.enum(['NOT_ASSIGNED', 'ON_LEAVE', 'OVERLAP']),
+    }),
+  ),
+});
+export type RecurringShiftsResult = z.infer<typeof recurringShiftsResultSchema>;
+
+export const cancelSeriesRequestSchema = z.strictObject({
+  /** Cancel the series' shifts from this date on (default: all not yet started). */
+  fromDate: localDateSchema.optional(),
+  /** Only this person's shifts of the series (default: everyone's). */
+  employeeId: z.uuid().optional(),
+});
+export type CancelSeriesRequest = z.infer<typeof cancelSeriesRequestSchema>;
+
+/** A department needs at least minStaff people on shift at every moment of the window. */
+export const staffingRequirementSchema = z.object({
+  id: z.uuid(),
+  departmentId: z.uuid(),
+  departmentName: z.string(),
+  weekdays: z.array(z.number().int()),
+  startTime: z.string(),
+  endTime: z.string(),
+  minStaff: z.number().int(),
+});
+export type StaffingRequirement = z.infer<typeof staffingRequirementSchema>;
+
+export const createStaffingRequirementRequestSchema = z
+  .strictObject({
+    departmentId: z.uuid(),
+    weekdays: weekdaysSchema,
+    startTime: localTimeSchema,
+    endTime: localTimeSchema,
+    minStaff: z.number().int().min(1).max(200),
+  })
+  .refine((r) => r.startTime !== r.endTime, {
+    message: 'Must differ from the start time',
+    path: ['endTime'],
+  });
+export type CreateStaffingRequirementRequest = z.infer<
+  typeof createStaffingRequirementRequestSchema
+>;
+
+/** One requirement on one date with fewer people than it needs. */
+export const coverageGapSchema = z.object({
+  date: localDateSchema,
+  requirementId: z.uuid(),
+  departmentId: z.uuid(),
+  departmentName: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
+  required: z.number().int(),
+  /** The fewest people on shift (draft or published, not on leave) at any moment. */
+  scheduled: z.number().int(),
+  /** The same, counting published shifts only. */
+  published: z.number().int(),
+});
+export type CoverageGap = z.infer<typeof coverageGapSchema>;
+
+export const coverageQuerySchema = z
+  .object({ from: localDateSchema, to: localDateSchema })
+  .refine((v) => v.from <= v.to, { message: 'from must not be after to', path: ['to'] })
+  .refine((v) => Date.parse(v.to) - Date.parse(v.from) < 62 * 86_400_000, {
+    message: 'At most 62 days',
+    path: ['to'],
+  });
+export type CoverageQuery = z.infer<typeof coverageQuerySchema>;
+
+export const publishResultSchema = z.object({
+  published: z.number().int(),
+  /** Understaffed windows left in the published range (ADR-0028). */
+  gaps: z.array(coverageGapSchema),
+});
+export type PublishResult = z.infer<typeof publishResultSchema>;

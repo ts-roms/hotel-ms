@@ -30,6 +30,7 @@ import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { EmployeeDocuments } from './documents';
+import { CompensationCard, EmploymentDetails, ReviewsCard, TrainingCard } from './records';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -131,6 +132,12 @@ export default function EmployeePage() {
         </CardContent>
       </Card>
 
+      <EmploymentDetails employee={e} canManage={hasPermission(session.data, 'employee.manage')} />
+      {hasPermission(session.data, 'employee.compensation') && (
+        <CompensationCard employeeId={e.id} />
+      )}
+      <TrainingCard employeeId={e.id} canManage={hasPermission(session.data, 'employee.manage')} />
+      {hasPermission(session.data, 'employee.performance') && <ReviewsCard employeeId={e.id} />}
       {hasPermission(session.data, 'employee.documents') && <EmployeeDocuments employeeId={e.id} />}
       {hasPermission(session.data, 'leave.read') && <EmployeeLeave employeeId={e.id} />}
     </div>

@@ -1,4 +1,16 @@
 import type {
+  CompensationHistory,
+  CoverageGap,
+  CreateCompensationInput,
+  CreatePerformanceReviewInput,
+  CreateRecurringShiftsInput,
+  CreateStaffingRequirementRequest,
+  CreateTrainingInput,
+  PerformanceReview,
+  PublishResult,
+  RecurringShiftsResult,
+  StaffingRequirement,
+  TrainingRecord,
   GuestCheckoutRequestInput,
   GuestHotelInfo,
   GuestIdType,
@@ -797,8 +809,30 @@ export function createApiClient(options: ApiClientOptions = {}) {
             'if-match': `W/"${version}"`,
           }).then((r) => r.data),
         publishSchedule: (from: string, to: string) =>
-          call<{ published: number }>('POST', `${p}/schedule/publish`, { from, to }).then(
+          call<PublishResult>('POST', `${p}/schedule/publish`, { from, to }).then((r) => r.data),
+        createRecurringShifts: (body: CreateRecurringShiftsInput) =>
+          call<RecurringShiftsResult>('POST', `${p}/shifts/recurring`, body).then((r) => r.data),
+        cancelShiftSeries: (seriesId: string, body: { fromDate?: string; employeeId?: string }) =>
+          call<{ cancelled: number }>(
+            'POST',
+            `${p}/shift-series/${id(seriesId)}/cancel`,
+            body,
+          ).then((r) => r.data),
+        staffingRequirements: () =>
+          call<{ items: StaffingRequirement[] }>('GET', `${p}/staffing-requirements`).then(
+            (r) => r.data.items,
+          ),
+        createStaffingRequirement: (body: CreateStaffingRequirementRequest) =>
+          call<{ items: StaffingRequirement[] }>('POST', `${p}/staffing-requirements`, body).then(
+            (r) => r.data.items,
+          ),
+        archiveStaffingRequirement: (requirementId: string) =>
+          call<void>('POST', `${p}/staffing-requirements/${id(requirementId)}/archive`).then(
             (r) => r.data,
+          ),
+        coverage: (from: string, to: string) =>
+          call<{ items: CoverageGap[] }>('GET', `${p}/schedule/coverage${qs({ from, to })}`).then(
+            (r) => r.data.items,
           ),
         leaveRequests: (status?: LeaveRequest['status']) =>
           call<{ items: LeaveRequest[] }>('GET', `${p}/leave-requests${qs({ status })}`).then(
@@ -850,6 +884,43 @@ export function createApiClient(options: ApiClientOptions = {}) {
         call<Employee>('POST', `/employees/${encodeURIComponent(id)}/terminate`, {
           terminatedOn,
         }).then((r) => r.data),
+      compensation: (id: string) =>
+        call<CompensationHistory>('GET', `/employees/${encodeURIComponent(id)}/compensation`).then(
+          (r) => r.data,
+        ),
+      addCompensation: (id: string, body: CreateCompensationInput) =>
+        call<CompensationHistory>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/compensation`,
+          body,
+        ).then((r) => r.data),
+      trainings: (id: string) =>
+        call<{ items: TrainingRecord[] }>(
+          'GET',
+          `/employees/${encodeURIComponent(id)}/training`,
+        ).then((r) => r.data.items),
+      addTraining: (id: string, body: CreateTrainingInput) =>
+        call<{ items: TrainingRecord[] }>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/training`,
+          body,
+        ).then((r) => r.data.items),
+      removeTraining: (id: string, recordId: string) =>
+        call<void>(
+          'DELETE',
+          `/employees/${encodeURIComponent(id)}/training/${encodeURIComponent(recordId)}`,
+        ).then((r) => r.data),
+      reviews: (id: string) =>
+        call<{ items: PerformanceReview[] }>(
+          'GET',
+          `/employees/${encodeURIComponent(id)}/reviews`,
+        ).then((r) => r.data.items),
+      addReview: (id: string, body: CreatePerformanceReviewInput) =>
+        call<{ items: PerformanceReview[] }>(
+          'POST',
+          `/employees/${encodeURIComponent(id)}/reviews`,
+          body,
+        ).then((r) => r.data.items),
       documents: (id: string) =>
         call<{ items: EmployeeDocument[] }>(
           'GET',

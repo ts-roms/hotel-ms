@@ -1,5 +1,6 @@
 'use client';
 
+import { EMPLOYMENT_TYPES } from '@hotel/contracts';
 import {
   Alert,
   Avatar,
@@ -113,6 +114,7 @@ function NewEmployee() {
     propertyId: '',
     departmentId: '',
     positionId: '',
+    employmentType: 'FULL_TIME' as (typeof EMPLOYMENT_TYPES)[number],
   });
   // '' means "not chosen yet": show and submit the first option. Options load after the
   // first render, so the selects must be given that option explicitly or they show blank.
@@ -131,6 +133,7 @@ function NewEmployee() {
         workEmail: null,
         workPhone: null,
         hireDate: today(),
+        employmentType: form.employmentType,
         birthdayVisibility: 'HIDDEN',
         assignment: {
           propertyId,
@@ -182,6 +185,20 @@ function NewEmployee() {
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
           />
+          <NativeSelect
+            className="w-auto"
+            aria-label={t('hrx.employmentType')}
+            value={form.employmentType}
+            onChange={(e) =>
+              setForm({ ...form, employmentType: e.target.value as typeof form.employmentType })
+            }
+          >
+            {EMPLOYMENT_TYPES.map((x) => (
+              <option key={x} value={x}>
+                {statusLabel(x)}
+              </option>
+            ))}
+          </NativeSelect>
           <NativeSelect
             className="w-auto"
             aria-label={t('hr.property')}

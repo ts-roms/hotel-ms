@@ -8,6 +8,7 @@ import { ENV, type Env } from '../../config/env.js';
 import { GuestIdentityService } from '../guest-portal/guest-identity.service.js';
 import { EmployeeDocumentsService } from '../hr/documents.service.js';
 import { LeaveService } from '../hr/leave.service.js';
+import { ProfileRecordsService } from '../hr/profile-records.service.js';
 import { TimeClockService } from '../hr/time-clock.service.js';
 import { RemindersService } from '../notifications/reminders.service.js';
 import { ReportsService } from '../payments/reports.service.js';
@@ -30,6 +31,7 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly timeClock: TimeClockService,
     private readonly reminders: RemindersService,
     private readonly guestIds: GuestIdentityService,
+    private readonly records: ProfileRecordsService,
     @Inject(ENV) private readonly env: Env,
   ) {}
 
@@ -73,7 +75,13 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
           const documents = await this.documents.runDaily(job.localDate);
           const photos = await this.timeClock.purgePhotos();
           const guestIds = await this.guestIds.purge();
-          return { ...documents, photosPurged: photos, guestIdsPurged: guestIds };
+          const certifications = await this.records.remindExpiring(job.localDate);
+          return {
+            ...documents,
+            photosPurged: photos,
+            guestIdsPurged: guestIds,
+            certificationReminders: certifications,
+          };
         }
       }
     });

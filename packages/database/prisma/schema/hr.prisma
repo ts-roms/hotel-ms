@@ -56,11 +56,12 @@ model Department {
   archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  positions      Position[]
-  assignments    EmploymentAssignment[]
-  shifts         Shift[]
-  shiftTemplates ShiftTemplate[]
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  positions            Position[]
+  assignments          EmploymentAssignment[]
+  shifts               Shift[]
+  shiftTemplates       ShiftTemplate[]
+  staffingRequirements StaffingRequirement[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, code])
@@ -85,28 +86,34 @@ model Position {
 }
 
 model Employee {
-  id                 String             @id @default(uuid(7)) @db.Uuid
-  organizationId     String             @map("organization_id") @db.Uuid
-  employeeNo         String             @map("employee_no")
-  firstName          String             @map("first_name")
-  lastName           String             @map("last_name")
-  preferredName      String?            @map("preferred_name")
-  workEmail          String?            @map("work_email")
-  workPhone          String?            @map("work_phone")
+  id                           String             @id @default(uuid(7)) @db.Uuid
+  organizationId               String             @map("organization_id") @db.Uuid
+  employeeNo                   String             @map("employee_no")
+  firstName                    String             @map("first_name")
+  lastName                     String             @map("last_name")
+  preferredName                String?            @map("preferred_name")
+  workEmail                    String?            @map("work_email")
+  workPhone                    String?            @map("work_phone")
   /// Personal details: only with employee.personal.read.
-  personalEmail      String?            @map("personal_email")
-  personalPhone      String?            @map("personal_phone")
-  birthDate          DateTime?          @map("birth_date") @db.Date
-  birthdayVisibility BirthdayVisibility @default(HIDDEN) @map("birthday_visibility")
-  hireDate           DateTime           @map("hire_date") @db.Date
-  status             EmployeeStatus     @default(ACTIVE)
-  terminatedOn       DateTime?          @map("terminated_on") @db.Date
+  personalEmail                String?            @map("personal_email")
+  personalPhone                String?            @map("personal_phone")
+  birthDate                    DateTime?          @map("birth_date") @db.Date
+  birthdayVisibility           BirthdayVisibility @default(HIDDEN) @map("birthday_visibility")
+  hireDate                     DateTime           @map("hire_date") @db.Date
+  status                       EmployeeStatus     @default(ACTIVE)
+  terminatedOn                 DateTime?          @map("terminated_on") @db.Date
+  /// FULL_TIME | PART_TIME | PROBATIONARY | CONTRACTUAL | SEASONAL | INTERN
+  employmentType               String             @default("FULL_TIME") @map("employment_type")
+  /// Emergency contact: personal details (employee.personal.read).
+  emergencyContactName         String?            @map("emergency_contact_name")
+  emergencyContactRelationship String?            @map("emergency_contact_relationship")
+  emergencyContactPhone        String?            @map("emergency_contact_phone")
   /// Staff login of this employee, if any (blueprint §13.1).
-  membershipId       String?            @map("membership_id") @db.Uuid
-  version            Int                @default(1)
-  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
-  createdBy          String?            @map("created_by") @db.Uuid
+  membershipId                 String?            @map("membership_id") @db.Uuid
+  version                      Int                @default(1)
+  createdAt                    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy                    String?            @map("created_by") @db.Uuid
 
   organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   membership    OrganizationMembership? @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
@@ -118,6 +125,9 @@ model Employee {
   leaveBalances LeaveBalance[]
   leaveRequests LeaveRequest[]
   documents     EmployeeDocument[]
+  compensations EmployeeCompensation[]
+  trainings     EmployeeTraining[]
+  reviews       EmployeeReview[]
 
   @@unique([organizationId, id])
   @@unique([organizationId, employeeNo])
@@ -182,6 +192,8 @@ model Shift {
   employeeId     String      @map("employee_id") @db.Uuid
   departmentId   String      @map("department_id") @db.Uuid
   templateId     String?     @map("template_id") @db.Uuid
+  /// Shifts created together as a recurring series (ADR-0028).
+  seriesId       String?     @map("series_id") @db.Uuid
   /// Property-local date the shift starts on.
   shiftDate      DateTime    @map("shift_date") @db.Date
   startsAt       DateTime    @map("starts_at") @db.Timestamptz(3)
