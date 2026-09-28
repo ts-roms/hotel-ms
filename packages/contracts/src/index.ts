@@ -17,3 +17,4 @@ export * from './finance.js';
 export * from './devices.js';
 export * from './maintenance.js';
 export * from './notifications.js';
+export * from './management.js';

@@ -1,4 +1,11 @@
 import type {
+  FnbReport,
+  GuestServiceReport,
+  HrReport,
+  OccupancyReport,
+  OrganizationDashboard,
+  PropertyDashboard,
+  SearchResult,
   NotificationList,
   CloseLostFoundItem,
   CreateLostFoundInput,
@@ -265,6 +272,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
           (r) => r.data,
         ),
     },
+    /** Group overview (ADR-0025). */
+    dashboard: () => call<OrganizationDashboard>('GET', '/dashboard').then((r) => r.data),
+    search: (q: string) =>
+      call<SearchResult>('GET', `/search${qs({ q })}`).then((r) => r.data.items),
     properties: {
       list: (params: { cursor?: string; limit?: number } = {}) =>
         call<Page<Property>>('GET', `/properties${qs(params)}`).then((r) => r.data),
@@ -628,6 +639,25 @@ export function createApiClient(options: ApiClientOptions = {}) {
               'if-match': `W/"${version}"`,
             },
           ).then((r) => r.data),
+        dashboard: () => call<PropertyDashboard>('GET', `${p}/dashboard`).then((r) => r.data),
+        occupancyReport: (from: string, to: string) =>
+          call<OccupancyReport>('GET', `${p}/reports/occupancy${qs({ from, to })}`).then(
+            (r) => r.data,
+          ),
+        hrReport: (from: string, to: string) =>
+          call<HrReport>('GET', `${p}/reports/hr${qs({ from, to })}`).then((r) => r.data),
+        fnbReport: (from: string, to: string) =>
+          call<FnbReport>('GET', `${p}/reports/fnb${qs({ from, to })}`).then((r) => r.data),
+        guestServiceReport: (from: string, to: string) =>
+          call<GuestServiceReport>('GET', `${p}/reports/guest-services${qs({ from, to })}`).then(
+            (r) => r.data,
+          ),
+        /** CSV download (same-origin; the session cookie authenticates). */
+        reportExportUrl: (
+          kind: 'occupancy' | 'hr' | 'fnb' | 'guest-services',
+          from: string,
+          to: string,
+        ) => `${baseUrl}${p}/reports/${kind}/export${qs({ from, to })}`,
         maintenance: (query: Partial<MaintenanceListQuery> = {}) =>
           call<{ items: MaintenanceRequest[] }>(
             'GET',

@@ -28,6 +28,8 @@ import {
   Timer,
   Users,
   FileClock,
+  Gauge,
+  Search,
   Landmark,
   PackageSearch,
   Wrench,
@@ -54,6 +56,7 @@ interface NavItem {
 
 /** Pages that work on one property live under /p/[propertyId]. */
 const PROPERTY_NAV: NavItem[] = [
+  { href: 'overview', label: 'nav.overview', icon: Gauge, permission: 'property.read' },
   {
     href: 'front-desk',
     label: 'nav.frontDesk',
@@ -204,6 +207,26 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
           items={[{ href: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard }]}
           pathname={pathname}
         />
+        <form
+          role="search"
+          className="relative mb-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = new FormData(e.currentTarget).get('q')?.toString().trim() ?? '';
+            if (q.length >= 2) {
+              setMenuOpen(false);
+              router.push(`/search?q=${encodeURIComponent(q)}`);
+            }
+          }}
+        >
+          <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <input
+            name="q"
+            aria-label={t('search.title')}
+            placeholder={t('search.placeholder')}
+            className="h-9 w-full rounded-lg border bg-background pl-8 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+          />
+        </form>
         {propertyNav.length > 0 && (
           <NavGroup title={t('nav.sectionProperty')} items={propertyNav} pathname={pathname} />
         )}
