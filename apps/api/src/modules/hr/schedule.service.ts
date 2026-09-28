@@ -21,6 +21,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState } from '../pms/reservations.service.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 /** Less rest than this between two shifts is flagged (configurable per org later). */
 const MIN_REST_HOURS = 8;
@@ -67,6 +68,7 @@ export class ScheduleService {
     private readonly outbox: OutboxService,
     private readonly notifications: NotificationsQueue,
     @Inject(ENV) private readonly env: Env,
+    private readonly inbox: NotificationsService,
   ) {}
 
   // ---- Templates ---------------------------------------------------------------------------
@@ -405,6 +407,7 @@ export class ScheduleService {
               lastName: true,
               preferredName: true,
               workEmail: true,
+              membershipId: true,
               membership: { select: { identity: { select: { email: true } } } },
             },
           },
@@ -429,6 +432,14 @@ export class ScheduleService {
         { from, to, shiftIds: ids },
         { propertyId },
       );
+      await this.inbox.notifyInTx(tx, {
+        membershipIds: drafts.map((s) => s.employee.membershipId),
+        propertyId,
+        kind: 'SCHEDULE_PUBLISHED',
+        title: `Schedule published: ${from} to ${to}`,
+        body: property.name,
+        link: '/me',
+      });
 
       const byEmployee = new Map<string, typeof drafts>();
       for (const s of drafts)

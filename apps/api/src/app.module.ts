@@ -94,6 +94,10 @@ import {
   MaintenanceController,
 } from './modules/maintenance/maintenance.controller.js';
 import { MaintenanceService } from './modules/maintenance/maintenance.service.js';
+import { GuestMessagesService } from './modules/notifications/guest-messages.service.js';
+import { NotificationsController } from './modules/notifications/notifications.controller.js';
+import { NotificationsService } from './modules/notifications/notifications.service.js';
+import { RemindersService } from './modules/notifications/reminders.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';
 import { PropertiesService } from './modules/tenancy/properties.service.js';
@@ -118,6 +122,7 @@ export const CONTROLLERS = [
   HrController,
   EmployeeDocumentsController,
   DocumentRetentionController,
+  NotificationsController,
   MaintenanceController,
   LostFoundController,
   ClockPhotosController,
@@ -170,6 +175,9 @@ export class AppModule {
         IdempotencyService,
         RoomsService,
         MaintenanceService,
+        NotificationsService,
+        GuestMessagesService,
+        RemindersService,
         LostFoundService,
         RatesService,
         GuestsService,

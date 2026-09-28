@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
-import { type EmailJob, NOTIFICATIONS_QUEUE } from '@hotel/contracts';
+import { type EmailJob, NOTIFICATIONS_QUEUE, SMS_QUEUE, type SmsJob } from '@hotel/contracts';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
@@ -16,6 +16,7 @@ import { ENV, type Env } from '../config/env.js';
 export class NotificationsQueue implements OnModuleDestroy {
   private readonly connection: Redis;
   private readonly queue: Queue<EmailJob>;
+  private readonly sms: Queue<SmsJob>;
 
   constructor(
     @Inject(ENV) env: Env,
@@ -24,6 +25,33 @@ export class NotificationsQueue implements OnModuleDestroy {
     this.connection = new Redis(env.REDIS_QUEUE_URL, { maxRetriesPerRequest: null });
     this.connection.on('error', () => undefined);
     this.queue = new Queue<EmailJob>(NOTIFICATIONS_QUEUE, { connection: this.connection });
+    this.sms = new Queue<SmsJob>(SMS_QUEUE, { connection: this.connection });
+  }
+
+  /** Text message (ADR-0024). Only E.164 numbers are sent; anything else is skipped. */
+  async sendSms(to: string | null | undefined, text: string): Promise<boolean> {
+    const number = to?.replace(/[\s()-]/g, '') ?? '';
+    if (!/^\+[1-9]\d{7,14}$/.test(number)) return false;
+    await this.sms.add(
+      'sms',
+      {
+        to: number,
+        text: text.slice(0, 320),
+        correlationId: this.cls.isActive() ? (this.cls.get('requestId') ?? null) : null,
+      },
+      {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: true,
+        removeOnFail: { age: 24 * 3600 },
+      },
+    );
+    return true;
+  }
+
+  /** Test helper: inspect queued text messages. */
+  get rawSms(): Queue<SmsJob> {
+    return this.sms;
   }
 
   async sendEmail(
@@ -49,6 +77,7 @@ export class NotificationsQueue implements OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     await this.queue.close();
+    await this.sms.close();
     this.connection.disconnect();
   }
 }

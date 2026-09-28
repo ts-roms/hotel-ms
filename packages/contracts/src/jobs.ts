@@ -25,6 +25,13 @@ export type TenantJob =
       period: string;
     }
   | {
+      /** Guest and staff reminders (ADR-0024), after 09:00 property-local time. */
+      type: 'property.daily-reminders';
+      organizationId: string;
+      propertyId: string;
+      localDate: string;
+    }
+  | {
       /** Document housekeeping (ADR-0021): unfinished uploads, then retention. */
       type: 'organization.daily-documents';
       organizationId: string;
@@ -70,6 +77,55 @@ export type EmailTemplate =
       };
     }
   | {
+      template: 'booking-confirmation';
+      data: {
+        guestName: string;
+        propertyName: string;
+        confirmationNo: string;
+        arrivalDate: string;
+        departureDate: string;
+        rooms: number;
+      };
+    }
+  | {
+      template: 'booking-cancelled';
+      data: { guestName: string; propertyName: string; confirmationNo: string };
+    }
+  | {
+      template: 'checked-in';
+      data: {
+        guestName: string;
+        propertyName: string;
+        roomNumber: string;
+        departureDate: string;
+        checkOutTime: string;
+      };
+    }
+  | {
+      template: 'checkin-reminder';
+      data: {
+        guestName: string;
+        propertyName: string;
+        arrivalDate: string;
+        checkInTime: string;
+        portalUrl: string;
+      };
+    }
+  | {
+      template: 'checkout-reminder';
+      data: { guestName: string; propertyName: string; checkOutTime: string; roomNumber: string };
+    }
+  | {
+      template: 'payment-received';
+      data: {
+        guestName: string;
+        propertyName: string;
+        amount: string;
+        folioNo: string;
+        reference: string;
+      };
+    }
+  | {
       template: 'leave-decided';
       data: {
         employeeName: string;
@@ -87,3 +143,12 @@ export type EmailJob = EmailTemplate & {
   /** Correlates with the API request that triggered the email. */
   correlationId: string | null;
 };
+
+/** SMS delivery (worker). Kept short: one segment where possible. */
+export const SMS_QUEUE = 'sms';
+export interface SmsJob {
+  /** E.164, e.g. +639171234567. */
+  to: string;
+  text: string;
+  correlationId: string | null;
+}

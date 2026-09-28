@@ -1,0 +1,31 @@
+/// In-app notifications for staff (spec §40, ADR-0024): one row per recipient membership.
+model Notification {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String?   @map("property_id") @db.Uuid
+  membershipId   String    @map("membership_id") @db.Uuid
+  kind           String
+  title          String
+  body           String    @default("")
+  /// Path in the staff app, e.g. /p/{property}/maintenance.
+  link           String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt         DateTime? @map("read_at") @db.Timestamptz(3)
+
+  membership OrganizationMembership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, membershipId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+/// Messages to guests and staff that must go out once (ADR-0024): the key is reserved in
+/// the same transaction that decides to send, so retries and reruns never send twice.
+model MessageLog {
+  organizationId String   @map("organization_id") @db.Uuid
+  dedupeKey      String   @map("dedupe_key")
+  channel        String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([organizationId, dedupeKey])
+  @@map("message_log")
+}

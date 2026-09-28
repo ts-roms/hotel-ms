@@ -84,6 +84,26 @@ describe('tenant job planner', () => {
     );
   });
 
+  it('plans morning reminders per property and local date, after 09:00 only', async () => {
+    await planTenantJobs(system, queue, log, new Date('2026-10-01T23:00:00Z')); // 07:00 Manila
+    const early = (await queue.getJobs(['waiting', 'delayed'])).filter(
+      (j) => j.data.type === 'property.daily-reminders',
+    );
+    expect(early).toEqual([]);
+    await planTenantJobs(system, queue, log, new Date('2026-10-02T02:00:00Z')); // 10:00 Manila
+    await planTenantJobs(system, queue, log, new Date('2026-10-02T02:30:00Z'));
+    const reminders = (await queue.getJobs(['waiting', 'delayed'])).filter(
+      (j) => j.data.type === 'property.daily-reminders',
+    );
+    const properties = [
+      ...Object.values(world.abc.properties),
+      ...Object.values(world.xyz.properties),
+    ];
+    expect(reminders.map((j) => j.id).sort()).toEqual(
+      properties.map((id) => `reminders:${id}:2026-10-02`).sort(),
+    );
+  });
+
   it('the system role still sees no tenant business data', async () => {
     await expect(system.$queryRaw`SELECT name FROM properties`).rejects.toThrow(
       /permission denied/,

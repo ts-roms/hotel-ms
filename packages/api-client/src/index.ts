@@ -1,4 +1,5 @@
 import type {
+  NotificationList,
   CloseLostFoundItem,
   CreateLostFoundInput,
   CreateMaintenanceInput,
@@ -819,6 +820,16 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ),
     },
     me: {
+      notifications: (unread = false) =>
+        call<NotificationList>('GET', `/me/notifications${unread ? '?unread=true' : ''}`).then(
+          (r) => r.data,
+        ),
+      readNotification: (notificationId: string) =>
+        call<void>('POST', `/me/notifications/${encodeURIComponent(notificationId)}/read`).then(
+          (r) => r.data,
+        ),
+      readAllNotifications: () =>
+        call<void>('POST', '/me/notifications/read-all').then((r) => r.data),
       pin: () => call<PinStatus>('GET', '/me/pin').then((r) => r.data),
       setPin: (pin: string, currentPassword: string) =>
         call<PinStatus>('PUT', '/me/pin', { pin, currentPassword }).then((r) => r.data),

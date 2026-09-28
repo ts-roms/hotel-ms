@@ -39,6 +39,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/brand';
+import { NotificationBell } from '@/components/notification-bell';
 import { ThemeToggle } from '@/components/theme';
 import { type MessageKey, t } from '@/lib/i18n';
 import { lastProperty, rememberProperty, useProperties, useRoutePropertyId } from '@/lib/property';
@@ -218,6 +219,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
             <span className="truncate text-sm font-medium">{info.identity.displayName}</span>
             <span className="truncate text-xs text-muted-foreground">{info.identity.email}</span>
           </div>
+          <NotificationBell placement="up" />
           <ThemeToggle />
         </div>
         <div className="flex gap-2">
@@ -260,6 +262,8 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
           <BrandMark className="size-8" />
           <span className="truncate font-semibold">{org?.organizationName}</span>
         </Link>
+        <span className="flex-1" />
+        <NotificationBell placement="down" />
         <Button
           variant="ghost"
           size="icon"

@@ -126,6 +126,86 @@ export function renderEmail(email: EmailTemplate): RenderedEmail {
         html: layout(lines, { label: 'Open my schedule', url: scheduleUrl }),
       };
     }
+    case 'booking-confirmation': {
+      const { guestName, propertyName, confirmationNo, arrivalDate, departureDate, rooms } =
+        email.data;
+      const lines = [
+        `Hello ${guestName},`,
+        `Thank you for booking ${propertyName}. Your confirmation number is ${confirmationNo}.`,
+        `Arrival ${arrivalDate}, departure ${departureDate}, ${rooms} room${rooms === 1 ? '' : 's'}.`,
+        'We will send you a link to check in online before you arrive.',
+      ];
+      return {
+        subject: `Booking confirmed: ${confirmationNo}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
+    case 'booking-cancelled': {
+      const { guestName, propertyName, confirmationNo } = email.data;
+      const lines = [
+        `Hello ${guestName},`,
+        `Your booking ${confirmationNo} at ${propertyName} has been cancelled.`,
+        'If you did not expect this, please contact the hotel.',
+      ];
+      return {
+        subject: `Booking cancelled: ${confirmationNo}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
+    case 'checked-in': {
+      const { guestName, propertyName, roomNumber, departureDate, checkOutTime } = email.data;
+      const lines = [
+        `Welcome to ${propertyName}, ${guestName}.`,
+        `You are in room ${roomNumber}. Check-out is on ${departureDate} by ${checkOutTime}.`,
+        'Ask the front desk, or use your guest portal, for anything you need.',
+      ];
+      return {
+        subject: `Welcome to ${propertyName}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
+    case 'checkin-reminder': {
+      const { guestName, propertyName, arrivalDate, checkInTime, portalUrl } = email.data;
+      const lines = [
+        `Hello ${guestName},`,
+        `We look forward to seeing you at ${propertyName} on ${arrivalDate}. Check-in starts at ${checkInTime}.`,
+        'Save time at the desk: tell us when you will arrive and, where offered, check in online. Do not forward this email: the link opens your booking.',
+      ];
+      return {
+        subject: `See you tomorrow at ${propertyName}`,
+        text: `${lines.join('\n\n')}\n\n${portalUrl}\n`,
+        html: layout(lines, { label: 'Check in online', url: portalUrl }),
+      };
+    }
+    case 'checkout-reminder': {
+      const { guestName, propertyName, checkOutTime, roomNumber } = email.data;
+      const lines = [
+        `Good morning ${guestName},`,
+        `A reminder that check-out from room ${roomNumber} at ${propertyName} is today by ${checkOutTime}.`,
+        'Your bill is in your guest portal. We hope you enjoyed your stay.',
+      ];
+      return {
+        subject: `Check-out today at ${propertyName}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
+    case 'payment-received': {
+      const { guestName, propertyName, amount, folioNo, reference } = email.data;
+      const lines = [
+        `Hello ${guestName},`,
+        `We received your payment of ${amount} for folio ${folioNo} at ${propertyName}.`,
+        `Reference: ${reference}. This email is not an official receipt; ask the front desk for one.`,
+      ];
+      return {
+        subject: `Payment received: ${amount}`,
+        text: lines.join('\n\n') + '\n',
+        html: layout(lines),
+      };
+    }
     case 'leave-decided': {
       const { employeeName, leaveTypeName, startDate, endDate, decision, note } = email.data;
       const verdict = decision === 'APPROVED' ? 'approved' : 'not approved';

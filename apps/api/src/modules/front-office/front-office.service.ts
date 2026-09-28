@@ -18,6 +18,7 @@ import {
 } from '../pms/reservations.service.js';
 import { businessDateOf } from '../pms/rooms.service.js';
 import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';
+import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 
 export const frontDeskInclude = {
   reservation: { select: { id: true, confirmationNo: true, currency: true, status: true } },
@@ -65,6 +66,7 @@ export class FrontOfficeService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly guestMessages: GuestMessagesService,
   ) {}
 
   private get ctx() {
@@ -162,6 +164,7 @@ export class FrontOfficeService {
       );
       return this.reservations.load(tx, reservationId);
     });
+    await this.guestMessages.checkedIn(lineId);
     return toReservationDto(row);
   }
 

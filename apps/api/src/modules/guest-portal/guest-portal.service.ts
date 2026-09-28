@@ -67,7 +67,14 @@ export class GuestPortalService {
 
   // ---- Staff: send the portal link ------------------------------------------------------
 
-  async sendLink(reservationId: string): Promise<void> {
+  /**
+   * Issues a fresh portal link and emails it: on request by staff, or as the day-before
+   * check-in reminder (ADR-0024). A new link revokes earlier ones.
+   */
+  async sendLink(
+    reservationId: string,
+    template: 'guest-portal-link' | 'checkin-reminder' = 'guest-portal-link',
+  ): Promise<void> {
     const organizationId = this.cls.get('organizationId')!;
     const propertyId = this.cls.get('propertyId')!;
     const token = newToken();
@@ -107,25 +114,28 @@ export class GuestPortalService {
       await this.outbox.enqueue(tx, 'GuestPortalLinkSent', { reservationId }, { propertyId });
       const property = await tx.property.findUniqueOrThrow({
         where: { id: propertyId },
-        select: { name: true },
+        select: { name: true, checkInTime: true },
       });
       return {
         to: reservation.booker.email,
         guestName: reservation.booker.firstName,
         propertyName: property.name,
+        checkInTime: property.checkInTime,
         arrivalDate: fromDbDate(reservation.rooms[0]!.arrivalDate),
       };
     });
-    await this.notifications.sendEmail({
-      template: 'guest-portal-link',
-      to: email.to,
-      data: {
-        guestName: email.guestName,
-        propertyName: email.propertyName,
-        arrivalDate: email.arrivalDate,
-        portalUrl: `${this.env.GUEST_PUBLIC_URL}/welcome#token=${token}`,
-      },
-    });
+    const portalUrl = `${this.env.GUEST_PUBLIC_URL}/welcome#token=${token}`;
+    const base = {
+      guestName: email.guestName,
+      propertyName: email.propertyName,
+      arrivalDate: email.arrivalDate,
+      portalUrl,
+    };
+    await this.notifications.sendEmail(
+      template === 'checkin-reminder'
+        ? { template, to: email.to, data: { ...base, checkInTime: email.checkInTime } }
+        : { template, to: email.to, data: base },
+    );
   }
 
   // ---- Guest: session -------------------------------------------------------------------

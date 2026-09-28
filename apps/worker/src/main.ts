@@ -3,6 +3,8 @@ import {
   type DomainEventEnvelope,
   type EmailJob,
   NOTIFICATIONS_QUEUE,
+  SMS_QUEUE,
+  type SmsJob,
   TENANT_JOBS_QUEUE,
   type TenantJob,
 } from '@hotel/contracts';
@@ -16,6 +18,7 @@ import { createTransport } from './email/transports.js';
 import { dispatch } from './handlers.js';
 import { DOMAIN_EVENTS_QUEUE, relayOutboxBatch } from './outbox-relay.js';
 import { planTenantJobs } from './scheduler.js';
+import { createSmsTransport, deliverSms } from './sms.js';
 
 const env = z
   .object({
@@ -35,6 +38,9 @@ const env = z
     MAIL_DIR: z.string().default('.mail'),
     AWS_REGION: z.string().optional(),
     SES_CONFIGURATION_SET: z.string().optional(),
+    SMS_TRANSPORT: z.enum(['file', 'sns']).default('file'),
+    /** Alphanumeric sender id where the destination country allows it. */
+    SMS_SENDER_ID: z.string().max(11).optional(),
   })
   .parse(process.env);
 
@@ -84,6 +90,16 @@ mailer.on('failed', (job, err) =>
   ),
 );
 
+const smsTransport = createSmsTransport(env);
+const texter = new Worker<SmsJob>(
+  SMS_QUEUE,
+  (job) => deliverSms(job.data, smsTransport, log.child({ jobId: job.id })),
+  { connection, concurrency: 5, limiter: { max: 5, duration: 1000 } },
+);
+texter.on('failed', (job, err) =>
+  log.error({ jobId: job?.id, attempts: job?.attemptsMade, err }, 'sms delivery failed'),
+);
+
 let running = true;
 async function relayLoop(): Promise<void> {
   while (running) {
@@ -111,7 +127,7 @@ async function plan(): Promise<void> {
 }
 void plan();
 const scheduler = setInterval(() => void plan(), env.SCHEDULER_INTERVAL_MS);
-log.info({ emailTransport: transport.name }, 'worker started');
+log.info({ emailTransport: transport.name, smsTransport: smsTransport.name }, 'worker started');
 
 async function shutdown(signal: string): Promise<void> {
   log.info({ signal }, 'shutting down');
@@ -121,6 +137,7 @@ async function shutdown(signal: string): Promise<void> {
   await tenantJobs.close();
   await worker.close();
   await mailer.close();
+  await texter.close();
   await queue.close();
   await system.$disconnect();
   connection.disconnect();
