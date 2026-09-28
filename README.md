@@ -124,6 +124,12 @@ two-step verification). They also see hotel information and updates about their 
 orders, and can request checkout. **Guest portal** settings hold the hotel information and can
 require an approved ID before self check-in. ID files are deleted 30 days after the stay (ADR-0027).
 
+An employee's page also holds the employment type, emergency contact, **pay history** and
+**performance reviews** (both need two-step verification), and **training and certifications**
+with expiry reminders. On the schedule, **Repeat a shift** plans the same shift on chosen weekdays
+for several people. **Minimum staffing** marks understaffed days, which are also reported when
+publishing (ADR-0028).
+
 Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
 birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
 on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.

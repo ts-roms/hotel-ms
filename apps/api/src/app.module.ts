@@ -67,6 +67,12 @@ import { HrController, MeController, PropertyHrController } from './modules/hr/h
 import { LeaveService } from './modules/hr/leave.service.js';
 import { PayrollService } from './modules/hr/payroll.service.js';
 import { PeopleService } from './modules/hr/people.service.js';
+import {
+  EmployeeRecordsController,
+  StaffingController,
+} from './modules/hr/hr-records.controller.js';
+import { ProfileRecordsService } from './modules/hr/profile-records.service.js';
+import { StaffingService } from './modules/hr/staffing.service.js';
 import { ScheduleService } from './modules/hr/schedule.service.js';
 import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
 import { MenuService } from './modules/fnb/menu.service.js';
@@ -155,6 +161,8 @@ export const CONTROLLERS = [
   PinController,
   KioskController,
   MeController,
+  EmployeeRecordsController,
+  StaffingController,
   PropertyHrController,
   FnbController,
   GuestFnbController,
@@ -222,6 +230,8 @@ export class AppModule {
         HrAccess,
         PeopleService,
         ScheduleService,
+        StaffingService,
+        ProfileRecordsService,
         AttendanceService,
         LeaveService,
         PayrollService,

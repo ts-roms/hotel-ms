@@ -85,6 +85,7 @@ describe('employees', () => {
       birthDate: '1995-10-20',
       personalEmail: null,
       personalPhone: null,
+      emergencyContact: null,
     });
     const byGm = await john.get(`/api/v1/employees/${E('E003')}`);
     expect(byGm.status).toBe(200);

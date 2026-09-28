@@ -216,6 +216,16 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
     sensitive: true,
   },
+  'employee.compensation': {
+    description: 'View and record pay (salary or rate history)',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
+  'employee.performance': {
+    description: 'View and write performance reviews',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
   'employee.documents': {
     description: 'View, upload and delete employee documents (contracts, IDs, medical)',
     scopes: ORG_OR_PROPERTY,
