@@ -108,8 +108,8 @@ model Room {
   createdBy          String?            @map("created_by") @db.Uuid
   updatedBy          String?            @map("updated_by") @db.Uuid
 
-  roomType          RoomType           @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
-  floor             Floor?             @relation(fields: [organizationId, floorId], references: [organizationId, id], onDelete: Restrict)
+  roomType          RoomType             @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+  floor             Floor?               @relation(fields: [organizationId, floorId], references: [organizationId, id], onDelete: Restrict)
   assignments       RoomAssignment[]
   statusEvents      RoomStatusEvent[]
   stays             Stay[]

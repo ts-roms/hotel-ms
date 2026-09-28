@@ -1,21 +1,21 @@
 /// Hotel events (spec §38, ADR-0026): meetings, training, guest activities and more.
 model HotelEvent {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  propertyId     String    @map("property_id") @db.Uuid
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
   title          String
-  description    String    @default("")
+  description    String   @default("")
   category       String
-  startsAt       DateTime  @map("starts_at") @db.Timestamptz(3)
-  endsAt         DateTime  @map("ends_at") @db.Timestamptz(3)
-  allDay         Boolean   @default(false) @map("all_day")
-  location       String    @default("")
-  guestVisible   Boolean   @default(false) @map("guest_visible")
-  status         String    @default("SCHEDULED")
-  organizerId    String?   @map("organizer_id") @db.Uuid
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  version        Int       @default(1)
+  startsAt       DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt         DateTime @map("ends_at") @db.Timestamptz(3)
+  allDay         Boolean  @default(false) @map("all_day")
+  location       String   @default("")
+  guestVisible   Boolean  @default(false) @map("guest_visible")
+  status         String   @default("SCHEDULED")
+  organizerId    String?  @map("organizer_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  version        Int      @default(1)
 
   property     Property           @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
   participants EventParticipant[]

@@ -4,63 +4,10 @@
  * desk's rules, the bill, and service requests end to end. MNL opens on 2026-10-01.
  */
 import { randomUUID } from 'node:crypto';
-import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import {
-  type ApiResponse,
-  Mailbox,
-  startTestApp,
-  type TestContext,
-  TestClient,
-} from './harness.js';
-
-const GUEST_ORIGIN = 'http://localhost:43200';
-let guestIp = 0;
-
-/** A guest's browser: the guest cookie, the guest CSRF token, the portal's Origin. */
-class GuestClient {
-  private cookie: string | undefined;
-  csrfToken: string | undefined;
-  /** Distinct client IP per guest so the link-exchange rate limit does not couple tests. */
-  private readonly ip = `10.9.${Math.floor(++guestIp / 250)}.${guestIp % 250}`;
-
-  constructor(private readonly app: NestFastifyApplication) {}
-
-  async request(
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
-    url: string,
-    body?: unknown,
-    headers: Record<string, string> = {},
-  ): Promise<ApiResponse> {
-    const res = await this.app.inject({
-      method,
-      url: `/api/v1${url}`,
-      ...(body === undefined ? {} : { payload: body as Record<string, unknown> }),
-      headers: {
-        origin: GUEST_ORIGIN,
-        'x-forwarded-for': this.ip,
-        ...(this.cookie ? { cookie: this.cookie } : {}),
-        ...(this.csrfToken && method !== 'GET' ? { 'x-csrf-token': this.csrfToken } : {}),
-        ...headers,
-      },
-    });
-    const cookie = res.cookies.find((c) => c.name === 'hotel_guest');
-    if (cookie) this.cookie = cookie.value ? `hotel_guest=${cookie.value}` : undefined;
-    const parsed =
-      String(res.headers['content-type'] ?? '').includes('json') && res.body
-        ? JSON.parse(res.body)
-        : res.body;
-    if (parsed && typeof parsed === 'object' && typeof parsed.csrfToken === 'string')
-      this.csrfToken = parsed.csrfToken;
-    return { status: res.statusCode, body: parsed, headers: res.headers };
-  }
-
-  get rawCookie() {
-    return this.cookie;
-  }
-}
+import { GuestClient, Mailbox, startTestApp, type TestContext, TestClient } from './harness.js';
 
 let ctx: TestContext;
 let reception: TestClient;

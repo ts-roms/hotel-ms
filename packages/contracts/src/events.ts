@@ -51,6 +51,9 @@ export interface DomainEventPayloads {
   LostItemLogged: { itemId: string };
   EventScheduled: { eventId: string };
   EventCancelled: { eventId: string };
+  GuestIdentitySubmitted: { documentId: string; reservationRoomId: string };
+  GuestIdentityReviewed: { documentId: string; decision: 'APPROVE' | 'REJECT' };
+  GuestCheckoutRequested: { serviceRequestId: string; reservationRoomId: string };
   RoomStatusChanged: {
     roomId: string;
     dimension: 'HOUSEKEEPING' | 'SERVICE';

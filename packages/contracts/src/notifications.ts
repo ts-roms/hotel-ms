@@ -13,6 +13,8 @@ export const NOTIFICATION_KINDS = [
   'EVENT_INVITED',
   'EVENT_CHANGED',
   'EVENTS_TODAY',
+  'GUEST_ID_SUBMITTED',
+  'CHECKOUT_REQUESTED',
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

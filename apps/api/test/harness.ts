@@ -215,3 +215,51 @@ export class TestClient {
     return this.request('GET', url, undefined, headers);
   }
 }
+
+export const GUEST_ORIGIN = 'http://localhost:43200';
+let guestIp = 0;
+/** A network per test file, so rate limits keyed by IP never couple files. */
+const guestNet = 10 + Math.floor(Math.random() * 240);
+
+/** A guest's browser: the guest cookie, the guest CSRF token, the portal's Origin. */
+export class GuestClient {
+  private cookie: string | undefined;
+  csrfToken: string | undefined;
+  /** Distinct client IP per guest so the link-exchange rate limit does not couple tests. */
+  private readonly ip = `10.${guestNet}.${Math.floor(++guestIp / 250)}.${guestIp % 250}`;
+
+  constructor(private readonly app: NestFastifyApplication) {}
+
+  async request(
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+    url: string,
+    body?: unknown,
+    headers: Record<string, string> = {},
+  ): Promise<ApiResponse> {
+    const res = await this.app.inject({
+      method,
+      url: `/api/v1${url}`,
+      ...(body === undefined ? {} : { payload: body as Record<string, unknown> | Buffer }),
+      headers: {
+        origin: GUEST_ORIGIN,
+        'x-forwarded-for': this.ip,
+        ...(this.cookie ? { cookie: this.cookie } : {}),
+        ...(this.csrfToken && method !== 'GET' ? { 'x-csrf-token': this.csrfToken } : {}),
+        ...headers,
+      },
+    });
+    const cookie = res.cookies.find((c) => c.name === 'hotel_guest');
+    if (cookie) this.cookie = cookie.value ? `hotel_guest=${cookie.value}` : undefined;
+    const parsed =
+      String(res.headers['content-type'] ?? '').includes('json') && res.body
+        ? JSON.parse(res.body)
+        : res.body;
+    if (parsed && typeof parsed === 'object' && typeof parsed.csrfToken === 'string')
+      this.csrfToken = parsed.csrfToken;
+    return { status: res.statusCode, body: parsed, headers: res.headers };
+  }
+
+  get rawCookie() {
+    return this.cookie;
+  }
+}

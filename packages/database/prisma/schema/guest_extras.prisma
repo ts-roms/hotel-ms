@@ -1,0 +1,53 @@
+/// A guest's ID uploaded in the guest portal for one stay, reviewed by the front desk
+/// (ADR-0027). The file is deleted 30 days after departure (or when superseded); the
+/// review record stays.
+model GuestIdentityDocument {
+  id                String    @id @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationRoomId String    @map("reservation_room_id") @db.Uuid
+  guestId           String    @map("guest_id") @db.Uuid
+  /// PASSPORT | DRIVERS_LICENSE | NATIONAL_ID | OTHER
+  documentType      String    @map("document_type")
+  contentType       String    @map("content_type")
+  sizeBytes         Int       @map("size_bytes")
+  sha256            String    @db.Char(64)
+  storageKey        String    @map("storage_key")
+  /// PENDING | APPROVED | REJECTED | SUPERSEDED
+  status            String    @default("PENDING")
+  rejectionReason   String?   @map("rejection_reason")
+  uploadedAt        DateTime  @default(now()) @map("uploaded_at") @db.Timestamptz(3)
+  reviewedAt        DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  reviewedBy        String?   @map("reviewed_by") @db.Uuid
+  purgedAt          DateTime? @map("purged_at") @db.Timestamptz(3)
+  version           Int       @default(1)
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  guest           Guest           @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, status])
+  @@index([organizationId, reservationRoomId])
+  @@map("guest_identity_documents")
+}
+
+/// The guest portal's notification feed for one stay (ADR-0027).
+model GuestNotification {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationRoomId String    @map("reservation_room_id") @db.Uuid
+  /// SERVICE_REQUEST | ORDER | IDENTITY | CHECKOUT | MESSAGE
+  kind              String
+  title             String
+  body              String    @default("")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt            DateTime? @map("read_at") @db.Timestamptz(3)
+  createdBy         String?   @map("created_by") @db.Uuid
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, reservationRoomId, createdAt])
+  @@map("guest_notifications")
+}
