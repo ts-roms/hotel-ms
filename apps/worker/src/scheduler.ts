@@ -5,6 +5,8 @@ import type { Logger } from 'pino';
 
 /** Property-local wall clock time after which the nightly run is due. */
 export const NIGHTLY_AFTER = '03:00';
+/** Reminders go out in the morning, property-local time (ADR-0024). */
+export const REMINDERS_AFTER = '09:00';
 
 function toLocal(instant: Date, timeZone: string): { date: string; time: string } {
   const parts = Object.fromEntries(
@@ -44,6 +46,8 @@ const jobOptions = (jobId: string): JobsOptions => ({
  * - `property.nightly`: once per property and local date, after 03:00 local time
  *   (reconciliation).
  * - `organization.monthly-accrual`: once per organization and local month (leave accruals).
+ * - `property.daily-reminders`: once per property and local date, after 09:00 local time
+ *   (guest arrival/departure reminders, birthdays; ADR-0024).
  * - `organization.daily-documents`: once per organization and local date, after 03:00
  *   local time (document sweep and retention, ADR-0021).
  */
@@ -65,6 +69,18 @@ export async function planTenantJobs(
   for (const p of properties) {
     if (!active.has(p.organization_id)) continue;
     const local = toLocal(now, p.timezone);
+    if (local.time >= REMINDERS_AFTER) {
+      jobs.push({
+        name: 'property.daily-reminders',
+        data: {
+          type: 'property.daily-reminders',
+          organizationId: p.organization_id,
+          propertyId: p.id,
+          localDate: local.date,
+        },
+        opts: jobOptions(`reminders:${p.id}:${local.date}`),
+      });
+    }
     if (local.time < NIGHTLY_AFTER) continue;
     jobs.push({
       name: 'property.nightly',

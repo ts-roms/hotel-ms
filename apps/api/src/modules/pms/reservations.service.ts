@@ -18,6 +18,7 @@ import { GuestsService, toGuestSummary } from './guests.service.js';
 import { releaseInventory, takeInventory } from './inventory.js';
 import { priceStay, toMinor } from './pricing.js';
 import { businessDateOf } from './rooms.service.js';
+import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 
 export const reservationInclude = {
   booker: true,
@@ -113,6 +114,7 @@ export class ReservationsService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly guestMessages: GuestMessagesService,
   ) {}
 
   private get ctx() {
@@ -309,6 +311,7 @@ export class ReservationsService {
         return this.load(tx, reservation.id);
       }),
     );
+    await this.guestMessages.bookingConfirmed(row.id);
     return toReservationDto(row);
   }
 
@@ -699,6 +702,7 @@ export class ReservationsService {
       );
       return this.load(tx, reservationId);
     });
+    await this.guestMessages.bookingCancelled(reservationId);
     return toReservationDto(row);
   }
 }

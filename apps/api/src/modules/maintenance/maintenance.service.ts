@@ -28,6 +28,7 @@ import { matchesType } from '../hr/documents.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { RoomsService } from '../pms/rooms.service.js';
 import { invalidState, nextNumber } from '../pms/reservations.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 const include = {
   room: { select: { number: true } },
@@ -68,6 +69,7 @@ export class MaintenanceService {
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly inbox: NotificationsService,
   ) {}
 
   private get ctx() {
@@ -304,6 +306,16 @@ export class MaintenanceService {
             outOfOrder: input.outOfOrder,
           },
         });
+        if (input.priority === 'URGENT') {
+          await this.inbox.notifyInTx(tx, {
+            membershipIds: await this.inbox.membersWith(tx, 'maintenance.manage', propertyId),
+            propertyId,
+            kind: 'MAINTENANCE_URGENT',
+            title: `Urgent: ${input.title}`,
+            body: input.description,
+            link: `/p/${propertyId}/maintenance`,
+          });
+        }
         await this.outbox.enqueue(
           tx,
           'MaintenanceRequested',
@@ -407,6 +419,16 @@ export class MaintenanceService {
         data: { ...data, version: { increment: 1 } },
       });
       if (count !== 1) throw Problems.versionConflict();
+      if (action.action === 'ASSIGN' && action.membershipId !== membershipId) {
+        await this.inbox.notifyInTx(tx, {
+          membershipIds: [action.membershipId],
+          propertyId,
+          kind: 'MAINTENANCE_ASSIGNED',
+          title: `${row.requestNo}: ${row.title}`,
+          body: row.room ? `Room ${row.room.number}` : (row.location ?? ''),
+          link: `/p/${propertyId}/maintenance`,
+        });
+      }
       await tx.maintenanceUpdate.create({
         data: {
           organizationId,

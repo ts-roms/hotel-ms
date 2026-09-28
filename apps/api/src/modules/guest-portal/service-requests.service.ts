@@ -16,6 +16,7 @@ import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState, nextNumber } from '../pms/reservations.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 const include = {
   room: { select: { number: true } },
@@ -63,6 +64,7 @@ export class ServiceRequestsService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly inbox: NotificationsService,
   ) {}
 
   private get ctx() {
@@ -216,6 +218,20 @@ export class ServiceRequestsService {
         { serviceRequestId: id, status: row.status },
         { propertyId },
       );
+      if (
+        row.assignedMembershipId &&
+        row.assignedMembershipId !== current.assignedMembershipId &&
+        row.assignedMembershipId !== this.cls.get('membershipId')
+      ) {
+        await this.inbox.notifyInTx(tx, {
+          membershipIds: [row.assignedMembershipId],
+          propertyId,
+          kind: 'SERVICE_REQUEST_ASSIGNED',
+          title: `${row.requestNo}: ${row.category.replaceAll('_', ' ').toLowerCase()}`,
+          body: row.description,
+          link: `/p/${propertyId}/service-requests`,
+        });
+      }
       return toDto(row);
     });
   }

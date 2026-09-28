@@ -110,6 +110,10 @@ HR keeps employee documents (contracts, IDs, certificates) on the employee page.
 and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019). **Document retention** (HR) deletes a
 category's documents a set number of months after an employee leaves (ADR-0021).
 
+Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
+birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
+on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.
+
 **Maintenance** tracks problems from report to fix (assign, start, hold, complete, photos, history);
 a request can take a room out of order until it is closed. **Lost & found** logs items until they
 are returned or disposed of (ADR-0023).

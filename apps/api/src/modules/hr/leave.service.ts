@@ -24,6 +24,7 @@ import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState } from '../pms/reservations.service.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 import { toShiftDto } from './schedule.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 const insufficientBalance = (detail: string) =>
   new ProblemException(409, 'INSUFFICIENT_LEAVE_BALANCE', 'Not enough leave', detail);
@@ -103,6 +104,7 @@ export class LeaveService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly notifications: NotificationsQueue,
+    private readonly inbox: NotificationsService,
   ) {}
 
   // ---- Leave types -------------------------------------------------------------------------
@@ -364,6 +366,16 @@ export class LeaveService {
         { leaveRequestId: row.id, employeeId: me.id },
         { propertyId: row.propertyId },
       );
+      await this.inbox.notifyInTx(tx, {
+        membershipIds: (await this.inbox.membersWith(tx, 'leave.approve', row.propertyId)).filter(
+          (m) => m !== me.membershipId,
+        ),
+        propertyId: row.propertyId,
+        kind: 'LEAVE_REQUESTED',
+        title: `Leave request: ${me.preferredName || me.firstName} ${me.lastName}`,
+        body: `${type.name}, ${input.startDate} to ${input.endDate}`,
+        link: `/p/${row.propertyId}/leave`,
+      });
       return toRequestDto(row);
     });
   }
@@ -463,6 +475,7 @@ export class LeaveService {
               lastName: true,
               preferredName: true,
               workEmail: true,
+              membershipId: true,
               membership: { select: { identity: { select: { email: true } } } },
             },
           },
@@ -594,6 +607,14 @@ export class LeaveService {
       const row = await tx.leaveRequest.findUniqueOrThrow({
         where: { id },
         include: requestInclude,
+      });
+      await this.inbox.notifyInTx(tx, {
+        membershipIds: [current.employee.membershipId],
+        propertyId,
+        kind: 'LEAVE_DECIDED',
+        title: `Leave ${status === 'APPROVED' ? 'approved' : 'not approved'}`,
+        body: `${current.leaveType.name}, ${fromDbDate(current.startDate)} to ${fromDbDate(current.endDate)}${input.note ? ` · ${input.note}` : ''}`,
+        link: '/me',
       });
       const recipient = current.employee.membership?.identity.email ?? current.employee.workEmail;
       return {

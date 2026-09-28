@@ -19,6 +19,7 @@ import { invalidState } from '../pms/reservations.service.js';
 import { computeAttendanceDays } from './attendance-rules.js';
 import { photoRetentionDaysInTx } from './photo-retention.js';
 import { employeeName, HrAccess, toEmployeeSummary } from './hr-access.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 /** A shift left open longer than this no longer blocks clocking in (it shows incomplete). */
 const STALE_OPEN_HOURS = 18;
@@ -76,6 +77,7 @@ export class AttendanceService {
     private readonly access: HrAccess,
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
+    private readonly inbox: NotificationsService,
   ) {}
 
   // ---- Self service ------------------------------------------------------------------------
@@ -380,6 +382,18 @@ export class AttendanceService {
         entityId: id,
         propertyId,
         after: { status, note: input.note },
+      });
+      const employee = await tx.employee.findUniqueOrThrow({
+        where: { id: current.employeeId },
+        select: { membershipId: true },
+      });
+      await this.inbox.notifyInTx(tx, {
+        membershipIds: [employee.membershipId],
+        propertyId,
+        kind: 'CORRECTION_DECIDED',
+        title: `Attendance correction ${status === 'APPROVED' ? 'approved' : 'rejected'}`,
+        body: input.note ?? '',
+        link: '/me',
       });
       const row = await tx.attendanceCorrection.findUniqueOrThrow({
         where: { id },

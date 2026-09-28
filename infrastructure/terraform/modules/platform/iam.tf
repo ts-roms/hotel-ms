@@ -53,10 +53,23 @@ resource "aws_iam_role" "task" {
   tags               = local.tags
 }
 
+# SMS to phone numbers has no resource ARN; topic publishes are denied below.
+#trivy:ignore:AWS-0057
 data "aws_iam_policy_document" "worker" {
   statement {
     actions   = ["ses:SendEmail", "ses:SendRawEmail"]
     resources = [aws_sesv2_email_identity.domain.arn, aws_sesv2_configuration_set.main.arn]
+  }
+  # Direct-to-phone SMS (ADR-0024). Publishing to a phone number has no topic ARN, so
+  # the resource is "*"; denying topic publishes keeps the grant to SMS only.
+  statement {
+    actions   = ["sns:Publish"]
+    resources = ["*"]
+  }
+  statement {
+    effect    = "Deny"
+    actions   = ["sns:Publish"]
+    resources = ["arn:aws:sns:*:*:*"]
   }
 }
 

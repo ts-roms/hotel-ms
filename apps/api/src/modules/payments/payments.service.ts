@@ -19,6 +19,7 @@ import {
   type PaymentProviders,
   type ProviderEvent,
 } from './providers.js';
+import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 
 const INTENT_TTL_MS = 60 * 60_000;
 
@@ -81,6 +82,7 @@ export class PaymentsService {
     private readonly cls: ClsService<RequestContext>,
     @Inject(PAYMENT_PROVIDERS) private readonly providers: PaymentProviders,
     @Inject(ENV) private readonly env: Env,
+    private readonly guestMessages: GuestMessagesService,
   ) {}
 
   private provider(): PaymentProvider {
@@ -350,7 +352,8 @@ export class PaymentsService {
     this.cls.set('propertyId', intent.propertyId);
     this.cls.set('system', true);
 
-    return this.db.run(async (tx) => {
+    let received: string | null = null;
+    const outcome = await this.db.run(async (tx) => {
       await tx.$queryRaw`SELECT id FROM payment_intents WHERE id = ${intent.id}::uuid FOR UPDATE`;
       const current = await tx.paymentIntent.findUniqueOrThrow({ where: { id: intent.id } });
       if (current.kind === 'HOLD') return this.applyHoldEvent(tx, current, event);
@@ -422,8 +425,11 @@ export class PaymentsService {
         },
         { propertyId: current.propertyId },
       );
-      return 'processed';
+      received = paymentId;
+      return 'processed' as const;
     });
+    if (received) await this.guestMessages.paymentReceived(received);
+    return outcome;
   }
 
   /** A hold only moves PENDING → AUTHORIZED (or FAILED); capture and release are ours. */

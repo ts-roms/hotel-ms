@@ -56,6 +56,7 @@ locals {
         EMAIL_FROM            = var.email_from
         AWS_REGION            = local.region
         SES_CONFIGURATION_SET = aws_sesv2_configuration_set.main.configuration_set_name
+        SMS_TRANSPORT         = "sns"
         LOG_LEVEL             = "info"
       }
       secrets = ["DATABASE_SYSTEM_URL", "REDIS_QUEUE_URL"]

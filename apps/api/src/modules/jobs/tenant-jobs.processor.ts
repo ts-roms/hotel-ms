@@ -8,6 +8,7 @@ import { ENV, type Env } from '../../config/env.js';
 import { EmployeeDocumentsService } from '../hr/documents.service.js';
 import { LeaveService } from '../hr/leave.service.js';
 import { TimeClockService } from '../hr/time-clock.service.js';
+import { RemindersService } from '../notifications/reminders.service.js';
 import { ReportsService } from '../payments/reports.service.js';
 
 /**
@@ -26,6 +27,7 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
     private readonly leave: LeaveService,
     private readonly documents: EmployeeDocumentsService,
     private readonly timeClock: TimeClockService,
+    private readonly reminders: RemindersService,
     @Inject(ENV) private readonly env: Env,
   ) {}
 
@@ -60,6 +62,9 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
         case 'property.nightly':
           this.cls.set('propertyId', job.propertyId);
           return this.reports.recordNightly(job.propertyId, job.localDate);
+        case 'property.daily-reminders':
+          this.cls.set('propertyId', job.propertyId);
+          return this.reminders.run(job.propertyId, job.localDate);
         case 'organization.monthly-accrual':
           return this.leave.accrueMonth(job.period);
         case 'organization.daily-documents': {
