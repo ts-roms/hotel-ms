@@ -3,6 +3,14 @@
 import { DEVICE_PERMISSIONS, type DeviceKind, type DevicePairing } from '@hotel/contracts';
 import {
   Alert,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Badge,
   Button,
   Card,
@@ -10,10 +18,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
+  Label,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -107,18 +117,32 @@ export default function DevicesPage() {
                   >
                     {t('dev.newCode')}
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="hover:text-destructive"
-                    disabled={act.isPending}
-                    onClick={() => {
-                      if (window.confirm(t('dev.revokeConfirm')))
-                        act.mutate(() => pms.revokeDevice(d.id));
-                    }}
-                  >
-                    {t('dev.revoke')}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="hover:text-destructive"
+                        disabled={act.isPending}
+                      >
+                        {t('dev.revoke')}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('dev.revokeConfirm')}</AlertDialogTitle>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t('dev.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => act.mutate(() => pms.revokeDevice(d.id))}
+                        >
+                          {t('dev.revoke')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </span>
               )}
             </div>
@@ -133,7 +157,7 @@ export default function DevicesPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={create} className="flex flex-col gap-3 text-sm">
-            <Select
+            <NativeSelect
               aria-label={t('dev.kind')}
               value={kind}
               onChange={(e) => {
@@ -144,7 +168,7 @@ export default function DevicesPage() {
             >
               <option value="KITCHEN">{t('dev.kitchen')}</option>
               <option value="TIME_CLOCK">{t('dev.timeClock')}</option>
-            </Select>
+            </NativeSelect>
             <Input
               required
               maxLength={60}
@@ -155,18 +179,17 @@ export default function DevicesPage() {
             />
             <fieldset className="flex flex-wrap gap-4" hidden={kind !== 'KITCHEN'}>
               {DEVICE_PERMISSIONS.map((p) => (
-                <label key={p} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                <Label key={p} className="flex items-center gap-2 font-normal">
+                  <Checkbox
                     checked={permissions.includes(p)}
-                    onChange={(e) =>
+                    onCheckedChange={(v) =>
                       setPermissions(
-                        e.target.checked ? [...permissions, p] : permissions.filter((x) => x !== p),
+                        v === true ? [...permissions, p] : permissions.filter((x) => x !== p),
                       )
                     }
                   />
                   {PERMISSION_LABELS[p]}
-                </label>
+                </Label>
               ))}
             </fieldset>
             <Button

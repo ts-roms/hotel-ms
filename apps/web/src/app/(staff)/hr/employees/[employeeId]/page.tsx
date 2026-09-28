@@ -12,7 +12,7 @@ import {
   CardTitle,
   Input,
   LoadingRegion,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonCard,
   SkeletonText,
@@ -191,7 +191,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
         </div>
         {hasPermission(session.data, 'leave.manage') && (
           <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
-            <Select
+            <NativeSelect
               className="w-auto"
               aria-label={t('hr.leaveType')}
               value={leaveTypeId}
@@ -202,7 +202,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
                   {lt.name}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Input
               className="w-24"
               type="number"

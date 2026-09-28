@@ -15,7 +15,7 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +58,7 @@ function ScopeSelect({
 }) {
   const { items } = usePropertyNames();
   return (
-    <Select
+    <NativeSelect
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={t('members.scope')}
@@ -69,7 +69,7 @@ function ScopeSelect({
           {p.name}
         </option>
       ))}
-    </Select>
+    </NativeSelect>
   );
 }
 
@@ -198,13 +198,17 @@ function InviteForm({
           </div>
           <div className="flex flex-col gap-1">
             <Label htmlFor="invite-role">{t('members.role')}</Label>
-            <Select id="invite-role" value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+            <NativeSelect
+              id="invite-role"
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+            >
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </div>
           <div className="flex flex-col gap-1">
             <Label>{t('members.scope')}</Label>
@@ -272,9 +276,11 @@ function MemberRow({
               >
                 {a.roleName} · {nameOf(a.propertyId)}
                 {canAssign && (
-                  <button
+                  <Button
                     type="button"
-                    className="ml-1 rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    variant="ghost"
+                    size="icon"
+                    className="ml-1 size-auto rounded-full p-0.5 hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3"
                     aria-label={`${t('members.remove')} ${a.roleName}`}
                     disabled={busy}
                     onClick={() =>
@@ -282,7 +288,7 @@ function MemberRow({
                     }
                   >
                     <X className="size-3" />
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}
@@ -290,7 +296,7 @@ function MemberRow({
           <div className="flex flex-wrap items-center gap-2">
             {canAssign && roles.length > 0 && (
               <>
-                <Select
+                <NativeSelect
                   className="w-auto"
                   value={roleId}
                   onChange={(e) => setRoleId(e.target.value)}
@@ -301,7 +307,7 @@ function MemberRow({
                       {r.name}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
                 <div className="w-auto">
                   <ScopeSelect
                     value={scope}

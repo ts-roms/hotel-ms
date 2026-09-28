@@ -109,15 +109,16 @@ function SignIn({ state, onSignedIn }: { state: KioskState; onSignedIn: (s: Kios
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {state.operators.map((o) => (
-                <button
+                <Button
                   key={o.membershipId}
                   type="button"
+                  variant="outline"
                   onClick={() => setWho(o.membershipId)}
-                  className="flex items-center gap-2 rounded-lg border p-3 text-left text-sm transition-colors hover:bg-accent"
+                  className="h-auto justify-start whitespace-normal p-3 text-left font-normal text-foreground"
                 >
                   <Avatar name={o.name} className="size-8" />
                   {o.name}
-                </button>
+                </Button>
               ))}
             </div>
           )

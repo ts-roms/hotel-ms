@@ -13,7 +13,7 @@ import {
   Input,
   LoadingRegion,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -85,7 +85,7 @@ export default function MenusPage() {
       <PageHeader
         title={t('fnb.menus')}
         actions={
-          <Select
+          <NativeSelect
             className="h-9 w-auto"
             aria-label={t('fnb.outlet')}
             value={outlet}
@@ -96,7 +96,7 @@ export default function MenusPage() {
                 {o.name}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
         }
       />
       {error && <Alert>{errorMessage(error)}</Alert>}
@@ -106,7 +106,7 @@ export default function MenusPage() {
         <Card className="animate-fade-in">
           <CardContent className="flex flex-col gap-3 pt-5">
             <form onSubmit={onAddItem} className="flex flex-wrap items-center gap-2" noValidate>
-              <Select
+              <NativeSelect
                 className="w-auto"
                 aria-label={t('fnb.category')}
                 value={categoryId}
@@ -117,7 +117,7 @@ export default function MenusPage() {
                     {c.name}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
               <Input
                 className="min-w-40 flex-1"
                 placeholder={t('fnb.itemName')}
@@ -258,15 +258,16 @@ function PriceEditor({
   const [text, setText] = useState<string | null>(null);
   if (text === null) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
         disabled={saving}
-        className="group inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium tabular-nums transition-colors hover:bg-accent disabled:opacity-60"
+        className="group h-auto gap-1 rounded-md px-2 py-1 text-foreground tabular-nums disabled:opacity-60 [&_svg]:size-3"
         onClick={() => setText(minorToInput(value, currency))}
       >
         {formatMoney(value, currency)}
         <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      </button>
+      </Button>
     );
   }
   const parsed = parseMoney(text, currency);

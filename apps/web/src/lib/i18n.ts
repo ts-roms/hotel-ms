@@ -661,6 +661,7 @@ const en = {
   'dev.newCode': 'New pairing code',
   'dev.revoke': 'Revoke',
   'dev.revokeConfirm': 'Revoke this device? It is signed out and can never be used again.',
+  'dev.cancel': 'Cancel',
   'dev.lastSeen': 'last seen',
   'dev.none': 'No devices yet.',
   'pin.title': 'Device PIN',

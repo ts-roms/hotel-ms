@@ -13,7 +13,7 @@ import {
   Avatar,
   Input,
   LoadingRegion,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonCard,
   SkeletonText,
@@ -290,7 +290,7 @@ function RoomLine({
           </span>
           {canUpdate && upcoming && (
             <>
-              <Select
+              <NativeSelect
                 className="w-auto"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
@@ -302,7 +302,7 @@ function RoomLine({
                     {room.number}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
               <Button
                 size="sm"
                 variant="outline"

@@ -14,9 +14,15 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
@@ -107,38 +113,38 @@ export default function RoomsPage() {
               {t('rooms.none')}
             </p>
           )}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr className="border-b">
-                  <th className="p-2 font-semibold">{t('rooms.number')}</th>
-                  <th className="p-2 font-semibold">{t('res.roomType')}</th>
-                  <th className="p-2 font-semibold">{t('rooms.housekeeping')}</th>
-                  <th className="p-2 font-semibold">{t('rooms.service')}</th>
-                </tr>
-              </thead>
-              <tbody className="stagger">
-                {rooms.data
-                  ?.filter((r) => !r.archived)
-                  .map((room) => (
-                    <tr key={room.id} className="border-t transition-colors hover:bg-accent/40">
-                      <td className="p-2.5 font-semibold">{room.number}</td>
-                      <td className="p-2.5 font-mono text-muted-foreground">{room.roomTypeCode}</td>
-                      <td className="p-2.5">
-                        <Badge variant={statusVariant(room.housekeepingStatus)} dot>
-                          {statusLabel(room.housekeepingStatus)}
-                        </Badge>
-                      </td>
-                      <td className="p-2.5">
-                        <Badge variant={statusVariant(room.serviceStatus)}>
-                          {statusLabel(room.serviceStatus)}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('rooms.number')}</TableHead>
+                <TableHead>{t('res.roomType')}</TableHead>
+                <TableHead>{t('rooms.housekeeping')}</TableHead>
+                <TableHead>{t('rooms.service')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="stagger">
+              {rooms.data
+                ?.filter((r) => !r.archived)
+                .map((room) => (
+                  <TableRow key={room.id}>
+                    <TableCell className="font-semibold">{room.number}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground">
+                      {room.roomTypeCode}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(room.housekeepingStatus)} dot>
+                        {statusLabel(room.housekeepingStatus)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(room.serviceStatus)}>
+                        {statusLabel(room.serviceStatus)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
           {canManageRooms && roomTypes.data && (
             <>
               <AddRoomForm propertyId={propertyId} roomTypes={roomTypes.data} onDone={refresh} />
@@ -270,7 +276,7 @@ function AddRoomForm({
         value={number}
         onChange={(e) => setNumber(e.target.value)}
       />
-      <Select
+      <NativeSelect
         aria-label={t('res.roomType')}
         value={roomTypeId}
         onChange={(e) => setRoomTypeId(e.target.value)}
@@ -280,7 +286,7 @@ function AddRoomForm({
             {rt.code} · {rt.name}
           </option>
         ))}
-      </Select>
+      </NativeSelect>
       <Button type="submit" variant="outline" loading={action.isPending}>
         {t('rooms.addRoom')}
       </Button>
@@ -320,7 +326,7 @@ function BlockRoomForm({
       <Label className="pt-2 sm:col-span-5">{t('rooms.block')}</Label>
       {action.error && <Alert className="sm:col-span-5">{errorMessage(action.error)}</Alert>}
       {action.isSuccess && <Notice className="sm:col-span-5">{t('rooms.saved')}</Notice>}
-      <Select
+      <NativeSelect
         aria-label={t('rooms.number')}
         value={form.roomId}
         onChange={(e) => setForm({ ...form, roomId: e.target.value })}
@@ -330,7 +336,7 @@ function BlockRoomForm({
             {r.number}
           </option>
         ))}
-      </Select>
+      </NativeSelect>
       <Input
         aria-label={t('rooms.blockFrom')}
         type="date"

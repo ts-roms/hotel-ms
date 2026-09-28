@@ -9,6 +9,12 @@ import {
   LoadingRegion,
   PageHeader,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -79,35 +85,33 @@ export default function AvailabilityPage() {
       {availability.data && availability.data.roomTypes.length > 0 && (
         <Card
           className={cn(
-            'animate-fade-in overflow-x-auto transition-opacity duration-300',
+            'animate-fade-in overflow-hidden transition-opacity duration-300',
             paging && 'opacity-50',
           )}
           aria-busy={paging}
         >
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="sticky left-0 z-10 whitespace-nowrap bg-card p-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t('res.roomType')}
-                </th>
+          <Table className="border-collapse">
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="sticky left-0 z-10 bg-card">{t('res.roomType')}</TableHead>
                 {availability.data.roomTypes[0]?.nights.map((n) => (
-                  <th
+                  <TableHead
                     key={n.date}
-                    className="whitespace-nowrap p-3 text-center text-xs font-medium text-muted-foreground"
+                    className="text-center font-medium normal-case tracking-normal"
                   >
                     {formatDate(n.date)}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {availability.data.roomTypes.map((rt) => (
-                <tr key={rt.roomTypeId} className="border-t transition-colors hover:bg-accent/30">
-                  <th className="sticky left-0 z-10 bg-card p-3 text-left font-mono font-semibold">
+                <TableRow key={rt.roomTypeId}>
+                  <TableHead scope="row" className="sticky left-0 z-10 bg-card font-mono">
                     {rt.code}
-                  </th>
+                  </TableHead>
                   {rt.nights.map((n) => (
-                    <td
+                    <TableCell
                       key={n.date}
                       className="p-1.5 text-center"
                       title={`${n.sold} / ${n.blocked}`}
@@ -127,12 +131,12 @@ export default function AvailabilityPage() {
                           {n.sold}/{n.blocked}
                         </div>
                       </div>
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </Card>
       )}
     </div>

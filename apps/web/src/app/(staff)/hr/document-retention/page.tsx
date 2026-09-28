@@ -1,7 +1,7 @@
 'use client';
 
 import { type DocumentRetention, EMPLOYEE_DOCUMENT_CATEGORIES } from '@hotel/contracts';
-import { Alert, Button, Card, CardContent, Input, Notice, PageHeader } from '@hotel/ui';
+import { Alert, Button, Card, CardContent, Input, Label, Notice, PageHeader } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
@@ -60,7 +60,7 @@ export default function DocumentRetentionPage() {
             }}
           >
             {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
-              <label key={c} className="flex items-center justify-between gap-3">
+              <Label key={c} className="flex items-center justify-between gap-3 font-normal">
                 <span>{CATEGORY_LABELS[c]}</span>
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <Input
@@ -73,7 +73,7 @@ export default function DocumentRetentionPage() {
                   />
                   {t('hr.monthsAfterTermination')}
                 </span>
-              </label>
+              </Label>
             ))}
             {canEdit && (
               <Button

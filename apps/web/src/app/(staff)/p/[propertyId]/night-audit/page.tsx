@@ -15,6 +15,12 @@ import {
   SkeletonCard,
   SkeletonTable,
   StatCard,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BedDouble, CalendarDays, MoonStar, TriangleAlert, UserX } from 'lucide-react';
@@ -134,7 +140,7 @@ export default function NightAuditPage() {
         <CardHeader>
           <CardTitle className="text-base">{t('na.history')}</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           {history.isPending && (
             <LoadingRegion label={t('loading')}>
               <SkeletonTable rows={4} columns={5} />
@@ -144,24 +150,23 @@ export default function NightAuditPage() {
             <EmptyState icon={<MoonStar />} title={t('na.noHistory')} className="border-0" />
           )}
           {history.data && history.data.length > 0 && (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr className="border-b">
-                  <th className="px-2 py-3 font-semibold">{t('res.businessDate')}</th>
-                  <th className="px-2 py-3 text-right font-semibold">{t('na.occupancy')}</th>
-                  <th className="px-2 py-3 text-right font-semibold">{t('na.revenue')}</th>
-                  <th className="px-2 py-3 text-right font-semibold">{t('na.adr')}</th>
-                  <th className="px-2 py-3 text-right font-semibold">{t('na.revpar')}</th>
-                </tr>
-              </thead>
-              <tbody className="stagger">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-2">{t('res.businessDate')}</TableHead>
+                  <TableHead className="px-2 text-right">{t('na.occupancy')}</TableHead>
+                  <TableHead className="px-2 text-right">{t('na.revenue')}</TableHead>
+                  <TableHead className="px-2 text-right">{t('na.adr')}</TableHead>
+                  <TableHead className="px-2 text-right">{t('na.revpar')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="stagger">
                 {history.data.map((d) => (
-                  <tr
-                    key={d.businessDate}
-                    className="border-t transition-colors hover:bg-accent/40"
-                  >
-                    <td className="px-2 py-3 font-medium">{formatDate(d.businessDate)}</td>
-                    <td className="px-2 py-3 text-right tabular-nums">
+                  <TableRow key={d.businessDate}>
+                    <TableCell className="px-2 py-3 font-medium">
+                      {formatDate(d.businessDate)}
+                    </TableCell>
+                    <TableCell className="px-2 py-3 text-right tabular-nums">
                       <div className="flex items-center justify-end gap-2">
                         <div className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-muted sm:block">
                           <div
@@ -174,20 +179,20 @@ export default function NightAuditPage() {
                           ({d.stats.roomsSold}/{d.stats.roomsAvailable})
                         </span>
                       </div>
-                    </td>
-                    <td className="px-2 py-3 text-right tabular-nums">
+                    </TableCell>
+                    <TableCell className="px-2 py-3 text-right tabular-nums">
                       {formatMoney(d.stats.roomRevenueMinor, d.stats.currency)}
-                    </td>
-                    <td className="px-2 py-3 text-right tabular-nums">
+                    </TableCell>
+                    <TableCell className="px-2 py-3 text-right tabular-nums">
                       {formatMoney(d.stats.adrMinor, d.stats.currency)}
-                    </td>
-                    <td className="px-2 py-3 text-right tabular-nums">
+                    </TableCell>
+                    <TableCell className="px-2 py-3 text-right tabular-nums">
                       {formatMoney(d.stats.revparMinor, d.stats.currency)}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

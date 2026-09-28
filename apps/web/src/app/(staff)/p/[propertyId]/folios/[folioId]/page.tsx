@@ -12,9 +12,13 @@ import {
   EmptyState,
   Input,
   LoadingRegion,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
@@ -97,41 +101,41 @@ export default function FolioPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           {f.lines.length === 0 && (
             <EmptyState icon={<Receipt />} title={t('folio.noLines')} className="border-0" />
           )}
-          <table className="w-full text-sm">
-            <tbody className="stagger">
+          <Table>
+            <TableBody className="stagger">
               {f.lines.map((line) => (
-                <tr
+                <TableRow
                   key={line.id}
                   className={
                     line.reversed
-                      ? 'border-t text-muted-foreground line-through'
-                      : 'border-t transition-colors hover:bg-accent/40'
+                      ? 'text-muted-foreground line-through hover:bg-transparent'
+                      : undefined
                   }
                 >
-                  <td className="whitespace-nowrap px-2 py-2.5 text-muted-foreground">
+                  <TableCell className="whitespace-nowrap px-2 text-muted-foreground">
                     {formatDate(line.businessDate)}
-                  </td>
-                  <td className="px-2 py-2.5">
+                  </TableCell>
+                  <TableCell className="px-2">
                     {line.parentLineId ? (
                       <span className="pl-4 text-muted-foreground">{line.description}</span>
                     ) : (
                       line.description
                     )}
                     {line.reason && <span className="text-muted-foreground"> · {line.reason}</span>}
-                  </td>
-                  <td className="px-2 py-2.5">
+                  </TableCell>
+                  <TableCell className="px-2">
                     <Badge variant={line.type === 'PAYMENT' ? 'success' : 'neutral'}>
                       {statusLabel(line.type)}
                     </Badge>
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-2.5 text-right font-medium tabular-nums">
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap px-2 text-right font-medium tabular-nums">
                     {formatMoney(line.amountMinor, f.currency)}
-                  </td>
-                  <td className="py-1.5 pl-2 text-right">
+                  </TableCell>
+                  <TableCell className="py-1.5 pl-2 pr-0 text-right">
                     {open &&
                       can('folio.void') &&
                       line.type === 'CHARGE' &&
@@ -151,11 +155,11 @@ export default function FolioPage() {
                           {t('folio.void')}
                         </Button>
                       )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -256,7 +260,7 @@ function AmountForm({
       <CardContent>
         <form onSubmit={submit} className="grid gap-2 sm:grid-cols-4">
           {invalid && <Alert className="sm:col-span-4">{t('folio.invalidAmount')}</Alert>}
-          <Select
+          <NativeSelect
             aria-label={optionLabel}
             value={option}
             onChange={(e) => setOption(e.target.value)}
@@ -266,7 +270,7 @@ function AmountForm({
                 {o.replace('_', ' ').toLowerCase()}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           {withDescription && (
             <Input
               aria-label={descriptionLabel ?? t('folio.description')}

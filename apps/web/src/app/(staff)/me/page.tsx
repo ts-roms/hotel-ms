@@ -14,10 +14,16 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   SkeletonCard,
   SkeletonTable,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, Camera, Clock as ClockIcon, Plane, Timer } from 'lucide-react';
@@ -265,39 +271,34 @@ function MyAttendance() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm">
         {days.isPending && <SkeletonTable rows={4} columns={6} />}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-              <tr className="border-b">
-                <th className="py-2">{t('hr.date')}</th>
-                <th>{t('hr.status')}</th>
-                <th>{t('hr.in')}</th>
-                <th>{t('hr.out')}</th>
-                <th>{t('hr.worked')}</th>
-                <th>{t('hr.late')}</th>
-              </tr>
-            </thead>
-            <tbody className="tabular-nums">
-              {days.data?.map((d) => (
-                <tr
-                  key={`${d.date}-${d.shift?.startsAt ?? ''}`}
-                  className="border-t transition-colors hover:bg-accent/40"
-                >
-                  <td className="py-2">{formatDate(d.date)}</td>
-                  <td>
-                    <Badge variant={statusVariant(d.status)} dot>
-                      {statusLabel(d.status)}
-                    </Badge>
-                  </td>
-                  <td>{clock(d.firstIn)}</td>
-                  <td>{clock(d.lastOut)}</td>
-                  <td>{duration(d.workedMinutes)}</td>
-                  <td>{duration(d.lateMinutes)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('hr.date')}</TableHead>
+              <TableHead>{t('hr.status')}</TableHead>
+              <TableHead>{t('hr.in')}</TableHead>
+              <TableHead>{t('hr.out')}</TableHead>
+              <TableHead>{t('hr.worked')}</TableHead>
+              <TableHead>{t('hr.late')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="tabular-nums">
+            {days.data?.map((d) => (
+              <TableRow key={`${d.date}-${d.shift?.startsAt ?? ''}`}>
+                <TableCell>{formatDate(d.date)}</TableCell>
+                <TableCell>
+                  <Badge variant={statusVariant(d.status)} dot>
+                    {statusLabel(d.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>{clock(d.firstIn)}</TableCell>
+                <TableCell>{clock(d.lastOut)}</TableCell>
+                <TableCell>{duration(d.workedMinutes)}</TableCell>
+                <TableCell>{duration(d.lateMinutes)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
         <form
           onSubmit={onSubmit}
           className="flex flex-wrap items-end gap-2 rounded-lg bg-muted/40 p-3"
@@ -305,7 +306,7 @@ function MyAttendance() {
         >
           <div className="flex flex-col gap-1">
             <Label htmlFor="corr-type">{t('hr.missedPunch')}</Label>
-            <Select
+            <NativeSelect
               id="corr-type"
               className="w-auto"
               value={form.type}
@@ -316,7 +317,7 @@ function MyAttendance() {
                   {t(PUNCH_LABEL[type])}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </div>
           <Input
             type="datetime-local"
@@ -406,7 +407,7 @@ function MyLeave() {
           className="flex flex-wrap items-end gap-2 rounded-lg bg-muted/40 p-3"
           noValidate
         >
-          <Select
+          <NativeSelect
             aria-label={t('hr.leaveType')}
             className="w-auto"
             value={leaveTypeId}
@@ -417,7 +418,7 @@ function MyLeave() {
                 {lt.name}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Input
             type="date"
             aria-label={t('hr.from')}
