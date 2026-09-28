@@ -100,6 +100,24 @@ export const PERMISSIONS = {
     sensitive: true,
   },
   'housekeeping.read': { description: 'View the housekeeping board', scopes: ORG_OR_PROPERTY },
+  'maintenance.read': { description: 'View maintenance requests', scopes: ORG_OR_PROPERTY },
+  'maintenance.report': {
+    description: 'Report maintenance problems (rooms, equipment, public areas)',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'maintenance.work': {
+    description: 'Work on maintenance requests: start, hold, complete, notes and photos',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'maintenance.manage': {
+    description: 'Assign, prioritize and cancel maintenance; take rooms out of order',
+    scopes: ORG_OR_PROPERTY,
+  },
+  'lost_found.log': { description: 'Log and view lost & found items', scopes: ORG_OR_PROPERTY },
+  'lost_found.manage': {
+    description: 'Return or dispose of lost & found items',
+    scopes: ORG_OR_PROPERTY,
+  },
   'housekeeping.update': {
     description: 'Update cleaning status of assigned rooms',
     scopes: ORG_OR_PROPERTY,

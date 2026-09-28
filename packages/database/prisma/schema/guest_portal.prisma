@@ -91,6 +91,7 @@ model ServiceRequest {
   version              Int                    @default(1)
 
   room     Room?                   @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  maintenance MaintenanceRequest[]
   guest    Guest?                  @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
   assignee OrganizationMembership? @relation(fields: [organizationId, assignedMembershipId], references: [organizationId, id], onDelete: Restrict)
 

@@ -110,6 +110,10 @@ HR keeps employee documents (contracts, IDs, certificates) on the employee page.
 and to an SSE-KMS encrypted S3 bucket in the cloud (ADR-0019). **Document retention** (HR) deletes a
 category's documents a set number of months after an employee leaves (ADR-0021).
 
+**Maintenance** tracks problems from report to fix (assign, start, hold, complete, photos, history);
+a request can take a room out of order until it is closed. **Lost & found** logs items until they
+are returned or disposed of (ADR-0023).
+
 Kitchen tablets: a manager adds a device under **Devices** and gets a pairing code. On the tablet,
 open http://localhost:43100/kiosk and enter the code. Staff then sign in there with the PIN they
 set under **Security**, and see the kitchen board with the device's permissions only (ADR-0020).

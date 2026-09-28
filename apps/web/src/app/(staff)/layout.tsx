@@ -29,6 +29,8 @@ import {
   Users,
   FileClock,
   Landmark,
+  PackageSearch,
+  Wrench,
   Tablet,
   Wallet,
   X,
@@ -75,6 +77,13 @@ const PROPERTY_NAV: NavItem[] = [
     icon: Sparkles,
     permission: 'housekeeping.read',
   },
+  {
+    href: 'maintenance',
+    label: 'nav.maintenance',
+    icon: Wrench,
+    permission: 'maintenance.read',
+  },
+  { href: 'lost-found', label: 'nav.lostFound', icon: PackageSearch, permission: 'lost_found.log' },
   {
     href: 'service-requests',
     label: 'nav.serviceRequests',
