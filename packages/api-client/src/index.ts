@@ -1,4 +1,9 @@
 import type {
+  Calendar,
+  CreateEventInput,
+  GuestEvent,
+  HotelEvent,
+  UpdateEventRequest,
   FnbReport,
   GuestServiceReport,
   HrReport,
@@ -658,6 +663,21 @@ export function createApiClient(options: ApiClientOptions = {}) {
           from: string,
           to: string,
         ) => `${baseUrl}${p}/reports/${kind}/export${qs({ from, to })}`,
+        calendar: (from: string, to: string) =>
+          call<Calendar>('GET', `${p}/calendar${qs({ from, to })}`).then((r) => r.data),
+        event: (eventId: string) =>
+          call<HotelEvent>('GET', `${p}/events/${id(eventId)}`).then((r) => r.data),
+        eventPeople: () =>
+          call<{ items: { membershipId: string; displayName: string }[] }>(
+            'GET',
+            `${p}/events/people`,
+          ).then((r) => r.data.items),
+        createEvent: (body: CreateEventInput) =>
+          call<HotelEvent>('POST', `${p}/events`, body).then((r) => r.data),
+        updateEvent: (eventId: string, version: number, body: UpdateEventRequest) =>
+          call<HotelEvent>('PATCH', `${p}/events/${id(eventId)}`, body, {
+            'if-match': `W/"${version}"`,
+          }).then((r) => r.data),
         maintenance: (query: Partial<MaintenanceListQuery> = {}) =>
           call<{ items: MaintenanceRequest[] }>(
             'GET',
@@ -971,6 +991,7 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
       call<PaymentIntent>('POST', '/guest/holds', {}, { 'idempotency-key': idempotencyKey }).then(
         data,
       ),
+    events: () => call<{ items: GuestEvent[] }>('GET', '/guest/events').then((r) => r.data.items),
     menus: () => call<{ items: Menu[] }>('GET', '/guest/menus').then((r) => r.data.items),
     orders: () => call<{ items: Order[] }>('GET', '/guest/orders').then((r) => r.data.items),
     placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>

@@ -33,6 +33,7 @@ model OrganizationMembership {
   deviceSessions    DeviceSession[]
   maintenanceWork   MaintenanceRequest[]
   notifications     Notification[]
+  eventInvitations  EventParticipant[]
   invitations       OrganizationInvitation[]
   housekeepingTasks HousekeepingTask[]
   serviceRequests   ServiceRequest[]

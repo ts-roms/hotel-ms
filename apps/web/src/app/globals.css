@@ -236,3 +236,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* FullCalendar (classic theme) in the app's colors, light and dark (ADR-0026). */
+.hotel-calendar {
+  --fc-classic-button: var(--secondary);
+  --fc-classic-button-border: var(--border);
+  --fc-classic-button-strong: var(--primary);
+  --fc-classic-button-strong-border: var(--primary);
+  --fc-classic-button-outline: color-mix(in oklch, var(--ring) 50%, transparent);
+  --fc-classic-button-foreground: var(--foreground);
+  --fc-classic-primary: var(--primary);
+  --fc-classic-highlight: color-mix(in oklch, var(--primary) 15%, transparent);
+  --fc-classic-today: color-mix(in oklch, var(--primary) 12%, transparent);
+  --fc-classic-background: var(--card);
+  --fc-classic-faint: color-mix(in oklch, var(--foreground) 4%, transparent);
+  --fc-classic-muted: color-mix(in oklch, var(--foreground) 8%, transparent);
+  --fc-classic-strong: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-faint-foreground: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+  --fc-classic-border: var(--border);
+  --fc-classic-strong-border: color-mix(in oklch, var(--foreground) 25%, var(--border));
+}

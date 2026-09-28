@@ -104,6 +104,11 @@ import {
 } from './modules/management/management.controller.js';
 import { ManagementService } from './modules/management/management.service.js';
 import { SearchService } from './modules/management/search.service.js';
+import {
+  CalendarController,
+  GuestEventsController,
+} from './modules/calendar/calendar.controller.js';
+import { CalendarService } from './modules/calendar/calendar.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';
 import { PropertiesService } from './modules/tenancy/properties.service.js';
@@ -128,6 +133,8 @@ export const CONTROLLERS = [
   HrController,
   EmployeeDocumentsController,
   DocumentRetentionController,
+  CalendarController,
+  GuestEventsController,
   ManagementController,
   PropertyReportsController,
   NotificationsController,
@@ -188,6 +195,7 @@ export class AppModule {
         RemindersService,
         ManagementService,
         SearchService,
+        CalendarService,
         LostFoundService,
         RatesService,
         GuestsService,

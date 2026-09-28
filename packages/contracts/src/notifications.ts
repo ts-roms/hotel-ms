@@ -10,6 +10,9 @@ export const NOTIFICATION_KINDS = [
   'CORRECTION_DECIDED',
   'SERVICE_REQUEST_ASSIGNED',
   'BIRTHDAYS_TODAY',
+  'EVENT_INVITED',
+  'EVENT_CHANGED',
+  'EVENTS_TODAY',
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
