@@ -15,7 +15,6 @@ import {
   buttonVariants,
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   cn,
@@ -52,7 +51,9 @@ import {
 import Link from 'next/link';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/guest-shell';
+import { Section } from '@/components/section';
 import { api, errorMessage, formatDate, formatMoney, rememberStay } from '@/lib/api';
+import { CheckoutRequest, HotelInfo, IdUpload, Notifications } from './extras';
 import { RoomService } from './room-service';
 
 const CATEGORY_LABELS: Record<(typeof SERVICE_CATEGORIES)[number], string> = {
@@ -66,7 +67,13 @@ const CATEGORY_LABELS: Record<(typeof SERVICE_CATEGORIES)[number], string> = {
   LUGGAGE: 'Luggage help',
   WAKE_UP_CALL: 'Wake-up call',
   OTHER: 'Something else',
+  CHECKOUT: 'Checkout',
 };
+
+/** What the request form offers; checkout has its own card. */
+const REQUEST_CATEGORIES = SERVICE_CATEGORIES.filter(
+  (c): c is Exclude<(typeof SERVICE_CATEGORIES)[number], 'CHECKOUT'> => c !== 'CHECKOUT',
+);
 
 const STATUS_LABELS: Record<ServiceRequest['status'], [string, BadgeVariant]> = {
   OPEN: ['Sent', 'info'],
@@ -121,7 +128,11 @@ export default function StayPage() {
     <Shell>
       <div className="stagger flex flex-col gap-4">
         <Overview stay={s} />
+        <Notifications unread={s.unreadNotifications} />
         {!s.verified && <Verification stay={s} />}
+        {s.verified && (s.stay.status === 'RESERVED' || s.stay.status === 'IN_HOUSE') && (
+          <IdUpload stay={s} />
+        )}
         {s.stay.status === 'RESERVED' && <PreCheckIn stay={s} />}
         {checkedIn && <RoomAccess result={checkedIn} />}
         {s.selfCheckInAvailable && !checkedIn && (
@@ -132,9 +143,11 @@ export default function StayPage() {
         {s.verified && (s.stay.status === 'IN_HOUSE' || s.stay.status === 'CHECKED_OUT') && (
           <Bill />
         )}
+        {s.verified && s.stay.status === 'IN_HOUSE' && <CheckoutRequest stay={s} />}
         {(s.stay.status === 'RESERVED' || s.stay.status === 'IN_HOUSE') && (
           <HotelEvents timeZone={s.property.timezone} />
         )}
+        <HotelInfo stay={s} />
         <Contact stay={s} />
       </div>
     </Shell>
@@ -143,36 +156,6 @@ export default function StayPage() {
 
 function Shell({ children }: { children: ReactNode }) {
   return <main className="mx-auto flex max-w-lg flex-col gap-4 p-4 pb-12">{children}</main>;
-}
-
-/** Section card with an icon badge in the title. */
-function Section({
-  icon,
-  title,
-  description,
-  children,
-  className,
-}: {
-  icon: ReactNode;
-  title: ReactNode;
-  description?: ReactNode;
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <Card className={className}>
-      <CardHeader className={children ? 'pb-4' : undefined}>
-        <CardTitle className="flex items-center gap-3 text-base">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-4">
-            {icon}
-          </span>
-          {title}
-        </CardTitle>
-        {description && <CardDescription className="pl-12">{description}</CardDescription>}
-      </CardHeader>
-      {children}
-    </Card>
-  );
 }
 
 function StaySkeleton() {
@@ -548,7 +531,7 @@ function SelfCheckIn({
 
 function Requests() {
   const queryClient = useQueryClient();
-  const [category, setCategory] = useState<(typeof SERVICE_CATEGORIES)[number]>('TOWELS');
+  const [category, setCategory] = useState<(typeof REQUEST_CATEGORIES)[number]>('TOWELS');
   const [description, setDescription] = useState('');
   const list = useQuery({ queryKey: ['requests'], queryFn: api.serviceRequests });
   const create = useMutation({
@@ -578,7 +561,7 @@ function Requests() {
               value={category}
               onChange={(e) => setCategory(e.target.value as typeof category)}
             >
-              {SERVICE_CATEGORIES.map((c) => (
+              {REQUEST_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {CATEGORY_LABELS[c]}
                 </option>

@@ -144,6 +144,11 @@ export const PERMISSIONS = {
     description: 'Acknowledge, assign and complete guest service requests',
     scopes: ORG_OR_PROPERTY,
   },
+  'guest.identity.review': {
+    description: 'View and approve or reject guest IDs uploaded in the guest portal',
+    scopes: ORG_OR_PROPERTY,
+    sensitive: true,
+  },
   'guest_portal.invite': {
     description: 'Send guests their portal link',
     scopes: ORG_OR_PROPERTY,

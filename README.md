@@ -119,6 +119,11 @@ rooms out of order in one month, week or list view, each shown as far as your pe
 Managers schedule events there and invite staff; guest-visible events appear in the guest portal
 under "What's on" (ADR-0026).
 
+In the guest portal, guests can upload an ID for the front desk to approve (**Guest IDs**, which needs
+two-step verification). They also see hotel information and updates about their requests and
+orders, and can request checkout. **Guest portal** settings hold the hotel information and can
+require an approved ID before self check-in. ID files are deleted 30 days after the stay (ADR-0027).
+
 Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
 birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
 on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.

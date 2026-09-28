@@ -19,6 +19,7 @@ import {
 import { businessDateOf } from '../pms/rooms.service.js';
 import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
+import { GuestInboxService } from '../guest-portal/guest-inbox.service.js';
 
 export const frontDeskInclude = {
   reservation: { select: { id: true, confirmationNo: true, currency: true, status: true } },
@@ -67,6 +68,7 @@ export class FrontOfficeService {
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
     private readonly guestMessages: GuestMessagesService,
+    private readonly guestInbox: GuestInboxService,
   ) {}
 
   private get ctx() {
@@ -246,6 +248,26 @@ export class FrontOfficeService {
         { reservationRoomId: lineId, stayId: stay.id, roomId: stay.roomId, folioId: folio.id },
         { propertyId },
       );
+      // A checkout the guest asked for in the portal is now done (ADR-0027).
+      await tx.serviceRequest.updateMany({
+        where: {
+          reservationRoomId: lineId,
+          category: 'CHECKOUT',
+          status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
+        },
+        data: {
+          status: 'DONE',
+          completedAt: new Date(),
+          version: { increment: 1 },
+        },
+      });
+      await this.guestInbox.notifyInTx(tx, {
+        reservationRoomId: lineId,
+        propertyId,
+        kind: 'CHECKOUT',
+        title: "You're checked out",
+        body: 'Thank you for staying with us. Your final bill is under "Your bill".',
+      });
       return this.reservations.load(tx, reservationId);
     });
     return toReservationDto(row);

@@ -16,7 +16,11 @@ import { OutboxService } from '../outbox/outbox.service.js';
 import { cardHoldStateInTx } from '../payments/holds.js';
 import { toMinor } from '../pms/pricing.js';
 import { ReservationsService } from '../pms/reservations.service.js';
+import { guestPortalSettingsInTx } from './guest-info.service.js';
+import { GuestIdentityService } from './guest-identity.service.js';
+import { GuestInboxService } from './guest-inbox.service.js';
 import { GuestSessions, newToken, sha256 } from './guest-session.js';
+import { ServiceRequestsService } from './service-requests.service.js';
 import { ROOM_ACCESS_PROVIDER, type RoomAccessProvider } from './room-access.js';
 
 const CODE_TTL_SECONDS = 600;
@@ -59,6 +63,9 @@ export class GuestPortalService {
     private readonly cls: ClsService<RequestContext>,
     @Inject(ROOM_ACCESS_PROVIDER) private readonly roomAccess: RoomAccessProvider,
     @Inject(ENV) private readonly env: Env,
+    private readonly identity: GuestIdentityService,
+    private readonly guestInbox: GuestInboxService,
+    private readonly requests: ServiceRequestsService,
   ) {}
 
   private get guest() {
@@ -344,6 +351,11 @@ export class GuestPortalService {
           fromDbDate(line.arrivalDate) === businessDate &&
           (await this.selfCheckInEnabled(tx)),
         cardHold: await this.cardHold(tx, line),
+        identity: await this.identity.summaryInTx(tx, line.id),
+        identityRequired: (await guestPortalSettingsInTx(tx, line.propertyId))
+          .requireIdForSelfCheckIn,
+        checkoutRequested: await this.requests.checkoutRequestedInTx(tx, line.id),
+        unreadNotifications: await this.guestInbox.unreadInTx(tx, line.id),
         csrfToken: this.sessions.csrfTokenFor(this.guest.tokenHash),
       };
     });
@@ -399,7 +411,7 @@ export class GuestPortalService {
    * with all its rules. Any failure sends the guest to the front desk; nothing bypasses it.
    */
   async selfCheckIn(): Promise<SelfCheckInResult> {
-    const { line, property, hold } = await this.db.run(async (tx) => {
+    const { line, property, hold, identity } = await this.db.run(async (tx) => {
       const line = await this.loadLine(tx);
       const property = await tx.property.findUniqueOrThrow({ where: { id: line.propertyId } });
       if (!(await this.selfCheckInEnabled(tx))) {
@@ -411,7 +423,11 @@ export class GuestPortalService {
         );
       }
       const hold = await cardHoldStateInTx(tx, line.propertyId, line.id);
-      return { line, property, hold };
+      const settings = await guestPortalSettingsInTx(tx, line.propertyId);
+      const identity = settings.requireIdForSelfCheckIn
+        ? await this.identity.summaryInTx(tx, line.id)
+        : undefined;
+      return { line, property, hold, identity };
     });
     if (line.status !== 'RESERVED') throw seeFrontDesk('This booking cannot be checked in online.');
     if (fromDbDate(line.arrivalDate) !== fromDbDate(property.currentBusinessDate)) {
@@ -423,6 +439,23 @@ export class GuestPortalService {
       throw seeFrontDesk(
         `Check-in starts at ${property.checkInTime}. Early arrival? The front desk will help.`,
       );
+    }
+
+    // The property's ID rule (ADR-0027): an approved ID before the room is handed over.
+    if (identity !== undefined && identity?.status !== 'APPROVED') {
+      throw identity?.status === 'PENDING'
+        ? new ProblemException(
+            409,
+            'ID_REVIEW_PENDING',
+            'ID not reviewed yet',
+            'The front desk is checking your ID. Try again shortly, or see the front desk.',
+          )
+        : new ProblemException(
+            409,
+            'ID_REQUIRED',
+            'ID required',
+            'Upload a photo of your ID for the front desk to approve, then check in.',
+          );
     }
 
     if (!hold.authorized) {

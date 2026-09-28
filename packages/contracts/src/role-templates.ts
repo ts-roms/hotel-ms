@@ -46,6 +46,7 @@ const FRONT_OFFICE = [
   'maintenance.report',
   'lost_found.log',
   'lost_found.manage',
+  'guest.identity.review',
 ] as const satisfies readonly PermissionCode[];
 
 const HOUSEKEEPING = [

@@ -34,6 +34,7 @@ import {
   Landmark,
   PackageSearch,
   Wrench,
+  Smartphone,
   Tablet,
   Wallet,
   X,
@@ -91,6 +92,12 @@ const PROPERTY_NAV: NavItem[] = [
   },
   { href: 'lost-found', label: 'nav.lostFound', icon: PackageSearch, permission: 'lost_found.log' },
   {
+    href: 'id-review',
+    label: 'nav.idReview',
+    icon: IdCard,
+    permission: 'guest.identity.review',
+  },
+  {
     href: 'service-requests',
     label: 'nav.serviceRequests',
     icon: BellRing,
@@ -112,6 +119,12 @@ const PROPERTY_NAV: NavItem[] = [
     label: 'nav.financeSettings',
     icon: Landmark,
     permission: 'exchange_rate.manage',
+  },
+  {
+    href: 'guest-portal',
+    label: 'nav.guestPortal',
+    icon: Smartphone,
+    permission: 'property.settings.manage',
   },
   { href: 'night-audit', label: 'nav.nightAudit', icon: MoonStar, permission: 'night_audit.run' },
 ];

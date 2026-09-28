@@ -33,6 +33,13 @@ import {
   GuestPortalController,
   GuestServiceController,
 } from './modules/guest-portal/guest-portal.controller.js';
+import {
+  GuestAdminController,
+  GuestExtrasController,
+} from './modules/guest-portal/guest-extras.controller.js';
+import { GuestIdentityService } from './modules/guest-portal/guest-identity.service.js';
+import { GuestInboxService } from './modules/guest-portal/guest-inbox.service.js';
+import { GuestInfoService } from './modules/guest-portal/guest-info.service.js';
 import { GuestPortalService } from './modules/guest-portal/guest-portal.service.js';
 import { GuestGuard, GuestSessions } from './modules/guest-portal/guest-session.js';
 import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-portal/room-access.js';
@@ -129,6 +136,8 @@ export const CONTROLLERS = [
   GuestsController,
   FrontOfficeController,
   GuestServiceController,
+  GuestExtrasController,
+  GuestAdminController,
   GuestPortalController,
   HrController,
   EmployeeDocumentsController,
@@ -207,6 +216,9 @@ export class AppModule {
         GuestSessions,
         GuestPortalService,
         ServiceRequestsService,
+        GuestIdentityService,
+        GuestInboxService,
+        GuestInfoService,
         HrAccess,
         PeopleService,
         ScheduleService,

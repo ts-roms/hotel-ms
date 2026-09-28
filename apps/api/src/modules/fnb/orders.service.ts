@@ -15,6 +15,7 @@ import { actorOf } from '../../common/actor.js';
 import { ProblemException, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
+import { GuestInboxService } from '../guest-portal/guest-inbox.service.js';
 import { RealtimeService } from '../../infrastructure/realtime.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../folio/folio.service.js';
@@ -44,6 +45,13 @@ const itemUnavailable = (name: string) =>
     'Item unavailable',
     `${name} is not available right now.`,
   );
+
+const GUEST_ORDER_UPDATE: Partial<Record<OrderStatus, (orderNo: string) => string>> = {
+  CONFIRMED: (n) => `Order ${n} confirmed`,
+  READY: (n) => `Order ${n} is ready for pickup`,
+  OUT_FOR_DELIVERY: (n) => `Order ${n} is on its way`,
+  DELIVERED: (n) => `Order ${n} delivered`,
+};
 
 const orderInclude = {
   outlet: { select: { name: true } },
@@ -113,6 +121,7 @@ export class OrdersService {
     private readonly outbox: OutboxService,
     private readonly realtime: RealtimeService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly guestInbox: GuestInboxService,
   ) {}
 
   private get organizationId() {
@@ -374,6 +383,17 @@ export class OrdersService {
         { orderId: id, outletId: current.outletId, from: current.status, to },
         { propertyId },
       );
+      // The guest's portal feed follows room and guest orders (ADR-0027).
+      const update = current.reservationRoomId ? GUEST_ORDER_UPDATE[to] : undefined;
+      if (update && (to !== 'READY' || !current.roomId)) {
+        await this.guestInbox.notifyInTx(tx, {
+          reservationRoomId: current.reservationRoomId!,
+          propertyId,
+          kind: 'ORDER',
+          title: update(current.orderNo),
+          body: current.outlet.name,
+        });
+      }
       if (charge) {
         await this.outbox.enqueue(
           tx,

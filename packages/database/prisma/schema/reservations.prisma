@@ -49,11 +49,12 @@ model Guest {
   createdBy           String?   @map("created_by") @db.Uuid
   updatedBy           String?   @map("updated_by") @db.Uuid
 
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  bookings         Reservation[]
-  reservationRooms ReservationRoom[]
-  serviceRequests  ServiceRequest[]
-  orders           Order[]
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  bookings          Reservation[]
+  reservationRooms  ReservationRoom[]
+  serviceRequests   ServiceRequest[]
+  orders            Order[]
+  identityDocuments GuestIdentityDocument[]
 
   @@unique([organizationId, id])
   @@index([organizationId, lastName, firstName])
@@ -114,14 +115,16 @@ model ReservationRoom {
   createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  reservation Reservation        @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
-  roomType    RoomType           @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
-  ratePlan    RatePlan           @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Restrict)
-  guest       Guest              @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
-  nights      ReservationNight[]
-  assignments RoomAssignment[]
-  stays       Stay[]
-  folios      Folio[]
+  reservation        Reservation             @relation(fields: [organizationId, reservationId], references: [organizationId, id], onDelete: Restrict)
+  roomType           RoomType                @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+  ratePlan           RatePlan                @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Restrict)
+  guest              Guest                   @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+  nights             ReservationNight[]
+  assignments        RoomAssignment[]
+  stays              Stay[]
+  folios             Folio[]
+  identityDocuments  GuestIdentityDocument[]
+  guestNotifications GuestNotification[]
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, arrivalDate])
@@ -160,8 +163,8 @@ model RoomAssignment {
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   createdBy         String?            @map("created_by") @db.Uuid
 
-  room            Room             @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
-  reservationRoom ReservationRoom? @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  room            Room                 @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  reservationRoom ReservationRoom?     @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
   maintenance     MaintenanceRequest[]
 
   @@index([organizationId, roomId, startDate])

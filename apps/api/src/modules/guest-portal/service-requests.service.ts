@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  type GuestCheckoutRequest,
   type GuestServiceRating,
   type GuestServiceRequestCreate,
   SERVICE_ROUTING,
@@ -17,6 +18,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { invalidState, nextNumber } from '../pms/reservations.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { GuestInboxService } from './guest-inbox.service.js';
 
 const include = {
   room: { select: { number: true } },
@@ -50,6 +52,17 @@ function toDto(r: Row): ServiceRequest {
 }
 
 const FINISHED = new Set(['DONE', 'CANCELLED']);
+
+const label = (category: string) => {
+  const words = category.replaceAll('_', ' ').toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+/** What the guest's feed says when staff move a request along (ADR-0027). */
+const GUEST_UPDATE: Partial<Record<string, (category: string) => string>> = {
+  ACKNOWLEDGED: (c) => `We're on it: ${label(c)}`,
+  DONE: (c) => `Done: ${label(c)}`,
+  CANCELLED: (c) => `Cancelled: ${label(c)}`,
+};
 const ACTIVE_STATUSES = ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] as const;
 
 /**
@@ -65,6 +78,7 @@ export class ServiceRequestsService {
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
     private readonly inbox: NotificationsService,
+    private readonly guestInbox: GuestInboxService,
   ) {}
 
   private get ctx() {
@@ -218,6 +232,16 @@ export class ServiceRequestsService {
         { serviceRequestId: id, status: row.status },
         { propertyId },
       );
+      const guestUpdate = row.status !== current.status ? GUEST_UPDATE[row.status] : undefined;
+      if (guestUpdate && row.reservationRoomId && row.category !== 'CHECKOUT') {
+        await this.guestInbox.notifyInTx(tx, {
+          reservationRoomId: row.reservationRoomId,
+          propertyId,
+          kind: 'SERVICE_REQUEST',
+          title: guestUpdate(row.category),
+          body: `${row.requestNo}${row.description ? ` · ${row.description}` : ''}`,
+        });
+      }
       if (
         row.assignedMembershipId &&
         row.assignedMembershipId !== current.assignedMembershipId &&
@@ -326,6 +350,65 @@ export class ServiceRequestsService {
         guestId: this.guest.guestId,
       });
     });
+  }
+
+  /**
+   * "Request checkout" (spec §23): a front-desk request, one open at a time. Checking the
+   * guest out closes it (FrontOfficeService.checkOut).
+   */
+  async guestRequestCheckout(input: GuestCheckoutRequest): Promise<ServiceRequest> {
+    const { propertyId } = this.ctx;
+    return this.db.run(async (tx) => {
+      const line = await tx.reservationRoom.findUniqueOrThrow({
+        where: { id: this.guest.reservationRoomId },
+        include: { stays: { where: { checkedOutAt: null }, select: { roomId: true } } },
+      });
+      const stay = line.stays[0];
+      if (line.status !== 'IN_HOUSE' || !stay)
+        throw invalidState('Checkout can be requested during your stay.');
+      const open = await tx.serviceRequest.count({
+        where: {
+          reservationRoomId: line.id,
+          category: 'CHECKOUT',
+          status: { in: [...ACTIVE_STATUSES] },
+        },
+      });
+      if (open > 0) throw invalidState('Your checkout request is already with the front desk.');
+      const description = [input.time ? `Leaving at ${input.time}` : 'Leaving now', input.note]
+        .filter(Boolean)
+        .join('. ');
+      const request = await this.create(tx, {
+        source: 'GUEST',
+        category: 'CHECKOUT',
+        description,
+        reservationRoomId: line.id,
+        roomId: stay.roomId,
+        guestId: this.guest.guestId,
+      });
+      await this.inbox.notifyInTx(tx, {
+        membershipIds: await this.inbox.membersWith(tx, 'stay.check_out', propertyId),
+        propertyId,
+        kind: 'CHECKOUT_REQUESTED',
+        title: `Checkout requested: room ${request.roomNumber ?? ''}`.trim(),
+        body: `${request.guestName ?? ''}${request.guestName ? ' · ' : ''}${description}`,
+        link: `/p/${propertyId}/front-desk`,
+      });
+      await this.outbox.enqueue(
+        tx,
+        'GuestCheckoutRequested',
+        { serviceRequestId: request.id, reservationRoomId: line.id },
+        { propertyId },
+      );
+      return request;
+    });
+  }
+
+  async checkoutRequestedInTx(tx: Tx, reservationRoomId: string): Promise<boolean> {
+    return (
+      (await tx.serviceRequest.count({
+        where: { reservationRoomId, category: 'CHECKOUT', status: { in: [...ACTIVE_STATUSES] } },
+      })) > 0
+    );
   }
 
   async guestRate(id: string, input: GuestServiceRating): Promise<ServiceRequest> {
