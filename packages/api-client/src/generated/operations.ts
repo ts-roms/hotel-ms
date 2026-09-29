@@ -230,8 +230,6 @@ export const paths = {
   FrontOfficeController_nightAuditPreview: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/night-audit`,
   /** POST /properties/{propertyId}/night-audit */
   FrontOfficeController_runNightAudit: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/night-audit`,
-  /** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message */
-  GuestAdminController_message: (path: { propertyId: string; reservationId: string; lineId: string }): string => `/properties/${e(path.propertyId)}/reservations/${e(path.reservationId)}/rooms/${e(path.lineId)}/guest-message`,
   /** GET /properties/{propertyId}/guest-portal-settings */
   GuestAdminController_settings: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/guest-portal-settings`,
   /** PUT /properties/{propertyId}/guest-portal-settings */
@@ -266,6 +264,8 @@ export const paths = {
   GuestImagesController_hotelImage: (path: { imageId: string }): string => `/guest/hotel-images/${e(path.imageId)}`,
   /** GET /guest/menu-items/{itemId}/image */
   GuestImagesController_menuImage: (path: { itemId: string }): string => `/guest/menu-items/${e(path.itemId)}/image`,
+  /** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message */
+  GuestInboxController_message: (path: { propertyId: string; reservationId: string; lineId: string }): string => `/properties/${e(path.propertyId)}/reservations/${e(path.reservationId)}/rooms/${e(path.lineId)}/guest-message`,
   /** POST /guest/holds */
   GuestPaymentsController_hold: (): string => `/guest/holds`,
   /** GET /guest/payments */
@@ -712,7 +712,6 @@ export interface Routes {
   FrontOfficeController_closings: 'GET /properties/{propertyId}/business-days';
   FrontOfficeController_nightAuditPreview: 'GET /properties/{propertyId}/night-audit';
   FrontOfficeController_runNightAudit: 'POST /properties/{propertyId}/night-audit';
-  GuestAdminController_message: 'POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message';
   GuestAdminController_settings: 'GET /properties/{propertyId}/guest-portal-settings';
   GuestAdminController_updateSettings: 'PUT /properties/{propertyId}/guest-portal-settings';
   GuestEventsController_list: 'GET /guest/events';
@@ -730,6 +729,7 @@ export interface Routes {
   GuestIdentityController_review: 'POST /properties/{propertyId}/guest-ids/{documentId}/review';
   GuestImagesController_hotelImage: 'GET /guest/hotel-images/{imageId}';
   GuestImagesController_menuImage: 'GET /guest/menu-items/{itemId}/image';
+  GuestInboxController_message: 'POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message';
   GuestPaymentsController_hold: 'POST /guest/holds';
   GuestPaymentsController_list: 'GET /guest/payments';
   GuestPaymentsController_pay: 'POST /guest/payments';
@@ -1448,11 +1448,6 @@ export function FrontOfficeController_runNightAudit<T>(call: Call, path: { prope
   return call<T>('POST', paths.FrontOfficeController_runNightAudit(path), body);
 }
 
-/** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message (204 No Content) */
-export function GuestAdminController_message(call: Call, path: { propertyId: string; reservationId: string; lineId: string }, body: unknown): Promise<Result<void>> {
-  return call<void>('POST', paths.GuestAdminController_message(path), body);
-}
-
 /** GET /properties/{propertyId}/guest-portal-settings */
 export function GuestAdminController_settings<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
   return call<T>('GET', paths.GuestAdminController_settings(path));
@@ -1536,6 +1531,11 @@ export function GuestImagesController_hotelImage<T>(call: Call, path: { imageId:
 /** GET /guest/menu-items/{itemId}/image */
 export function GuestImagesController_menuImage<T>(call: Call, path: { itemId: string }): Promise<Result<T>> {
   return call<T>('GET', paths.GuestImagesController_menuImage(path));
+}
+
+/** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message (204 No Content) */
+export function GuestInboxController_message(call: Call, path: { propertyId: string; reservationId: string; lineId: string }, body: unknown): Promise<Result<void>> {
+  return call<void>('POST', paths.GuestInboxController_message(path), body);
 }
 
 /** POST /guest/holds */

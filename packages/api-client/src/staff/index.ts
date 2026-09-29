@@ -22,6 +22,7 @@ import { imagesClient } from './property/images.js';
 import { importsClient } from './property/imports.js';
 import { inventoryClient } from './property/inventory.js';
 import { managementClient as propertyManagementClient } from './property/management.js';
+import { notificationsClient as propertyNotificationsClient } from './property/notifications.js';
 import { operationsClient } from './property/operations.js';
 import { pricingClient } from './property/pricing.js';
 import { reservationsClient } from './property/reservations.js';
@@ -39,6 +40,7 @@ function propertyClient(transport: Transport, propertyId: string) {
     ...frontOfficeClient(property),
     ...operationsClient(property),
     ...guestPortalClient(property),
+    ...propertyNotificationsClient(property),
     ...importsClient(property),
     ...imagesClient(property),
     ...financeClient(property),

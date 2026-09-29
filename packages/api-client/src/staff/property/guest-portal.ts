@@ -1,12 +1,8 @@
-import type {
-  GuestPortalSettings,
-  GuestPortalSettingsInput,
-  StaffGuestMessageInput,
-} from '@hotel/contracts';
+import type { GuestPortalSettings, GuestPortalSettingsInput } from '@hotel/contracts';
 import * as op from '../../generated/operations.js';
 import { data, type PropertyTransport } from '../../http.js';
 
-/** The guest portal from the staff side: portal links, settings and messages to guests. */
+/** The guest portal from the staff side: portal links and settings. */
 export function guestPortalClient({ call, propertyId }: PropertyTransport) {
   return {
     sendGuestPortalLink: (reservationId: string) =>
@@ -17,7 +13,5 @@ export function guestPortalClient({ call, propertyId }: PropertyTransport) {
       op
         .GuestAdminController_updateSettings<GuestPortalSettings>(call, { propertyId }, body)
         .then(data),
-    messageGuest: (reservationId: string, lineId: string, body: StaffGuestMessageInput) =>
-      op.GuestAdminController_message(call, { propertyId, reservationId, lineId }, body).then(data),
   };
 }
