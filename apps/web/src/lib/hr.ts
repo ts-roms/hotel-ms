@@ -1,33 +1,17 @@
 import type { EMPLOYEE_DOCUMENT_CATEGORIES, PunchType } from '@hotel/contracts';
-import { addDays, formatTime } from '@hotel/format';
-import type { MessageKey } from './i18n';
+import { formatDuration, formatTime } from '@hotel/format';
+import { type MessageKey, t } from './i18n';
 
-/** Today's calendar date on this device. */
-export function today(): string {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
-
-/** Monday of the week containing `date`. */
-export function mondayOf(date: string): string {
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 = Sunday
-  return addDays(date, weekday === 0 ? -6 : 1 - weekday);
-}
-
-export function weekDays(monday: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-}
-
-/** 125 → "2h 05m". */
+/** 125 → "2h 05m" (unit words from the catalog); nothing → "—". */
 export function duration(minutes: number): string {
   if (!minutes) return '—';
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+  return formatDuration(minutes, t('time.duration'));
 }
 
-/** "2026-10-05T06:03:00.000Z" → "14:03" on this device. */
-export function clock(iso: string | null): string {
+/** "2026-10-05T06:03:00.000Z" → "14:03", in `timeZone` (a property's) or on this device. */
+export function clock(iso: string | null, timeZone?: string): string {
   if (!iso) return '—';
-  return formatTime(iso, { hour12: false });
+  return formatTime(iso, { hour12: false, timeZone });
 }
 
 /** Punches allowed after the last one (NONE: no punch yet). */

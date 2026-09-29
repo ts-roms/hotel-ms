@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@hotel/format';
+import { formatDate, localToday } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -16,7 +16,6 @@ import { Plane } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { statusLabel, statusVariant } from '@/lib/status';
 
@@ -125,7 +124,8 @@ export function MyLeave() {
               <Badge variant={statusVariant(r.status)} dot>
                 {statusLabel(r.status)}
               </Badge>
-              {(r.status === 'PENDING' || (r.status === 'APPROVED' && r.startDate > today())) && (
+              {(r.status === 'PENDING' ||
+                (r.status === 'APPROVED' && r.startDate > localToday())) && (
                 <Button
                   size="sm"
                   variant="ghost"

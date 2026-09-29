@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, formatDate, localDate } from '@hotel/format';
+import { addDays, formatDate, localDate, localToday } from '@hotel/format';
 import {
   buttonVariants,
   Alert,
@@ -26,7 +26,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Check, Clock, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { clock, duration, PUNCH_LABEL, today } from '@/lib/hr';
+import { clock, duration, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
@@ -38,7 +38,7 @@ export default function AttendancePage() {
   const pms = usePms(propertyId);
   const can = useCan();
   const queryClient = useQueryClient();
-  const [to, setTo] = useState(today);
+  const [to, setTo] = useState(() => localToday());
   const from = addDays(to, -6);
   const days = useQuery({
     queryKey: ['attendance', propertyId, to],

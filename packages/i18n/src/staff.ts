@@ -958,6 +958,7 @@ export const en = {
   'time.hours': '{count} h',
   'time.minutesAgo': '{count} min ago',
   'time.hoursAgo': '{count} h ago',
+  'time.duration': '{hours}h {minutes}m',
   // Enum labels: one family per prefix, keyed by the raw value (see apps/web/src/lib/status.ts).
   'status.DIRTY': 'Dirty',
   'status.CLEANING': 'Cleaning',

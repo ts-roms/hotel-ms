@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, formatDate } from '@hotel/format';
+import { addDays, formatDate, localToday, startOfWeek, weekDates } from '@hotel/format';
 import {
   Alert,
   Button,
@@ -15,7 +15,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { CalendarClock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { Birthdays } from './_components/birthdays';
@@ -31,8 +30,8 @@ export default function SchedulePage() {
   const pms = usePms(propertyId);
   const can = useCan();
   const queryClient = useQueryClient();
-  const [monday, setMonday] = useState(() => mondayOf(today()));
-  const days = weekDays(monday);
+  const [monday, setMonday] = useState(() => startOfWeek(localToday()));
+  const days = weekDates(monday);
   const sunday = days[6]!;
   const canManage = can('schedule.manage');
 
@@ -71,7 +70,7 @@ export default function SchedulePage() {
   const data = schedule.data;
   const paging = schedule.isPlaceholderData;
   const drafts = data?.shifts.filter((s) => s.status === 'DRAFT').length ?? 0;
-  const todayDate = today();
+  const todayDate = localToday();
 
   return (
     <div className="flex flex-col gap-6">

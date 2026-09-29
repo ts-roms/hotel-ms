@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@hotel/format';
+import { formatDate, localToday } from '@hotel/format';
 import {
   Alert,
   Avatar,
@@ -26,7 +26,6 @@ import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
@@ -159,7 +158,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
         leaveTypeId,
         kind: Number(form.days) > 0 ? 'ACCRUAL' : 'ADJUSTMENT',
         days: Number(form.days),
-        effectiveDate: today(),
+        effectiveDate: localToday(),
         note: form.note,
       }),
     onSuccess: (data) => {

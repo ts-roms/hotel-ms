@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, formatDate, formatMoney } from '@hotel/format';
+import { addDays, formatDate, formatMoney, localToday } from '@hotel/format';
 import {
   Alert,
   buttonVariants,
@@ -18,7 +18,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { duration, today } from '@/lib/hr';
+import { duration } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useCan, usePms } from '@/lib/property';
 import { enumLabelOr } from '@/lib/status';
@@ -46,8 +46,8 @@ export function OperationalReports({ propertyId }: { propertyId: string }) {
   const can = useCan();
   const tabs = TABS.filter((tab) => can(tab.permission));
   const [tab, setTab] = useState<Tab | null>(null);
-  const [to, setTo] = useState(today());
-  const [from, setFrom] = useState(addDays(today(), -29));
+  const [to, setTo] = useState(localToday());
+  const [from, setFrom] = useState(addDays(localToday(), -29));
   const active = tab ?? tabs[0]?.key ?? null;
   const valid = from <= to;
   const report = useQuery({

@@ -1,14 +1,13 @@
 'use client';
 
 import { PAY_BASES } from '@hotel/contracts';
-import { formatDate, formatMoney, parseMoney } from '@hotel/format';
+import { formatDate, formatMoney, localToday, parseMoney } from '@hotel/format';
 import { Alert, Button, Input, NativeSelect } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Banknote } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { RecordSection } from './record-section';
 
@@ -21,7 +20,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
     retry: false,
   });
   const [form, setForm] = useState({
-    effectiveFrom: today(),
+    effectiveFrom: localToday(),
     payBasis: 'MONTHLY' as (typeof PAY_BASES)[number],
     amount: '',
     currency: 'PHP',

@@ -1,13 +1,12 @@
 'use client';
 
-import { formatDate } from '@hotel/format';
+import { formatDate, localToday } from '@hotel/format';
 import { Alert, Button, Input, Label, NativeSelect, Textarea } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { RecordSection } from './record-section';
 
@@ -20,7 +19,7 @@ export function ReviewsCard({ employeeId }: { employeeId: string }) {
     retry: false,
   });
   const empty = {
-    reviewDate: today(),
+    reviewDate: localToday(),
     periodFrom: '',
     periodTo: '',
     rating: 3,

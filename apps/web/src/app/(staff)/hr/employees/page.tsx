@@ -22,11 +22,11 @@ import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useProperties } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+import { localToday } from '@hotel/format';
 
 export default function EmployeesPage() {
   const session = useSession();
@@ -130,14 +130,14 @@ function NewEmployee() {
         preferredName: null,
         workEmail: null,
         workPhone: null,
-        hireDate: today(),
+        hireDate: localToday(),
         employmentType: form.employmentType,
         birthdayVisibility: 'HIDDEN',
         assignment: {
           propertyId,
           departmentId,
           positionId: form.positionId || null,
-          startDate: today(),
+          startDate: localToday(),
           endDate: null,
           isPrimary: true,
         },
