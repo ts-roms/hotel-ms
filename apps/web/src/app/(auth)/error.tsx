@@ -2,8 +2,8 @@
 
 import { RouteError } from '@/components/route-error';
 
-/** Inside the property layout, so the property context and shell stay in place. */
-export default function PropertyError(props: {
+/** Inside the sign-in backdrop, so the brand stays in place. */
+export default function AuthError(props: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
