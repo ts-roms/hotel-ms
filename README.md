@@ -28,10 +28,11 @@ apps/
   guest/      Next.js 16 guest portal PWA (proxies only /api/v1/guest to the API)
 packages/
   contracts/  Zod schemas, permission catalog, error codes, event types (shared by all)
-  database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed
-  api-client/ Typed clients for the staff and guest apps
+  database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed,
+              password hashing; @hotel/database/testing is the test harness
+  api-client/ Hand-written typed clients for the staff, guest and kiosk apps (+ ./react)
   format/     Money, date, time zone and relative-time formatting for the staff and guest apps
-  ui/         Shared shadcn-style components
+  ui/         Shared shadcn-style components and theme.css design tokens
 docs/         Architecture blueprint, ADRs, database conventions, generated OpenAPI
 infrastructure/docker/     Local Postgres roles, multi-target Dockerfile
 infrastructure/terraform/  AWS platform module + staging root (ADR-0010)
