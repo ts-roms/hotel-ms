@@ -2,6 +2,7 @@ import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException } from '
 import type { Problem } from '@hotel/contracts';
 import { Prisma } from '@hotel/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { reportError } from '../infrastructure/error-reporting.js';
 import { ProblemException } from './problem.js';
 
 const PROBLEM_BASE = 'https://docs.hotel-platform.dev/problems/';
@@ -16,6 +17,10 @@ export class ProblemFilter implements ExceptionFilter {
 
     if (problem.status >= 500) {
       request.log.error({ err: exception }, 'unhandled error');
+      reportError(exception, {
+        requestId: problem.requestId,
+        route: `${request.method} ${request.routeOptions?.url ?? 'unknown'}`,
+      });
     }
 
     const headers = exception instanceof ProblemException ? exception.headers : undefined;

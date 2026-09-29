@@ -21,8 +21,12 @@ register() {
   local key="$1" image="$2" family
   family="$(config ".task_families[\"$key\"]")"
   aws ecs describe-task-definition --task-definition "$family" --query taskDefinition --output json |
-    jq --arg image "$image" '
+    jq --arg image "$image" --arg release "${image##*:}" '
       .containerDefinitions[0].image = $image
+      # The release (commit SHA) groups errors by version (ADR-0029).
+      | .containerDefinitions[0].environment =
+          ((.containerDefinitions[0].environment // [])
+            | map(select(.name != "RELEASE")) + [{name: "RELEASE", value: $release}])
       | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities,
             .registeredAt, .registeredBy, .deregisteredAt)' >"/tmp/td-$key.json"
   aws ecs register-task-definition --cli-input-json "file:///tmp/td-$key.json" \

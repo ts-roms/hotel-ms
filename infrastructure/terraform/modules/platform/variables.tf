@@ -166,3 +166,31 @@ variable "attendance_photo_expiry_days" {
   type        = number
   default     = 400
 }
+
+variable "tracing_enabled" {
+  description = "Run the OpenTelemetry collector sidecar next to api and worker and send traces to X-Ray (ADR-0029)."
+  type        = bool
+  default     = true
+}
+
+variable "tracing_sample_ratio" {
+  description = "Share of new traces sampled (parent-based)."
+  type        = number
+  default     = 0.1
+  validation {
+    condition     = var.tracing_sample_ratio >= 0 && var.tracing_sample_ratio <= 1
+    error_message = "Between 0 and 1."
+  }
+}
+
+variable "otel_collector_image" {
+  description = "AWS Distro for OpenTelemetry collector image (pinned)."
+  type        = string
+  default     = "public.ecr.aws/aws-observability/aws-otel-collector:v0.43.3"
+}
+
+variable "sentry_enabled" {
+  description = "Send server errors to Sentry. The DSN goes in the app secret under SENTRY_DSN."
+  type        = bool
+  default     = false
+}

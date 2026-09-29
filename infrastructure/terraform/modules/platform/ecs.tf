@@ -14,9 +14,19 @@ resource "aws_ecs_cluster" "main" {
 
 locals {
   app_secret = aws_secretsmanager_secret.app.arn
-  secret     = { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD", "PAYMENT_SANDBOX_SECRET"] : key => "${local.app_secret}:${key}::" }
-  public_url = "https://${var.domain_name}"
-  guest_url  = "https://${var.guest_domain_name}"
+  secret     = { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD", "PAYMENT_SANDBOX_SECRET", "SENTRY_DSN"] : key => "${local.app_secret}:${key}::" }
+
+  # Observability (ADR-0029): traces to the collector sidecar, errors to Sentry.
+  tracing_env = var.tracing_enabled ? {
+    OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+    OTEL_TRACES_SAMPLER_ARG     = tostring(var.tracing_sample_ratio)
+    OTEL_RESOURCE_ATTRIBUTES    = "deployment.environment=${var.environment}"
+  } : {}
+  error_env     = { SENTRY_ENVIRONMENT = var.environment }
+  error_secrets = var.sentry_enabled ? ["SENTRY_DSN"] : []
+  traced        = var.tracing_enabled ? ["api", "worker"] : []
+  public_url    = "https://${var.domain_name}"
+  guest_url     = "https://${var.guest_domain_name}"
 
   containers = {
     api = {
@@ -44,6 +54,7 @@ locals {
       secrets = concat(
         ["DATABASE_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS"],
         var.payment_sandbox_enabled ? ["PAYMENT_SANDBOX_SECRET"] : [],
+        local.error_secrets,
       )
     }
     worker = {
@@ -59,7 +70,7 @@ locals {
         SMS_TRANSPORT         = "sns"
         LOG_LEVEL             = "info"
       }
-      secrets = ["DATABASE_SYSTEM_URL", "REDIS_QUEUE_URL"]
+      secrets = concat(["DATABASE_SYSTEM_URL", "REDIS_QUEUE_URL"], local.error_secrets)
     }
     web = {
       image       = "web"
@@ -117,13 +128,18 @@ resource "aws_ecs_task_definition" "task" {
     cpu_architecture        = "X86_64"
   }
 
-  container_definitions = jsonencode([merge(
+  # The app is container 0 (the deploy swaps its image); the collector, where enabled, is 1.
+  container_definitions = jsonencode(concat([merge(
     {
       name                   = each.key
       image                  = "${aws_ecr_repository.images[each.value.image].repository_url}:${var.image_tag}"
       essential              = true
       readonlyRootFilesystem = contains(["api", "worker"], each.key) # web (.next cache) and Prisma CLI write to disk
-      environment            = [for k, v in each.value.environment : { name = k, value = v }]
+      environment = [for k, v in merge(
+        each.value.environment,
+        contains(["api", "worker"], each.key) ? local.error_env : {},
+        contains(local.traced, each.key) ? local.tracing_env : {},
+      ) : { name = k, value = v }]
       secrets = concat(
         [for k in each.value.secrets : { name = k, valueFrom = local.secret[k] }],
         each.key == "db-bootstrap" ? [
@@ -144,7 +160,23 @@ resource "aws_ecs_task_definition" "task" {
     },
     each.value.port == null ? {} : { portMappings = [{ containerPort = each.value.port, protocol = "tcp" }] },
     each.value.command == null ? {} : { command = each.value.command },
-  )])
+    )],
+    # OpenTelemetry collector (ADOT): OTLP in on localhost, traces out to X-Ray.
+    contains(local.traced, each.key) ? [{
+      name      = "otel-collector"
+      image     = var.otel_collector_image
+      essential = false
+      command   = ["--config=/etc/ecs/ecs-default-config.yaml"]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.services[each.key].name
+          awslogs-region        = local.region
+          awslogs-stream-prefix = "otel"
+        }
+      }
+    }] : [],
+  ))
 
   tags = local.tags
 }

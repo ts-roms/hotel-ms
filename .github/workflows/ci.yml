@@ -1,6 +1,7 @@
 # Pull-request pipeline (blueprint §24): lint → typecheck → unit → integration (incl. the
-# tenant-isolation suites) → build → security checks → container images.
-# Deploy stages (staging → E2E → approval → production) are added with the infrastructure.
+# tenant-isolation suites) → build → restore drill → security checks → browser E2E →
+# container images. After merge: staging deploy → smoke E2E → approval → production
+# (deploy-staging.yml, deploy-production.yml; ADR-0029).
 name: CI
 
 on:
@@ -78,6 +79,17 @@ jobs:
       - name: Seed runs cleanly
         run: pnpm db:seed
 
+      # Back up and restore the seeded database, then check the copy (ADR-0029).
+      - name: Restore drill
+        run: |
+          sudo apt-get install -y -qq postgresql-common >/dev/null
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y >/dev/null
+          sudo apt-get install -y -qq postgresql-client-17 >/dev/null
+          PATH="/usr/lib/postgresql/17/bin:$PATH" scripts/ops/restore-drill.sh
+        env:
+          ADMIN_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          SOURCE_DB: hotel
+
       - name: OpenAPI document is up to date
         run: |
           pnpm --filter @hotel/api openapi
@@ -102,7 +114,83 @@ jobs:
       - name: Workflow and shell lint
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color
-          docker run --rm -v "$PWD:/repo" -w /repo koalaman/shellcheck:stable scripts/deploy/ecs.sh
+          docker run --rm -v "$PWD:/repo" -w /repo koalaman/shellcheck:stable scripts/deploy/ecs.sh scripts/ops/restore-drill.sh
+
+  # Browser end-to-end tests (ADR-0029) against production builds on a fresh, seeded
+  # database: the staff app, the guest portal and the API, as users reach them.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 3s --health-retries 30
+      redis-cache:
+        image: valkey/valkey:8-alpine
+        ports: ['6379:6379']
+      redis-queue:
+        image: valkey/valkey:8-alpine
+        ports: ['6380:6379']
+    env:
+      NODE_ENV: development
+      LOG_LEVEL: warn
+      DATABASE_OWNER_URL: postgresql://hotel_owner:hotel_owner@localhost:5432/hotel
+      DATABASE_URL: postgresql://hotel_app:hotel_app@localhost:5432/hotel
+      DATABASE_SYSTEM_URL: postgresql://hotel_system:hotel_system@localhost:5432/hotel
+      REDIS_CACHE_URL: redis://localhost:6379
+      REDIS_QUEUE_URL: redis://localhost:6380
+      SESSION_SECRET: ci-only-session-secret-not-used-anywhere-else
+      DATA_ENCRYPTION_KEYS: ci:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      EMAIL_FROM: Hotel CI <ci@example.test>
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - name: Create database roles
+        run: psql -v ON_ERROR_STOP=1 -h localhost -U postgres -f infrastructure/docker/postgres-init.sql
+        env:
+          PGPASSWORD: postgres
+      - run: pnpm build
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+
+      - name: Start the API, worker, staff app and guest portal
+        run: |
+          mkdir -p .e2e-logs
+          (cd apps/api && node dist/main.js >../../.e2e-logs/api.log 2>&1 &)
+          (cd apps/worker && node dist/main.js >../../.e2e-logs/worker.log 2>&1 &)
+          (pnpm --filter @hotel/web start >.e2e-logs/web.log 2>&1 &)
+          (pnpm --filter @hotel/guest start >.e2e-logs/guest.log 2>&1 &)
+          for url in http://localhost:48100/health/ready http://localhost:43100/login http://localhost:43200/; do
+            for _ in $(seq 1 60); do curl -fsS -o /dev/null "$url" && break; sleep 2; done
+            curl -fsS -o /dev/null "$url"
+          done
+
+      - name: Install the browser
+        run: pnpm --filter @hotel/e2e exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm --filter @hotel/e2e e2e
+
+      - name: Keep the report and server logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+            .e2e-logs
+          retention-days: 7
 
   images:
     runs-on: ubuntu-latest

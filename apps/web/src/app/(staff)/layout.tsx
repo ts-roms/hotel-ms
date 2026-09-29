@@ -15,6 +15,7 @@ import {
   SkeletonCard,
 } from '@hotel/ui';
 import {
+  Activity,
   ArrowLeftRight,
   BedDouble,
   BellRing,
@@ -205,7 +206,13 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
   const propertyNav = propertyId
     ? PROPERTY_NAV.filter(allowed).map((i) => ({ ...i, href: `/p/${propertyId}/${i.href}` }))
     : [];
-  const orgNav = ORG_NAV.filter(allowed);
+  const orgNav = [
+    ...ORG_NAV.filter(allowed),
+    // Platform operators (ADR-0029): the ops dashboard, outside any organization.
+    ...(info.identity.platformOperator
+      ? [{ href: '/ops', label: 'nav.ops' as const, icon: Activity }]
+      : []),
+  ];
 
   const sidebar = (
     <div className="flex h-full flex-col gap-4 p-4">

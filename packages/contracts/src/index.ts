@@ -19,3 +19,4 @@ export * from './maintenance.js';
 export * from './notifications.js';
 export * from './management.js';
 export * from './calendar.js';
+export * from './ops.js';
