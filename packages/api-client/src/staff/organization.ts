@@ -16,72 +16,58 @@ import type {
   UpdatePropertyRequest,
   UpdateRoleRequest,
 } from '@hotel/contracts';
-import type { Page, Transport } from '../http.js';
+import * as op from '../generated/operations.js';
+import { data, items, type Page, type Transport } from '../http.js';
 
 /** Organization-level resources: dashboard, search, properties, access, flags, guests, audit log. */
-export function organizationClient({ call, qs }: Transport) {
+export function organizationClient({ call }: Transport) {
   return {
     /** Group overview (ADR-0025). */
-    dashboard: () => call<OrganizationDashboard>('GET', '/dashboard').then((r) => r.data),
-    search: (q: string) =>
-      call<SearchResult>('GET', `/search${qs({ q })}`).then((r) => r.data.items),
+    dashboard: () => op.ManagementController_organization<OrganizationDashboard>(call).then(data),
+    search: (q: string) => op.ManagementController_search<SearchResult>(call, { q }).then(items),
     properties: {
       list: (params: { cursor?: string; limit?: number } = {}) =>
-        call<Page<Property>>('GET', `/properties${qs(params)}`).then((r) => r.data),
-      get: (id: string) => call<Property>('GET', `/properties/${encodeURIComponent(id)}`),
+        op.PropertiesController_list<Page<Property>>(call, params).then(data),
+      get: (id: string) => op.PropertiesController_get<Property>(call, { propertyId: id }),
       create: (body: CreatePropertyRequest) =>
-        call<Property>('POST', '/properties', body).then((r) => r.data),
+        op.PropertiesController_create<Property>(call, body).then(data),
       update: (id: string, etag: string, body: UpdatePropertyRequest) =>
-        call<Property>('PATCH', `/properties/${encodeURIComponent(id)}`, body, {
-          'if-match': etag,
-        }),
+        op.PropertiesController_update<Property>(call, { propertyId: id }, body, { ifMatch: etag }),
     },
     access: {
-      permissions: () => call<PermissionInfo[]>('GET', '/permissions').then((r) => r.data),
-      roles: () => call<RoleDto[]>('GET', '/roles').then((r) => r.data),
-      getRole: (id: string) => call<RoleDto>('GET', `/roles/${encodeURIComponent(id)}`),
+      permissions: () => op.AccessController_permissions<PermissionInfo[]>(call).then(data),
+      roles: () => op.AccessController_listRoles<RoleDto[]>(call).then(data),
+      getRole: (id: string) => op.AccessController_getRole<RoleDto>(call, { roleId: id }),
       createRole: (body: CreateRoleRequest) =>
-        call<RoleDto>('POST', '/roles', body).then((r) => r.data),
+        op.AccessController_createRole<RoleDto>(call, body).then(data),
       updateRole: (id: string, etag: string, body: UpdateRoleRequest) =>
-        call<RoleDto>('PATCH', `/roles/${encodeURIComponent(id)}`, body, { 'if-match': etag }),
-      deleteRole: (id: string) =>
-        call<void>('DELETE', `/roles/${encodeURIComponent(id)}`).then((r) => r.data),
-      members: () => call<Member[]>('GET', '/members').then((r) => r.data),
+        op.AccessController_updateRole<RoleDto>(call, { roleId: id }, body, { ifMatch: etag }),
+      deleteRole: (id: string) => op.AccessController_deleteRole(call, { roleId: id }).then(data),
+      members: () => op.AccessController_listMembers<Member[]>(call).then(data),
       invite: (body: InviteMemberRequest) =>
-        call<Member>('POST', '/members/invitations', body).then((r) => r.data),
+        op.AccessController_invite<Member>(call, body).then(data),
       resendInvitation: (membershipId: string) =>
-        call<void>('POST', `/members/${encodeURIComponent(membershipId)}/invitation`).then(
-          (r) => r.data,
-        ),
+        op.AccessController_resendInvitation(call, { membershipId }).then(data),
       updateMember: (membershipId: string, body: UpdateMemberRequest) =>
-        call<Member>('PATCH', `/members/${encodeURIComponent(membershipId)}`, body).then(
-          (r) => r.data,
-        ),
+        op.AccessController_updateMember<Member>(call, { membershipId }, body).then(data),
       addAssignment: (membershipId: string, body: AssignmentRequest) =>
-        call<Member>(
-          'POST',
-          `/members/${encodeURIComponent(membershipId)}/role-assignments`,
-          body,
-        ).then((r) => r.data),
+        op.AccessController_addAssignment<Member>(call, { membershipId }, body).then(data),
       removeAssignment: (membershipId: string, assignmentId: string) =>
-        call<Member>(
-          'DELETE',
-          `/members/${encodeURIComponent(membershipId)}/role-assignments/${encodeURIComponent(assignmentId)}`,
-        ).then((r) => r.data),
+        op
+          .AccessController_removeAssignment<Member>(call, { membershipId, assignmentId })
+          .then(data),
     },
     featureFlags: {
       list: () =>
-        call<{ items: FeatureFlag[] }>('GET', '/organization/feature-flags').then(
-          (r) => r.data.items,
-        ),
+        op.OrganizationController_featureFlags<{ items: FeatureFlag[] }>(call).then(items),
       set: (key: string, enabled: boolean) =>
-        call<FeatureFlag>('PUT', `/organization/feature-flags/${encodeURIComponent(key)}`, {
-          enabled,
-        }).then((r) => r.data),
+        op
+          .OrganizationController_setFeatureFlag<FeatureFlag>(call, { flagKey: key }, { enabled })
+          .then(data),
     },
     guests: {
       search: (q: string, limit = 20) =>
-        call<Guest[]>('GET', `/guests${qs({ q, limit })}`).then((r) => r.data),
+        op.GuestsController_search<Guest[]>(call, { q, limit }).then(data),
     },
     auditLogs: {
       list: (
@@ -92,7 +78,7 @@ export function organizationClient({ call, qs }: Transport) {
           cursor?: string;
           limit?: number;
         } = {},
-      ) => call<Page<AuditLogEntry>>('GET', `/audit-logs${qs(params)}`).then((r) => r.data),
+      ) => op.AuditController_list<Page<AuditLogEntry>>(call, params).then(data),
     },
   };
 }

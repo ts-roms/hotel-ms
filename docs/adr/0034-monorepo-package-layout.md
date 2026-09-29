@@ -22,7 +22,7 @@ portal) and `apps/guest` (guest PWA).
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `@hotel/contracts`  | Zod schemas and their types, enums, permission catalog, role templates, error codes, event and job types. Shared helpers in `common.ts` (`cursorPage`, `listOf`, `staffRefSchema`). The only package every app depends on.                                                           |
 | `@hotel/database`   | Prisma schema (one file per context), migrations incl. RLS, generated client, seed, platform catalog sync, organization provisioning and password hashing. `@hotel/database/testing` is the test harness (test database URLs, reset, demo world); never imported by production code. |
-| `@hotel/api-client` | Typed HTTP clients for the staff, guest and kiosk apps. `@hotel/api-client/react` adds the TanStack Query helpers.                                                                                                                                                                   |
+| `@hotel/api-client` | Typed HTTP clients for the staff, guest and kiosk apps; request functions generated from the OpenAPI document. `@hotel/api-client/react` adds the TanStack Query helpers.                                                                                                            |
 | `@hotel/ui`         | shadcn-style components and blocks, plus the design tokens in `@hotel/ui/theme.css`.                                                                                                                                                                                                 |
 | `@hotel/format`     | Money, date, time zone and relative-time formatting shared by the apps and the worker.                                                                                                                                                                                               |
 
@@ -54,10 +54,34 @@ contexts (stays, folios, shifts, leave, orders). They query those tables inside 
 caller's tenant transaction, so RLS and property permission checks still apply. Writes
 still go only through the owning context's services.
 
-**The API client is hand-written and split per context** (`staff/`, `staff/property/`,
-`guest.ts`, `kiosk.ts`) over the contract types, not generated from OpenAPI with orval.
-ADR-0009 keeps generation as a later option; the checked-in `docs/api/openapi.json` stays the
-contract a generator would use.
+**The API client's HTTP layer is generated from the OpenAPI document; its public shape is
+not** (amended 2026-09-29). `pnpm --filter @hotel/api-client generate` runs
+`packages/api-client/scripts/generate.mjs`, a small dependency-free script over
+`docs/api/openapi.json`, which writes `src/generated/operations.ts`: one typed request
+function per operationId (`<Controller>_<method>`) carrying the method, path, path and query
+parameters, the `If-Match`/`Idempotency-Key` headers and whether a body (JSON or a raw `Blob`)
+is sent, plus a URL builder per operation for same-origin links. The files split per context
+(`staff/`, `staff/property/`, `guest.ts`, `kiosk.ts`) stay as thin facades that map those
+functions onto the methods the apps call (`api.pms(id).rooms()`, `api.auth.login(...)`,
+`createGuestApiClient`, ...) and give them their `@hotel/contracts` request and response
+types; the transport (`http.ts`: CSRF header, same-origin credentials, 204, ETag, RFC 9457
+problems as `ApiError`) stays hand-written. A renamed, removed or re-parameterized route
+therefore breaks the client's type check instead of drifting. The two route families the
+client addresses by a kind segment (CSV import preview/commit, report CSV exports) are
+checked at type level against the generated route table (`RouteSegment` in `http.ts`).
+
+We chose the in-repo script over orval, openapi-typescript + openapi-fetch and
+@hey-api/openapi-ts: the document's schemas are all inline (no `components`), so their
+generated types would duplicate `@hotel/contracts`, which the API's schemas come from anyway;
+their runtimes would replace the transport's exact request behaviour; and the document omits
+some parameters the API reads (`propertyId` declared at controller level, `If-Match` read
+with `@Headers`). The script takes path parameters from the path template and lists the other
+omissions in `UNDECLARED`; it fails once the document declares one of them, so the list only
+shrinks as `@ApiHeader`/`@ApiBody` are added in the API.
+
+The generated file is checked in (ignored by lint and Prettier like other `generated/`
+directories). `generate` is also a Turborepo task, so builds regenerate it, and CI regenerates
+it after regenerating the OpenAPI document and fails on any diff.
 
 **No `config` or `testing` packages.** Shared TypeScript settings are in the root
 `tsconfig.base.json`, lint rules in the root `eslint.config.js` and context dependency rules
@@ -79,4 +103,6 @@ together.
 - Blueprint §6.3 now shows this layout and links here.
 - A cross-context read outside the read models above still goes through the owning
   context's exported service (ADR-0031).
-- Moving to a generated client or adding a shared domain package needs a new ADR.
+- Adding a shared domain package needs a new ADR.
+- Changing an API route changes `docs/api/openapi.json`, then `src/generated/operations.ts`;
+  commit both, and fix the facade if its type check fails.

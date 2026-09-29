@@ -21,126 +21,114 @@ import type {
   UpdateEmployeeRequest,
   UpdateLeaveTypeRequest,
 } from '@hotel/contracts';
-import type { Transport } from '../http.js';
+import * as op from '../generated/operations.js';
+import { data, items, type Transport } from '../http.js';
 
 /** Organization HR: departments, employees, documents, records and leave types. */
-export function hrClient({ call, qs, baseUrl }: Transport) {
+export function hrClient({ call, baseUrl }: Transport) {
   return {
     hr: {
-      departments: () =>
-        call<{ items: Department[] }>('GET', '/departments').then((r) => r.data.items),
+      departments: () => op.HrController_departments<{ items: Department[] }>(call).then(items),
       employees: (query: Partial<EmployeeListQuery> = {}) =>
-        call<{ items: EmployeeSummary[] }>('GET', `/employees${qs(query)}`).then(
-          (r) => r.data.items,
-        ),
+        op.HrController_employees<{ items: EmployeeSummary[] }>(call, query).then(items),
       employee: (id: string) =>
-        call<Employee>('GET', `/employees/${encodeURIComponent(id)}`).then((r) => r.data),
+        op.HrController_employee<Employee>(call, { employeeId: id }).then(data),
       createEmployee: (body: CreateEmployeeRequest) =>
-        call<Employee>('POST', '/employees', body).then((r) => r.data),
+        op.HrController_createEmployee<Employee>(call, body).then(data),
       updateEmployee: (id: string, version: number, body: UpdateEmployeeRequest) =>
-        call<Employee>('PATCH', `/employees/${encodeURIComponent(id)}`, body, {
-          'if-match': `W/"${version}"`,
-        }).then((r) => r.data),
+        op
+          .HrController_updateEmployee<Employee>(call, { employeeId: id }, body, {
+            ifMatch: `W/"${version}"`,
+          })
+          .then(data),
       addAssignment: (id: string, body: NewAssignment) =>
-        call<Employee>('POST', `/employees/${encodeURIComponent(id)}/assignments`, body).then(
-          (r) => r.data,
-        ),
+        op.HrController_addAssignment<Employee>(call, { employeeId: id }, body).then(data),
       endAssignment: (id: string, assignmentId: string, endDate: string) =>
-        call<Employee>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/assignments/${encodeURIComponent(assignmentId)}/end`,
-          { endDate },
-        ).then((r) => r.data),
+        op
+          .HrController_endAssignment<Employee>(call, { employeeId: id, assignmentId }, { endDate })
+          .then(data),
       terminate: (id: string, terminatedOn: string) =>
-        call<Employee>('POST', `/employees/${encodeURIComponent(id)}/terminate`, {
-          terminatedOn,
-        }).then((r) => r.data),
+        op.HrController_terminate<Employee>(call, { employeeId: id }, { terminatedOn }).then(data),
       compensation: (id: string) =>
-        call<CompensationHistory>('GET', `/employees/${encodeURIComponent(id)}/compensation`).then(
-          (r) => r.data,
-        ),
+        op
+          .EmployeeRecordsController_compensation<CompensationHistory>(call, { employeeId: id })
+          .then(data),
       addCompensation: (id: string, body: CreateCompensationInput) =>
-        call<CompensationHistory>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/compensation`,
-          body,
-        ).then((r) => r.data),
+        op
+          .EmployeeRecordsController_addCompensation<CompensationHistory>(
+            call,
+            { employeeId: id },
+            body,
+          )
+          .then(data),
       trainings: (id: string) =>
-        call<{ items: TrainingRecord[] }>(
-          'GET',
-          `/employees/${encodeURIComponent(id)}/training`,
-        ).then((r) => r.data.items),
+        op
+          .EmployeeRecordsController_trainings<{ items: TrainingRecord[] }>(call, {
+            employeeId: id,
+          })
+          .then(items),
       addTraining: (id: string, body: CreateTrainingInput) =>
-        call<{ items: TrainingRecord[] }>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/training`,
-          body,
-        ).then((r) => r.data.items),
+        op
+          .EmployeeRecordsController_addTraining<{ items: TrainingRecord[] }>(
+            call,
+            { employeeId: id },
+            body,
+          )
+          .then(items),
       removeTraining: (id: string, recordId: string) =>
-        call<void>(
-          'DELETE',
-          `/employees/${encodeURIComponent(id)}/training/${encodeURIComponent(recordId)}`,
-        ).then((r) => r.data),
+        op.EmployeeRecordsController_removeTraining(call, { employeeId: id, recordId }).then(data),
       reviews: (id: string) =>
-        call<{ items: PerformanceReview[] }>(
-          'GET',
-          `/employees/${encodeURIComponent(id)}/reviews`,
-        ).then((r) => r.data.items),
+        op
+          .EmployeeRecordsController_reviews<{ items: PerformanceReview[] }>(call, {
+            employeeId: id,
+          })
+          .then(items),
       addReview: (id: string, body: CreatePerformanceReviewInput) =>
-        call<{ items: PerformanceReview[] }>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/reviews`,
-          body,
-        ).then((r) => r.data.items),
+        op
+          .EmployeeRecordsController_addReview<{ items: PerformanceReview[] }>(
+            call,
+            { employeeId: id },
+            body,
+          )
+          .then(items),
       documents: (id: string) =>
-        call<{ items: EmployeeDocument[] }>(
-          'GET',
-          `/employees/${encodeURIComponent(id)}/documents`,
-        ).then((r) => r.data.items),
+        op
+          .EmployeeDocumentsController_list<{ items: EmployeeDocument[] }>(call, { employeeId: id })
+          .then(items),
       uploadDocument: (
         id: string,
         file: Blob,
         meta: { category: string; title: string; fileName: string; expiresOn?: string },
       ) =>
-        call<EmployeeDocument>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/documents${qs(meta)}`,
-          file,
-        ).then((r) => r.data),
-      photoRetention: () =>
-        call<PhotoRetention>('GET', '/attendance-photo-retention').then((r) => r.data),
+        op
+          .EmployeeDocumentsController_upload<EmployeeDocument>(
+            call,
+            { employeeId: id },
+            meta,
+            file,
+          )
+          .then(data),
+      photoRetention: () => op.PhotoRetentionController_get<PhotoRetention>(call).then(data),
       setPhotoRetention: (days: number) =>
-        call<PhotoRetention>('PUT', '/attendance-photo-retention', { days }).then((r) => r.data),
+        op.PhotoRetentionController_set<PhotoRetention>(call, { days }).then(data),
       documentRetention: () =>
-        call<DocumentRetention>('GET', '/document-retention').then((r) => r.data),
+        op.DocumentRetentionController_get<DocumentRetention>(call).then(data),
       setDocumentRetention: (rules: DocumentRetention['rules']) =>
-        call<DocumentRetention>('PUT', '/document-retention', { rules }).then((r) => r.data),
+        op.DocumentRetentionController_set<DocumentRetention>(call, { rules }).then(data),
       /** Same-origin download link; the session cookie authenticates. */
       documentUrl: (id: string, documentId: string) =>
-        `${baseUrl}/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}/content`,
+        `${baseUrl}${op.paths.EmployeeDocumentsController_download({ employeeId: id, documentId })}`,
       deleteDocument: (id: string, documentId: string) =>
-        call<void>(
-          'DELETE',
-          `/employees/${encodeURIComponent(id)}/documents/${encodeURIComponent(documentId)}`,
-        ).then((r) => r.data),
+        op.EmployeeDocumentsController_remove(call, { employeeId: id, documentId }).then(data),
       employeeLeave: (id: string) =>
-        call<EmployeeLeave>('GET', `/employees/${encodeURIComponent(id)}/leave`).then(
-          (r) => r.data,
-        ),
+        op.LeaveController_employeeLeave<EmployeeLeave>(call, { employeeId: id }).then(data),
       postLeave: (id: string, body: LeaveLedgerPostRequest) =>
-        call<EmployeeLeave>(
-          'POST',
-          `/employees/${encodeURIComponent(id)}/leave/entries`,
-          body,
-        ).then((r) => r.data),
-      leaveTypes: () =>
-        call<{ items: LeaveType[] }>('GET', '/leave-types').then((r) => r.data.items),
+        op.LeaveController_postLedger<EmployeeLeave>(call, { employeeId: id }, body).then(data),
+      leaveTypes: () => op.LeaveController_leaveTypes<{ items: LeaveType[] }>(call).then(items),
       createLeaveType: (body: CreateLeaveTypeRequest) =>
-        call<LeaveType>('POST', '/leave-types', body).then((r) => r.data),
+        op.LeaveController_createLeaveType<LeaveType>(call, body).then(data),
       updateLeaveType: (leaveTypeId: string, body: UpdateLeaveTypeRequest) =>
-        call<LeaveType>('PATCH', `/leave-types/${encodeURIComponent(leaveTypeId)}`, body).then(
-          (r) => r.data,
-        ),
+        op.LeaveController_updateLeaveType<LeaveType>(call, { leaveTypeId }, body).then(data),
     },
   };
 }

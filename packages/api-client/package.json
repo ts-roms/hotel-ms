@@ -17,6 +17,7 @@
   },
   "sideEffects": false,
   "scripts": {
+    "generate": "node scripts/generate.mjs",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

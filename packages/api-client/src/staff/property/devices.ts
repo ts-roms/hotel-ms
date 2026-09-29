@@ -1,15 +1,16 @@
 import type { CreateDeviceRequest, Device, DevicePairing } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
 /** Shared devices (kitchen tablets, time clocks). */
-export function devicesClient({ call, p, id }: PropertyTransport) {
+export function devicesClient({ call, propertyId }: PropertyTransport) {
   return {
-    devices: () => call<{ items: Device[] }>('GET', `${p}/devices`).then((r) => r.data.items),
+    devices: () => op.DevicesController_list<{ items: Device[] }>(call, { propertyId }).then(items),
     createDevice: (body: CreateDeviceRequest) =>
-      call<DevicePairing>('POST', `${p}/devices`, body).then((r) => r.data),
+      op.DevicesController_create<DevicePairing>(call, { propertyId }, body).then(data),
     repairDevice: (deviceId: string) =>
-      call<DevicePairing>('POST', `${p}/devices/${id(deviceId)}/pairing`).then((r) => r.data),
+      op.DevicesController_repair<DevicePairing>(call, { propertyId, deviceId }).then(data),
     revokeDevice: (deviceId: string) =>
-      call<Device>('POST', `${p}/devices/${id(deviceId)}/revoke`).then((r) => r.data),
+      op.DevicesController_revoke<Device>(call, { propertyId, deviceId }).then(data),
   };
 }

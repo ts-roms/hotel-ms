@@ -17,5 +17,7 @@
   missing, `412 VERSION_CONFLICT` when stale.
 - `docs/api/openapi.json` is generated (`pnpm --filter @hotel/api openapi`) and checked in. CI
   fails if it is stale.
-- `@hotel/api-client` is a thin hand-written client over contract types for now. Switch to
-  generation from the OpenAPI document (orval) when the surface grows past a few resources.
+- `@hotel/api-client` is a thin client over contract types. Its request functions are generated
+  from the OpenAPI document (`pnpm --filter @hotel/api-client generate`, checked in, CI fails if
+  stale); the facades keep the contract types as the public request and response types
+  (ADR-0034).

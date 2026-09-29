@@ -22,11 +22,7 @@ import { timeClient } from './property/time.js';
 
 /** Endpoints of one property (/properties/{propertyId}/...). */
 function propertyClient(transport: Transport, propertyId: string) {
-  const property = {
-    ...transport,
-    p: `/properties/${encodeURIComponent(propertyId)}`,
-    id: encodeURIComponent,
-  };
+  const property = { ...transport, propertyId };
   return {
     ...inventoryClient(property),
     ...pricingClient(property),
@@ -50,7 +46,7 @@ function propertyClient(transport: Transport, propertyId: string) {
  * context); this assembles them into one object.
  */
 export function createApiClient(options: ApiClientOptions = {}) {
-  const transport: Transport = { ...createCaller(options), baseUrl: options.baseUrl ?? '/api/v1' };
+  const transport: Transport = createCaller(options);
   return {
     ...authClient(transport),
     ...organizationClient(transport),
