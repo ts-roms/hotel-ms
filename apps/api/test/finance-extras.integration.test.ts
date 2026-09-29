@@ -7,7 +7,12 @@ import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { ProblemException } from '../src/common/problem.js';
+import {
+  PAYMENT_PROVIDERS,
+  type PaymentProviders,
+} from '../src/modules/finance/payments/providers.js';
 import { SandboxProvider } from '../src/modules/finance/payments/sandbox.provider.js';
 import { Mailbox, startTestApp, type TestContext, TestClient } from './harness.js';
 
@@ -344,8 +349,11 @@ describe('statutory discounts', () => {
 });
 
 describe('refunds completed by webhook', () => {
+  let refundFolioId: string;
+
   it('a pending refund posts to the folio only when the provider confirms it', async () => {
     const folioId = await checkedInFolio('104');
+    refundFolioId = folioId;
     const folioUrl = `${base()}/folios/${folioId}`;
     await charge(folioId, 'ROOM', 350_000);
     const link = await reception.request(
@@ -439,6 +447,93 @@ describe('refunds completed by webhook', () => {
       [10_013, 'SUCCEEDED'],
       [5_013, 'FAILED'],
     ]);
+  });
+
+  it('an unknown provider outcome stays PENDING; only a clear refusal fails the refund', async () => {
+    const folioUrl = `${base()}/folios/${refundFolioId}`;
+    await charge(refundFolioId, 'ROOM', 100_000);
+    const link = await reception.request(
+      'POST',
+      `${folioUrl}/payment-links`,
+      { amountMinor: 100_000 },
+      idem(),
+    );
+    expect(link.status, JSON.stringify(link.body)).toBe(201);
+    await payAtSandbox(link.body.checkoutUrl, 'pay');
+    const payment = (await reception.get(folioUrl)).body.payments.find(
+      (p: { amountMinor: number; refundedMinor: number }) =>
+        p.amountMinor === 100_000 && p.refundedMinor === 0,
+    );
+    const url = `${base()}/payments/${payment.id}/refunds`;
+    const provider = (ctx.app.get(PAYMENT_PROVIDERS) as PaymentProviders).get('sandbox')!;
+    const refund = vi.spyOn(provider, 'refund');
+    let unknownId = '';
+    try {
+      // A timeout or outage may have refunded at the provider: the refund stays PENDING.
+      refund.mockRejectedValueOnce(new Error('socket hang up'));
+      const unknown = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 60_000, reason: 'Provider timed out' },
+        idem(),
+      );
+      expect(unknown.status, JSON.stringify(unknown.body)).toBe(201);
+      expect(unknown.body.status).toBe('PENDING');
+      unknownId = unknown.body.id;
+      // ...and still counts against the cap, so a second refund cannot go out as well.
+      const second = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 60_000, reason: 'Retry' },
+        idem(),
+      );
+      expect(second.status).toBe(409);
+      expect(second.body.code).toBe('REFUND_EXCEEDS_PAYMENT');
+      // Nothing was posted to the folio for it.
+      expect((await reception.get(folioUrl)).body.balanceMinor).toBe(10_013);
+
+      // An explicit refusal fails the refund and frees the amount again.
+      refund.mockRejectedValueOnce(
+        new ProblemException(502, 'PAYMENT_PROVIDER_REJECTED', 'Refund refused', 'Declined'),
+      );
+      const refused = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 40_000, reason: 'Refused' },
+        idem(),
+      );
+      expect(refused.status).toBe(502);
+      const items = (await reception.get(url)).body.items.map(
+        (r: { amountMinor: number; status: string }) => [r.amountMinor, r.status],
+      );
+      expect(items).toEqual([
+        [60_000, 'PENDING'],
+        [40_000, 'FAILED'],
+      ]);
+      const again = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 40_000, reason: 'Refund after refusal' },
+        idem(),
+      );
+      expect(again.status, JSON.stringify(again.body)).toBe(201);
+      expect(again.body.status).toBe('SUCCEEDED');
+    } finally {
+      refund.mockRestore();
+    }
+
+    // After an hour, reconciliation flags the unresolved refund for finance.
+    const inTwoHours = Date.now() + 2 * 3_600_000;
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(inTwoHours);
+    let issues: { code: string; reference: string }[];
+    try {
+      issues = (await admin.get(`${base()}/reports/reconciliation`)).body.issues;
+    } finally {
+      clock.mockRestore();
+    }
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: 'PENDING_REFUND', reference: unknownId }),
+    );
   });
 });
 

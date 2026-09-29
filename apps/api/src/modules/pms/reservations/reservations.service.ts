@@ -762,7 +762,9 @@ export class ReservationsService {
         });
       }
 
-      // Guest portal access to a cancelled stay ends with it.
+      // Guest portal access to a cancelled stay ends with it, in this transaction (ADR-0033).
+      // A documented write to Guest Experience tables (ADR-0031): Reservations comes before
+      // guest-portal/ in API_CONTEXTS, and revoking after commit would leave a window.
       const now = new Date();
       await tx.guestSession.updateMany({
         where: { reservationRoomId: { in: targets.map((l) => l.id) }, revokedAt: null },
