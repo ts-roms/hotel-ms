@@ -28,15 +28,16 @@ export class NotificationsQueue implements OnModuleDestroy {
     this.sms = new Queue<SmsJob>(SMS_QUEUE, { connection: this.connection });
   }
 
-  /** Text message (ADR-0024). Only E.164 numbers are sent; anything else is skipped. */
-  async sendSms(to: string | null | undefined, text: string): Promise<boolean> {
-    const number = to?.replace(/[\s()-]/g, '') ?? '';
-    if (!/^\+[1-9]\d{7,14}$/.test(number)) return false;
+  /**
+   * Queues a text message (ADR-0024). The caller has already built it with the messaging
+   * rules (notifications/sms.ts: E.164 number, length); this only enqueues.
+   */
+  async sendSms(message: { to: string; text: string }): Promise<void> {
     await this.sms.add(
       'sms',
       {
-        to: number,
-        text: text.slice(0, 320),
+        to: message.to,
+        text: message.text,
         correlationId: this.cls.isActive() ? (this.cls.get('requestId') ?? null) : null,
       },
       {
@@ -46,7 +47,6 @@ export class NotificationsQueue implements OnModuleDestroy {
         removeOnFail: { age: 24 * 3600 },
       },
     );
-    return true;
   }
 
   /** Test helper: inspect queued text messages. */
