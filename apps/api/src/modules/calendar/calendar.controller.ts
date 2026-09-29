@@ -6,7 +6,6 @@ import {
   calendarSchema,
   type CreateEventRequest,
   createEventRequestSchema,
-  guestEventSchema,
   hotelEventSchema,
   type UpdateEventRequest,
   updateEventRequestSchema,
@@ -14,7 +13,7 @@ import {
 import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
-import { GuestRoute, RequirePermission } from '../../common/route-metadata.js';
+import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { CalendarService } from './calendar.service.js';
 
@@ -69,19 +68,5 @@ export class CalendarController {
     @ZodBody(updateEventRequestSchema) body: UpdateEventRequest,
   ) {
     return this.calendar.update(uuidParam(eventId), parseIfMatch(ifMatch), body);
-  }
-}
-
-/** Guest portal: the hotel's upcoming events for guests. */
-@ApiTags('guest portal')
-@Controller('guest')
-@GuestRoute({ verified: false })
-export class GuestEventsController {
-  constructor(private readonly calendar: CalendarService) {}
-
-  @Get('events')
-  @ZodResponse(200, z.object({ items: z.array(guestEventSchema) }))
-  async list() {
-    return { items: await this.calendar.guestEvents() };
   }
 }

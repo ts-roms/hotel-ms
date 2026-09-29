@@ -14,6 +14,7 @@ import {
   IMPORT_MAX_BYTES,
 } from '@hotel/contracts';
 import { ClsService } from 'nestjs-cls';
+import { orderOperations } from './api-surface.js';
 import { AppModule } from './app.module.js';
 import type { RequestContext } from './common/request-context.js';
 import type { Env } from './config/env.js';
@@ -148,5 +149,5 @@ export function buildOpenApiDocument(app: NestFastifyApplication): OpenAPIObject
     .setVersion('v1')
     .addCookieAuth('hotel_sid')
     .build();
-  return SwaggerModule.createDocument(app, config);
+  return orderOperations(SwaggerModule.createDocument(app, config));
 }

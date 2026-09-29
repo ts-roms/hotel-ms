@@ -7,7 +7,7 @@
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
 import { RequestMethod } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CONTROLLERS } from '../src/app.module.js';
+import { CONTROLLERS } from '../src/api-surface.js';
 import {
   GUEST_ROUTE,
   type GuestRouteOptions,

@@ -8,7 +8,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { SandboxProvider } from '../src/modules/payments/providers.js';
+import { SandboxProvider } from '../src/modules/finance/payments/providers.js';
 import { Mailbox, startTestApp, type TestContext, TestClient } from './harness.js';
 
 let ctx: TestContext;
