@@ -196,6 +196,7 @@
                         "NO_EXCHANGE_RATE",
                         "REFUND_EXCEEDS_PAYMENT",
                         "INVALID_SIGNATURE",
+                        "PAYMENT_PROVIDER_REJECTED",
                         "ITEM_UNAVAILABLE",
                         "INSUFFICIENT_LEAVE_BALANCE",
                         "NOT_AN_EMPLOYEE",

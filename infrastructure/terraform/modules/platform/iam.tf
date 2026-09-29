@@ -28,10 +28,10 @@ resource "aws_iam_role_policy_attachment" "execution_managed" {
 data "aws_iam_policy_document" "execution_secrets" {
   statement {
     actions = ["secretsmanager:GetSecretValue"]
-    resources = [
-      aws_secretsmanager_secret.app.arn,
-      aws_db_instance.postgres.master_user_secret[0].secret_arn,
-    ]
+    resources = concat(
+      [aws_secretsmanager_secret.app.arn, aws_db_instance.postgres.master_user_secret[0].secret_arn],
+      aws_secretsmanager_secret.paymongo[*].arn,
+    )
   }
   statement {
     actions   = ["kms:Decrypt"]

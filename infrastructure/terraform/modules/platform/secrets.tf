@@ -36,6 +36,17 @@ locals {
   }
 }
 
+# PayMongo credentials (ADR-0032) come from the merchant dashboard, so Terraform creates
+# only the container: set PAYMONGO_SECRET_KEY and PAYMONGO_WEBHOOK_SECRET in it with
+# `aws secretsmanager put-secret-value` before the first deploy. They never enter state.
+resource "aws_secretsmanager_secret" "paymongo" {
+  count       = var.payment_provider == "paymongo" ? 1 : 0
+  name        = "${var.name}/paymongo"
+  description = "PayMongo API and webhook secrets for ${var.name}"
+  kms_key_id  = aws_kms_key.platform.arn
+  tags        = local.tags
+}
+
 resource "aws_secretsmanager_secret" "app" {
   name        = "${var.name}/app"
   description = "Runtime configuration secrets for ${var.name}"

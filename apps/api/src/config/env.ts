@@ -57,7 +57,7 @@ const envSchema = z.object({
   /** Public base URL of this API (hosted checkout pages, provider callbacks). */
   API_PUBLIC_ORIGIN: z.url().default('http://localhost:48100'),
   /** Online payment gateway (ADR-0016). Unset: online payments are unavailable. */
-  PAYMENT_PROVIDER: z.enum(['sandbox']).optional(),
+  PAYMENT_PROVIDER: z.enum(['sandbox', 'paymongo']).optional(),
   /**
    * The built-in sandbox gateway (hosted test checkout, signed webhooks). On by default
    * outside production; production needs an explicit 'true' (e.g. staging).
@@ -67,6 +67,25 @@ const envSchema = z.object({
     .optional()
     .transform((v) => (v === undefined ? undefined : v === 'true')),
   PAYMENT_SANDBOX_SECRET: z.string().min(16).default('sandbox-webhook-secret-dev-only'),
+  /** PayMongo (ADR-0032): secret API key, test or live. */
+  PAYMONGO_SECRET_KEY: z
+    .string()
+    .regex(/^sk_(test|live)_\w+$/, 'must be a PayMongo secret key (sk_test_… or sk_live_…)')
+    .optional(),
+  /** The secret of the webhook registered for /api/v1/webhooks/payments/paymongo. */
+  PAYMONGO_WEBHOOK_SECRET: z.string().min(8).optional(),
+  /** Methods offered on PayMongo's checkout page; each must be enabled on the account. */
+  PAYMONGO_PAYMENT_METHODS: z
+    .string()
+    .default('card,gcash,paymaya')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean),
+    ),
+  /** Overridden only by tests, which run a fake PayMongo. */
+  PAYMONGO_API_BASE: z.url().default('https://api.paymongo.com/v1'),
   /**
    * Where uploaded files (employee documents, ADR-0019) live: 'local' disk for development
    * and tests, 's3' (SSE-KMS) in the cloud. Production requires 's3'.
@@ -92,7 +111,7 @@ export type Env = Omit<
   COOKIE_SECURE: boolean;
   OPENAPI_ENABLED: boolean;
   PAYMENT_SANDBOX_ENABLED: boolean;
-  PAYMENT_PROVIDER: 'sandbox' | null;
+  PAYMENT_PROVIDER: 'sandbox' | 'paymongo' | null;
 };
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
@@ -109,6 +128,17 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const sandbox = env.PAYMENT_SANDBOX_ENABLED ?? isLocal;
   if (env.PAYMENT_PROVIDER === 'sandbox' && !sandbox) {
     throw new Error('PAYMENT_PROVIDER=sandbox needs PAYMENT_SANDBOX_ENABLED=true');
+  }
+  if (
+    env.PAYMENT_PROVIDER === 'paymongo' &&
+    (!env.PAYMONGO_SECRET_KEY || !env.PAYMONGO_WEBHOOK_SECRET)
+  ) {
+    throw new Error(
+      'PAYMENT_PROVIDER=paymongo needs PAYMONGO_SECRET_KEY and PAYMONGO_WEBHOOK_SECRET',
+    );
+  }
+  if (!isLocal && !env.PAYMONGO_API_BASE.startsWith('https://')) {
+    throw new Error('PAYMONGO_API_BASE must be https in production');
   }
   if (sandbox && !isLocal && env.PAYMENT_SANDBOX_SECRET.endsWith('dev-only')) {
     throw new Error('PAYMENT_SANDBOX_SECRET must be set to a real secret outside development');

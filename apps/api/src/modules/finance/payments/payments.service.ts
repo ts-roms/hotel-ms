@@ -274,6 +274,7 @@ export class PaymentsService {
     const provider = this.providers.get(providerCode);
     if (!provider) throw Problems.notFound('Payment provider');
     const event = provider.verifyWebhook(rawBody, headers);
+    if (!event) return 'ignored';
     const paymentRef = `${provider.code}:${event.reference}`;
 
     const inbox = await this.db.runWithPaymentRef(paymentRef, async (tx) => {
