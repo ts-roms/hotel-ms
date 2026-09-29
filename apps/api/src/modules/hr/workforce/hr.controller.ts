@@ -1,26 +1,20 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CreateDepartmentRequest,
   createDepartmentRequestSchema,
   type CreateEmployeeRequest,
   createEmployeeRequestSchema,
-  type CreateLeaveTypeRequest,
-  createLeaveTypeRequestSchema,
   type CreatePositionRequest,
   createPositionRequestSchema,
   departmentSchema,
   type Employee,
-  employeeLeaveSchema,
   type EmployeeListQuery,
   employeeListQuerySchema,
   employeeSchema,
   employeeSummarySchema,
   type EndAssignmentRequest,
   endAssignmentRequestSchema,
-  type LeaveLedgerPostRequest,
-  leaveLedgerPostRequestSchema,
-  leaveTypeSchema,
   type LinkMembershipRequest,
   linkMembershipRequestSchema,
   type NewAssignment,
@@ -31,46 +25,38 @@ import {
   updateDepartmentRequestSchema,
   type UpdateEmployeeRequest,
   updateEmployeeRequestSchema,
-  type UpdateLeaveTypeRequest,
-  updateLeaveTypeRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
-import { LeaveService } from '../time/leave.service.js';
 import { PeopleService } from './people.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
-
-/** Organization-level HR: departments, employees, leave configuration (blueprint §13). */
+/** Organization-level HR: departments, positions, employees (blueprint §13). */
 @ApiTags('hr')
 @Controller()
 export class HrController {
-  constructor(
-    private readonly people: PeopleService,
-    private readonly leave: LeaveService,
-  ) {}
+  constructor(private readonly people: PeopleService) {}
 
   @Get('departments')
   @RequirePermission('employee.read', 'any')
-  @ZodResponse(200, items(departmentSchema))
+  @ZodResponse(200, listOf(departmentSchema))
   async departments() {
     return { items: await this.people.departments() };
   }
 
   @Post('departments')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(201, items(departmentSchema))
+  @ZodResponse(201, listOf(departmentSchema))
   async createDepartment(@ZodBody(createDepartmentRequestSchema) body: CreateDepartmentRequest) {
     return { items: await this.people.createDepartment(body) };
   }
 
   @Patch('departments/:departmentId')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(200, items(departmentSchema))
+  @ZodResponse(200, listOf(departmentSchema))
   async updateDepartment(
     @Param('departmentId') id: string,
     @ZodBody(updateDepartmentRequestSchema) body: UpdateDepartmentRequest,
@@ -80,14 +66,14 @@ export class HrController {
 
   @Post('positions')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(201, items(departmentSchema))
+  @ZodResponse(201, listOf(departmentSchema))
   async createPosition(@ZodBody(createPositionRequestSchema) body: CreatePositionRequest) {
     return { items: await this.people.createPosition(body) };
   }
 
   @Get('employees')
   @RequirePermission('employee.read', 'any')
-  @ZodResponse(200, items(employeeSummarySchema))
+  @ZodResponse(200, listOf(employeeSummarySchema))
   async employees(@ZodQuery(employeeListQuerySchema) query: EmployeeListQuery) {
     return { items: await this.people.list(query) };
   }
@@ -119,7 +105,7 @@ export class HrController {
   @ZodResponse(200, employeeSchema)
   async updateEmployee(
     @Param('employeeId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateEmployeeRequestSchema) body: UpdateEmployeeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
@@ -170,46 +156,5 @@ export class HrController {
     @ZodBody(linkMembershipRequestSchema) body: LinkMembershipRequest,
   ) {
     return this.people.linkMembership(uuidParam(id), body.membershipId);
-  }
-
-  @Get('employees/:employeeId/leave')
-  @RequirePermission('leave.read', 'any')
-  @ZodResponse(200, employeeLeaveSchema)
-  employeeLeave(@Param('employeeId') id: string) {
-    return this.leave.employeeLeave(uuidParam(id));
-  }
-
-  @Post('employees/:employeeId/leave/entries')
-  @RequirePermission('leave.manage', 'any')
-  @ZodResponse(201, employeeLeaveSchema)
-  postLedger(
-    @Param('employeeId') id: string,
-    @ZodBody(leaveLedgerPostRequestSchema) body: LeaveLedgerPostRequest,
-  ) {
-    return this.leave.postLedger(uuidParam(id), body);
-  }
-
-  @Get('leave-types')
-  @RequirePermission('leave.request.own', 'any')
-  @ZodResponse(200, items(leaveTypeSchema))
-  async leaveTypes() {
-    return { items: await this.leave.types() };
-  }
-
-  @Post('leave-types')
-  @RequirePermission('leave.configure', 'organization')
-  @ZodResponse(201, leaveTypeSchema)
-  createLeaveType(@ZodBody(createLeaveTypeRequestSchema) body: CreateLeaveTypeRequest) {
-    return this.leave.createType(body);
-  }
-
-  @Patch('leave-types/:leaveTypeId')
-  @RequirePermission('leave.configure', 'organization')
-  @ZodResponse(200, leaveTypeSchema)
-  updateLeaveType(
-    @Param('leaveTypeId') id: string,
-    @ZodBody(updateLeaveTypeRequestSchema) body: UpdateLeaveTypeRequest,
-  ) {
-    return this.leave.updateType(uuidParam(id), body);
   }
 }

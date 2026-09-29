@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDate } from '@hotel/format';
+import { formatDate, localToday } from '@hotel/format';
 import {
   Alert,
   Avatar,
@@ -11,9 +11,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  DocumentTitle,
   Input,
   LoadingRegion,
   NativeSelect,
+  SectionCard,
   Skeleton,
   SkeletonCard,
   SkeletonText,
@@ -25,12 +27,15 @@ import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
-import { EmployeeDocuments } from './documents';
-import { CompensationCard, EmploymentDetails, ReviewsCard, TrainingCard } from './records';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+import { CompensationCard } from './_components/compensation-card';
+import { EmployeeDocuments } from './_components/employee-documents';
+import { EmploymentDetails } from './_components/employment-details';
+import { ReviewsCard } from './_components/reviews-card';
+import { TrainingCard } from './_components/training-card';
+import { useProperties } from '@/lib/property';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -39,6 +44,7 @@ export default function EmployeePage() {
     queryKey: ['employee', employeeId],
     queryFn: () => api.hr.employee(employeeId),
   });
+  const properties = useProperties();
   const e = employee.data;
   if (employee.error) return <Alert>{errorMessage(employee.error)}</Alert>;
   if (!e)
@@ -59,6 +65,9 @@ export default function EmployeePage() {
       </LoadingRegion>
     );
   const name = `${e.preferredName || e.firstName} ${e.lastName}`;
+  // Pay defaults to the currency of the property the employee mainly works at.
+  const home = e.assignments.find((a) => a.isPrimary) ?? e.assignments[0];
+  const homeCurrency = properties.data?.items.find((p) => p.id === home?.propertyId)?.currency;
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
@@ -69,6 +78,7 @@ export default function EmployeePage() {
         <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
+      <DocumentTitle title={name} />
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
@@ -106,13 +116,7 @@ export default function EmployeePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Briefcase className="size-4 text-primary" />
-            {t('hr.assignments')}
-          </CardTitle>
-        </CardHeader>
+      <SectionCard icon={Briefcase} title={t('hr.assignments')}>
         <CardContent className="stagger flex flex-col gap-2 text-sm">
           {e.assignmentHistory.map((a) => (
             <div
@@ -130,11 +134,11 @@ export default function EmployeePage() {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </SectionCard>
 
       <EmploymentDetails employee={e} canManage={hasPermission(session.data, 'employee.manage')} />
       {hasPermission(session.data, 'employee.compensation') && (
-        <CompensationCard employeeId={e.id} />
+        <CompensationCard employeeId={e.id} defaultCurrency={homeCurrency} />
       )}
       <TrainingCard employeeId={e.id} canManage={hasPermission(session.data, 'employee.manage')} />
       {hasPermission(session.data, 'employee.performance') && <ReviewsCard employeeId={e.id} />}
@@ -161,7 +165,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
         leaveTypeId,
         kind: Number(form.days) > 0 ? 'ACCRUAL' : 'ADJUSTMENT',
         days: Number(form.days),
-        effectiveDate: today(),
+        effectiveDate: localToday(),
         note: form.note,
       }),
     onSuccess: (data) => {
@@ -174,13 +178,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
     post.mutate();
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Plane className="size-4 text-primary" />
-          {t('hr.leave')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Plane} title={t('hr.leave')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         {leave.error && <Alert>{errorMessage(leave.error)}</Alert>}
         <div className="flex flex-wrap gap-2">
@@ -192,7 +190,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
           )}
           {leave.data?.balances.map((b) => (
             <Badge key={b.leaveTypeId} variant="primary">
-              {b.leaveTypeName}: {b.days} {t('hr.days')}
+              {b.leaveTypeName}: {t('common.daysCount', { count: b.days })}
             </Badge>
           ))}
         </div>
@@ -243,7 +241,8 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
             className="flex justify-between gap-2 border-t pt-2 text-muted-foreground"
           >
             <span>
-              {formatDate(l.effectiveDate)} · {l.leaveTypeCode} · {l.kind.toLowerCase()} · {l.note}
+              {formatDate(l.effectiveDate)} · {l.leaveTypeCode} · {enumLabel('leaveKind', l.kind)} ·{' '}
+              {l.note}
             </span>
             <span
               className={
@@ -256,6 +255,6 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

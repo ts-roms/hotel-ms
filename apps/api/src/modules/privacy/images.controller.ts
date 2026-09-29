@@ -13,21 +13,20 @@ import {
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   IMAGE_UPLOAD_TYPES,
+  imageVersionSchema,
   propertyImageSchema,
   type UpdatePropertyImageRequest,
   updatePropertyImageRequestSchema,
   type UploadImageQuery,
   uploadImageQuerySchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { sendImage } from './image-response.js';
 import { ImagesService } from './images.service.js';
-
-const items = <T extends z.ZodType>(schema: T) => z.object({ items: z.array(schema) });
 
 /** Hotel photos and menu item photos (ADR-0030). Upload bodies are the image. */
 @ApiTags('images')
@@ -37,7 +36,7 @@ export class ImagesController {
 
   @Get('images')
   @RequirePermission('property.read')
-  @ZodResponse(200, items(propertyImageSchema))
+  @ZodResponse(200, listOf(propertyImageSchema))
   async list(@Param('propertyId') propertyId: string) {
     return { items: await this.images.list(propertyId) };
   }
@@ -46,7 +45,7 @@ export class ImagesController {
   @RequirePermission('property.settings.manage')
   @ApiConsumes(...IMAGE_UPLOAD_TYPES)
   @ApiBody({ schema: { type: 'string', format: 'binary' } })
-  @ZodResponse(201, items(propertyImageSchema))
+  @ZodResponse(201, listOf(propertyImageSchema))
   async upload(
     @Param('propertyId') propertyId: string,
     @ZodQuery(uploadImageQuerySchema) query: UploadImageQuery,
@@ -64,7 +63,7 @@ export class ImagesController {
 
   @Patch('images/:imageId')
   @RequirePermission('property.settings.manage')
-  @ZodResponse(200, items(propertyImageSchema))
+  @ZodResponse(200, listOf(propertyImageSchema))
   async update(
     @Param('propertyId') propertyId: string,
     @Param('imageId') imageId: string,
@@ -99,7 +98,7 @@ export class ImagesController {
   @RequirePermission('fnb.menu.manage')
   @ApiConsumes(...IMAGE_UPLOAD_TYPES)
   @ApiBody({ schema: { type: 'string', format: 'binary' } })
-  @ZodResponse(200, z.object({ imageVersion: z.string() }))
+  @ZodResponse(200, imageVersionSchema)
   setMenuImage(
     @Param('propertyId') propertyId: string,
     @Param('itemId') itemId: string,

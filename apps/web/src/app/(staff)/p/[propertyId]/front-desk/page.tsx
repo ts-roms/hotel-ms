@@ -22,8 +22,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 /** `key` identifies which button started the action, so only that one shows a spinner. */
@@ -33,9 +32,9 @@ interface Action {
 }
 
 export default function FrontDeskPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const board = useQuery({ queryKey: ['front-desk', propertyId], queryFn: pms.frontDesk });
   const action = useMutation({
@@ -43,8 +42,6 @@ export default function FrontDeskPage() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['front-desk', propertyId] }),
   });
   const running = (key: string) => action.isPending && action.variables?.key === key;
-
-  const can = (p: string) => hasPermission(session.data, p);
 
   const section = (
     title: MessageKey,
@@ -172,9 +169,7 @@ export default function FrontDeskPage() {
         title={t('fd.title')}
         description={
           d ? (
-            <>
-              {t('res.businessDate')} {formatDate(d.businessDate)}
-            </>
+            t('common.businessDateOn', { date: formatDate(d.businessDate) })
           ) : (
             <Skeleton className="h-4 w-40" />
           )

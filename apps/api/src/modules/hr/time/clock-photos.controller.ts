@@ -5,9 +5,9 @@ import {
   clockPhotoSchema,
   type DateRangeQuery,
   dateRangeQuerySchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -21,7 +21,7 @@ export class ClockPhotosController {
 
   @Get()
   @RequirePermission('attendance.read')
-  @ZodResponse(200, z.object({ items: z.array(clockPhotoSchema) }))
+  @ZodResponse(200, listOf(clockPhotoSchema))
   async list(
     @Param('propertyId') propertyId: string,
     @ZodQuery(dateRangeQuerySchema) query: DateRangeQuery,

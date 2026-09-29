@@ -10,14 +10,12 @@ import {
   createTrainingRequestSchema,
   performanceReviewSchema,
   trainingRecordSchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
 import { ProfileRecordsService } from './profile-records.service.js';
-
-const items = <T extends z.ZodType>(schema: T) => z.object({ items: z.array(schema) });
 
 /** Pay, training and performance records on an employee's file (ADR-0028). */
 @ApiTags('hr')
@@ -44,14 +42,14 @@ export class EmployeeRecordsController {
 
   @Get('training')
   @RequirePermission('employee.read', 'any')
-  @ZodResponse(200, items(trainingRecordSchema))
+  @ZodResponse(200, listOf(trainingRecordSchema))
   async trainings(@Param('employeeId') id: string) {
     return { items: await this.records.trainings(uuidParam(id)) };
   }
 
   @Post('training')
   @RequirePermission('employee.manage', 'any')
-  @ZodResponse(201, items(trainingRecordSchema))
+  @ZodResponse(201, listOf(trainingRecordSchema))
   async addTraining(
     @Param('employeeId') id: string,
     @ZodBody(createTrainingRequestSchema) body: CreateTrainingRequest,
@@ -68,14 +66,14 @@ export class EmployeeRecordsController {
 
   @Get('reviews')
   @RequirePermission('employee.performance', 'any')
-  @ZodResponse(200, items(performanceReviewSchema))
+  @ZodResponse(200, listOf(performanceReviewSchema))
   async reviews(@Param('employeeId') id: string) {
     return { items: await this.records.reviews(uuidParam(id)) };
   }
 
   @Post('reviews')
   @RequirePermission('employee.performance', 'any')
-  @ZodResponse(201, items(performanceReviewSchema))
+  @ZodResponse(201, listOf(performanceReviewSchema))
   async addReview(
     @Param('employeeId') id: string,
     @ZodBody(createPerformanceReviewRequestSchema) body: CreatePerformanceReviewRequest,

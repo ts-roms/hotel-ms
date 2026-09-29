@@ -1,21 +1,36 @@
 import type { PropertyImage, UpdatePropertyImageRequest } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
-/** Hotel photos shown in the guest portal (ADR-0030). */
-export function imagesClient({ call, qs, baseUrl, p, id }: PropertyTransport) {
+/** Hotel photos and menu item images shown in the guest portal (ADR-0030). */
+export function imagesClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
-    images: () => call<{ items: PropertyImage[] }>('GET', `${p}/images`).then((r) => r.data.items),
+    images: () =>
+      op.ImagesController_list<{ items: PropertyImage[] }>(call, { propertyId }).then(items),
     uploadImage: (file: Blob, caption: string) =>
-      call<{ items: PropertyImage[] }>('POST', `${p}/images${qs({ caption })}`, file).then(
-        (r) => r.data.items,
-      ),
+      op
+        .ImagesController_upload<{ items: PropertyImage[] }>(
+          call,
+          { propertyId },
+          { caption },
+          file,
+        )
+        .then(items),
     updateImage: (imageId: string, body: UpdatePropertyImageRequest) =>
-      call<{ items: PropertyImage[] }>('PATCH', `${p}/images/${id(imageId)}`, body).then(
-        (r) => r.data.items,
-      ),
+      op
+        .ImagesController_update<{ items: PropertyImage[] }>(call, { propertyId, imageId }, body)
+        .then(items),
     removeImage: (imageId: string) =>
-      call<void>('DELETE', `${p}/images/${id(imageId)}`).then((r) => r.data),
+      op.ImagesController_remove(call, { propertyId, imageId }).then(data),
     imageUrl: (imageId: string, version: string) =>
-      `${baseUrl}${p}/images/${id(imageId)}/content?v=${encodeURIComponent(version)}`,
+      `${baseUrl}${op.paths.ImagesController_content({ propertyId, imageId })}?v=${encodeURIComponent(version)}`,
+    setMenuItemImage: (itemId: string, file: Blob) =>
+      op
+        .ImagesController_setMenuImage<{ imageVersion: string }>(call, { propertyId, itemId }, file)
+        .then(data),
+    removeMenuItemImage: (itemId: string) =>
+      op.ImagesController_removeMenuImage(call, { propertyId, itemId }).then(data),
+    menuItemImageUrl: (itemId: string, version: string) =>
+      `${baseUrl}${op.paths.ImagesController_menuImage({ propertyId, itemId })}?v=${encodeURIComponent(version)}`,
   };
 }

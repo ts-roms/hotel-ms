@@ -8,7 +8,8 @@ import type {
 import type { Prisma } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { isUniqueViolation } from '../../../common/db-errors.js';
-import { currencyDigits, formatRate, parseRateMicros } from '../../../common/money.js';
+import { currencyDigits } from '@hotel/format';
+import { formatRate, parseRateMicros } from '../../../common/money.js';
 import { Problems } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
 import { TenantDb } from '../../../infrastructure/database.js';

@@ -93,6 +93,10 @@ export const recoveryCodesSchema = z.object({
 });
 export type RecoveryCodes = z.infer<typeof recoveryCodesSchema>;
 
+/** Confirming MFA enrollment returns the recovery codes and the new, fully signed-in session. */
+export const enrollmentConfirmedSchema = recoveryCodesSchema.extend({ session: sessionInfoSchema });
+export type EnrollmentConfirmed = z.infer<typeof enrollmentConfirmedSchema>;
+
 // ---- Passwords -----------------------------------------------------------------------------
 
 export const forgotPasswordRequestSchema = z.strictObject({ email: z.email().max(254) });

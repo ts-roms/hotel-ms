@@ -8,12 +8,13 @@ import {
   type DemoWorld,
   prepareTestDatabase,
   testDatabaseUrls,
+  testRedisPath,
 } from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createApp } from '../src/app.factory.js';
 import { type Env, loadEnv } from '../src/config/env.js';
-import { base32Decode, hotp } from '../src/infrastructure/totp.js';
+import { base32Decode, hotp } from '../src/modules/auth/totp.js';
 
 export const WEB_ORIGIN = 'http://localhost:43100';
 
@@ -45,9 +46,9 @@ export async function startTestApp(overrides: NodeJS.ProcessEnv = {}): Promise<T
   const urls = testDatabaseUrls();
 
   const redisUrl = new URL(process.env.REDIS_CACHE_URL ?? 'redis://localhost:56379');
-  redisUrl.pathname = '/15';
+  redisUrl.pathname = testRedisPath();
   const queueUrl = new URL(process.env.REDIS_QUEUE_URL ?? 'redis://localhost:56380');
-  queueUrl.pathname = '/15';
+  queueUrl.pathname = testRedisPath();
   for (const url of [redisUrl, queueUrl]) {
     const redis = new Redis(url.toString());
     await redis.flushdb();
@@ -268,4 +269,37 @@ export class GuestClient {
   get rawCookie() {
     return this.cookie;
   }
+}
+
+/**
+ * A guest on the portal for a booking: the front desk (`staff`) sends the portal link, the
+ * guest opens a session from the emailed link and, unless `verified: false`, confirms the
+ * emailed code (needed for the bill, payments, requests and self check-in).
+ */
+export async function guestSession(
+  ctx: TestContext,
+  staff: TestClient,
+  input: { propertyId: string; reservationId: string; email: string; verified?: boolean },
+): Promise<GuestClient> {
+  const link = await staff.request(
+    'POST',
+    `/api/v1/properties/${input.propertyId}/reservations/${input.reservationId}/guest-portal-link`,
+  );
+  if (link.status !== 204)
+    throw new Error(`Portal link: ${link.status} ${JSON.stringify(link.body)}`);
+  const mail = await ctx.mailbox.latestFor(input.email, 'guest-portal-link');
+  if (!mail) throw new Error(`No portal link was mailed to ${input.email}`);
+  const guest = new GuestClient(ctx.app);
+  const token = Mailbox.tokenFrom((mail.data as { portalUrl: string }).portalUrl);
+  const session = await guest.request('POST', '/guest/session', { token });
+  if (session.status !== 200) throw new Error(`Guest session: ${session.status}`);
+  if (input.verified === false) return guest;
+  const sent = await guest.request('POST', '/guest/verification');
+  if (sent.status !== 204) throw new Error(`Verification code: ${sent.status}`);
+  const code = await ctx.mailbox.latestFor(input.email, 'guest-verification-code');
+  const confirmed = await guest.request('POST', '/guest/verification/confirm', {
+    code: (code!.data as { code: string }).code,
+  });
+  if (confirmed.status !== 200) throw new Error(`Verification: ${confirmed.status}`);
+  return guest;
 }

@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type GuestExchangeRequest,
@@ -6,26 +6,17 @@ import {
   guestExchangeRequestSchema,
   type GuestOtpVerifyRequest,
   guestOtpVerifyRequestSchema,
-  type GuestServiceRating,
-  guestServiceRatingSchema,
-  type GuestServiceRequestCreate,
-  guestServiceRequestCreateSchema,
   guestStaySchema,
   type PreCheckInRequest,
   preCheckInRequestSchema,
   selfCheckInResultSchema,
-  serviceRequestSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { uuidParam } from '../../common/params.js';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
+import { GuestAccessService } from './guest-access.service.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { GuestSessions } from './guest-session.js';
-import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
-
-const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
 
 /**
  * Guest realm (blueprint §11): authenticated by GuestGuard with the guest cookie. No route
@@ -37,7 +28,7 @@ const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
 export class GuestPortalController {
   constructor(
     private readonly portal: GuestPortalService,
-    private readonly requests: ServiceRequestsService,
+    private readonly access: GuestAccessService,
     private readonly sessions: GuestSessions,
   ) {}
 
@@ -49,7 +40,7 @@ export class GuestPortalController {
     @ZodBody(guestExchangeRequestSchema) body: GuestExchangeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    const { token, expiresAt, stay } = await this.portal.exchange(body.token);
+    const { token, expiresAt, stay } = await this.access.exchange(body.token);
     reply.setCookie(this.sessions.cookieName, token, this.sessions.cookieOptions(expiresAt));
     return stay;
   }
@@ -57,7 +48,7 @@ export class GuestPortalController {
   @Delete('session')
   @HttpCode(204)
   async logout(@Res({ passthrough: true }) reply: FastifyReply): Promise<void> {
-    await this.portal.logout();
+    await this.access.logout();
     reply.clearCookie(this.sessions.cookieName, { path: '/' });
   }
 
@@ -70,14 +61,14 @@ export class GuestPortalController {
   @Post('verification')
   @HttpCode(204)
   async requestCode(): Promise<void> {
-    await this.portal.requestCode();
+    await this.access.requestCode();
   }
 
   @Post('verification/confirm')
   @HttpCode(200)
   @ZodResponse(200, guestStaySchema)
   verifyCode(@ZodBody(guestOtpVerifyRequestSchema) body: GuestOtpVerifyRequest) {
-    return this.portal.verifyCode(body.code);
+    return this.access.verifyCode(body.code);
   }
 
   @Put('pre-check-in')
@@ -100,30 +91,5 @@ export class GuestPortalController {
   @ZodResponse(200, guestBillSchema)
   bill() {
     return this.portal.bill();
-  }
-
-  @Get('service-requests')
-  @GuestRoute({ verified: true })
-  @ZodResponse(200, serviceRequestList)
-  async listRequests() {
-    return { items: await this.requests.guestList() };
-  }
-
-  @Post('service-requests')
-  @GuestRoute({ verified: true })
-  @HttpCode(201)
-  @ZodResponse(201, serviceRequestSchema)
-  createRequest(@ZodBody(guestServiceRequestCreateSchema) body: GuestServiceRequestCreate) {
-    return this.requests.guestCreate(body);
-  }
-
-  @Put('service-requests/:requestId/rating')
-  @GuestRoute({ verified: true })
-  @ZodResponse(200, serviceRequestSchema)
-  rate(
-    @Param('requestId') requestId: string,
-    @ZodBody(guestServiceRatingSchema) body: GuestServiceRating,
-  ) {
-    return this.requests.guestRate(uuidParam(requestId), body);
   }
 }

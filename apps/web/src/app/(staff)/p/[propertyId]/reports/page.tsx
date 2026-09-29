@@ -1,17 +1,27 @@
 'use client';
 
 import { formatMoney } from '@hotel/format';
-import { Alert, Card, CardContent, CardHeader, CardTitle, Input, Notice } from '@hotel/ui';
+import {
+  Alert,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DocumentTitle,
+  Input,
+  Notice,
+} from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
-import { OperationalReports } from './operational';
+import { usePms, usePropertyId } from '@/lib/property';
+import { OperationalReports } from './_components/operational-reports';
+import { enumLabelOr } from '@/lib/status';
 
 /** Daily financial report and ledger reconciliation (blueprint §15). */
 export default function ReportsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const [date, setDate] = useState('');
   const report = useQuery({
@@ -43,7 +53,7 @@ export default function ReportsPage() {
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between gap-2">
             <span>
-              {row.label.toLowerCase().replace('_', ' ')}
+              {row.label}
               {row.count !== undefined && ` (${row.count})`}
             </span>
             <span className="tabular-nums">{money(row.value)}</span>
@@ -60,6 +70,7 @@ export default function ReportsPage() {
   return (
     <div className="flex max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <DocumentTitle title={t('fin.reports')} />
         <h1 className="text-xl font-semibold">
           {t('fin.reports')} {r && `· ${r.businessDate}`}
         </h1>
@@ -93,7 +104,10 @@ export default function ReportsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {table(
             t('fin.revenue'),
-            r.revenue.map((x) => ({ label: x.department, value: x.netMinor })),
+            r.revenue.map((x) => ({
+              label: enumLabelOr('department', x.department),
+              value: x.netMinor,
+            })),
             r.totals.revenueNetMinor,
           )}
           {table(
@@ -103,12 +117,20 @@ export default function ReportsPage() {
           )}
           {table(
             t('fin.payments'),
-            r.payments.map((x) => ({ label: x.method, value: x.amountMinor, count: x.count })),
+            r.payments.map((x) => ({
+              label: enumLabelOr('paymentMethod', x.method),
+              value: x.amountMinor,
+              count: x.count,
+            })),
             r.totals.paymentsMinor,
           )}
           {table(
             t('fin.refunds'),
-            r.refunds.map((x) => ({ label: x.method, value: x.amountMinor, count: x.count })),
+            r.refunds.map((x) => ({
+              label: enumLabelOr('paymentMethod', x.method),
+              value: x.amountMinor,
+              count: x.count,
+            })),
             r.totals.refundsMinor,
           )}
           <Notice>
@@ -126,7 +148,7 @@ export default function ReportsPage() {
               <div key={run.id} className="flex justify-between gap-2">
                 <span>{run.runDate}</span>
                 <span className={run.ok ? 'text-success' : 'text-destructive'}>
-                  {run.ok ? t('fin.runOk') : `${run.issues.length} ${t('fin.runIssues')}`}
+                  {run.ok ? t('fin.runOk') : t('fin.runIssuesCount', { count: run.issues.length })}
                 </span>
               </div>
             ))}

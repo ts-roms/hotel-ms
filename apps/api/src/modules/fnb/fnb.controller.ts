@@ -36,12 +36,12 @@ import {
   updateMenuItemRequestSchema,
   type UpdateOutletRequest,
   updateOutletRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
-import { z } from 'zod';
-import { parseIfMatch } from '../../common/etag.js';
-import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
+import { IfMatch, parseIfMatch } from '../../common/etag.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { RequirePermission } from '../../common/route-metadata.js';
@@ -51,7 +51,6 @@ import { RealtimeService } from '../../infrastructure/realtime.js';
 import { MenuService } from './menu.service.js';
 import { OrdersService } from './orders.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 const HEARTBEAT_MS = 25_000;
 
 @ApiTags('f&b')
@@ -70,7 +69,7 @@ export class FnbController {
 
   @Get('outlets')
   @RequirePermission('fnb.order.read')
-  @ZodResponse(200, items(outletSchema))
+  @ZodResponse(200, listOf(outletSchema))
   async outlets(@Param('propertyId') propertyId: string) {
     return { items: await this.menus.outlets(propertyId) };
   }
@@ -91,7 +90,7 @@ export class FnbController {
   updateOutlet(
     @Param('propertyId') propertyId: string,
     @Param('outletId') outletId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateOutletRequestSchema) body: UpdateOutletRequest,
   ) {
     return this.menus.updateOutlet(propertyId, uuidParam(outletId), parseIfMatch(ifMatch), body);
@@ -152,7 +151,7 @@ export class FnbController {
 
   @Get('orders')
   @RequirePermission('fnb.order.read')
-  @ZodResponse(200, items(orderSchema))
+  @ZodResponse(200, listOf(orderSchema))
   async list(
     @Param('propertyId') propertyId: string,
     @ZodQuery(orderListQuerySchema) query: OrderListQuery,
@@ -197,7 +196,7 @@ export class FnbController {
   transition(
     @Param('propertyId') propertyId: string,
     @Param('orderId') orderId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(orderTransitionRequestSchema) body: OrderTransitionRequest,
   ) {
     return this.orders.transition(
@@ -215,7 +214,7 @@ export class FnbController {
   cancel(
     @Param('propertyId') propertyId: string,
     @Param('orderId') orderId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(cancelOrderRequestSchema) body: CancelOrderRequest,
   ) {
     const canOverride = this.cls

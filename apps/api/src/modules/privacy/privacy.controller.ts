@@ -6,19 +6,15 @@ import {
   anonymizeResultSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
+import { sendJsonDownload } from '../../common/download.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { PrivacyService } from './privacy.service.js';
 
 /** A data export as a download; never cached. */
-async function sendExport(reply: FastifyReply, name: string, data: unknown): Promise<void> {
-  await reply
-    .header('content-type', 'application/json; charset=utf-8')
-    .header('content-disposition', `attachment; filename="${name}.json"`)
-    .header('cache-control', 'no-store')
-    .send(JSON.stringify(data, null, 2));
-}
+const sendExport = (reply: FastifyReply, name: string, data: unknown) =>
+  sendJsonDownload(reply, `${name}.json`, data);
 
 /** Data requests (ADR-0030): export or anonymize one person's personal data. */
 @ApiTags('privacy')

@@ -5,16 +5,15 @@ import {
   guestOrderRequestSchema,
   menuSchema,
   orderSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { OrdersService } from './orders.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 /** Room service in the guest portal (behind the guest_food_ordering flag). */
 @ApiTags('guest portal')
 @Controller('guest')
@@ -27,13 +26,13 @@ export class GuestFnbController {
 
   @Get('menus')
   @GuestRoute()
-  @ZodResponse(200, items(menuSchema))
+  @ZodResponse(200, listOf(menuSchema))
   async menus() {
     return { items: await this.orders.guestMenus() };
   }
 
   @Get('orders')
-  @ZodResponse(200, items(orderSchema))
+  @ZodResponse(200, listOf(orderSchema))
   async list() {
     return { items: await this.orders.guestOrders() };
   }

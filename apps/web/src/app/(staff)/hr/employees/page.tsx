@@ -6,16 +6,14 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   cn,
   EmptyState,
   Input,
   LoadingRegion,
-  PageHeader,
   NativeSelect,
+  PageHeader,
+  SectionCard,
   SkeletonRow,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,11 +22,11 @@ import Link from 'next/link';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useProperties } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+import { localToday } from '@hotel/format';
 
 export default function EmployeesPage() {
   const session = useSession();
@@ -132,14 +130,14 @@ function NewEmployee() {
         preferredName: null,
         workEmail: null,
         workPhone: null,
-        hireDate: today(),
+        hireDate: localToday(),
         employmentType: form.employmentType,
         birthdayVisibility: 'HIDDEN',
         assignment: {
           propertyId,
           departmentId,
           positionId: form.positionId || null,
-          startDate: today(),
+          startDate: localToday(),
           endDate: null,
           isPrimary: true,
         },
@@ -155,13 +153,12 @@ function NewEmployee() {
     create.mutate();
   };
   return (
-    <Card className="animate-fade-in">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="size-4 text-primary" />
-          {t('hr.addEmployee')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard
+      className="animate-fade-in"
+      headerClassName="pb-4"
+      icon={UserPlus}
+      title={t('hr.addEmployee')}
+    >
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
           <Input
@@ -195,7 +192,7 @@ function NewEmployee() {
           >
             {EMPLOYMENT_TYPES.map((x) => (
               <option key={x} value={x}>
-                {statusLabel(x)}
+                {enumLabel('employmentType', x)}
               </option>
             ))}
           </NativeSelect>
@@ -248,6 +245,6 @@ function NewEmployee() {
         </form>
         {create.error && <Alert className="mt-2">{errorMessage(create.error)}</Alert>}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

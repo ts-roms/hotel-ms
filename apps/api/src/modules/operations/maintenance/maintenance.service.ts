@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
@@ -16,9 +15,9 @@ import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../../common/dates.js';
 import { nextNumber } from '../../../common/numbering.js';
-import { ProblemException, Problems, invalidState } from '../../../common/problem.js';
+import { Problems, invalidState } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
-import { matchesType } from '../../../common/uploads.js';
+import { acceptUpload } from '../../../common/uploads.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import {
   OBJECT_STORAGE,
@@ -50,8 +49,12 @@ const TRANSITIONS: Record<'START' | 'HOLD' | 'COMPLETE', [MaintenanceStatus[], M
     COMPLETE: [['IN_PROGRESS'], 'DONE'],
   };
 
-const unsupported = (detail: string) =>
-  new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported photo', detail);
+const PHOTO_RULES = {
+  types: MAINTENANCE_PHOTO_TYPES,
+  maxBytes: MAINTENANCE_PHOTO_MAX_BYTES,
+  label: 'photo',
+  typeHint: 'Upload a JPEG, PNG or WebP photo.',
+};
 
 /**
  * Maintenance requests (spec §32, ADR-0023). Anyone with maintenance.report files one;
@@ -477,21 +480,12 @@ export class MaintenanceService {
     body: unknown,
   ): Promise<MaintenanceDetail> {
     const { organizationId, actorId, propertyId } = this.ctx;
-    const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
-    if (!(MAINTENANCE_PHOTO_TYPES as readonly string[]).includes(type))
-      throw unsupported('Upload a JPEG, PNG or WebP photo.');
-    if (!Buffer.isBuffer(body) || body.length === 0)
-      throw Problems.validation([{ path: 'body', message: 'The photo is empty' }]);
-    if (body.length > MAINTENANCE_PHOTO_MAX_BYTES)
-      throw new ProblemException(413, 'VALIDATION_FAILED', 'Photo too large', 'At most 8 MiB.');
-    if (!matchesType(body, type as (typeof MAINTENANCE_PHOTO_TYPES)[number]))
-      throw unsupported(`The file is not a ${type} image.`);
+    const { type, body: photo, sha256 } = acceptUpload(contentType, body, PHOTO_RULES);
     await this.db.run((tx) => this.requireRow(tx, id));
 
     const photoId = uuidv7();
     const storageKey = `${organizationId}/maintenance-photos/${photoId}`;
-    const sha256 = createHash('sha256').update(body).digest('hex');
-    await this.storage.put(storageKey, body, type, sha256);
+    await this.storage.put(storageKey, photo, type, sha256);
     try {
       await this.db.run(async (tx) => {
         await this.requireRow(tx, id);
@@ -502,7 +496,7 @@ export class MaintenanceService {
             requestId: id,
             storageKey,
             contentType: type,
-            sizeBytes: body.length,
+            sizeBytes: photo.length,
             sha256,
             uploadedBy: actorId,
           },

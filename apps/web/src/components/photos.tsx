@@ -1,7 +1,7 @@
 'use client';
 
 import { IMAGE_MAX_PER_PROPERTY, IMAGE_UPLOAD_TYPES } from '@hotel/contracts';
-import { Alert, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@hotel/ui';
+import { Alert, Button, CardContent, Input, SectionCard } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDown, ArrowUp, ImagePlus, ImageOff, Images, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -73,13 +73,7 @@ export function PropertyPhotos({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Images className="size-4 text-primary" />
-          {t('img.photos')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Images} title={t('img.photos')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">{t('img.photosHint')}</p>
         {images.error && <Alert>{errorMessage(images.error)}</Alert>}
@@ -161,7 +155,7 @@ export function PropertyPhotos({
           <Alert>{errorMessage(upload.error ?? update.error ?? remove.error)}</Alert>
         )}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 

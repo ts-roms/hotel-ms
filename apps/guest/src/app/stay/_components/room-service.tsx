@@ -1,0 +1,179 @@
+'use client';
+
+import { ApiError } from '@hotel/api-client';
+import {
+  type CartLine as Line,
+  cartCount,
+  cartTotal,
+  type MenuItem,
+  newCartLine,
+} from '@hotel/contracts';
+import { formatMoney } from '@hotel/format';
+import {
+  Alert,
+  Badge,
+  Button,
+  CardContent,
+  NativeSelect,
+  Notice,
+  SectionCard,
+  SkeletonCard,
+} from '@hotel/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { api, errorMessage } from '@/lib/api';
+import { t } from '@/lib/i18n';
+import { CartLine } from './room-service-cart-line';
+import { RoomServiceOrders } from './room-service-orders';
+
+/** In-room dining for checked-in guests (blueprint §14). Hidden when the hotel has it off. */
+export function RoomService() {
+  const queryClient = useQueryClient();
+  const menus = useQuery({ queryKey: ['menus'], queryFn: api.menus, retry: false });
+  const orders = useQuery({ queryKey: ['orders'], queryFn: api.orders, refetchInterval: 20_000 });
+  const [cart, setCart] = useState<Line[]>([]);
+  const [chargeMethod, setChargeMethod] = useState<'ROOM_CHARGE' | 'PAY_ON_DELIVERY'>(
+    'ROOM_CHARGE',
+  );
+  // Reused if the same order is retried after a network error; renewed after success.
+  const [attemptKey, setAttemptKey] = useState(() => crypto.randomUUID());
+
+  // A delivered room-charge order is now on the folio: refresh the bill.
+  const delivered = orders.data?.filter((o) => o.status === 'DELIVERED').length ?? 0;
+  useEffect(() => {
+    if (delivered > 0) void queryClient.invalidateQueries({ queryKey: ['bill'] });
+  }, [delivered, queryClient]);
+
+  const menu = menus.data?.[0];
+  // Outlets that do not allow room charges only offer pay on delivery: show and send that,
+  // not the (hidden) room-charge default.
+  const payment = menu && !menu.outlet.allowRoomCharge ? 'PAY_ON_DELIVERY' : chargeMethod;
+  const place = useMutation({
+    mutationFn: () =>
+      api.placeOrder(
+        {
+          outletId: menu!.outlet.id,
+          chargeMethod: payment,
+          notes: '',
+          items: cart.map((l) => ({
+            menuItemId: l.item.id,
+            quantity: l.quantity,
+            modifierIds: l.modifierIds,
+            notes: '',
+          })),
+        },
+        attemptKey,
+      ),
+    onSuccess: () => {
+      setCart([]);
+      setAttemptKey(crypto.randomUUID());
+      return queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+
+  if (menus.isPending) return <SkeletonCard lines={4} />;
+  if (menus.error instanceof ApiError && menus.error.code === 'FEATURE_DISABLED') return null;
+  if (!menu) return null;
+  const total = cartTotal(cart);
+  const count = cartCount(cart);
+  const add = (item: MenuItem) => setCart([...cart, newCartLine(item)]);
+  const update = (index: number, change: Partial<Line>) =>
+    setCart(cart.map((l, i) => (i === index ? { ...l, ...change } : l)));
+
+  return (
+    <SectionCard
+      variant="badge"
+      icon={UtensilsCrossed}
+      title={menu.outlet.name}
+      actions={
+        <Badge variant={menu.open ? 'success' : 'neutral'} dot>
+          {menu.open ? t('roomService.open') : t('roomService.closed')}
+        </Badge>
+      }
+    >
+      <CardContent className="flex flex-col gap-5 text-sm">
+        {!menu.open && <Notice>{t('roomService.closedNotice')}</Notice>}
+        {menu.categories.map((c) => (
+          <div key={c.id} className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {c.name}
+            </div>
+            {c.items.map((i) => (
+              <div
+                key={i.id}
+                className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:border-primary/30"
+              >
+                {i.imageVersion && (
+                  <img
+                    src={api.menuItemImageUrl(i.id, i.imageVersion)}
+                    alt=""
+                    loading="lazy"
+                    className="size-16 shrink-0 rounded-lg bg-muted object-cover"
+                  />
+                )}
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{i.name}</span>
+                  {i.description && (
+                    <span className="text-xs text-muted-foreground">{i.description}</span>
+                  )}
+                  <span className="mt-0.5 tabular-nums text-muted-foreground">
+                    {formatMoney(i.priceMinor, menu.currency)}
+                  </span>
+                </span>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="shrink-0 rounded-full"
+                  aria-label={t('roomService.add', { item: i.name })}
+                  disabled={!menu.open}
+                  onClick={() => add(i)}
+                >
+                  <Plus />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {cart.length > 0 && (
+          <div className="flex animate-scale-in flex-col gap-3 rounded-2xl bg-muted/50 p-3">
+            <div className="flex items-center gap-2 px-1 font-medium">
+              <ShoppingBag className="size-4 text-primary" />
+              {t('roomService.yourOrder')}
+              <Badge variant="primary" className="tabular-nums">
+                {count}
+              </Badge>
+            </div>
+            {cart.map((l, index) => (
+              <CartLine
+                key={index}
+                line={l}
+                currency={menu.currency}
+                onUpdate={(change) => update(index, change)}
+                onRemove={() => setCart(cart.filter((_, i) => i !== index))}
+              />
+            ))}
+            <NativeSelect
+              aria-label={t('roomService.payment')}
+              value={payment}
+              onChange={(e) => setChargeMethod(e.target.value as typeof chargeMethod)}
+            >
+              {menu.outlet.allowRoomCharge && (
+                <option value="ROOM_CHARGE">{t('roomService.roomCharge')}</option>
+              )}
+              <option value="PAY_ON_DELIVERY">{t('roomService.payOnDelivery')}</option>
+            </NativeSelect>
+            {place.error && <Alert>{errorMessage(place.error)}</Alert>}
+            <Button size="lg" loading={place.isPending} onClick={() => place.mutate()}>
+              {t('roomService.order')} ·{' '}
+              <span className="tabular-nums">{formatMoney(total, menu.currency)}</span>
+            </Button>
+          </div>
+        )}
+
+        <RoomServiceOrders orders={orders.data} />
+      </CardContent>
+    </SectionCard>
+  );
+}

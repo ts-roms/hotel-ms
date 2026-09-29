@@ -11,8 +11,9 @@ import type { Logger } from 'pino';
 export type EventHandler = (event: DomainEventEnvelope, log: Logger) => Promise<void>;
 
 export const HANDLERS: Record<string, EventHandler[]> = {
-  // Phase 0: events are observable end-to-end. Real consumers (notifications, calendar
-  // projection, stats) register here as their modules land.
+  // Events without a handler are consumed as no-ops. The API does its follow-up work in the
+  // same transaction as the event (ADR-0031) and sends email and SMS through the
+  // notification queue, so only work that must happen outside the API registers here.
   PropertyCreated: [
     async (event, log) => {
       log.info(

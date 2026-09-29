@@ -4,15 +4,15 @@ import {
   type GuestPaymentRequest,
   guestPaymentRequestSchema,
   paymentIntentSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { IdempotencyService, idempotencyKeyHeader } from '../../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../../idempotency/idempotency.service.js';
 import { GuestRoute } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { CardHoldsService } from './card-holds.service.js';
 import { PaymentsService } from './payments.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 /** Guest portal: pay the stay folio online (hosted checkout). */
 @ApiTags('guest portal')
 @Controller('guest')
@@ -20,6 +20,7 @@ const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) 
 export class GuestPaymentsController {
   constructor(
     private readonly payments: PaymentsService,
+    private readonly holds: CardHoldsService,
     private readonly idempotency: IdempotencyService,
   ) {}
 
@@ -40,7 +41,7 @@ export class GuestPaymentsController {
   }
 
   @Get('payments')
-  @ZodResponse(200, items(paymentIntentSchema))
+  @ZodResponse(200, listOf(paymentIntentSchema))
   async list() {
     return { items: await this.payments.guestIntents() };
   }
@@ -55,7 +56,7 @@ export class GuestPaymentsController {
   ) {
     const result = await this.idempotency.run('guest.hold', key, {}, async () => ({
       status: 201,
-      body: await this.payments.guestHold(),
+      body: await this.holds.guestHold(),
     }));
     if (result.replayed) reply.header('idempotent-replayed', 'true');
     return result.body;

@@ -1,15 +1,11 @@
 'use client';
 
-import { formatMoney, minorToInput, parseMoney } from '@hotel/format';
+import { parseMoney } from '@hotel/format';
 import {
   Alert,
-  Badge,
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  cn,
   EmptyState,
   Input,
   LoadingRegion,
@@ -18,16 +14,16 @@ import {
   SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, Check, FolderPlus, Pencil, Plus } from 'lucide-react';
+import { BookOpen, FolderPlus, Plus } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { MenuItemPhoto } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
+import { MenuCategoryCard } from './_components/menu-category-card';
 
 /** Outlet menus: categories, items, prices and availability (blueprint §14). */
 export default function MenusPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const outlets = useQuery({ queryKey: ['outlets', propertyId], queryFn: pms.outlets });
@@ -177,132 +173,18 @@ export default function MenusPage() {
 
       <div className="stagger flex flex-col gap-4">
         {menu.data?.categories.map((c) => (
-          <Card key={c.id}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                {c.name}
-                <Badge className="tabular-nums">{c.items.length}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col text-sm">
-              {c.items.map((i) => (
-                <div
-                  key={i.id}
-                  className={cn(
-                    'flex flex-wrap items-center justify-between gap-2 border-t py-2.5 transition-colors',
-                    i.archived && 'opacity-60',
-                  )}
-                >
-                  <span
-                    className={i.archived ? 'text-muted-foreground line-through' : 'font-medium'}
-                  >
-                    {i.name}
-                    {i.modifierGroups.length > 0 && (
-                      <span className="font-normal text-muted-foreground">
-                        {' '}
-                        · {i.modifierGroups.map((g) => g.name).join(', ')}
-                      </span>
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    {!i.available && <Badge variant="danger">{t('fnb.soldOutBadge')}</Badge>}
-                    <MenuItemPhoto
-                      propertyId={propertyId}
-                      itemId={i.id}
-                      version={i.imageVersion}
-                      onChanged={() => queryClient.invalidateQueries({ queryKey: key })}
-                    />
-                    <PriceEditor
-                      value={i.priceMinor}
-                      currency={currency}
-                      saving={updating(i.id, 'priceMinor')}
-                      onSave={(priceMinor) => updateItem.mutate({ id: i.id, body: { priceMinor } })}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      loading={updating(i.id, 'available')}
-                      disabled={updateItem.isPending}
-                      onClick={() =>
-                        updateItem.mutate({ id: i.id, body: { available: !i.available } })
-                      }
-                    >
-                      {i.available ? t('fnb.markSoldOut') : t('fnb.markAvailable')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      loading={updating(i.id, 'archived')}
-                      disabled={updateItem.isPending}
-                      onClick={() =>
-                        updateItem.mutate({ id: i.id, body: { archived: !i.archived } })
-                      }
-                    >
-                      {i.archived ? t('fnb.restore') : t('fnb.archive')}
-                    </Button>
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <MenuCategoryCard
+            key={c.id}
+            category={c}
+            propertyId={propertyId}
+            currency={currency}
+            updating={updating}
+            updatePending={updateItem.isPending}
+            onUpdate={(id, body) => updateItem.mutate({ id, body })}
+            onPhotoChanged={() => queryClient.invalidateQueries({ queryKey: key })}
+          />
         ))}
       </div>
     </div>
-  );
-}
-
-function PriceEditor({
-  value,
-  currency,
-  saving,
-  onSave,
-}: {
-  value: number;
-  currency: string;
-  saving: boolean;
-  onSave: (minor: number) => void;
-}) {
-  const [text, setText] = useState<string | null>(null);
-  if (text === null) {
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        disabled={saving}
-        className="group h-auto gap-1 rounded-md px-2 py-1 text-foreground tabular-nums disabled:opacity-60 [&_svg]:size-3"
-        onClick={() => setText(minorToInput(value, currency))}
-      >
-        {formatMoney(value, currency)}
-        <Pencil className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      </Button>
-    );
-  }
-  const parsed = parseMoney(text, currency);
-  return (
-    <form
-      className="flex animate-fade-in items-center gap-1"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (parsed !== null) onSave(parsed);
-        setText(null);
-      }}
-    >
-      <Input
-        className="h-8 w-24"
-        autoFocus
-        aria-label={t('fnb.price')}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <Button
-        size="icon"
-        className="size-8"
-        type="submit"
-        aria-label={t('fnb.price')}
-        disabled={parsed === null}
-      >
-        <Check />
-      </Button>
-    </form>
   );
 }

@@ -35,6 +35,14 @@ export function testDatabaseUrls(): TestDatabaseUrls {
   };
 }
 
+/**
+ * Redis logical database the integration suites use and flush (TEST_REDIS_DB, default 15).
+ * Give each concurrent run its own, together with its own TEST_DATABASE_*_URL database.
+ */
+export function testRedisPath(): string {
+  return `/${process.env.TEST_REDIS_DB ?? '15'}`;
+}
+
 const PACKAGE_ROOT = path.resolve(import.meta.dirname, '..');
 
 /**

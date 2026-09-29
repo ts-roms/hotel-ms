@@ -7,23 +7,23 @@ import {
   Button,
   Card,
   CardContent,
+  ChipGroup,
   cn,
+  FilterChip,
   EmptyState,
   LoadingRegion,
   Notice,
   PageHeader,
   NativeSelect,
   Skeleton,
-  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BedDouble } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 type BoardRoom = HousekeepingBoard['rooms'][number];
 type Status = BoardRoom['housekeepingStatus'];
@@ -54,9 +54,9 @@ interface Action {
 }
 
 export default function HousekeepingPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Status | null>(null);
   const board = useQuery({
@@ -64,7 +64,7 @@ export default function HousekeepingPage() {
     queryFn: pms.housekeeping,
     refetchInterval: 30_000,
   });
-  const canAssign = hasPermission(session.data, 'housekeeping.assign');
+  const canAssign = can('housekeeping.assign');
   const staff = useQuery({
     queryKey: ['housekeeping-staff', propertyId],
     queryFn: pms.housekeepingStaff,
@@ -89,23 +89,19 @@ export default function HousekeepingPage() {
       {(board.error || action.error) && <Alert>{errorMessage(board.error ?? action.error)}</Alert>}
 
       {board.data && rooms.length > 0 && (
-        <div
-          role="group"
-          aria-label={t('hk.summary')}
-          className="flex animate-fade-in flex-wrap gap-2"
-        >
-          <FilterChip active={filter === null} onClick={() => setFilter(null)}>
+        <ChipGroup label={t('hk.summary')} className="animate-fade-in">
+          <FilterChip pressed={filter === null} onPressedChange={() => setFilter(null)}>
             {t('hk.all')} <span className="tabular-nums opacity-70">{rooms.length}</span>
           </FilterChip>
           {HOUSEKEEPING_STATUSES.map((s) => (
-            <FilterChip key={s} active={filter === s} onClick={() => setFilter(s)}>
+            <FilterChip key={s} pressed={filter === s} onPressedChange={() => setFilter(s)}>
               <Badge variant={statusVariant(s)} dot className="border-0 bg-transparent p-0">
                 {statusLabel(s)}
               </Badge>
               <span className="tabular-nums opacity-70">{counts[s]}</span>
             </FilterChip>
           ))}
-        </div>
+        </ChipGroup>
       )}
 
       {board.isPending && (
@@ -159,7 +155,7 @@ export default function HousekeepingPage() {
               {room.openTask && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 px-2.5 py-2 text-xs">
                   <span>
-                    {statusLabel(room.openTask.type)} · {statusLabel(room.openTask.status)}
+                    {enumLabel('hkTask', room.openTask.type)} · {statusLabel(room.openTask.status)}
                   </span>
                   {canAssign ? (
                     <NativeSelect
@@ -191,7 +187,7 @@ export default function HousekeepingPage() {
               )}
               <div className="flex flex-wrap gap-2">
                 {NEXT_ACTIONS[room.housekeepingStatus]
-                  .filter((a) => hasPermission(session.data, a.permission))
+                  .filter((a) => can(a.permission))
                   .map((a) => {
                     const key = `${room.roomId}:${a.to}`;
                     return (
@@ -219,30 +215,5 @@ export default function HousekeepingPage() {
         ))}
       </div>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Toggle
-      variant="outline"
-      size="sm"
-      pressed={active}
-      onPressedChange={onClick}
-      className={cn(
-        'rounded-full px-3 active:scale-95 data-[state=on]:hover:bg-primary/10 data-[state=on]:hover:text-primary',
-        active ? 'shadow-sm' : 'text-muted-foreground hover:border-ring/40 hover:text-foreground',
-      )}
-    >
-      {children}
-    </Toggle>
   );
 }

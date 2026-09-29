@@ -1,9 +1,10 @@
 'use client';
 
-import type { Reservation, ReservationRoom } from '@hotel/contracts';
-import { formatDate, formatMoney } from '@hotel/format';
+import type { Reservation } from '@hotel/contracts';
+import { formatMoney } from '@hotel/format';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -11,30 +12,27 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Avatar,
+  DocumentTitle,
   Input,
-  LoadingRegion,
-  NativeSelect,
-  Skeleton,
-  SkeletonCard,
-  SkeletonText,
-  Textarea,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, LogIn, LogOut, Mail, MessageSquare, Receipt } from 'lucide-react';
+import { ArrowLeft, Check, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { useCan, usePms } from '@/lib/property';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+import { GuestMessage } from './_components/guest-message';
+import { DetailSkeleton } from './_components/reservation-skeleton';
+import { RoomLine } from './_components/room-line';
+import { useAction } from '@/lib/use-action';
 
 export default function ReservationPage() {
   const { propertyId, reservationId } = useParams<{ propertyId: string; reservationId: string }>();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const reservation = useQuery({
     queryKey: ['reservation', propertyId, reservationId],
@@ -46,8 +44,7 @@ export default function ReservationPage() {
     queryClient.setQueryData(['reservation', propertyId, reservationId], data);
     void queryClient.invalidateQueries({ queryKey: ['reservations', propertyId] });
   };
-  const action = useMutation({
-    mutationFn: (fn: () => Promise<Reservation>) => fn(),
+  const action = useAction<Reservation>({
     onSuccess: update,
   });
   const [reason, setReason] = useState('');
@@ -57,8 +54,8 @@ export default function ReservationPage() {
   if (reservation.error) return <Alert>{errorMessage(reservation.error)}</Alert>;
   if (!r) return <DetailSkeleton />;
 
-  const canUpdate = hasPermission(session.data, 'reservation.update');
-  const canCancel = hasPermission(session.data, 'reservation.cancel');
+  const canUpdate = can('reservation.update');
+  const canCancel = can('reservation.cancel');
   const hasUpcoming = r.rooms.some((l) => l.status === 'RESERVED');
 
   return (
@@ -70,6 +67,7 @@ export default function ReservationPage() {
         <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
+      <DocumentTitle title={`${r.confirmationNo} · ${r.booker.firstName} ${r.booker.lastName}`} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -95,7 +93,7 @@ export default function ReservationPage() {
         <CardContent className="flex flex-col gap-2 text-sm">
           <span>
             <span className="text-muted-foreground">{t('res.source')}:</span>{' '}
-            {r.source.replace('_', ' ').toLowerCase()}
+            {enumLabel('bookingSource', r.source)}
           </span>
           {r.specialRequests && (
             <span>
@@ -107,7 +105,7 @@ export default function ReservationPage() {
               {t('res.cancelled')}: {r.cancelReason}
             </span>
           )}
-          {r.status === 'CONFIRMED' && hasPermission(session.data, 'guest_portal.invite') && (
+          {r.status === 'CONFIRMED' && can('guest_portal.invite') && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Button
                 size="sm"
@@ -123,7 +121,7 @@ export default function ReservationPage() {
               {portalLink.isSuccess && (
                 <span className="flex animate-fade-in items-center gap-1 text-success">
                   <Check className="size-4" />
-                  {t('res.portalLinkSent')} {r.booker.email}
+                  {t('res.portalLinkSentTo', { email: r.booker.email ?? '' })}
                 </span>
               )}
               {portalLink.error && (
@@ -153,24 +151,18 @@ export default function ReservationPage() {
             reason && action.mutate(() => pms.cancelReservationRoom(r.id, line.id, reason))
           }
           folioHref={
-            line.folioId && hasPermission(session.data, 'folio.read')
-              ? `/p/${propertyId}/folios/${line.folioId}`
-              : null
+            line.folioId && can('folio.read') ? `/p/${propertyId}/folios/${line.folioId}` : null
           }
           onCheckIn={
-            hasPermission(session.data, 'stay.check_in')
-              ? () => action.mutate(() => pms.checkIn(r.id, line.id))
-              : null
+            can('stay.check_in') ? () => action.mutate(() => pms.checkIn(r.id, line.id)) : null
           }
           onCheckOut={
-            hasPermission(session.data, 'stay.check_out')
-              ? () => action.mutate(() => pms.checkOut(r.id, line.id))
-              : null
+            can('stay.check_out') ? () => action.mutate(() => pms.checkOut(r.id, line.id)) : null
           }
           extra={
             r.status === 'CONFIRMED' &&
             (line.status === 'RESERVED' || line.status === 'IN_HOUSE') &&
-            hasPermission(session.data, 'guest_portal.invite') ? (
+            can('guest_portal.invite') ? (
               <GuestMessage propertyId={propertyId} reservationId={r.id} lineId={line.id} />
             ) : null
           }
@@ -199,222 +191,5 @@ export default function ReservationPage() {
         </Card>
       )}
     </div>
-  );
-}
-
-/** Placeholder shaped like a detail page: a header card and two section cards. */
-function DetailSkeleton() {
-  return (
-    <LoadingRegion label={t('loading')} className="flex max-w-3xl flex-col gap-4">
-      <Skeleton className="h-4 w-16" />
-      <Card className="flex flex-col gap-4 p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-12 rounded-full" />
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-6 w-24 rounded-full" />
-        </div>
-        <SkeletonText lines={2} />
-      </Card>
-      <SkeletonCard lines={4} />
-      <SkeletonCard lines={3} />
-    </LoadingRegion>
-  );
-}
-
-function RoomLine({
-  line,
-  currency,
-  rooms,
-  canUpdate,
-  canCancel,
-  busy,
-  onAssign,
-  onUnassign,
-  onCancel,
-  folioHref,
-  onCheckIn,
-  onCheckOut,
-  extra,
-}: {
-  line: ReservationRoom;
-  currency: string;
-  rooms: { id: string; number: string; blockedToday: boolean }[];
-  canUpdate: boolean;
-  canCancel: boolean;
-  busy: boolean;
-  onAssign: (roomId: string) => void;
-  onUnassign: () => void;
-  onCancel: () => void;
-  folioHref: string | null;
-  onCheckIn: (() => void) | null;
-  onCheckOut: (() => void) | null;
-  extra?: ReactNode;
-}) {
-  const [roomId, setRoomId] = useState('');
-  const upcoming = line.status === 'RESERVED';
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            {line.roomTypeCode} · {line.ratePlanCode}
-          </CardTitle>
-          <Badge variant={statusVariant(line.status)} dot>
-            {statusLabel(line.status)}
-          </Badge>
-        </div>
-        <CardDescription>
-          {formatDate(line.arrivalDate)} → {formatDate(line.departureDate)} · {line.nights.length}{' '}
-          {t('res.nights')} · {line.adults} {t('res.adults').toLowerCase()}
-          {line.children ? `, ${line.children} ${t('res.children').toLowerCase()}` : ''}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 text-sm">
-        <ul className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">
-          {line.nights.map((n) => (
-            <li key={n.date} className="flex justify-between gap-2 border-b border-dashed py-1">
-              <span className="text-muted-foreground">{formatDate(n.date)}</span>
-              <span className="tabular-nums">{formatMoney(n.amountMinor, currency)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-wrap items-center gap-2">
-          <span>
-            {t('res.room')}: <strong>{line.assignedRoom?.number ?? t('res.unassigned')}</strong>
-          </span>
-          {canUpdate && upcoming && (
-            <>
-              <NativeSelect
-                className="w-auto"
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                aria-label={t('res.room')}
-              >
-                <option value="">—</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id} disabled={room.blockedToday}>
-                    {room.number}
-                  </option>
-                ))}
-              </NativeSelect>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!roomId || busy}
-                onClick={() => onAssign(roomId)}
-              >
-                {t('res.assign')}
-              </Button>
-              {line.assignedRoom && (
-                <Button size="sm" variant="ghost" disabled={busy} onClick={onUnassign}>
-                  {t('res.unassign')}
-                </Button>
-              )}
-            </>
-          )}
-          {canCancel && upcoming && (
-            <Button size="sm" variant="ghost" disabled={busy} onClick={onCancel}>
-              {t('res.cancelRoom')}
-            </Button>
-          )}
-          {onCheckIn && upcoming && line.assignedRoom && (
-            <Button size="sm" disabled={busy} onClick={onCheckIn}>
-              <LogIn />
-              {t('fd.checkIn')}
-            </Button>
-          )}
-          {folioHref && (
-            <Button size="sm" variant="outline" asChild>
-              <Link href={folioHref}>
-                <Receipt />
-                {t('fd.folio')}
-              </Link>
-            </Button>
-          )}
-          {onCheckOut && line.status === 'IN_HOUSE' && (
-            <Button size="sm" disabled={busy} onClick={onCheckOut}>
-              <LogOut />
-              {t('fd.checkOut')}
-            </Button>
-          )}
-        </div>
-        {extra}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** A note to the guest's portal feed (ADR-0027), e.g. "Your room is ready". */
-function GuestMessage({
-  propertyId,
-  reservationId,
-  lineId,
-}: {
-  propertyId: string;
-  reservationId: string;
-  lineId: string;
-}) {
-  const pms = usePms(propertyId);
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const send = useMutation({
-    mutationFn: () => pms.messageGuest(reservationId, lineId, { title, body }),
-    onSuccess: () => {
-      setTitle('');
-      setBody('');
-      setOpen(false);
-    },
-  });
-  if (!open)
-    return (
-      <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-        <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
-          <MessageSquare />
-          {t('res.messageGuest')}
-        </Button>
-        {send.isSuccess && <span className="text-muted-foreground">{t('res.messageSent')}</span>}
-      </div>
-    );
-  return (
-    <form
-      className="flex flex-col gap-2 border-t pt-3"
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        send.mutate();
-      }}
-    >
-      <Input
-        required
-        maxLength={120}
-        aria-label={t('res.messageTitle')}
-        placeholder={t('res.messageTitle')}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <Textarea
-        maxLength={1000}
-        rows={2}
-        aria-label={t('res.messageBody')}
-        placeholder={t('res.messageBody')}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-      />
-      {send.error && <Alert>{errorMessage(send.error)}</Alert>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" loading={send.isPending} disabled={!title.trim()}>
-          {t('res.sendMessage')}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
-          {t('fin.cancel')}
-        </Button>
-      </div>
-    </form>
   );
 }

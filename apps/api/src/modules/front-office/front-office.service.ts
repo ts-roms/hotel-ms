@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { FrontDesk, FrontDeskItem, Reservation } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
-import { fromDbDate, nightsOf, toDbDate } from '../../common/dates.js';
+import { fromDbDate, toDbDate } from '../../common/dates.js';
 import { ProblemException, Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
@@ -10,13 +10,11 @@ import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { toGuestSummary } from '../pms/guests/guests.service.js';
-import { releaseInventory } from '../pms/inventory/inventory.js';
 import { ReservationsService, toReservationDto } from '../pms/reservations/reservations.service.js';
-import { businessDateOf } from '../pms/inventory/rooms.service.js';
-import {
-  ensureHousekeepingTask,
-  recordRoomStatus,
-} from '../operations/housekeeping/room-status.js';
+import { businessDateOf } from '../../common/business-date.js';
+import { RoomsService } from '../pms/inventory/rooms.service.js';
+import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
+import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 
@@ -57,6 +55,9 @@ export function toFrontDeskItem(line: FrontDeskRow): FrontDeskItem {
 const roomNotReady = (detail: string) =>
   new ProblemException(409, 'ROOM_NOT_READY', 'Room not ready', detail);
 
+/** Housekeeping states in which a room can be handed to an arriving guest. */
+const READY_HOUSEKEEPING = ['INSPECTED', 'CLEAN'] as const;
+
 @Injectable()
 export class FrontOfficeService {
   constructor(
@@ -66,6 +67,9 @@ export class FrontOfficeService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly rooms: RoomsService,
+    private readonly housekeeping: HousekeepingService,
+    private readonly serviceRequests: ServiceRequestsService,
     private readonly guestMessages: GuestMessagesService,
     private readonly guestInbox: GuestInboxService,
   ) {}
@@ -107,6 +111,45 @@ export class FrontOfficeService {
    * Check-in (§12.5). Rules live here, in one place, for the front desk and (later) the
    * guest self check-in flow alike.
    */
+  /**
+   * Rooms of a type that can be handed over for a stay now: in service, clean or inspected,
+   * nobody in them, and not held for any night of the stay. Inspected rooms come first
+   * (they need no further housekeeping check), then by number.
+   */
+  async readyRoomsInTx(
+    tx: Tx,
+    input: { propertyId: string; roomTypeId: string; arrival: Date; departure: Date },
+    take = 10,
+  ): Promise<{ id: string; number: string }[]> {
+    const rooms = await tx.room.findMany({
+      where: {
+        propertyId: input.propertyId,
+        roomTypeId: input.roomTypeId,
+        archivedAt: null,
+        serviceStatus: 'IN_SERVICE',
+        housekeepingStatus: { in: [...READY_HOUSEKEEPING] },
+        stays: { none: { checkedOutAt: null } },
+        assignments: {
+          none: {
+            releasedAt: null,
+            startDate: { lt: input.departure },
+            endDate: { gt: input.arrival },
+          },
+        },
+      },
+      select: { id: true, number: true, housekeepingStatus: true },
+      orderBy: { number: 'asc' },
+      take,
+    });
+    return rooms
+      .sort(
+        (a, b) =>
+          Number(b.housekeepingStatus === 'INSPECTED') -
+          Number(a.housekeepingStatus === 'INSPECTED'),
+      )
+      .map(({ id, number }) => ({ id, number }));
+  }
+
   async checkIn(reservationId: string, lineId: string): Promise<Reservation> {
     const { organizationId, propertyId, actorId } = this.ctx;
     const row = await this.db.run(async (tx) => {
@@ -129,7 +172,7 @@ export class FrontOfficeService {
       const room = await tx.room.findUniqueOrThrow({ where: { id: assignment.roomId } });
       if (room.serviceStatus === 'OUT_OF_ORDER')
         throw roomNotReady(`Room ${room.number} is out of order.`);
-      if (room.housekeepingStatus !== 'CLEAN' && room.housekeepingStatus !== 'INSPECTED') {
+      if (!(READY_HOUSEKEEPING as readonly string[]).includes(room.housekeepingStatus)) {
         throw roomNotReady(`Room ${room.number} is ${room.housekeepingStatus.toLowerCase()}.`);
       }
       const occupied = await tx.stay.count({ where: { roomId: room.id, checkedOutAt: null } });
@@ -145,10 +188,7 @@ export class FrontOfficeService {
         },
       });
       const folio = await this.folios.openInTx(tx, lineId, reservation.currency);
-      await tx.reservationRoom.update({
-        where: { id: lineId },
-        data: { status: 'IN_HOUSE', version: { increment: 1 } },
-      });
+      await this.reservations.setStayStatusInTx(tx, lineId, 'IN_HOUSE');
 
       await this.audit.record(tx, {
         action: 'stay.checked_in',
@@ -193,39 +233,26 @@ export class FrontOfficeService {
       }
 
       const businessDate = await businessDateOf(tx, propertyId);
-      await this.shortenStay(tx, line, businessDate);
+      await this.reservations.shortenLineInTx(tx, line, businessDate);
 
-      await tx.folio.update({
-        where: { id: folio.id },
-        data: { status: 'CLOSED', closedAt: new Date(), version: { increment: 1 } },
-      });
+      await this.folios.closeInTx(tx, folio.id);
       await tx.stay.update({
         where: { id: stay.id },
         data: { checkedOutAt: new Date(), checkedOutBy: actorId },
       });
-      await tx.reservationRoom.update({
-        where: { id: lineId },
-        data: { status: 'CHECKED_OUT', version: { increment: 1 } },
-      });
+      await this.reservations.setStayStatusInTx(tx, lineId, 'CHECKED_OUT');
 
-      await recordRoomStatus(
-        tx,
-        {
-          organizationId,
-          propertyId,
-          roomId: stay.roomId,
-          to: 'DIRTY',
-          reason: 'Check-out',
-          actorId,
-        },
-        this.outbox,
-      );
-      // The departed guest's stayover cleaning is superseded by the checkout clean.
-      await tx.housekeepingTask.updateMany({
-        where: { roomId: stay.roomId, type: 'STAYOVER', status: { in: ['OPEN', 'IN_PROGRESS'] } },
-        data: { status: 'CANCELLED', version: { increment: 1 } },
+      await this.rooms.setHousekeepingStatusInTx(tx, {
+        organizationId,
+        propertyId,
+        roomId: stay.roomId,
+        to: 'DIRTY',
+        reason: 'Check-out',
+        actorId,
       });
-      await ensureHousekeepingTask(tx, {
+      // The departed guest's stayover cleaning is superseded by the checkout clean.
+      await this.housekeeping.cancelOpenTasksInTx(tx, stay.roomId, 'STAYOVER');
+      await this.housekeeping.ensureTaskInTx(tx, {
         organizationId,
         propertyId,
         roomId: stay.roomId,
@@ -248,18 +275,7 @@ export class FrontOfficeService {
         { propertyId },
       );
       // A checkout the guest asked for in the portal is now done (ADR-0027).
-      await tx.serviceRequest.updateMany({
-        where: {
-          reservationRoomId: lineId,
-          category: 'CHECKOUT',
-          status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
-        },
-        data: {
-          status: 'DONE',
-          completedAt: new Date(),
-          version: { increment: 1 },
-        },
-      });
+      await this.serviceRequests.completeCheckoutRequestsInTx(tx, lineId);
       await this.guestInbox.notifyInTx(tx, {
         reservationRoomId: lineId,
         propertyId,
@@ -270,42 +286,5 @@ export class FrontOfficeService {
       return this.reservations.load(tx, reservationId);
     });
     return toReservationDto(row);
-  }
-
-  /** Early departure: release unused nights (from today) and free the room from today. */
-  private async shortenStay(
-    tx: Tx,
-    line: Awaited<ReturnType<ReservationsService['load']>>['rooms'][number],
-    businessDate: string,
-  ): Promise<void> {
-    const departure = fromDbDate(line.departureDate);
-    if (businessDate >= departure) return;
-    const unused = nightsOf(businessDate, departure);
-    await releaseInventory(tx, [{ roomTypeId: line.roomTypeId, dates: unused }]);
-    await tx.reservationNight.deleteMany({
-      where: { reservationRoomId: line.id, stayDate: { gte: toDbDate(businessDate) } },
-    });
-    const arrival = fromDbDate(line.arrivalDate);
-    const assignment = line.assignments[0];
-    if (assignment) {
-      if (businessDate > arrival) {
-        await tx.roomAssignment.update({
-          where: { id: assignment.id },
-          data: { endDate: toDbDate(businessDate) },
-        });
-      } else {
-        // Leaving on the arrival day: no night was stayed.
-        await tx.roomAssignment.update({
-          where: { id: assignment.id },
-          data: { releasedAt: new Date() },
-        });
-      }
-    }
-    if (businessDate > arrival) {
-      await tx.reservationRoom.update({
-        where: { id: line.id },
-        data: { departureDate: toDbDate(businessDate) },
-      });
-    }
   }
 }

@@ -10,24 +10,15 @@ import {
   reportRangeQuerySchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { csvField } from '../../common/csv.js';
+import { toCsv } from '../../common/csv.js';
+import { sendCsv as sendCsvDownload } from '../../common/download.js';
 import { toDecimalString } from '../../common/money.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../common/zod.js';
 import { ManagementService } from './management.service.js';
 
-const toCsv = (header: string[], rows: (string | number | null)[][]) =>
-  [header, ...rows].map((r) => r.map((v) => csvField(v)).join(',')).join('\r\n') + '\r\n';
-
-function sendCsv(reply: FastifyReply, name: string, query: ReportRangeQuery, csv: string) {
-  reply.header('content-type', 'text/csv; charset=utf-8');
-  reply.header(
-    'content-disposition',
-    `attachment; filename="${name}-${query.from}-${query.to}.csv"`,
-  );
-  reply.header('cache-control', 'no-store');
-  return csv;
-}
+const sendCsv = (reply: FastifyReply, name: string, query: ReportRangeQuery, csv: string) =>
+  sendCsvDownload(reply, `${name}-${query.from}-${query.to}.csv`, csv);
 
 /** Property dashboard and operational reports (ADR-0025). */
 @ApiTags('management')

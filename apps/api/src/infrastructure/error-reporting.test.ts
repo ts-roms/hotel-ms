@@ -1,6 +1,6 @@
 import type { ArgumentsHost } from '@nestjs/common';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ProblemFilter } from '../common/problem.filter.js';
+import { ProblemFilter } from './problem.filter.js';
 import { Problems } from '../common/problem.js';
 import { type ErrorContext, reportError, setErrorReporter } from './error-reporting.js';
 

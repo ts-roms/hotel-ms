@@ -1,0 +1,460 @@
+/**
+ * Payments (ADR-0018, ADR-0033, finance/payments): refunds completed by webhook, refunds
+ * whose provider outcome is unknown, and card holds that gate guest self check-in.
+ */
+import { randomUUID } from 'node:crypto';
+import { createPrismaClient, withDbContext } from '@hotel/database';
+import { testDatabaseUrls } from '@hotel/database/testing';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { ProblemException } from '../src/common/problem.js';
+import {
+  PAYMENT_PROVIDERS,
+  type PaymentProviders,
+} from '../src/modules/finance/payments/providers.js';
+import { SandboxProvider } from '../src/modules/finance/payments/sandbox.provider.js';
+import { guestSession, startTestApp, type TestContext, TestClient } from './harness.js';
+
+let ctx: TestContext;
+let admin: TestClient;
+let reception: TestClient;
+let sandbox: SandboxProvider;
+
+const MNL = () => ctx.world.abc.properties.MNL;
+const base = () => `/api/v1/properties/${MNL()}`;
+const inv = () => ctx.world.inventory.MNL;
+const idem = () => ({ 'idempotency-key': `test-${randomUUID()}` });
+
+async function book(input: {
+  arrivalDate: string;
+  departureDate: string;
+  roomType: string;
+  roomNumber?: string;
+  email: string;
+}) {
+  const res = await reception.request(
+    'POST',
+    `${base()}/reservations`,
+    {
+      source: 'DIRECT',
+      booker: { newGuest: { firstName: 'Fe', lastName: 'Extras', email: input.email } },
+      rooms: [
+        {
+          roomTypeId: inv().roomTypes[input.roomType],
+          ratePlanId: inv().ratePlans.BAR,
+          arrivalDate: input.arrivalDate,
+          departureDate: input.departureDate,
+          adults: 1,
+          ...(input.roomNumber ? { roomId: inv().rooms[input.roomNumber] } : {}),
+        },
+      ],
+    },
+    idem(),
+  );
+  expect(res.status, JSON.stringify(res.body)).toBe(201);
+  return { id: res.body.id as string, lineId: res.body.rooms[0].id as string };
+}
+
+async function checkedInFolio(roomNumber: string): Promise<string> {
+  const booking = await book({
+    arrivalDate: '2026-10-01',
+    departureDate: '2026-10-03',
+    roomType: 'STD',
+    roomNumber,
+    email: `fx-${randomUUID().slice(0, 8)}@example.test`,
+  });
+  const line = `${base()}/reservations/${booking.id}/rooms/${booking.lineId}`;
+  const checkIn = await reception.request('POST', `${line}/check-in`);
+  expect(checkIn.status, JSON.stringify(checkIn.body)).toBe(200);
+  return (await reception.get(`${line}/folio`)).body.id as string;
+}
+
+async function charge(folioId: string, department: string, amountMinor: number) {
+  const res = await reception.request(
+    'POST',
+    `${base()}/folios/${folioId}/charges`,
+    { department, description: `${department} test`, amountMinor },
+    idem(),
+  );
+  expect(res.status, JSON.stringify(res.body)).toBe(200);
+  return res.body;
+}
+
+async function payAtSandbox(checkoutUrl: string, outcome: 'pay' | 'decline') {
+  const path = new URL(checkoutUrl).pathname;
+  const page = await ctx.app.inject({ method: 'GET', url: path });
+  expect(page.statusCode).toBe(200);
+  return {
+    page: page.body,
+    result: await ctx.app.inject({
+      method: 'POST',
+      url: `${path}/${outcome}`,
+      payload: 'method=CARD',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        origin: new URL(checkoutUrl).origin,
+      },
+    }),
+  };
+}
+
+const webhook = (event: { rawBody: string; headers: Record<string, string> }) =>
+  ctx.app.inject({
+    method: 'POST',
+    url: '/api/v1/webhooks/payments/sandbox',
+    payload: event.rawBody,
+    headers: event.headers,
+  });
+
+/** Reads rows the API does not expose, as the tenant (RLS applies). */
+async function asTenant<T>(fn: Parameters<typeof withDbContext<T>>[2]): Promise<T> {
+  const app = createPrismaClient({ connectionString: testDatabaseUrls().app, maxConnections: 1 });
+  try {
+    return await withDbContext(
+      app,
+      { organizationId: ctx.world.abc.organizationId, identityId: null },
+      fn,
+    );
+  } finally {
+    await app.$disconnect();
+  }
+}
+
+/** A verified guest session for the booking (the portal link and code go to `email`). */
+const verifiedGuest = (reservationId: string, email: string) =>
+  guestSession(ctx, reception, { propertyId: MNL(), reservationId, email });
+
+beforeAll(async () => {
+  ctx = await startTestApp();
+  admin = await TestClient.withMfa(ctx.app, 'admin@abc.test');
+  reception = await TestClient.as(ctx.app, 'reception@abc.test');
+  sandbox = new SandboxProvider(ctx.env);
+});
+afterAll(async () => {
+  await ctx?.mailbox.close();
+  await ctx?.app.close();
+});
+
+describe('refunds completed by webhook', () => {
+  let refundFolioId: string;
+
+  it('a pending refund posts to the folio only when the provider confirms it', async () => {
+    const folioId = await checkedInFolio('104');
+    refundFolioId = folioId;
+    const folioUrl = `${base()}/folios/${folioId}`;
+    await charge(folioId, 'ROOM', 350_000);
+    const link = await reception.request(
+      'POST',
+      `${folioUrl}/payment-links`,
+      { amountMinor: 350_000 },
+      idem(),
+    );
+    expect(link.status).toBe(201);
+    await payAtSandbox(link.body.checkoutUrl, 'pay');
+    const payment = (await reception.get(folioUrl)).body.payments[0];
+    expect((await reception.get(folioUrl)).body.balanceMinor).toBe(0);
+    const url = `${base()}/payments/${payment.id}/refunds`;
+
+    // The sandbox leaves amounts ending in 13 pending, like test amounts at real gateways.
+    const pending = await admin.request(
+      'POST',
+      url,
+      { amountMinor: 10_013, reason: 'Late checkout waived' },
+      idem(),
+    );
+    expect(pending.status, JSON.stringify(pending.body)).toBe(201);
+    expect(pending.body.status).toBe('PENDING');
+    expect((await reception.get(folioUrl)).body.balanceMinor).toBe(0);
+    const failing = await admin.request(
+      'POST',
+      url,
+      { amountMinor: 5_013, reason: 'Goodwill' },
+      idem(),
+    );
+    expect(failing.body.status).toBe('PENDING');
+    // Pending refunds count against what can still be refunded.
+    const tooMuch = await admin.request(
+      'POST',
+      url,
+      { amountMinor: 350_000 - 15_025, reason: 'Too much' },
+      idem(),
+    );
+    expect(tooMuch.status).toBe(409);
+
+    const refs = await asTenant((tx) =>
+      tx.refund.findMany({
+        where: { id: { in: [pending.body.id, failing.body.id] } },
+        select: { id: true, provider: true, providerRef: true },
+      }),
+    );
+    const refOf = (id: string) => refs.find((r) => r.id === id)!;
+    expect(refOf(pending.body.id).provider).toBe('sandbox');
+
+    const succeeded = sandbox.event({
+      type: 'refund.succeeded',
+      reference: refOf(pending.body.id).providerRef!,
+      amountMinor: 10_013,
+      currency: 'PHP',
+    });
+    const first = await webhook(succeeded);
+    expect(first.statusCode, first.body).toBe(200);
+    expect(first.json().outcome).toBe('processed');
+    expect((await webhook(succeeded)).json().outcome).toBe('duplicate');
+    const after = await reception.get(folioUrl);
+    expect(after.body.balanceMinor).toBe(10_013);
+
+    const failed = await webhook(
+      sandbox.event({
+        type: 'refund.failed',
+        reference: refOf(failing.body.id).providerRef!,
+        amountMinor: 5_013,
+        currency: 'PHP',
+      }),
+    );
+    expect(failed.json().outcome).toBe('processed');
+    // A late "succeeded" for a refund already failed changes nothing.
+    const late = await webhook(
+      sandbox.event({
+        type: 'refund.succeeded',
+        reference: refOf(failing.body.id).providerRef!,
+        amountMinor: 5_013,
+        currency: 'PHP',
+      }),
+    );
+    expect(late.json().outcome).toBe('ignored');
+    expect((await reception.get(folioUrl)).body.balanceMinor).toBe(10_013);
+
+    const list = await reception.get(url);
+    expect(
+      list.body.items.map((r: { amountMinor: number; status: string }) => [
+        r.amountMinor,
+        r.status,
+      ]),
+    ).toEqual([
+      [10_013, 'SUCCEEDED'],
+      [5_013, 'FAILED'],
+    ]);
+  });
+
+  it('an unknown provider outcome stays PENDING; only a clear refusal fails the refund', async () => {
+    const folioUrl = `${base()}/folios/${refundFolioId}`;
+    await charge(refundFolioId, 'ROOM', 100_000);
+    const link = await reception.request(
+      'POST',
+      `${folioUrl}/payment-links`,
+      { amountMinor: 100_000 },
+      idem(),
+    );
+    expect(link.status, JSON.stringify(link.body)).toBe(201);
+    await payAtSandbox(link.body.checkoutUrl, 'pay');
+    const payment = (await reception.get(folioUrl)).body.payments.find(
+      (p: { amountMinor: number; refundedMinor: number }) =>
+        p.amountMinor === 100_000 && p.refundedMinor === 0,
+    );
+    const url = `${base()}/payments/${payment.id}/refunds`;
+    const provider = (ctx.app.get(PAYMENT_PROVIDERS) as PaymentProviders).get('sandbox')!;
+    const refund = vi.spyOn(provider, 'refund');
+    let unknownId: string | undefined;
+    try {
+      // A timeout or outage may have refunded at the provider: the refund stays PENDING.
+      refund.mockRejectedValueOnce(new Error('socket hang up'));
+      const unknown = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 60_000, reason: 'Provider timed out' },
+        idem(),
+      );
+      expect(unknown.status, JSON.stringify(unknown.body)).toBe(201);
+      expect(unknown.body.status).toBe('PENDING');
+      unknownId = unknown.body.id;
+      // ...and still counts against the cap, so a second refund cannot go out as well.
+      const second = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 60_000, reason: 'Retry' },
+        idem(),
+      );
+      expect(second.status).toBe(409);
+      expect(second.body.code).toBe('REFUND_EXCEEDS_PAYMENT');
+      // Nothing was posted to the folio for it.
+      expect((await reception.get(folioUrl)).body.balanceMinor).toBe(10_013);
+
+      // An explicit refusal fails the refund and frees the amount again.
+      refund.mockRejectedValueOnce(
+        new ProblemException(502, 'PAYMENT_PROVIDER_REJECTED', 'Refund refused', 'Declined'),
+      );
+      const refused = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 40_000, reason: 'Refused' },
+        idem(),
+      );
+      expect(refused.status).toBe(502);
+      const items = (await reception.get(url)).body.items.map(
+        (r: { amountMinor: number; status: string }) => [r.amountMinor, r.status],
+      );
+      expect(items).toEqual([
+        [60_000, 'PENDING'],
+        [40_000, 'FAILED'],
+      ]);
+      const again = await admin.request(
+        'POST',
+        url,
+        { amountMinor: 40_000, reason: 'Refund after refusal' },
+        idem(),
+      );
+      expect(again.status, JSON.stringify(again.body)).toBe(201);
+      expect(again.body.status).toBe('SUCCEEDED');
+    } finally {
+      refund.mockRestore();
+    }
+
+    // After an hour, reconciliation flags the unresolved refund for finance.
+    const inTwoHours = Date.now() + 2 * 3_600_000;
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(inTwoHours);
+    let issues: { code: string; reference: string }[];
+    try {
+      issues = (await admin.get(`${base()}/reports/reconciliation`)).body.issues;
+    } finally {
+      clock.mockRestore();
+    }
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: 'PENDING_REFUND', reference: unknownId }),
+    );
+  });
+});
+
+describe('card holds for self check-in', () => {
+  const settingsUrl = () => `${base()}/payment-settings`;
+
+  it('self check-in waits for an authorized hold; staff capture it at check-out', async () => {
+    expect((await reception.get(settingsUrl())).body).toEqual({ selfCheckInHoldMinor: 0 });
+    expect(
+      (await reception.request('PUT', settingsUrl(), { selfCheckInHoldMinor: 500_000 })).status,
+    ).toBe(403);
+    const set = await admin.request('PUT', settingsUrl(), { selfCheckInHoldMinor: 500_000 });
+    expect(set.status, JSON.stringify(set.body)).toBe(200);
+    const property = await admin.get(`/api/v1/properties/${MNL()}`);
+    expect(
+      (
+        await admin.request(
+          'PATCH',
+          `/api/v1/properties/${MNL()}`,
+          { checkInTime: '00:00' },
+          { 'if-match': String(property.headers.etag) },
+        )
+      ).status,
+    ).toBe(200);
+
+    const email = `hold-${randomUUID().slice(0, 8)}@example.test`;
+    const booking = await book({
+      arrivalDate: '2026-10-01',
+      departureDate: '2026-10-02',
+      roomType: 'DLX',
+      email,
+    });
+    const guest = await verifiedGuest(booking.id, email);
+    const stay = await guest.request('GET', '/guest/stay');
+    expect(stay.body.cardHold).toEqual({
+      requiredMinor: 500_000,
+      currency: 'PHP',
+      authorized: false,
+    });
+
+    const blocked = await guest.request('POST', '/guest/check-in');
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.code).toBe('HOLD_REQUIRED');
+
+    const hold = await guest.request('POST', '/guest/holds', {}, idem());
+    expect(hold.status, JSON.stringify(hold.body)).toBe(201);
+    expect(hold.body).toMatchObject({
+      kind: 'HOLD',
+      status: 'PENDING',
+      amountMinor: 500_000,
+      folioId: null,
+      reservationRoomId: booking.lineId,
+    });
+    // A second tap reuses the open checkout instead of placing another hold.
+    const again = await guest.request('POST', '/guest/holds', {}, idem());
+    expect(again.body.id).toBe(hold.body.id);
+
+    const { page, result } = await payAtSandbox(hold.body.checkoutUrl, 'pay');
+    expect(page).toContain('Authorize a hold of');
+    expect(result.headers.location).toBe(`${ctx.env.GUEST_PUBLIC_URL}/stay?hold=${hold.body.id}`);
+    expect((await guest.request('GET', '/guest/stay')).body.cardHold.authorized).toBe(true);
+    // Authorizing moves no money.
+    const checkedIn = await guest.request('POST', '/guest/check-in');
+    expect(checkedIn.status, JSON.stringify(checkedIn.body)).toBe(200);
+
+    const folio = (
+      await reception.get(`${base()}/reservations/${booking.id}/rooms/${booking.lineId}/folio`)
+    ).body;
+    expect(folio.payments).toHaveLength(0);
+    const intents = await reception.get(`${base()}/folios/${folio.id}/payment-intents`);
+    expect(intents.body.items).toContainEqual(
+      expect.objectContaining({ id: hold.body.id, kind: 'HOLD', status: 'AUTHORIZED' }),
+    );
+
+    await charge(folio.id, 'MINIBAR', 30_000);
+    const captureUrl = `${base()}/holds/${hold.body.id}/capture`;
+    expect(
+      (await reception.request('POST', captureUrl, { amountMinor: 500_001 }, idem())).status,
+    ).toBe(400);
+    const captured = await reception.request('POST', captureUrl, { amountMinor: 30_000 }, idem());
+    expect(captured.status, JSON.stringify(captured.body)).toBe(200);
+    expect(captured.body).toMatchObject({
+      status: 'SUCCEEDED',
+      capturedMinor: 30_000,
+      folioId: folio.id,
+    });
+    const settled = (await reception.get(`${base()}/folios/${folio.id}`)).body;
+    expect(settled.payments).toEqual([
+      expect.objectContaining({ method: 'CARD', amountMinor: 30_000, provider: 'sandbox' }),
+    ]);
+    expect(
+      (await reception.request('POST', captureUrl, { amountMinor: 1_000 }, idem())).body.code,
+    ).toBe('INVALID_STATE');
+    expect(
+      (await reception.request('POST', `${base()}/holds/${hold.body.id}/release`)).status,
+    ).toBe(409);
+  });
+
+  it('a hold left behind by a cancelled stay is flagged until released', async () => {
+    const email = `hold-${randomUUID().slice(0, 8)}@example.test`;
+    const booking = await book({
+      arrivalDate: '2026-10-10',
+      departureDate: '2026-10-11',
+      roomType: 'DLX',
+      email,
+    });
+    const guest = await verifiedGuest(booking.id, email);
+    const hold = await guest.request('POST', '/guest/holds', {}, idem());
+    expect(hold.status, JSON.stringify(hold.body)).toBe(201);
+    await payAtSandbox(hold.body.checkoutUrl, 'pay');
+
+    const reconciliation = () => admin.get(`${base()}/reports/reconciliation`);
+    const staleFor = async () =>
+      (await reconciliation()).body.issues.filter(
+        (i: { code: string; reference: string }) =>
+          i.code === 'STALE_HOLD' && i.reference === hold.body.id,
+      );
+    expect(await staleFor()).toHaveLength(0);
+
+    const cancelled = await reception.request(
+      'POST',
+      `${base()}/reservations/${booking.id}/cancel`,
+      { reason: 'Plans changed' },
+    );
+    expect(cancelled.status, JSON.stringify(cancelled.body)).toBe(200);
+    expect(await staleFor()).toHaveLength(1);
+
+    const released = await reception.request('POST', `${base()}/holds/${hold.body.id}/release`);
+    expect(released.status, JSON.stringify(released.body)).toBe(200);
+    expect(released.body.status).toBe('CANCELLED');
+    expect(await staleFor()).toHaveLength(0);
+    // Cancelling the booking also ended the guest's portal session.
+    expect((await guest.request('GET', '/guest/payments')).status).toBe(401);
+
+    const off = await admin.request('PUT', settingsUrl(), { selfCheckInHoldMinor: 0 });
+    expect(off.status).toBe(200);
+  });
+});

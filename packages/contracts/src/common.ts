@@ -51,3 +51,18 @@ export function cursorPage<T extends z.ZodType>(item: T) {
     nextCursor: z.string().nullable(),
   });
 }
+
+/** A page of `T`s: the type of `cursorPage(schemaOfT)`. */
+export type CursorPage<T> = z.infer<ReturnType<typeof cursorPage<z.ZodType<T>>>>;
+
+/** Unpaginated list envelope: `{ items: T[] }`. */
+export function listOf<T extends z.ZodType>(item: T) {
+  return z.object({ items: z.array(item) });
+}
+
+/** A staff member as shown in pickers and assignee fields. */
+export const staffRefSchema = z.object({ membershipId: z.uuid(), displayName: z.string() });
+export type StaffRef = z.infer<typeof staffRefSchema>;
+
+/** Money: a non-negative integer number of minor units (e.g. centavos), never a float. */
+export const amountMinorSchema = z.number().int().min(0).max(1_000_000_000_000);

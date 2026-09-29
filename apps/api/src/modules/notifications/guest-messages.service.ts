@@ -2,12 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { EmailTemplate } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
-import { fromDbDate } from '../../common/dates.js';
+import { fromDbDate, toDbDate } from '../../common/dates.js';
 import { formatMinor } from '../../common/money.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { NotificationsService } from './notifications.service.js';
+import { toSmsMessage } from './sms.js';
 
 interface Outgoing {
   email: (EmailTemplate & { to: string }) | null;
@@ -37,18 +38,84 @@ export class GuestMessagesService {
     dedupeKey: string,
     build: (tx: Tx) => Promise<Outgoing | null>,
   ): Promise<void> {
+    await this.deliver(dedupeKey, build);
+  }
+
+  /** Builds, reserves and queues one message; true when it was queued now. */
+  private async deliver(
+    dedupeKey: string,
+    build: (tx: Tx) => Promise<Outgoing | null>,
+  ): Promise<boolean> {
     try {
       const out = await this.db.run(async (tx) => {
         const message = await build(tx);
         if (!message) return null;
         return (await this.notifications.reserveMessage(tx, dedupeKey, 'EMAIL')) ? message : null;
       });
-      if (!out) return;
+      if (!out) return false;
       if (out.email) await this.queue.sendEmail(out.email);
-      if (out.sms) await this.queue.sendSms(out.sms.to, out.sms.text);
+      const sms = out.sms && toSmsMessage(out.sms.to, out.sms.text);
+      if (sms) await this.queue.sendSms(sms);
+      return true;
     } catch (error) {
       this.logger.error(`Guest message ${dedupeKey} failed: ${String(error)}`);
+      return false;
     }
+  }
+
+  /**
+   * The daily reminder job (ADR-0024): a check-out reminder to every in-house guest of the
+   * property who leaves on `localDate`. Returns how many were sent now.
+   */
+  async departureReminders(propertyId: string, localDate: string): Promise<number> {
+    const lineIds = await this.db.run(async (tx) =>
+      (
+        await tx.reservationRoom.findMany({
+          where: { propertyId, status: 'IN_HOUSE', departureDate: toDbDate(localDate) },
+          select: { id: true },
+        })
+      ).map((line) => line.id),
+    );
+    let sent = 0;
+    for (const id of lineIds) if (await this.departureReminder(id)) sent++;
+    return sent;
+  }
+
+  /** Check-out reminder for one in-house stay: room, check-out time. */
+  departureReminder(reservationRoomId: string): Promise<boolean> {
+    return this.deliver(`checkout-reminder:${reservationRoomId}`, async (tx) => {
+      const line = await tx.reservationRoom.findUnique({
+        where: { id: reservationRoomId },
+        include: {
+          guest: { select: { firstName: true, email: true } },
+          reservation: {
+            select: {
+              booker: { select: { email: true } },
+              property: { select: { name: true, checkOutTime: true } },
+            },
+          },
+          assignments: {
+            where: { releasedAt: null, kind: 'RESERVATION' },
+            include: { room: { select: { number: true } } },
+          },
+        },
+      });
+      const to = line?.guest.email ?? line?.reservation.booker.email;
+      if (!line || !to || !line.assignments[0]) return null;
+      return {
+        email: {
+          template: 'checkout-reminder',
+          to,
+          data: {
+            guestName: line.guest.firstName,
+            propertyName: line.reservation.property.name,
+            checkOutTime: line.reservation.property.checkOutTime,
+            roomNumber: line.assignments[0].room.number,
+          },
+        },
+        sms: null,
+      };
+    });
   }
 
   private async reservationFacts(tx: Tx, reservationId: string) {

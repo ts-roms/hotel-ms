@@ -1,4 +1,5 @@
--- Local-only bootstrap. In cloud environments these roles are created by Terraform.
+-- Local-only bootstrap. In cloud environments the db-bootstrap task creates these roles
+-- (packages/database/src/bootstrap, run on deploy with credentials from Secrets Manager).
 --
 -- hotel_owner  : owns schema objects, runs migrations. Never used by the running app.
 -- hotel_app    : runtime role for API + worker tenant work. Member of app_rw. RLS enforced.

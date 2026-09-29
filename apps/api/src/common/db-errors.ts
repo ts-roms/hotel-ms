@@ -1,5 +1,5 @@
 import { Prisma } from '@hotel/database';
-import { ProblemException } from './problem.js';
+import { ProblemException, Problems } from './problem.js';
 
 /**
  * Database constraints are the last line of defence for business rules (blueprint §7.4).
@@ -85,6 +85,22 @@ function describe(error: unknown): string {
     error instanceof Prisma.PrismaClientKnownRequestError ? JSON.stringify(error.meta ?? {}) : '';
   const cause = (error as { cause?: unknown }).cause;
   return `${error.message} ${meta} ${cause instanceof Error ? cause.message : ''}`;
+}
+
+/** Runs fn; a unique-key violation becomes 409 "<what> already exists at this property." */
+export async function conflictOnDuplicate<T>(fn: () => Promise<T>, what: string): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (isUniqueViolation(error))
+      throw Problems.conflict(`${what} already exists at this property.`);
+    throw error;
+  }
+}
+
+/** Whether the error is a violation of the named constraint (e.g. an exclusion constraint). */
+export function isConstraintViolation(error: unknown, constraint: string): boolean {
+  return describe(error).includes(constraint);
 }
 
 /** Rethrows a mapped problem for known constraint violations; otherwise rethrows as is. */

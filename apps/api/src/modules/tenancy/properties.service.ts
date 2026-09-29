@@ -4,6 +4,7 @@ import { Prisma, type Property as PropertyRow } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { localToday } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService, diffFields } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
@@ -65,7 +66,7 @@ export class PropertiesService {
   async create(input: CreatePropertyRequest): Promise<Property> {
     const organizationId = this.cls.get('organizationId')!;
     const identityId = this.cls.get('identityId') ?? null;
-    const businessDate = input.currentBusinessDate ?? todayIn(input.timezone);
+    const businessDate = input.currentBusinessDate ?? localToday(input.timezone);
 
     try {
       return await this.db.run(async (tx) => {
@@ -188,14 +189,4 @@ function toDto(row: PropertyRow): Property {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-/** Calendar date "now" in an IANA time zone, as YYYY-MM-DD. */
-export function todayIn(timeZone: string, now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
 }

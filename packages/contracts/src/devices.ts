@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { PUNCH_TYPES } from './hr.js';
 
 /**
  * Shared devices (ADR-0020): a kitchen tablet paired to one property, used by staff who
@@ -47,6 +46,8 @@ export const createDeviceRequestSchema = z
     path: ['permissions'],
   });
 export type CreateDeviceRequest = z.infer<typeof createDeviceRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateDeviceRequestInput = z.input<typeof createDeviceRequestSchema>;
 
 /** The pairing code is shown once; only its hash is stored. */
 export const devicePairingSchema = z.object({
@@ -66,6 +67,8 @@ export const kioskPairRequestSchema = z.strictObject({
     .pipe(z.string().regex(/^[A-Z0-9]{8}$/, 'Enter the 8-character code')),
 });
 export type KioskPairRequest = z.infer<typeof kioskPairRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type KioskPairRequestInput = z.input<typeof kioskPairRequestSchema>;
 
 export const kioskStateSchema = z.object({
   device: z.object({
@@ -102,47 +105,3 @@ export type SetPinRequest = z.infer<typeof setPinRequestSchema>;
 
 export const pinStatusSchema = z.object({ hasPin: z.boolean() });
 export type PinStatus = z.infer<typeof pinStatusSchema>;
-
-// ---- Time clock (ADR-0022) --------------------------------------------------------------------
-
-/** Selfie formats a time clock may send (checked against the image's own bytes). */
-export const CLOCK_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-/** Largest accepted selfie: 2 MiB (a camera frame is far smaller). */
-export const CLOCK_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
-
-/** The punch travels in the query string; the body is the selfie itself. */
-export const clockPunchQuerySchema = z.strictObject({
-  /** Matched case-insensitively. */
-  employeeNo: z.string().trim().min(1).max(40),
-  type: z.enum(PUNCH_TYPES),
-});
-export type ClockPunchQuery = z.infer<typeof clockPunchQuerySchema>;
-
-export const clockPunchResultSchema = z.object({
-  /** First (or preferred) name only, for the greeting on a shared screen. */
-  employeeName: z.string(),
-  type: z.enum(PUNCH_TYPES),
-  at: z.iso.datetime(),
-});
-export type ClockPunchResult = z.infer<typeof clockPunchResultSchema>;
-
-/** A punch with its selfie, for managers reviewing punches. */
-export const clockPhotoSchema = z.object({
-  punchId: z.uuid(),
-  employeeId: z.uuid(),
-  employeeNo: z.string(),
-  employeeName: z.string(),
-  type: z.enum(PUNCH_TYPES),
-  at: z.iso.datetime(),
-  deviceName: z.string().nullable(),
-  /** WEB: the employee's own session; KIOSK: a time clock. */
-  source: z.enum(['WEB', 'KIOSK']),
-});
-export type ClockPhoto = z.infer<typeof clockPhotoSchema>;
-
-/** How long punch selfies are kept, per organization (default 90 days). */
-export const PHOTO_RETENTION_DEFAULT_DAYS = 90;
-export const photoRetentionSchema = z.strictObject({
-  days: z.number().int().min(7).max(365),
-});
-export type PhotoRetention = z.infer<typeof photoRetentionSchema>;

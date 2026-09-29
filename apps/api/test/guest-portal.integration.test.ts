@@ -280,6 +280,65 @@ describe('verification', () => {
     expect((await guest.request('POST', '/guest/verification/confirm', { code })).status).toBe(401);
     expect((await guest.request('GET', '/guest/bill')).status).toBe(200);
   });
+
+  it('limits codes per booking, so fresh sessions from the same link do not reset it', async () => {
+    const email = `limits-${randomUUID().slice(0, 8)}@example.test`;
+    const booking = await book(...later(), email);
+    expect((await sendLink(booking.id)).status).toBe(204);
+    const token = await linkToken(email);
+    const session = async () => {
+      const guest = new GuestClient(ctx.app);
+      expect((await guest.request('POST', '/guest/session', { token })).status).toBe(200);
+      return guest;
+    };
+    const send = (guest: GuestClient) => guest.request('POST', '/guest/verification');
+
+    // 3 sends per session, 6 per booking and hour.
+    const first = await session();
+    for (let i = 0; i < 3; i++) expect((await send(first)).status).toBe(204);
+    expect((await send(first)).status).toBe(429);
+    const second = await session();
+    for (let i = 0; i < 3; i++) expect((await send(second)).status).toBe(204);
+    const third = await session();
+    const blocked = await send(third);
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.code).toBe('RATE_LIMITED');
+
+    // 5 checks per session, 15 per booking and hour: wrong codes from new sessions stop too.
+    const check = (guest: GuestClient) =>
+      guest.request('POST', '/guest/verification/confirm', { code: '000000' });
+    for (let n = 0; n < 3; n++) {
+      const guest = await session();
+      for (let i = 0; i < 5; i++) expect((await check(guest)).status).toBe(401);
+    }
+    const fourth = await session();
+    const tooMany = await check(fourth);
+    expect(tooMany.status).toBe(429);
+    expect(tooMany.body.code).toBe('RATE_LIMITED');
+  });
+});
+
+describe('cancelled stays', () => {
+  it('cancelling the booking ends its guest sessions and its portal link', async () => {
+    const { guest, booking, email } = await guestFor(...later());
+    await verify(guest, email);
+    const token = await linkToken(email);
+    expect((await guest.request('GET', '/guest/stay')).status).toBe(200);
+
+    const cancel = await reception.request(
+      'POST',
+      `${base()}/reservations/${booking.id}/cancel`,
+      { reason: 'Guest cancelled' },
+      idem(),
+    );
+    expect(cancel.status, JSON.stringify(cancel.body)).toBe(200);
+
+    // The open session is signed out, and the emailed link no longer opens a new one.
+    expect((await guest.request('GET', '/guest/stay')).status).toBe(401);
+    expect((await guest.request('GET', '/guest/bill')).status).toBe(401);
+    const reopen = await new GuestClient(ctx.app).request('POST', '/guest/session', { token });
+    expect(reopen.status).toBe(400);
+  });
 });
 
 describe('self check-in', () => {

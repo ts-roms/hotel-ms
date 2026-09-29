@@ -133,6 +133,17 @@ export class GuestsService {
     return toGuestDto(await this.db.run((tx) => this.createInTx(tx, propertyId, input)));
   }
 
+  /**
+   * The phone number a guest gave in the portal's pre-check-in, inside the caller's
+   * transaction. The caller records the audit entry for the whole pre-check-in.
+   */
+  async setPhoneFromPortalInTx(tx: Tx, guestId: string, phone: string): Promise<void> {
+    await tx.guest.update({
+      where: { id: guestId },
+      data: { phone, version: { increment: 1 } },
+    });
+  }
+
   async update(
     guestId: string,
     expectedVersion: number,

@@ -22,12 +22,12 @@ import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
+import { usePms, useProperty, usePropertyId } from '@/lib/property';
 
 const DAYS = 14;
 
 export default function AvailabilityPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const property = useProperty(propertyId);
   const [offset, setOffset] = useState(0);

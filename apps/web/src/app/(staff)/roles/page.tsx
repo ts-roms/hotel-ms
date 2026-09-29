@@ -53,7 +53,7 @@ export default function RolesPage() {
                 </div>
                 <Badge variant="primary">
                   <Users />
-                  {role.assignmentCount} {t('roles.members')}
+                  {t('roles.memberCount', { count: role.assignmentCount })}
                 </Badge>
               </div>
               {role.description && <CardDescription>{role.description}</CardDescription>}

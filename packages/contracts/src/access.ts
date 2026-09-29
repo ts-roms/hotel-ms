@@ -13,7 +13,9 @@ export const roleAssignmentSchema = z.object({
   scopeType: z.enum(SCOPE_TYPES),
   propertyId: z.uuid().nullable(),
 });
-export type RoleAssignmentDto = z.infer<typeof roleAssignmentSchema>;
+export type RoleAssignment = z.infer<typeof roleAssignmentSchema>;
+/** @deprecated Use RoleAssignment. */
+export type RoleAssignmentDto = RoleAssignment;
 
 export const memberSchema = z.object({
   membershipId: z.uuid(),
@@ -56,7 +58,9 @@ export const roleSchema = z.object({
   assignmentCount: z.number().int(),
   version: z.number().int(),
 });
-export type RoleDto = z.infer<typeof roleSchema>;
+export type Role = z.infer<typeof roleSchema>;
+/** @deprecated Use Role. */
+export type RoleDto = Role;
 
 export const createRoleRequestSchema = z.strictObject({
   key: z.string().regex(/^[a-z][a-z0-9_]{1,39}$/, 'Lowercase letters, digits and _ (2-40 chars)'),
@@ -65,6 +69,8 @@ export const createRoleRequestSchema = z.strictObject({
   permissions: z.array(permissionCodeSchema).min(1),
 });
 export type CreateRoleRequest = z.infer<typeof createRoleRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateRoleRequestInput = z.input<typeof createRoleRequestSchema>;
 
 export const updateRoleRequestSchema = z
   .strictObject({

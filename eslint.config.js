@@ -70,8 +70,26 @@ export default tseslint.config(
     },
   },
   {
-    // The web app must never reach server-only packages.
-    files: ['apps/web/**/*.ts', 'apps/web/**/*.tsx'],
+    // The worker is production code too: the test harness stays in its tests.
+    files: ['apps/worker/src/**/*.ts'],
+    ignores: ['apps/worker/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@hotel/database/testing',
+              message: 'Test helpers must not be imported by production code.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The browser apps (staff web app and guest portal) must never reach server-only packages.
+    files: ['apps/web/**/*.ts', 'apps/web/**/*.tsx', 'apps/guest/**/*.ts', 'apps/guest/**/*.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',

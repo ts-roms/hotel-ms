@@ -9,8 +9,7 @@ import { NightAuditService } from './night-audit.service.js';
 
 /**
  * Front Office (blueprint §6.1, §12.4-12.5): front desk, check-in/out, night audit and
- * business date. FrontOfficeController also serves the folio, tax-rule and housekeeping
- * desk routes through the Finance, Pricing and Operations services (ADR-0031).
+ * business date. Folio, tax-rule and housekeeping routes are served by their own contexts.
  */
 @Module({
   imports: [PmsModule, FinanceModule, OperationsModule, NotificationsModule],

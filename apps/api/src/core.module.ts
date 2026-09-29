@@ -1,5 +1,4 @@
 import { type DynamicModule, Global, Module } from '@nestjs/common';
-import { IdempotencyService } from './common/idempotency.js';
 import { ENV, type Env } from './config/env.js';
 import { PrismaService, TenantDb } from './infrastructure/database.js';
 import { NotificationsQueue } from './infrastructure/queue.js';
@@ -10,7 +9,7 @@ import { createObjectStorage, OBJECT_STORAGE } from './infrastructure/storage.js
 
 /**
  * Shared kernel available to every context module without importing it: configuration,
- * database (TenantDb), Redis, queues, realtime, secrets, object storage and idempotency.
+ * database (TenantDb), Redis, queues, realtime, secrets and object storage.
  * Context modules never re-provide these.
  */
 @Global()
@@ -29,7 +28,6 @@ export class CoreModule {
         RateLimiter,
         NotificationsQueue,
         RealtimeService,
-        IdempotencyService,
       ],
       exports: [
         ENV,
@@ -41,7 +39,6 @@ export class CoreModule {
         RateLimiter,
         NotificationsQueue,
         RealtimeService,
-        IdempotencyService,
       ],
     };
   }

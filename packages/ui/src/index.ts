@@ -5,9 +5,9 @@
  * - `blocks/`     — app-level compositions built from the primitives (page header, stat card, ...).
  *
  * Components use semantic color tokens (bg-primary, text-muted-foreground, ...) and animation
- * tokens (animate-shimmer, animate-fade-in, ...) defined by each app's Tailwind theme, so the
- * guest portal can brand them differently from the staff app. Import from the package root or
- * from a single component path, e.g. `@hotel/ui/components/button`.
+ * tokens (animate-shimmer, animate-fade-in, ...). `@hotel/ui/theme.css` maps them and defines
+ * the motion; each app sets only the color values, so the guest portal can brand them
+ * differently from the staff app. Import components from the package root.
  */
 export { cn } from './lib/utils.js';
 
@@ -33,8 +33,17 @@ export * from './components/table.js';
 export * from './components/textarea.js';
 export * from './components/toggle.js';
 
+export * from './blocks/brand-mark.js';
+export * from './blocks/document-title.js';
 export * from './blocks/empty-state.js';
+export * from './blocks/filter-chips.js';
+export * from './blocks/form-field.js';
 export * from './blocks/loading.js';
+export * from './blocks/modifier-picker.js';
 export * from './blocks/page-header.js';
+export * from './blocks/section-card.js';
+export * from './blocks/shell-card.js';
+export * from './blocks/star-rating.js';
 export * from './blocks/stat-card.js';
 export * from './blocks/top-progress.js';
+export * from './blocks/weekday-picker.js';

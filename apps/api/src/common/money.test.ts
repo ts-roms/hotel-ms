@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   convertMinor,
-  currencyDigits,
   formatMinor,
   formatRate,
   parseRateMicros,
@@ -10,12 +9,6 @@ import {
 } from './money.js';
 
 describe('money', () => {
-  it('knows minor units per currency', () => {
-    expect(currencyDigits('PHP')).toBe(2);
-    expect(currencyDigits('JPY')).toBe(0);
-    expect(currencyDigits('KWD')).toBe(3);
-  });
-
   it('parses and formats exchange rates exactly', () => {
     expect(parseRateMicros('56.25')).toBe(56_250_000n);
     expect(parseRateMicros('0.382')).toBe(382_000n);

@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
@@ -14,9 +13,9 @@ import {
 import { type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { addDays } from '../../../common/dates.js';
-import { ProblemException, Problems } from '../../../common/problem.js';
+import { Problems } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
-import { matchesType } from '../../../common/uploads.js';
+import { acceptUpload, type AcceptedUpload } from '../../../common/uploads.js';
 import { fromLocal } from '../../../common/zoned-time.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { RateLimiter } from '../../../infrastructure/redis.js';
@@ -34,8 +33,12 @@ import { activeOn, employeeName, HrAccess } from '../hr-access.js';
 const PHOTO_TAGS = { retention: 'attendance-photo' };
 /** Selfies are required with every punch, from the web and from time clocks (ADR-0022). */
 
-const unsupported = (detail: string) =>
-  new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported photo', detail);
+const PHOTO_RULES = {
+  types: CLOCK_PHOTO_TYPES,
+  maxBytes: CLOCK_PHOTO_MAX_BYTES,
+  label: 'selfie',
+  typeHint: 'Send the selfie as a JPEG, PNG or WebP image.',
+};
 
 /**
  * Time clock (ADR-0022): a paired TIME_CLOCK device records punches for employees who
@@ -56,20 +59,6 @@ export class TimeClockService {
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
-  /** The selfie must be a real image of an accepted type; returns its content type. */
-  private checkPhoto(contentType: string | undefined, body: unknown): string {
-    const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
-    if (!(CLOCK_PHOTO_TYPES as readonly string[]).includes(type))
-      throw unsupported('Send the selfie as a JPEG, PNG or WebP image.');
-    if (!Buffer.isBuffer(body) || body.length === 0)
-      throw Problems.validation([{ path: 'body', message: 'The selfie is missing' }]);
-    if (body.length > CLOCK_PHOTO_MAX_BYTES)
-      throw new ProblemException(413, 'VALIDATION_FAILED', 'Photo too large', 'At most 2 MiB.');
-    if (!matchesType(body, type as (typeof CLOCK_PHOTO_TYPES)[number]))
-      throw unsupported(`The photo is not a ${type} image.`);
-    return type;
-  }
-
   /**
    * Stores the selfie, then records the punch and its photo in one transaction. A refused
    * punch (e.g. "not clocked in") takes its photo with it.
@@ -81,13 +70,12 @@ export class TimeClockService {
     source: 'WEB' | 'KIOSK';
     recordedBy: string | null;
     deviceId: string | null;
-    contentType: string;
-    body: Buffer;
+    photo: AcceptedUpload<(typeof CLOCK_PHOTO_TYPES)[number]>;
   }) {
     const organizationId = this.cls.get('organizationId')!;
     const storageKey = `${organizationId}/attendance-photos/${uuidv7()}`;
-    const sha256 = createHash('sha256').update(input.body).digest('hex');
-    await this.storage.put(storageKey, input.body, input.contentType, sha256, {
+    const { type: contentType, body, sha256 } = input.photo;
+    await this.storage.put(storageKey, body, contentType, sha256, {
       tags: PHOTO_TAGS,
     });
     try {
@@ -105,8 +93,8 @@ export class TimeClockService {
             organizationId,
             deviceId: input.deviceId,
             storageKey,
-            contentType: input.contentType,
-            sizeBytes: input.body.length,
+            contentType,
+            sizeBytes: body.length,
             sha256,
           },
         });
@@ -132,7 +120,7 @@ export class TimeClockService {
     contentType: string | undefined,
     body: unknown,
   ): Promise<Punch> {
-    const photoType = this.checkPhoto(contentType, body);
+    const photo = acceptUpload(contentType, body, PHOTO_RULES);
     const employeeId = await this.db.run(async (tx) => {
       const me = await this.access.myEmployee(tx);
       const property = await this.access.property(tx, propertyId);
@@ -149,8 +137,7 @@ export class TimeClockService {
       source: 'WEB',
       recordedBy: this.access.actorId,
       deviceId: null,
-      contentType: photoType,
-      body: body as Buffer,
+      photo,
     });
     return toPunchDto(punch);
   }
@@ -165,7 +152,7 @@ export class TimeClockService {
     if (device.kind !== 'TIME_CLOCK') throw Problems.forbidden('This device is not a time clock.');
     // Enough for a shift change at the door; not enough to try Employee IDs at will.
     await this.rateLimiter.consume(`clock:${device.id}`, 60, 5 * 60, { failClosed: true });
-    const photoType = this.checkPhoto(contentType, body);
+    const photo = acceptUpload(contentType, body, PHOTO_RULES);
 
     // The device's organization and property; audited as SYSTEM with the device id.
     this.cls.set('organizationId', device.organizationId);
@@ -201,8 +188,7 @@ export class TimeClockService {
       source: 'KIOSK',
       recordedBy: null,
       deviceId: device.id,
-      contentType: photoType,
-      body: body as Buffer,
+      photo,
     });
     return {
       employeeName: employee.preferredName || employee.firstName,
@@ -277,6 +263,11 @@ export class TimeClockService {
       if (error instanceof ObjectNotFound) throw Problems.notFound('Photo');
       throw error;
     }
+  }
+
+  /** Days punch selfies are kept in an organization (ADR-0022), e.g. for a time clock's notice. */
+  photoRetentionDaysInTx(tx: Tx, organizationId: string): Promise<number> {
+    return photoRetentionDaysInTx(tx, organizationId);
   }
 
   /** Days selfies are kept in the current organization. */

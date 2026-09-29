@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import {
   type CancelSeriesRequest,
   cancelSeriesRequestSchema,
+  cancelSeriesResultSchema,
   type CoverageQuery,
   coverageGapSchema,
   coverageQuerySchema,
@@ -12,15 +13,13 @@ import {
   createStaffingRequirementRequestSchema,
   recurringShiftsResultSchema,
   staffingRequirementSchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { ScheduleService } from './schedule.service.js';
 import { StaffingService } from './staffing.service.js';
-
-const items = <T extends z.ZodType>(schema: T) => z.object({ items: z.array(schema) });
 
 /** Recurring shifts, minimum staffing and coverage of a property's schedule (ADR-0028). */
 @ApiTags('hr')
@@ -44,7 +43,7 @@ export class StaffingController {
   @Post('shift-series/:seriesId/cancel')
   @RequirePermission('schedule.manage')
   @HttpCode(200)
-  @ZodResponse(200, z.object({ cancelled: z.number().int() }))
+  @ZodResponse(200, cancelSeriesResultSchema)
   cancelSeries(
     @Param('propertyId') propertyId: string,
     @Param('seriesId') seriesId: string,
@@ -60,14 +59,14 @@ export class StaffingController {
 
   @Get('staffing-requirements')
   @RequirePermission('schedule.read')
-  @ZodResponse(200, items(staffingRequirementSchema))
+  @ZodResponse(200, listOf(staffingRequirementSchema))
   async requirements(@Param('propertyId') propertyId: string) {
     return { items: await this.staffing.requirements(propertyId) };
   }
 
   @Post('staffing-requirements')
   @RequirePermission('schedule.manage')
-  @ZodResponse(201, items(staffingRequirementSchema))
+  @ZodResponse(201, listOf(staffingRequirementSchema))
   async createRequirement(
     @Param('propertyId') propertyId: string,
     @ZodBody(createStaffingRequirementRequestSchema) body: CreateStaffingRequirementRequest,
@@ -87,7 +86,7 @@ export class StaffingController {
 
   @Get('schedule/coverage')
   @RequirePermission('schedule.read')
-  @ZodResponse(200, items(coverageGapSchema))
+  @ZodResponse(200, listOf(coverageGapSchema))
   async coverage(
     @Param('propertyId') propertyId: string,
     @ZodQuery(coverageQuerySchema) query: CoverageQuery,

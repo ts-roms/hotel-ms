@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiProduces, ApiTags } from '@nestjs/swagger';
 import {
   type CreateMaintenanceRequest,
@@ -10,16 +10,15 @@ import {
   type MaintenanceListQuery,
   maintenanceListQuerySchema,
   maintenanceRequestSchema,
+  listOf,
+  staffRefSchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-import { parseIfMatch } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { MaintenanceService } from './maintenance.service.js';
-
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
 /** Maintenance requests of a property (spec §32, ADR-0023). */
 @ApiTags('maintenance')
@@ -29,14 +28,14 @@ export class MaintenanceController {
 
   @Get()
   @RequirePermission('maintenance.read')
-  @ZodResponse(200, items(maintenanceRequestSchema))
+  @ZodResponse(200, listOf(maintenanceRequestSchema))
   async list(@ZodQuery(maintenanceListQuerySchema) query: MaintenanceListQuery) {
     return { items: await this.maintenance.list(query) };
   }
 
   @Get('technicians')
   @RequirePermission('maintenance.manage')
-  @ZodResponse(200, items(z.object({ membershipId: z.uuid(), displayName: z.string() })))
+  @ZodResponse(200, listOf(staffRefSchema))
   async technicians() {
     return { items: await this.maintenance.technicians() };
   }
@@ -62,7 +61,7 @@ export class MaintenanceController {
   @ZodResponse(200, maintenanceRequestSchema)
   act(
     @Param('requestId') requestId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(maintenanceActionSchema) body: MaintenanceAction,
   ) {
     return this.maintenance.act(uuidParam(requestId), parseIfMatch(ifMatch), body);

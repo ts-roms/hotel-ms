@@ -29,6 +29,24 @@ export function formatDateTime(
   return new Date(iso).toLocaleString(locale, timeZone ? { timeZone } : undefined);
 }
 
+/**
+ * Time of day of an instant ("2:30 PM", or "14:30" with `hour12: false`), in `timeZone` or
+ * the viewer's zone. `seconds` adds the seconds, e.g. for short-lived codes.
+ */
+export function formatTime(
+  instant: string | Date,
+  options: { timeZone?: string; locale?: string; seconds?: boolean; hour12?: boolean } = {},
+): string {
+  const { timeZone, locale = DEFAULT_LOCALE, seconds, hour12 } = options;
+  return new Date(instant).toLocaleTimeString(locale, {
+    hour: 'numeric',
+    minute: '2-digit',
+    ...(seconds ? { second: '2-digit' } : {}),
+    ...(hour12 === undefined ? {} : { hour12 }),
+    ...(timeZone ? { timeZone } : {}),
+  });
+}
+
 /** The calendar date ("YYYY-MM-DD") of an instant, in `timeZone` or the viewer's zone. */
 export function localDate(iso: string, timeZone?: string): string {
   return new Date(iso).toLocaleDateString('en-CA', timeZone ? { timeZone } : undefined);

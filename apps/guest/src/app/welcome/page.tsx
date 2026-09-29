@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { GuestShell } from '@/components/guest-shell';
 import { api, errorMessage, rememberStay } from '@/lib/api';
+import { t } from '@/lib/i18n';
 
 /** Landing page of the emailed link: trades the token for a session, then opens the stay. */
 export default function WelcomePage() {
@@ -23,7 +24,7 @@ export default function WelcomePage() {
     const token = tokenFromHash();
     history.replaceState(null, '', window.location.pathname);
     if (!token) {
-      setError('This link is incomplete. Open it again from your email.');
+      setError(t('welcome.incomplete'));
       return;
     }
     api
@@ -36,13 +37,13 @@ export default function WelcomePage() {
   }, [queryClient, router]);
 
   return (
-    <GuestShell title="Welcome">
+    <GuestShell title={t('welcome.title')}>
       <CardContent className="flex flex-col gap-4">
         {error ? (
           <>
             <Alert>{error}</Alert>
             <Link href="/" className={buttonVariants({ variant: 'outline' })}>
-              Back
+              {t('welcome.back')}
             </Link>
           </>
         ) : (
@@ -51,7 +52,7 @@ export default function WelcomePage() {
             className="flex flex-col items-center gap-3 py-4 text-muted-foreground"
           >
             <Spinner className="size-7 text-primary" />
-            Opening your booking…
+            {t('welcome.opening')}
           </div>
         )}
       </CardContent>

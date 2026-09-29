@@ -411,6 +411,25 @@ export class ServiceRequestsService {
     );
   }
 
+  /**
+   * On check-out (Front Office), inside its transaction: a checkout the guest asked for in
+   * the portal is now done (ADR-0027).
+   */
+  async completeCheckoutRequestsInTx(tx: Tx, reservationRoomId: string): Promise<void> {
+    await tx.serviceRequest.updateMany({
+      where: {
+        reservationRoomId,
+        category: 'CHECKOUT',
+        status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
+      },
+      data: {
+        status: 'DONE',
+        completedAt: new Date(),
+        version: { increment: 1 },
+      },
+    });
+  }
+
   async guestRate(id: string, input: GuestServiceRating): Promise<ServiceRequest> {
     return this.db.run(async (tx) => {
       const current = await tx.serviceRequest.findFirst({

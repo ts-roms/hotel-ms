@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  DayStats,
   FnbReport,
   GuestServiceReport,
   HrReport,
@@ -25,14 +26,11 @@ const ratio = (num: bigint, den: number) =>
   den === 0 ? 0 : toMinor((num * 2n + BigInt(den)) / (2n * BigInt(den)));
 const pct = (num: number, den: number) => (den === 0 ? 0 : Math.round((num / den) * 1000) / 10);
 
-interface DayStats {
-  roomsAvailable: number;
-  roomsSold: number;
-  roomRevenueMinor: number;
-  arrivals: number;
-  departures: number;
-  noShows: number;
-}
+/** The part of a night-audit closing's stored stats the occupancy report reads. */
+type ClosingStats = Pick<
+  DayStats,
+  'roomsAvailable' | 'roomsSold' | 'roomRevenueMinor' | 'arrivals' | 'departures' | 'noShows'
+>;
 
 /**
  * Dashboards and reports (spec §41–42, §66–67, ADR-0025). Read-only; every section is
@@ -305,7 +303,7 @@ export class ManagementService {
         orderBy: { businessDate: 'asc' },
       });
       const days = closings.map((c) => {
-        const s = c.stats as unknown as DayStats;
+        const s = c.stats as ClosingStats;
         return {
           date: fromDbDate(c.businessDate),
           roomsAvailable: s.roomsAvailable,

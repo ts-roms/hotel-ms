@@ -18,9 +18,8 @@ import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { CacheRedis } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
-import { refreshCapacity } from '../pms/inventory/inventory.js';
 import { GuestsService } from '../pms/guests/guests.service.js';
-import { businessDateOf } from '../pms/inventory/rooms.service.js';
+import { RoomsService } from '../pms/inventory/rooms.service.js';
 
 const PLAN_TTL_SECONDS = 30 * 60;
 const MAX_ERRORS = 200;
@@ -64,6 +63,7 @@ export class ImportsService {
     private readonly db: TenantDb,
     private readonly redis: CacheRedis,
     private readonly guests: GuestsService,
+    private readonly rooms: RoomsService,
     private readonly audit: AuditService,
     private readonly cls: ClsService<RequestContext>,
   ) {}
@@ -283,33 +283,9 @@ export class ImportsService {
           created++;
         }
       } else {
-        const taken = new Set(
-          (await tx.room.findMany({ where: { propertyId }, select: { number: true } })).map((r) =>
-            r.number.toUpperCase(),
-          ),
-        );
-        const { organizationId, actorId } = this.ctx;
-        for (const room of plan.rooms!) {
-          if (taken.has(room.number.toUpperCase())) {
-            skipped++;
-            continue;
-          }
-          await tx.room.create({
-            data: {
-              organizationId,
-              propertyId,
-              number: room.number,
-              roomTypeId: room.roomTypeId,
-              notes: room.notes,
-              createdBy: actorId,
-              updatedBy: actorId,
-            },
-          });
-          created++;
-        }
-        const today = await businessDateOf(tx, propertyId);
-        for (const roomTypeId of new Set(plan.rooms!.map((r) => r.roomTypeId)))
-          await refreshCapacity(tx, roomTypeId, today);
+        const result = await this.rooms.importInTx(tx, propertyId, plan.rooms!);
+        created += result.created;
+        skipped += result.skipped;
       }
       await this.audit.record(tx, {
         action: 'import.committed',

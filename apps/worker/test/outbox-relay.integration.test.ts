@@ -1,5 +1,10 @@
 import { createPrismaClient, type PrismaClient, uuidv7, withDbContext } from '@hotel/database';
-import { type DemoWorld, prepareTestDatabase, testDatabaseUrls } from '@hotel/database/testing';
+import {
+  type DemoWorld,
+  prepareTestDatabase,
+  testDatabaseUrls,
+  testRedisPath,
+} from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { pino } from 'pino';
@@ -19,7 +24,7 @@ beforeAll(async () => {
   app = createPrismaClient({ connectionString: urls.app, maxConnections: 2 });
   system = createPrismaClient({ connectionString: urls.system, maxConnections: 2 });
   const url = new URL(process.env.REDIS_QUEUE_URL ?? 'redis://localhost:56380');
-  url.pathname = '/15';
+  url.pathname = testRedisPath();
   connection = new Redis(url.toString(), { maxRetriesPerRequest: null });
   await connection.flushdb();
   queue = new Queue('test-domain-events', { connection });

@@ -3,6 +3,8 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { HrAccess } from './hr-access.js';
 import { AttendanceService } from './time/attendance.service.js';
 import { ClockPhotosController } from './time/clock-photos.controller.js';
+import { LeaveController } from './time/leave.controller.js';
+import { LeaveTypesService } from './time/leave-types.service.js';
 import { LeaveService } from './time/leave.service.js';
 import { MeController } from './time/me.controller.js';
 import { PayrollService } from './time/payroll.service.js';
@@ -12,6 +14,8 @@ import { ScheduleService } from './time/schedule.service.js';
 import { StaffingController } from './time/staffing.controller.js';
 import { StaffingService } from './time/staffing.service.js';
 import { TimeClockService } from './time/time-clock.service.js';
+import { BirthdaysController } from './workforce/birthdays.controller.js';
+import { BirthdaysService } from './workforce/birthdays.service.js';
 import { DocumentRetentionController } from './workforce/document-retention.controller.js';
 import { EmployeeDocumentsController } from './workforce/employee-documents.controller.js';
 import { EmployeeDocumentsService } from './workforce/employee-documents.service.js';
@@ -23,13 +27,14 @@ import { ProfileRecordsService } from './workforce/profile-records.service.js';
 /**
  * HR (blueprint §6.1, §13): Workforce (workforce/: employees, departments, documents,
  * records) and Time (time/: attendance, time clock, scheduling, staffing, leave, payroll
- * export). One Nest module: HrController serves leave configuration and
- * PropertyHrController serves birthdays, so the two sub-contexts use each other (ADR-0031).
+ * export). One Nest module; the two sub-folders share hr-access.ts and do not import each
+ * other (ADR-0031).
  */
 @Module({
   imports: [NotificationsModule],
   controllers: [
     HrController,
+    LeaveController,
     EmployeeDocumentsController,
     DocumentRetentionController,
     ClockPhotosController,
@@ -38,10 +43,12 @@ import { ProfileRecordsService } from './workforce/profile-records.service.js';
     EmployeeRecordsController,
     StaffingController,
     PropertyHrController,
+    BirthdaysController,
   ],
   providers: [
     HrAccess,
     PeopleService,
+    BirthdaysService,
     EmployeeDocumentsService,
     ProfileRecordsService,
     AttendanceService,
@@ -49,6 +56,7 @@ import { ProfileRecordsService } from './workforce/profile-records.service.js';
     ScheduleService,
     StaffingService,
     LeaveService,
+    LeaveTypesService,
     PayrollService,
   ],
   exports: [
@@ -58,6 +66,7 @@ import { ProfileRecordsService } from './workforce/profile-records.service.js';
     LeaveService,
     EmployeeDocumentsService,
     ProfileRecordsService,
+    BirthdaysService,
   ],
 })
 export class HrModule {}

@@ -1,71 +1,19 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
-  IMAGE_MAX_BYTES,
   IMAGE_MAX_PER_PROPERTY,
-  IMAGE_UPLOAD_TYPES,
   type PropertyImage,
   type UpdatePropertyImageRequest,
 } from '@hotel/contracts';
 import { uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
-import sharp from 'sharp';
-import { invalidState, ProblemException, Problems } from '../../common/problem.js';
+import { invalidState, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
-import { matchesType } from '../../common/uploads.js';
 import { TenantDb } from '../../infrastructure/database.js';
+import { processImage } from '../../infrastructure/images.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
-
-/** Longest side of a stored image, in pixels. */
-const MAX_SIDE = 1600;
-
-const unsupported = (detail: string) =>
-  new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported file', detail);
-
-export interface StoredImage {
-  body: Buffer;
-  sha256: string;
-  width: number;
-  height: number;
-}
-
-/**
- * Checks an uploaded image and re-encodes it (ADR-0030): JPEG, PNG or WebP whose bytes
- * match the claimed type, at most 8 MiB, decoded with a pixel limit; turned upright, scaled
- * to fit 1600 px, and written as WebP. Re-encoding drops every metadata block (EXIF GPS
- * location, camera serials) and anything smuggled after the image data.
- */
-export async function processImage(
-  contentType: string | undefined,
-  body: unknown,
-): Promise<StoredImage> {
-  const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
-  if (!(IMAGE_UPLOAD_TYPES as readonly string[]).includes(type))
-    throw unsupported('Upload a JPEG, PNG or WebP image.');
-  if (!Buffer.isBuffer(body) || body.length === 0)
-    throw Problems.validation([{ path: 'body', message: 'The image is empty' }]);
-  if (body.length > IMAGE_MAX_BYTES)
-    throw new ProblemException(413, 'VALIDATION_FAILED', 'Image too large', 'At most 8 MiB.');
-  if (!matchesType(body, type as (typeof IMAGE_UPLOAD_TYPES)[number]))
-    throw unsupported(`The file is not a ${type} image.`);
-  try {
-    const { data, info } = await sharp(body, { limitInputPixels: 50_000_000, failOn: 'error' })
-      .rotate()
-      .resize({ width: MAX_SIDE, height: MAX_SIDE, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer({ resolveWithObject: true });
-    return {
-      body: data,
-      sha256: createHash('sha256').update(data).digest('hex'),
-      width: info.width,
-      height: info.height,
-    };
-  } catch {
-    throw unsupported('The image could not be read.');
-  }
-}
+import { MenuService } from '../fnb/menu.service.js';
 
 /**
  * Hotel photos for the guest portal and menu item photos (spec §16, §27; ADR-0030). Files
@@ -81,6 +29,7 @@ export class ImagesService {
     private readonly audit: AuditService,
     private readonly cls: ClsService<RequestContext>,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly menus: MenuService,
   ) {}
 
   private get ctx() {
@@ -227,10 +176,7 @@ export class ImagesService {
     const storageKey = `${this.ctx.organizationId}/menu-images/${uuidv7()}`;
     await this.storage.put(storageKey, image.body, 'image/webp', image.sha256);
     await this.db.run(async (tx) => {
-      await tx.menuItem.update({
-        where: { id: itemId },
-        data: { imageKey: storageKey, imageSha256: image.sha256, version: { increment: 1 } },
-      });
+      await this.menus.setItemImageInTx(tx, itemId, { key: storageKey, sha256: image.sha256 });
       await this.audit.record(tx, {
         action: 'menu_item.image_set',
         entityType: 'menu_item',
@@ -248,10 +194,7 @@ export class ImagesService {
     const item = await this.requireItem(propertyId, itemId);
     if (!item.imageKey) return;
     await this.db.run(async (tx) => {
-      await tx.menuItem.update({
-        where: { id: itemId },
-        data: { imageKey: null, imageSha256: null, version: { increment: 1 } },
-      });
+      await this.menus.setItemImageInTx(tx, itemId, null);
       await this.audit.record(tx, {
         action: 'menu_item.image_removed',
         entityType: 'menu_item',

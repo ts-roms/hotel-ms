@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CalendarModule } from '../calendar/calendar.module.js';
 import { FinanceModule } from '../finance/finance.module.js';
 import { GuestPortalModule } from '../guest-portal/guest-portal.module.js';
 import { HrModule } from '../hr/hr.module.js';
@@ -9,7 +10,14 @@ import { TenantJobsProcessor } from './tenant-jobs.processor.js';
 
 /** Scheduled per-tenant jobs (ADR-0017): they call other contexts' exported services. */
 @Module({
-  imports: [NotificationsModule, PmsModule, FinanceModule, HrModule, GuestPortalModule],
+  imports: [
+    NotificationsModule,
+    PmsModule,
+    FinanceModule,
+    HrModule,
+    GuestPortalModule,
+    CalendarModule,
+  ],
   providers: [RemindersService, TenantJobsProcessor],
 })
 export class JobsModule {}

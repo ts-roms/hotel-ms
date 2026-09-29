@@ -26,8 +26,8 @@ import {
   updateReservationRoomRequestSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { parseIfMatch } from '../../../common/etag.js';
-import { IdempotencyService } from '../../../common/idempotency.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
+import { IdempotencyService } from '../../idempotency/idempotency.service.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -79,16 +79,11 @@ export class ReservationsController {
 
   @Patch(':reservationId/rooms/:lineId')
   @RequirePermission('reservation.update')
-  @ApiHeader({
-    name: 'If-Match',
-    required: true,
-    description: 'Version of the reservation room (W/"n")',
-  })
   @ZodResponse(200, reservationSchema)
   async updateLine(
     @Param('reservationId') reservationId: string,
     @Param('lineId') lineId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch('Version of the reservation room (W/"n")') ifMatch: string | undefined,
     @ZodBody(updateReservationRoomRequestSchema) body: UpdateReservationRoomRequest,
   ) {
     return this.reservations.updateLine(

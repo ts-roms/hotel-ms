@@ -1,22 +1,23 @@
 import type { AnonymizeResult } from '@hotel/contracts';
-import type { Transport } from '../http.js';
+import * as op from '../generated/operations.js';
+import { data, type Transport } from '../http.js';
 
 /** Data requests (ADR-0030): privacy.manage with two-step verification. */
 export function privacyClient({ call, baseUrl }: Transport) {
   return {
     privacy: {
       guestExportUrl: (guestId: string) =>
-        `${baseUrl}/guests/${encodeURIComponent(guestId)}/export`,
+        `${baseUrl}${op.paths.PrivacyController_exportGuest({ guestId })}`,
       anonymizeGuest: (guestId: string, reason: string) =>
-        call<AnonymizeResult>('POST', `/guests/${encodeURIComponent(guestId)}/anonymize`, {
-          reason,
-        }).then((r) => r.data),
+        op
+          .PrivacyController_anonymizeGuest<AnonymizeResult>(call, { guestId }, { reason })
+          .then(data),
       employeeExportUrl: (employeeId: string) =>
-        `${baseUrl}/employees/${encodeURIComponent(employeeId)}/export`,
+        `${baseUrl}${op.paths.PrivacyController_exportEmployee({ employeeId })}`,
       anonymizeEmployee: (employeeId: string, reason: string) =>
-        call<AnonymizeResult>('POST', `/employees/${encodeURIComponent(employeeId)}/anonymize`, {
-          reason,
-        }).then((r) => r.data),
+        op
+          .PrivacyController_anonymizeEmployee<AnonymizeResult>(call, { employeeId }, { reason })
+          .then(data),
     },
   };
 }

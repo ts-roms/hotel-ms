@@ -67,9 +67,12 @@ export function fromLocal(date: string, time: string, timeZone: string): Date {
   return new Date(guess);
 }
 
-/** Today's calendar date in a time zone. */
-export function localToday(timeZone: string, now = new Date()): string {
-  return toLocal(now, timeZone).date;
+/**
+ * Today's calendar date in a time zone (a property's, so "today" follows the hotel and not the
+ * device). Without one, the runtime's own zone is used.
+ */
+export function localToday(timeZone?: string, now = new Date()): string {
+  return toLocal(now, timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone).date;
 }
 
 /** `toLocal` for an ISO string, as the API sends instants. */

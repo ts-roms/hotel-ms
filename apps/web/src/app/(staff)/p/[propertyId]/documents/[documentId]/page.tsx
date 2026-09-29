@@ -1,17 +1,19 @@
 'use client';
 
 import { formatDate, formatDateTime, formatMoney } from '@hotel/format';
-import { Alert, Button, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
+import { Alert, Button, DocumentTitle, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
+import { usePms, usePropertyTimeZone } from '@/lib/property';
+import { enumLabelOr } from '@/lib/status';
 
 /** Printable invoice or receipt, rendered from its frozen snapshot. */
 export default function DocumentPage() {
   const { propertyId, documentId } = useParams<{ propertyId: string; documentId: string }>();
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const document = useQuery({
     queryKey: ['document', documentId],
     queryFn: () => pms.document(documentId),
@@ -23,6 +25,12 @@ export default function DocumentPage() {
   const c = d.content;
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4 rounded-md border bg-card p-6 text-sm print:border-0">
+      <DocumentTitle
+        title={t('fin.documentTitle', {
+          type: d.type === 'INVOICE' ? t('fin.invoice') : t('fin.receipt'),
+          number: d.documentNo,
+        })}
+      />
       <header className="flex items-start justify-between gap-4">
         <div>
           <div className="text-lg font-semibold">{c.property.name}</div>
@@ -33,16 +41,17 @@ export default function DocumentPage() {
             {d.type === 'INVOICE' ? t('fin.invoice') : t('fin.receipt')}
           </div>
           <div className="font-mono">{d.documentNo}</div>
-          <div className="text-muted-foreground">{formatDateTime(d.issuedAt)}</div>
+          <div className="text-muted-foreground">{formatDateTime(d.issuedAt, { timeZone })}</div>
         </div>
       </header>
       <div>
-        {t('fin.billTo')}: <strong>{c.billTo}</strong> · {t('folio.title')} {c.folioNo}
+        {t('fin.billTo')}: <strong>{c.billTo}</strong> ·{' '}
+        {t('folio.numbered', { number: c.folioNo })}
       </div>
       {c.payment ? (
         <div className="flex justify-between border-y py-2">
           <span>
-            {c.payment.method.toLowerCase().replace('_', ' ')}
+            {enumLabelOr('paymentMethod', c.payment.method)}
             {c.payment.reference && ` · ${c.payment.reference}`}
           </span>
           <strong className="tabular-nums">{money(c.payment.amountMinor)}</strong>

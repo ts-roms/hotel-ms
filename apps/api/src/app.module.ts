@@ -1,7 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
-import { ProblemFilter } from './common/problem.filter.js';
+import { ProblemFilter } from './infrastructure/problem.filter.js';
 import type { Env } from './config/env.js';
 import { CoreModule } from './core.module.js';
 import { AccessModule } from './modules/access/access.module.js';
@@ -17,6 +17,7 @@ import { GuestPortalModule } from './modules/guest-portal/guest-portal.module.js
 import { GuestGuard } from './modules/guest-portal/guest-session.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { HrModule } from './modules/hr/hr.module.js';
+import { IdempotencyModule } from './modules/idempotency/idempotency.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { ManagementModule } from './modules/management/management.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -30,28 +31,30 @@ import { TenancyModule } from './modules/tenancy/tenancy.module.js';
 /**
  * One Nest module per bounded context (blueprint §6.1, ADR-0031). Each declares its
  * controllers and providers and exports only what other contexts call; the shared kernel
- * (CoreModule, AuditModule, OutboxModule) is global.
+ * (CoreModule, AuditModule, OutboxModule, IdempotencyModule) is global. Listed in the order of
+ * API_CONTEXTS (.dependency-cruiser.cjs): a module only imports modules listed before it.
  */
 export const CONTEXT_MODULES = [
   AuditModule,
   OutboxModule,
+  IdempotencyModule,
   HealthModule,
-  AuthModule,
+  OpsModule,
   AccessModule,
+  AuthModule,
   TenancyModule,
   NotificationsModule,
   PmsModule,
   OperationsModule,
   FinanceModule,
   FrontOfficeModule,
-  GuestPortalModule,
   HrModule,
+  GuestPortalModule,
+  FnbModule,
+  PrivacyModule,
   DevicesModule,
   CalendarModule,
   ManagementModule,
-  FnbModule,
-  PrivacyModule,
-  OpsModule,
   JobsModule,
 ];
 

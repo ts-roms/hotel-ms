@@ -1,21 +1,13 @@
 'use client';
 
-import type { RatePlan, Room, RoomType } from '@hotel/contracts';
-import { addDays, formatMoney, minorToInput, parseMoney } from '@hotel/format';
 import {
-  Alert,
   Badge,
-  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  Input,
-  Label,
   LoadingRegion,
-  Notice,
   PageHeader,
-  NativeSelect,
   Skeleton,
   SkeletonTable,
   Table,
@@ -25,18 +17,19 @@ import {
   TableHeader,
   TableRow,
 } from '@hotel/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type FormEvent, useState } from 'react';
-import { errorMessage } from '@/lib/errors';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
+import { AddRoomForm } from './_components/add-room-form';
+import { AddRoomTypeForm } from './_components/add-room-type-form';
+import { BlockRoomForm } from './_components/block-room-form';
+import { RatePlanPrices } from './_components/rate-plan-prices';
 
 export default function RoomsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
   const roomTypes = useQuery({ queryKey: ['room-types', propertyId], queryFn: pms.roomTypes });
@@ -44,7 +37,7 @@ export default function RoomsPage() {
   const ratePlans = useQuery({
     queryKey: ['rate-plans', propertyId],
     queryFn: pms.ratePlans,
-    enabled: hasPermission(session.data, 'rate.read'),
+    enabled: can('rate.read'),
   });
   const refresh = () =>
     Promise.all(
@@ -52,8 +45,8 @@ export default function RoomsPage() {
         queryClient.invalidateQueries({ queryKey: [k, propertyId] }),
       ),
     );
-  const canManageRooms = hasPermission(session.data, 'room.manage');
-  const canManageRates = hasPermission(session.data, 'rate.manage');
+  const canManageRooms = can('room.manage');
+  const canManageRates = can('rate.manage');
   const currency = property.data?.currency ?? 'PHP';
 
   return (
@@ -88,8 +81,11 @@ export default function RoomsPage() {
                   <span className="font-medium">{rt.name}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {rt.roomCount} {t('rooms.rooms').toLowerCase()} · {rt.baseOccupancy}–
-                  {rt.maxOccupancy}
+                  {t('rooms.typeSummary', {
+                    count: rt.roomCount,
+                    base: rt.baseOccupancy,
+                    max: rt.maxOccupancy,
+                  })}
                 </span>
               </li>
             ))}
@@ -182,272 +178,5 @@ export default function RoomsPage() {
         </Card>
       )}
     </div>
-  );
-}
-
-function useAction(onDone: () => unknown) {
-  return useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
-    onSuccess: () => onDone(),
-  });
-}
-
-function AddRoomTypeForm({ propertyId, onDone }: { propertyId: string; onDone: () => unknown }) {
-  const pms = usePms(propertyId);
-  const action = useAction(onDone);
-  const [form, setForm] = useState({ code: '', name: '', baseOccupancy: 2, maxOccupancy: 2 });
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    action.mutate(() =>
-      pms.createRoomType({ ...form, code: form.code.toUpperCase(), description: '', sortOrder: 0 }),
-    );
-  };
-  return (
-    <form onSubmit={submit} className="grid gap-2 sm:grid-cols-5">
-      {action.error && <Alert className="sm:col-span-5">{errorMessage(action.error)}</Alert>}
-      <Input
-        aria-label={t('rooms.code')}
-        placeholder={t('rooms.code')}
-        required
-        value={form.code}
-        onChange={(e) => setForm({ ...form, code: e.target.value })}
-      />
-      <Input
-        aria-label={t('rooms.name')}
-        placeholder={t('rooms.name')}
-        required
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
-      <Input
-        aria-label={t('rooms.baseOcc')}
-        type="number"
-        min={1}
-        value={form.baseOccupancy}
-        onChange={(e) => setForm({ ...form, baseOccupancy: Number(e.target.value) })}
-      />
-      <Input
-        aria-label={t('rooms.maxOcc')}
-        type="number"
-        min={1}
-        value={form.maxOccupancy}
-        onChange={(e) => setForm({ ...form, maxOccupancy: Number(e.target.value) })}
-      />
-      <Button type="submit" variant="outline" loading={action.isPending}>
-        {t('rooms.addType')}
-      </Button>
-    </form>
-  );
-}
-
-function AddRoomForm({
-  propertyId,
-  roomTypes,
-  onDone,
-}: {
-  propertyId: string;
-  roomTypes: RoomType[];
-  onDone: () => unknown;
-}) {
-  const pms = usePms(propertyId);
-  const action = useAction(onDone);
-  const [number, setNumber] = useState('');
-  const [roomTypeId, setRoomTypeId] = useState(roomTypes[0]?.id ?? '');
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        action.mutate(() =>
-          pms.createRoom({
-            number,
-            roomTypeId: roomTypeId || roomTypes[0]!.id,
-            floorId: null,
-            notes: '',
-          }),
-        );
-      }}
-      className="grid gap-2 sm:grid-cols-3"
-    >
-      {action.error && <Alert className="sm:col-span-3">{errorMessage(action.error)}</Alert>}
-      <Input
-        aria-label={t('rooms.number')}
-        placeholder={t('rooms.number')}
-        required
-        value={number}
-        onChange={(e) => setNumber(e.target.value)}
-      />
-      <NativeSelect
-        aria-label={t('res.roomType')}
-        value={roomTypeId}
-        onChange={(e) => setRoomTypeId(e.target.value)}
-      >
-        {roomTypes.map((rt) => (
-          <option key={rt.id} value={rt.id}>
-            {rt.code} · {rt.name}
-          </option>
-        ))}
-      </NativeSelect>
-      <Button type="submit" variant="outline" loading={action.isPending}>
-        {t('rooms.addRoom')}
-      </Button>
-    </form>
-  );
-}
-
-function BlockRoomForm({
-  propertyId,
-  rooms,
-  businessDate,
-  onDone,
-}: {
-  propertyId: string;
-  rooms: Room[];
-  businessDate: string;
-  onDone: () => unknown;
-}) {
-  const pms = usePms(propertyId);
-  const action = useAction(onDone);
-  const active = rooms.filter((r) => !r.archived);
-  const [form, setForm] = useState({
-    roomId: active[0]?.id ?? '',
-    startDate: businessDate,
-    endDate: addDays(businessDate, 1),
-    reason: '',
-  });
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const { roomId, ...body } = form;
-        action.mutate(() => pms.blockRoom(roomId, body));
-      }}
-      className="grid gap-2 sm:grid-cols-5"
-    >
-      <Label className="pt-2 sm:col-span-5">{t('rooms.block')}</Label>
-      {action.error && <Alert className="sm:col-span-5">{errorMessage(action.error)}</Alert>}
-      {action.isSuccess && <Notice className="sm:col-span-5">{t('rooms.saved')}</Notice>}
-      <NativeSelect
-        aria-label={t('rooms.number')}
-        value={form.roomId}
-        onChange={(e) => setForm({ ...form, roomId: e.target.value })}
-      >
-        {active.map((r) => (
-          <option key={r.id} value={r.id}>
-            {r.number}
-          </option>
-        ))}
-      </NativeSelect>
-      <Input
-        aria-label={t('rooms.blockFrom')}
-        type="date"
-        min={businessDate}
-        value={form.startDate}
-        onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-      />
-      <Input
-        aria-label={t('rooms.blockTo')}
-        type="date"
-        min={addDays(form.startDate, 1)}
-        value={form.endDate}
-        onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-      />
-      <Input
-        aria-label={t('rooms.blockReason')}
-        placeholder={t('rooms.blockReason')}
-        required
-        value={form.reason}
-        onChange={(e) => setForm({ ...form, reason: e.target.value })}
-      />
-      <Button type="submit" variant="outline" loading={action.isPending}>
-        {t('rooms.blockSave')}
-      </Button>
-    </form>
-  );
-}
-
-function RatePlanPrices({
-  propertyId,
-  plan,
-  roomTypes,
-  currency,
-  editable,
-  onDone,
-}: {
-  propertyId: string;
-  plan: RatePlan;
-  roomTypes: RoomType[];
-  currency: string;
-  editable: boolean;
-  onDone: () => unknown;
-}) {
-  const pms = usePms(propertyId);
-  const action = useAction(onDone);
-  const initial = Object.fromEntries(
-    roomTypes.map((rt) => {
-      const price = plan.prices.find((p) => p.roomTypeId === rt.id);
-      return [rt.id, price ? minorToInput(price.baseAmountMinor, currency) : ''];
-    }),
-  );
-  const [values, setValues] = useState<Record<string, string>>(initial);
-  const [invalid, setInvalid] = useState(false);
-
-  const save = (e: FormEvent) => {
-    e.preventDefault();
-    const prices: { roomTypeId: string; baseAmountMinor: number }[] = [];
-    for (const [roomTypeId, text] of Object.entries(values)) {
-      if (!text.trim()) continue;
-      const amount = parseMoney(text, currency);
-      if (amount === null) return setInvalid(true);
-      prices.push({ roomTypeId, baseAmountMinor: amount });
-    }
-    setInvalid(false);
-    action.mutate(() => pms.updateRatePlan(plan.id, plan.version, { prices }));
-  };
-
-  return (
-    <form onSubmit={save} className="flex flex-col gap-2">
-      <div className="font-medium">
-        {plan.name} <span className="font-mono text-xs text-muted-foreground">{plan.code}</span>
-      </div>
-      {(invalid || action.error) && (
-        <Alert>{invalid ? t('error.generic') : errorMessage(action.error)}</Alert>
-      )}
-      <div className="grid gap-2 sm:grid-cols-3">
-        {roomTypes.map((rt) => (
-          <label key={rt.id} className="flex flex-col gap-1 text-sm">
-            <span>
-              {rt.code} · {t('rooms.basePrice')}
-            </span>
-            {editable ? (
-              <Input
-                inputMode="decimal"
-                value={values[rt.id] ?? ''}
-                onChange={(e) => setValues({ ...values, [rt.id]: e.target.value })}
-              />
-            ) : (
-              <span>
-                {plan.prices.find((p) => p.roomTypeId === rt.id)
-                  ? formatMoney(
-                      plan.prices.find((p) => p.roomTypeId === rt.id)!.baseAmountMinor,
-                      currency,
-                    )
-                  : '—'}
-              </span>
-            )}
-          </label>
-        ))}
-      </div>
-      {editable && (
-        <Button
-          type="submit"
-          size="sm"
-          variant="outline"
-          className="self-start"
-          loading={action.isPending}
-        >
-          {t('rooms.savePrices')}
-        </Button>
-      )}
-    </form>
   );
 }

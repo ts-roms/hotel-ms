@@ -1,10 +1,9 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   attendanceCorrectionSchema,
   CLOCK_PHOTO_TYPES,
   attendanceDaySchema,
-  birthdaySchema,
   type CreateShiftRequest,
   createShiftRequestSchema,
   type CreateShiftTemplateRequest,
@@ -29,28 +28,24 @@ import {
   shiftWithWarningsSchema,
   type UpdateShiftRequest,
   updateShiftRequestSchema,
+  listOf,
+  type CorrectionListQuery,
+  correctionListQuerySchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-import { parseIfMatch } from '../../../common/etag.js';
+import { sendCsv } from '../../../common/download.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { AttendanceService } from './attendance.service.js';
 import { LeaveService } from './leave.service.js';
 import { PayrollService } from './payroll.service.js';
-import { PeopleService } from '../workforce/people.service.js';
 import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
-
-const correctionStatusQuery = z.object({
-  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']).optional(),
-});
-
-/** Property-level HR: clock, attendance, schedule, leave approvals, birthdays. */
+/** Property-level HR: clock, attendance, schedule, leave approvals, payroll export. */
 @ApiTags('hr: property')
 @Controller('properties/:propertyId')
 export class PropertyHrController {
@@ -58,7 +53,6 @@ export class PropertyHrController {
     private readonly attendance: AttendanceService,
     private readonly schedule: ScheduleService,
     private readonly leave: LeaveService,
-    private readonly people: PeopleService,
     private readonly payroll: PayrollService,
     private readonly timeClock: TimeClockService,
     private readonly staffing: StaffingService,
@@ -73,13 +67,7 @@ export class PropertyHrController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<string> {
     const csv = await this.payroll.exportCsv(propertyId, query.from, query.to);
-    reply.header('content-type', 'text/csv; charset=utf-8');
-    reply.header(
-      'content-disposition',
-      `attachment; filename="payroll-${query.from}-${query.to}.csv"`,
-    );
-    reply.header('cache-control', 'no-store');
-    return csv;
+    return sendCsv(reply, `payroll-${query.from}-${query.to}.csv`, csv);
   }
 
   /** Punch type in the query; the body is the selfie taken now (ADR-0022). */
@@ -98,7 +86,7 @@ export class PropertyHrController {
 
   @Get('attendance')
   @RequirePermission('attendance.read')
-  @ZodResponse(200, items(attendanceDaySchema))
+  @ZodResponse(200, listOf(attendanceDaySchema))
   async attendanceDays(
     @Param('propertyId') propertyId: string,
     @ZodQuery(dateRangeQuerySchema) query: DateRangeQuery,
@@ -108,10 +96,10 @@ export class PropertyHrController {
 
   @Get('attendance/corrections')
   @RequirePermission('attendance.read')
-  @ZodResponse(200, items(attendanceCorrectionSchema))
+  @ZodResponse(200, listOf(attendanceCorrectionSchema))
   async corrections(
     @Param('propertyId') propertyId: string,
-    @ZodQuery(correctionStatusQuery) query: z.infer<typeof correctionStatusQuery>,
+    @ZodQuery(correctionListQuerySchema) query: CorrectionListQuery,
   ) {
     return { items: await this.attendance.corrections(propertyId, query.status) };
   }
@@ -123,7 +111,7 @@ export class PropertyHrController {
   decideCorrection(
     @Param('propertyId') propertyId: string,
     @Param('correctionId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.attendance.decideCorrection(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -131,14 +119,14 @@ export class PropertyHrController {
 
   @Get('shift-templates')
   @RequirePermission('schedule.read')
-  @ZodResponse(200, items(shiftTemplateSchema))
+  @ZodResponse(200, listOf(shiftTemplateSchema))
   async templates(@Param('propertyId') propertyId: string) {
     return { items: await this.schedule.templates(propertyId) };
   }
 
   @Post('shift-templates')
   @RequirePermission('schedule.manage')
-  @ZodResponse(201, items(shiftTemplateSchema))
+  @ZodResponse(201, listOf(shiftTemplateSchema))
   async createTemplate(
     @Param('propertyId') propertyId: string,
     @ZodBody(createShiftTemplateRequestSchema) body: CreateShiftTemplateRequest,
@@ -192,7 +180,7 @@ export class PropertyHrController {
   updateShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateShiftRequestSchema) body: UpdateShiftRequest,
   ) {
     return this.schedule.updateShift(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -205,14 +193,14 @@ export class PropertyHrController {
   cancelShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
   ) {
     return this.schedule.cancelShift(propertyId, uuidParam(id), parseIfMatch(ifMatch));
   }
 
   @Get('leave-requests')
   @RequirePermission('leave.read')
-  @ZodResponse(200, items(leaveRequestSchema))
+  @ZodResponse(200, listOf(leaveRequestSchema))
   async leaveRequests(
     @Param('propertyId') propertyId: string,
     @ZodQuery(leaveRequestListQuerySchema) query: LeaveRequestListQuery,
@@ -227,16 +215,9 @@ export class PropertyHrController {
   decideLeave(
     @Param('propertyId') propertyId: string,
     @Param('leaveRequestId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.leave.decide(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
-  }
-
-  @Get('birthdays')
-  @RequirePermission('birthday.read')
-  @ZodResponse(200, items(birthdaySchema))
-  async birthdays(@Param('propertyId') propertyId: string) {
-    return { items: await this.people.birthdays(propertyId) };
   }
 }

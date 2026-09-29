@@ -1,39 +1,21 @@
-import type { EMPLOYEE_DOCUMENT_CATEGORIES } from '@hotel/contracts';
-import { addDays } from '@hotel/format';
+import type { EMPLOYEE_DOCUMENT_CATEGORIES, PunchType } from '@hotel/contracts';
+import { formatDuration, formatTime } from '@hotel/format';
+import { type MessageKey, t } from './i18n';
 
-/** Today's calendar date on this device. */
-export function today(): string {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-}
-
-/** Monday of the week containing `date`. */
-export function mondayOf(date: string): string {
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay(); // 0 = Sunday
-  return addDays(date, weekday === 0 ? -6 : 1 - weekday);
-}
-
-export function weekDays(monday: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-}
-
-/** 125 → "2h 05m". */
+/** 125 → "2h 05m" (unit words from the catalog); nothing → "—". */
 export function duration(minutes: number): string {
   if (!minutes) return '—';
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+  return formatDuration(minutes, t('time.duration'));
 }
 
-/** "2026-10-05T06:03:00.000Z" → "14:03" on this device. */
-export function clock(iso: string | null): string {
+/** "2026-10-05T06:03:00.000Z" → "14:03", in `timeZone` (a property's) or on this device. */
+export function clock(iso: string | null, timeZone?: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  return formatTime(iso, { hour12: false, timeZone });
 }
 
-export const PUNCH_NEXT: Record<string, ('IN' | 'OUT' | 'BREAK_START' | 'BREAK_END')[]> = {
+/** Punches allowed after the last one (NONE: no punch yet). */
+export const PUNCH_NEXT: Record<PunchType | 'NONE', PunchType[]> = {
   NONE: ['IN'],
   OUT: ['IN'],
   IN: ['BREAK_START', 'OUT'],
@@ -41,15 +23,23 @@ export const PUNCH_NEXT: Record<string, ('IN' | 'OUT' | 'BREAK_START' | 'BREAK_E
   BREAK_END: ['BREAK_START', 'OUT'],
 };
 
+/** Punch button and history labels, shared by My time and the kiosk time clock. */
+export const PUNCH_LABEL: Record<PunchType, MessageKey> = {
+  IN: 'hr.clockIn',
+  OUT: 'hr.clockOut',
+  BREAK_START: 'hr.breakStart',
+  BREAK_END: 'hr.breakEnd',
+};
+
 /** Employee document categories (shared by the employee file and the retention settings). */
 export const DOCUMENT_CATEGORY_LABELS: Record<
   (typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number],
-  string
+  MessageKey
 > = {
-  CONTRACT: 'Contract',
-  GOVERNMENT_ID: 'Government ID',
-  TAX: 'Tax',
-  MEDICAL: 'Medical',
-  CERTIFICATE: 'Certificate',
-  OTHER: 'Other',
+  CONTRACT: 'docCategory.CONTRACT',
+  GOVERNMENT_ID: 'docCategory.GOVERNMENT_ID',
+  TAX: 'docCategory.TAX',
+  MEDICAL: 'docCategory.MEDICAL',
+  CERTIFICATE: 'docCategory.CERTIFICATE',
+  OTHER: 'docCategory.OTHER',
 };

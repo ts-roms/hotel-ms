@@ -33,5 +33,8 @@ describe('zoned time', () => {
     const instant = new Date('2026-10-04T16:30:00Z'); // 00:30 on the 5th in Manila
     expect(localToday('Asia/Manila', instant)).toBe('2026-10-05');
     expect(localToday('UTC', instant)).toBe('2026-10-04');
+    // Without a zone: the runtime's own (what the device shows).
+    const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    expect(localToday(undefined, instant)).toBe(toLocal(instant, own).date);
   });
 });

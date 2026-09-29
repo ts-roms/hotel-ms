@@ -19,7 +19,7 @@ import { OutboxService } from '../../outbox/outbox.service.js';
 import { GuestsService, toGuestSummary } from '../guests/guests.service.js';
 import { releaseInventory, takeInventory } from '../inventory/inventory.js';
 import { priceStay } from '../pricing/pricing.js';
-import { businessDateOf } from '../inventory/rooms.service.js';
+import { businessDateOf } from '../../../common/business-date.js';
 import { GuestMessagesService } from '../../notifications/guest-messages.service.js';
 
 export const reservationInclude = {
@@ -116,6 +116,39 @@ export class ReservationsService {
     });
     if (!row) throw Problems.notFound('Reservation');
     return row;
+  }
+
+  // ---- Guest pre-check-in (called by Guest Experience, blueprint §11) ------------------
+  // Both run inside the caller's transaction; the caller checks the line is still upcoming
+  // and records the pre-check-in's audit entry and event.
+
+  /** Marks the line pre-checked-in with the guest's expected arrival time. */
+  async markPreCheckedInInTx(
+    tx: Tx,
+    reservationRoomId: string,
+    expectedArrivalTime: string,
+  ): Promise<void> {
+    await tx.reservationRoom.update({
+      where: { id: reservationRoomId },
+      data: { expectedArrivalTime, preCheckInAt: new Date() },
+    });
+  }
+
+  /** Appends the guest's own requests to the booking's special requests. */
+  async appendGuestRequestsInTx(
+    tx: Tx,
+    reservation: { id: string; specialRequests: string | null },
+    requests: string,
+  ): Promise<void> {
+    await tx.reservation.update({
+      where: { id: reservation.id },
+      data: {
+        specialRequests: [reservation.specialRequests, `Guest: ${requests}`]
+          .filter(Boolean)
+          .join('\n')
+          .slice(0, 2000),
+      },
+    });
   }
 
   async get(reservationId: string): Promise<Reservation> {
@@ -469,6 +502,78 @@ export class ReservationsService {
     return toReservationDto(row);
   }
 
+  // ---- Stay lifecycle (called by Front Office: check-in/out, night audit) ---------------
+  // All run inside the caller's transaction; the caller checks the rules and records the
+  // audit entry and event of the whole check-in, check-out or audit.
+
+  /** The line's status on check-in (IN_HOUSE) or check-out (CHECKED_OUT). */
+  async setStayStatusInTx(
+    tx: Tx,
+    reservationRoomId: string,
+    status: 'IN_HOUSE' | 'CHECKED_OUT',
+  ): Promise<void> {
+    await tx.reservationRoom.update({
+      where: { id: reservationRoomId },
+      data: { status, version: { increment: 1 } },
+    });
+  }
+
+  /** Early departure: release unused nights (from today) and free the room from today. */
+  async shortenLineInTx(
+    tx: Tx,
+    line: ReservationRow['rooms'][number],
+    businessDate: string,
+  ): Promise<void> {
+    const departure = fromDbDate(line.departureDate);
+    if (businessDate >= departure) return;
+    const unused = nightsOf(businessDate, departure);
+    await releaseInventory(tx, [{ roomTypeId: line.roomTypeId, dates: unused }]);
+    await tx.reservationNight.deleteMany({
+      where: { reservationRoomId: line.id, stayDate: { gte: toDbDate(businessDate) } },
+    });
+    const arrival = fromDbDate(line.arrivalDate);
+    const assignment = line.assignments[0];
+    if (assignment) {
+      if (businessDate > arrival) {
+        await tx.roomAssignment.update({
+          where: { id: assignment.id },
+          data: { endDate: toDbDate(businessDate) },
+        });
+      } else {
+        // Leaving on the arrival day: no night was stayed.
+        await tx.roomAssignment.update({
+          where: { id: assignment.id },
+          data: { releasedAt: new Date() },
+        });
+      }
+    }
+    if (businessDate > arrival) {
+      await tx.reservationRoom.update({
+        where: { id: line.id },
+        data: { departureDate: toDbDate(businessDate) },
+      });
+    }
+  }
+
+  /** No-show: gives the line's nights back to sale, frees its room and marks it NO_SHOW. */
+  async markNoShowInTx(tx: Tx, line: { id: string; roomTypeId: string }): Promise<void> {
+    const nights = await tx.reservationNight.findMany({
+      where: { reservationRoomId: line.id },
+      select: { stayDate: true },
+    });
+    await releaseInventory(tx, [
+      { roomTypeId: line.roomTypeId, dates: nights.map((n) => fromDbDate(n.stayDate)) },
+    ]);
+    await tx.roomAssignment.updateMany({
+      where: { reservationRoomId: line.id, releasedAt: null },
+      data: { releasedAt: new Date() },
+    });
+    await tx.reservationRoom.update({
+      where: { id: line.id },
+      data: { status: 'NO_SHOW', version: { increment: 1 } },
+    });
+  }
+
   // ---- Modify ---------------------------------------------------------------------------
 
   /**
@@ -657,7 +762,9 @@ export class ReservationsService {
         });
       }
 
-      // Guest portal access to a cancelled stay ends with it.
+      // Guest portal access to a cancelled stay ends with it, in this transaction (ADR-0033).
+      // A documented write to Guest Experience tables (ADR-0031): Reservations comes before
+      // guest-portal/ in API_CONTEXTS, and revoking after commit would leave a window.
       const now = new Date();
       await tx.guestSession.updateMany({
         where: { reservationRoomId: { in: targets.map((l) => l.id) }, revokedAt: null },

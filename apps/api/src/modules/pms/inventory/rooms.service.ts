@@ -1,21 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  Building,
-  CreateBuildingRequest,
   CreateRoomBlockRequest,
   CreateRoomRequest,
-  CreateRoomTypeRequest,
+  HOUSEKEEPING_STATUSES,
   Room,
   RoomBlock,
-  RoomType,
   SetServiceStatusRequest,
   UpdateRoomRequest,
-  UpdateRoomTypeRequest,
 } from '@hotel/contracts';
 import { Prisma, type Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { businessDateOf } from '../../../common/business-date.js';
 import { fromDbDate, nightsOf, toDbDate } from '../../../common/dates.js';
-import { withConstraintMapping } from '../../../common/db-errors.js';
+import { conflictOnDuplicate, withConstraintMapping } from '../../../common/db-errors.js';
 import { Problems } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
 import { TenantDb } from '../../../infrastructure/database.js';
@@ -23,26 +20,9 @@ import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
 import { refreshCapacity, releaseInventory, takeInventory } from './inventory.js';
 
-/** Current business date of the route's property (the only "today" PMS code may use). */
-export async function businessDateOf(tx: Tx, propertyId: string): Promise<string> {
-  const property = await tx.property.findUniqueOrThrow({
-    where: { id: propertyId },
-    select: { currentBusinessDate: true },
-  });
-  return fromDbDate(property.currentBusinessDate);
-}
+type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
 
-const conflictOnDuplicate = async <T>(fn: () => Promise<T>, what: string): Promise<T> => {
-  try {
-    return await fn();
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw Problems.conflict(`${what} already exists at this property.`);
-    }
-    throw error;
-  }
-};
-
+/** Rooms, their statuses and out-of-order blocks (Inventory). */
 @Injectable()
 export class RoomsService {
   constructor(
@@ -58,147 +38,6 @@ export class RoomsService {
       propertyId: this.cls.get('propertyId')!,
       actorId: this.cls.get('identityId') ?? null,
     };
-  }
-
-  // ---- Buildings ------------------------------------------------------------------------
-
-  async listBuildings(): Promise<Building[]> {
-    const rows = await this.db.run((tx) =>
-      tx.building.findMany({
-        where: { propertyId: this.ctx.propertyId, archivedAt: null },
-        include: { floors: { orderBy: { level: 'asc' } } },
-        orderBy: { code: 'asc' },
-      }),
-    );
-    return rows.map((b) => ({
-      id: b.id,
-      code: b.code,
-      name: b.name,
-      floors: b.floors.map((f) => ({ id: f.id, level: f.level, name: f.name })),
-    }));
-  }
-
-  async createBuilding(input: CreateBuildingRequest): Promise<Building> {
-    const { organizationId, propertyId, actorId } = this.ctx;
-    const building = await conflictOnDuplicate(
-      () =>
-        this.db.run(async (tx) => {
-          const created = await tx.building.create({
-            data: {
-              organizationId,
-              propertyId,
-              code: input.code,
-              name: input.name,
-              createdBy: actorId,
-              updatedBy: actorId,
-            },
-          });
-          for (const floor of input.floors) {
-            await tx.floor.create({
-              data: {
-                organizationId,
-                propertyId,
-                buildingId: created.id,
-                level: floor.level,
-                name: floor.name,
-              },
-            });
-          }
-          await this.audit.record(tx, {
-            action: 'building.created',
-            entityType: 'building',
-            entityId: created.id,
-            propertyId,
-            after: { code: input.code, name: input.name, floors: input.floors.length },
-          });
-          return created;
-        }),
-      'A building with this code',
-    );
-    return (await this.listBuildings()).find((b) => b.id === building.id)!;
-  }
-
-  // ---- Room types -----------------------------------------------------------------------
-
-  async listRoomTypes(): Promise<RoomType[]> {
-    const rows = await this.db.run((tx) =>
-      tx.roomType.findMany({
-        where: { propertyId: this.ctx.propertyId },
-        include: { _count: { select: { rooms: { where: { archivedAt: null } } } } },
-        orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
-      }),
-    );
-    return rows.map((rt) => ({
-      id: rt.id,
-      code: rt.code,
-      name: rt.name,
-      description: rt.description,
-      baseOccupancy: rt.baseOccupancy,
-      maxOccupancy: rt.maxOccupancy,
-      sortOrder: rt.sortOrder,
-      archived: rt.archivedAt !== null,
-      roomCount: rt._count.rooms,
-      version: rt.version,
-    }));
-  }
-
-  async createRoomType(input: CreateRoomTypeRequest): Promise<RoomType> {
-    const { organizationId, propertyId, actorId } = this.ctx;
-    const created = await conflictOnDuplicate(
-      () =>
-        this.db.run(async (tx) => {
-          const rt = await tx.roomType.create({
-            data: { organizationId, propertyId, ...input, createdBy: actorId, updatedBy: actorId },
-          });
-          await this.audit.record(tx, {
-            action: 'room_type.created',
-            entityType: 'room_type',
-            entityId: rt.id,
-            propertyId,
-            after: input,
-          });
-          return rt;
-        }),
-      'A room type with this code',
-    );
-    return (await this.listRoomTypes()).find((rt) => rt.id === created.id)!;
-  }
-
-  async updateRoomType(
-    roomTypeId: string,
-    expectedVersion: number,
-    input: UpdateRoomTypeRequest,
-  ): Promise<RoomType> {
-    const { propertyId, actorId } = this.ctx;
-    await this.db.run(async (tx) => {
-      const before = await tx.roomType.findFirst({ where: { id: roomTypeId, propertyId } });
-      if (!before) throw Problems.notFound('Room type');
-      const base = input.baseOccupancy ?? before.baseOccupancy;
-      const max = input.maxOccupancy ?? before.maxOccupancy;
-      if (max < base) {
-        throw Problems.validation([
-          { path: 'maxOccupancy', message: 'Max occupancy must be at least base occupancy' },
-        ]);
-      }
-      const updated = await tx.roomType.updateMany({
-        where: { id: roomTypeId, version: expectedVersion },
-        data: { ...input, updatedBy: actorId, version: { increment: 1 } },
-      });
-      if (updated.count === 0) throw Problems.versionConflict();
-      await this.audit.record(tx, {
-        action: 'room_type.updated',
-        entityType: 'room_type',
-        entityId: roomTypeId,
-        propertyId,
-        before: {
-          name: before.name,
-          baseOccupancy: before.baseOccupancy,
-          maxOccupancy: before.maxOccupancy,
-        },
-        after: input,
-      });
-    });
-    return (await this.listRoomTypes()).find((rt) => rt.id === roomTypeId)!;
   }
 
   // ---- Rooms --------------------------------------------------------------------------------
@@ -274,6 +113,48 @@ export class RoomsService {
       'A room with this number',
     );
     return this.getRoom(created.id);
+  }
+
+  /**
+   * Creates imported rooms (CSV import, ADR-0030) inside the caller's transaction,
+   * skipping numbers that exist by now, then refreshes the sellable capacity of their
+   * room types. The caller validated the rows and records the import's audit entry.
+   */
+  async importInTx(
+    tx: Tx,
+    propertyId: string,
+    rooms: { number: string; roomTypeId: string; notes: string }[],
+  ): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const taken = new Set(
+      (await tx.room.findMany({ where: { propertyId }, select: { number: true } })).map((r) =>
+        r.number.toUpperCase(),
+      ),
+    );
+    const { organizationId, actorId } = this.ctx;
+    for (const room of rooms) {
+      if (taken.has(room.number.toUpperCase())) {
+        skipped++;
+        continue;
+      }
+      await tx.room.create({
+        data: {
+          organizationId,
+          propertyId,
+          number: room.number,
+          roomTypeId: room.roomTypeId,
+          notes: room.notes,
+          createdBy: actorId,
+          updatedBy: actorId,
+        },
+      });
+      created++;
+    }
+    const today = await businessDateOf(tx, propertyId);
+    for (const roomTypeId of new Set(rooms.map((r) => r.roomTypeId)))
+      await refreshCapacity(tx, roomTypeId, today);
+    return { created, skipped };
   }
 
   /**
@@ -374,6 +255,53 @@ export class RoomsService {
       );
     });
     return this.getRoom(roomId);
+  }
+
+  /**
+   * Changes a room's housekeeping status with its history row and event, inside the
+   * caller's transaction (housekeeping, check-out, night audit). No-op when the status is
+   * unchanged. The caller checks the transition is allowed.
+   */
+  async setHousekeepingStatusInTx(
+    tx: Tx,
+    input: {
+      organizationId: string;
+      propertyId: string;
+      roomId: string;
+      to: HousekeepingStatus;
+      reason: string | null;
+      actorId: string | null;
+    },
+  ): Promise<void> {
+    const room = await tx.room.findUniqueOrThrow({ where: { id: input.roomId } });
+    if (room.housekeepingStatus === input.to) return;
+    await tx.room.update({
+      where: { id: input.roomId },
+      data: { housekeepingStatus: input.to, version: { increment: 1 } },
+    });
+    await tx.roomStatusEvent.create({
+      data: {
+        organizationId: input.organizationId,
+        propertyId: input.propertyId,
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        fromValue: room.housekeepingStatus,
+        toValue: input.to,
+        reason: input.reason,
+        actorId: input.actorId,
+      },
+    });
+    await this.outbox.enqueue(
+      tx,
+      'RoomStatusChanged',
+      {
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        from: room.housekeepingStatus,
+        to: input.to,
+      },
+      { propertyId: input.propertyId },
+    );
   }
 
   // ---- Out-of-order blocks --------------------------------------------------------------

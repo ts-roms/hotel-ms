@@ -50,7 +50,7 @@ describe('TOTP enrollment', () => {
     expect(wrong.status).toBe(401);
     expect(wrong.body.code).toBe('INVALID_MFA_CODE');
 
-    const { hotp, base32Decode } = await import('../src/infrastructure/totp.js');
+    const { hotp, base32Decode } = await import('../src/modules/auth/totp.js');
     const code = hotp(base32Decode(start.body.secret), BigInt(Math.floor(Date.now() / 30_000)));
     // Someone holding only the session cookie cannot turn MFA on.
     const noPassword = await client.request('POST', '/api/v1/auth/mfa/totp/enrollment/confirm', {

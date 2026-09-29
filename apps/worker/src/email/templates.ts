@@ -1,16 +1,11 @@
 import type { EmailTemplate } from '@hotel/contracts';
+import { escapeHtml } from '@hotel/format';
 
 export interface RenderedEmail {
   subject: string;
   text: string;
   html: string;
 }
-
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  );
 
 function layout(paragraphs: string[], action?: { label: string; url: string }): string {
   const body = paragraphs.map((p) => `<p style="margin:0 0 16px">${escapeHtml(p)}</p>`).join('');

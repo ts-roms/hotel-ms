@@ -29,6 +29,7 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel } from '@/lib/status';
 
 type Subject = 'guests' | 'employees';
 interface Person {
@@ -64,8 +65,10 @@ export default function PrivacyPage() {
         : (await api.hr.employees({ q: query, limit: 20 })).map((e) => ({
             id: e.id,
             name: `${e.firstName} ${e.lastName}`,
-            detail: `${e.employeeNo} · ${e.status.toLowerCase()}`,
+            detail: `${e.employeeNo} · ${statusLabel(e.status)}`,
             canAnonymize: e.status === 'TERMINATED',
+            // TODO(api): the employee list (employeeSummarySchema) has no anonymized flag, so this
+            // relies on the placeholder name the anonymizer writes. Needs an `anonymizedAt` field.
             anonymized: e.firstName === 'Former',
           })),
   });
@@ -153,9 +156,7 @@ function PersonRow({ subject, person: p }: { subject: Subject; person: Person })
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t('priv.anonymizeTitle')} {p.name}?
-                  </AlertDialogTitle>
+                  <AlertDialogTitle>{t('priv.anonymizeName', { name: p.name })}</AlertDialogTitle>
                   <AlertDialogDescription>
                     {subject === 'guests' ? t('priv.guestEffect') : t('priv.employeeEffect')}
                   </AlertDialogDescription>

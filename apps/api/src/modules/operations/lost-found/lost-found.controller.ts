@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CloseLostFoundItem,
@@ -8,15 +8,13 @@ import {
   type LostFoundListQuery,
   lostFoundItemSchema,
   lostFoundListQuerySchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
-import { parseIfMatch } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { LostFoundService } from './lost-found.service.js';
-
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
 /** Lost & found of a property (spec §31). */
 @ApiTags('maintenance')
@@ -26,7 +24,7 @@ export class LostFoundController {
 
   @Get()
   @RequirePermission('lost_found.log')
-  @ZodResponse(200, items(lostFoundItemSchema))
+  @ZodResponse(200, listOf(lostFoundItemSchema))
   async list(@ZodQuery(lostFoundListQuerySchema) query: LostFoundListQuery) {
     return { items: await this.lostFound.list(query) };
   }
@@ -44,7 +42,7 @@ export class LostFoundController {
   @ZodResponse(200, lostFoundItemSchema)
   close(
     @Param('itemId') itemId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(closeLostFoundItemSchema) body: CloseLostFoundItem,
   ) {
     return this.lostFound.close(uuidParam(itemId), parseIfMatch(ifMatch), body);

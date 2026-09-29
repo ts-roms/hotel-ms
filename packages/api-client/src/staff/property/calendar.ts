@@ -1,23 +1,29 @@
-import type { Calendar, CreateEventInput, HotelEvent, UpdateEventRequest } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import type {
+  Calendar,
+  CreateEventInput,
+  HotelEvent,
+  StaffRef,
+  UpdateEventRequest,
+} from '@hotel/contracts';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
 /** Unified calendar and hotel events. */
-export function calendarClient({ call, qs, p, id }: PropertyTransport) {
+export function calendarClient({ call, propertyId }: PropertyTransport) {
   return {
     calendar: (from: string, to: string) =>
-      call<Calendar>('GET', `${p}/calendar${qs({ from, to })}`).then((r) => r.data),
+      op.CalendarController_view<Calendar>(call, { propertyId }, { from, to }).then(data),
     event: (eventId: string) =>
-      call<HotelEvent>('GET', `${p}/events/${id(eventId)}`).then((r) => r.data),
+      op.CalendarController_event<HotelEvent>(call, { propertyId, eventId }).then(data),
     eventPeople: () =>
-      call<{ items: { membershipId: string; displayName: string }[] }>(
-        'GET',
-        `${p}/events/people`,
-      ).then((r) => r.data.items),
+      op.CalendarController_people<{ items: StaffRef[] }>(call, { propertyId }).then(items),
     createEvent: (body: CreateEventInput) =>
-      call<HotelEvent>('POST', `${p}/events`, body).then((r) => r.data),
+      op.CalendarController_create<HotelEvent>(call, { propertyId }, body).then(data),
     updateEvent: (eventId: string, version: number, body: UpdateEventRequest) =>
-      call<HotelEvent>('PATCH', `${p}/events/${id(eventId)}`, body, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
+      op
+        .CalendarController_update<HotelEvent>(call, { propertyId, eventId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
+        .then(data),
   };
 }
