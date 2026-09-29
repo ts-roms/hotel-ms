@@ -29,6 +29,14 @@ portal) and `apps/guest` (guest PWA).
 `@hotel/i18n` holds the message catalogs: `@hotel/i18n/staff` (the staff app) and `@hotel/i18n/guest`
 (the guest portal), with a small typed translator. Formatting stays in `@hotel/format`.
 
+**Contract files follow the API contexts** (ADR-0031): one file per context, e.g.
+`tenancy.ts`, `inventory.ts`, `pricing.ts`, `guests.ts`, `reservations.ts`, `operations.ts`,
+`finance.ts`, `front-office.ts`, `workforce.ts` and `time.ts` (the two halves of `hr`),
+`guest-portal.ts`, `fnb.ts` and `calendar.ts` (hotel events), next to the shared kernel
+(`common.ts`, `errors.ts`, `permissions.ts`, `domain-events.ts`, `jobs.ts`). `internal.ts`
+holds helpers shared between contract files and is not re-exported; `index.ts` re-exports
+everything else, so consumers only ever import `@hotel/contracts`.
+
 **Domain logic stays in the API.** There is no `packages/domain`. Bounded-context modules live
 in `apps/api/src/modules/` (ADR-0031). The worker only relays the outbox, delivers email and
 SMS, and plans scheduled tenant jobs onto a queue; the API processes those jobs (ADR-0017). It

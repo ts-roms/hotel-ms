@@ -712,7 +712,7 @@ Domain event (via outbox) ─► NotificationRouter (worker)
 ## 17. Event-driven architecture
 
 - **Transactional outbox:** a use case writes business rows **and** `outbox_events` rows in one DB transaction. A relay in the worker reads unpublished rows (`FOR UPDATE SKIP LOCKED`), enqueues them to BullMQ and marks them published. Delivery is at-least-once, and handlers are idempotent.
-- **Event envelope:** `{ eventId (uuid v7), type, version, occurredAt, organizationId, propertyId?, actor, correlationId, payload }`. Schemas live in `packages/contracts/events`.
+- **Event envelope:** `{ eventId (uuid v7), type, version, occurredAt, organizationId, propertyId?, actor, correlationId, payload }`. Schemas live in `packages/contracts/src/domain-events.ts`.
 - **Two kinds of handler:**
   - _In-transaction domain handlers_: synchronous and in-process, **only** inside a single context, where a side effect must commit atomically.
   - _Async integration handlers_: through the outbox, for anything crossing contexts or touching the outside world (folio posting from F&B, notifications, calendar projection, access revocation, stats).

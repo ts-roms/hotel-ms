@@ -1,5 +1,75 @@
 import { z } from 'zod';
-import { localDateSchema } from './common.js';
+import { localDateSchema, staffRefSchema } from './common.js';
+import { HOUSEKEEPING_STATUSES, SERVICE_STATUSES } from './inventory.js';
+
+/**
+ * Operations contracts: housekeeping (blueprint §12.5), maintenance and lost & found, and
+ * guest service requests.
+ */
+
+// ---- Housekeeping -----------------------------------------------------------------------
+
+export const HOUSEKEEPING_TASK_TYPES = [
+  'CHECKOUT_CLEAN',
+  'STAYOVER',
+  'TOUCH_UP',
+  'INSPECTION',
+] as const;
+export const HOUSEKEEPING_TASK_STATUSES = ['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
+
+export const housekeepingTaskSchema = z.object({
+  id: z.uuid(),
+  roomId: z.uuid(),
+  roomNumber: z.string(),
+  type: z.enum(HOUSEKEEPING_TASK_TYPES),
+  status: z.enum(HOUSEKEEPING_TASK_STATUSES),
+  businessDate: localDateSchema,
+  assignee: staffRefSchema.nullable(),
+  notes: z.string(),
+  version: z.number().int(),
+});
+export type HousekeepingTask = z.infer<typeof housekeepingTaskSchema>;
+
+export const housekeepingBoardSchema = z.object({
+  businessDate: localDateSchema,
+  /** false when the caller only sees rooms with tasks assigned to them. */
+  fullBoard: z.boolean(),
+  rooms: z.array(
+    z.object({
+      roomId: z.uuid(),
+      number: z.string(),
+      roomTypeCode: z.string(),
+      housekeepingStatus: z.enum(HOUSEKEEPING_STATUSES),
+      serviceStatus: z.enum(SERVICE_STATUSES),
+      occupied: z.boolean(),
+      arrivalToday: z.boolean(),
+      departureToday: z.boolean(),
+      openTask: housekeepingTaskSchema.nullable(),
+    }),
+  ),
+});
+export type HousekeepingBoard = z.infer<typeof housekeepingBoardSchema>;
+
+export const setHousekeepingStatusRequestSchema = z.strictObject({
+  status: z.enum(HOUSEKEEPING_STATUSES),
+  reason: z.string().trim().max(200).default(''),
+});
+export type SetHousekeepingStatusRequest = z.infer<typeof setHousekeepingStatusRequestSchema>;
+
+export const createHousekeepingTaskRequestSchema = z.strictObject({
+  roomId: z.uuid(),
+  type: z.enum(HOUSEKEEPING_TASK_TYPES),
+  notes: z.string().trim().max(500).default(''),
+  assignedMembershipId: z.uuid().nullable().default(null),
+});
+export type CreateHousekeepingTaskRequest = z.infer<typeof createHousekeepingTaskRequestSchema>;
+
+export const assignHousekeepingTaskRequestSchema = z.strictObject({
+  assignedMembershipId: z.uuid().nullable(),
+});
+export type AssignHousekeepingTaskRequest = z.infer<typeof assignHousekeepingTaskRequestSchema>;
+
+// ---- Maintenance ------------------------------------------------------------------------
 
 /**
  * Maintenance (spec §32, ADR-0023): requests about rooms or other places, assigned to
@@ -188,3 +258,108 @@ export const lostFoundListQuerySchema = z.object({
   q: z.string().trim().max(80).optional(),
 });
 export type LostFoundListQuery = z.infer<typeof lostFoundListQuerySchema>;
+
+// ---- Service requests -----------------------------------------------------------------------
+
+export const SERVICE_CATEGORIES = [
+  'TOWELS',
+  'TOILETRIES',
+  'PILLOWS_BLANKETS',
+  'CLEANING',
+  'MAINTENANCE',
+  'LAUNDRY',
+  'TRANSPORT',
+  'LUGGAGE',
+  'WAKE_UP_CALL',
+  'OTHER',
+  /** Made through "Request checkout", not the general request form. */
+  'CHECKOUT',
+] as const;
+export const SERVICE_DEPARTMENTS = [
+  'HOUSEKEEPING',
+  'MAINTENANCE',
+  'FRONT_DESK',
+  'CONCIERGE',
+] as const;
+export const SERVICE_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
+export const SERVICE_REQUEST_STATUSES = [
+  'OPEN',
+  'ACKNOWLEDGED',
+  'IN_PROGRESS',
+  'DONE',
+  'CANCELLED',
+] as const;
+
+/** Where each category is routed (spec §26 workflow: guest → department → assignment). */
+export const SERVICE_ROUTING: Record<
+  (typeof SERVICE_CATEGORIES)[number],
+  (typeof SERVICE_DEPARTMENTS)[number]
+> = {
+  TOWELS: 'HOUSEKEEPING',
+  TOILETRIES: 'HOUSEKEEPING',
+  PILLOWS_BLANKETS: 'HOUSEKEEPING',
+  CLEANING: 'HOUSEKEEPING',
+  LAUNDRY: 'HOUSEKEEPING',
+  MAINTENANCE: 'MAINTENANCE',
+  TRANSPORT: 'CONCIERGE',
+  LUGGAGE: 'CONCIERGE',
+  WAKE_UP_CALL: 'FRONT_DESK',
+  OTHER: 'FRONT_DESK',
+  CHECKOUT: 'FRONT_DESK',
+};
+
+export const serviceRequestSchema = z.object({
+  id: z.uuid(),
+  requestNo: z.string(),
+  category: z.enum(SERVICE_CATEGORIES),
+  department: z.enum(SERVICE_DEPARTMENTS),
+  priority: z.enum(SERVICE_PRIORITIES),
+  description: z.string(),
+  status: z.enum(SERVICE_REQUEST_STATUSES),
+  roomNumber: z.string().nullable(),
+  guestName: z.string().nullable(),
+  assignee: staffRefSchema.nullable(),
+  createdAt: z.iso.datetime(),
+  acknowledgedAt: z.iso.datetime().nullable(),
+  completedAt: z.iso.datetime().nullable(),
+  rating: z.number().int().nullable(),
+  feedback: z.string().nullable(),
+  version: z.number().int(),
+});
+export type ServiceRequest = z.infer<typeof serviceRequestSchema>;
+
+export const guestServiceRequestCreateSchema = z.strictObject({
+  category: z.enum(SERVICE_CATEGORIES).exclude(['CHECKOUT']),
+  description: z.string().trim().max(1000).default(''),
+});
+export type GuestServiceRequestCreate = z.infer<typeof guestServiceRequestCreateSchema>;
+
+export const guestServiceRatingSchema = z.strictObject({
+  rating: z.number().int().min(1).max(5),
+  feedback: z.string().trim().max(1000).default(''),
+});
+export type GuestServiceRating = z.infer<typeof guestServiceRatingSchema>;
+
+export const staffServiceRequestCreateSchema = z.strictObject({
+  category: z.enum(SERVICE_CATEGORIES),
+  description: z.string().trim().min(1).max(1000),
+  priority: z.enum(SERVICE_PRIORITIES).default('NORMAL'),
+  roomId: z.uuid().nullable().default(null),
+});
+export type StaffServiceRequestCreate = z.infer<typeof staffServiceRequestCreateSchema>;
+
+export const serviceRequestUpdateSchema = z
+  .strictObject({
+    status: z.enum(['ACKNOWLEDGED', 'IN_PROGRESS', 'DONE', 'CANCELLED']),
+    priority: z.enum(SERVICE_PRIORITIES),
+    assignedMembershipId: z.uuid().nullable(),
+  })
+  .partial();
+export type ServiceRequestUpdate = z.infer<typeof serviceRequestUpdateSchema>;
+
+export const serviceRequestListQuerySchema = z.object({
+  status: z.enum(['ACTIVE', ...SERVICE_REQUEST_STATUSES]).default('ACTIVE'),
+  department: z.enum(SERVICE_DEPARTMENTS).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+});
+export type ServiceRequestListQuery = z.infer<typeof serviceRequestListQuerySchema>;
