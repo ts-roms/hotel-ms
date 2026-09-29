@@ -29,6 +29,8 @@ import {
   shiftWithWarningsSchema,
   type UpdateShiftRequest,
   updateShiftRequestSchema,
+  listOf,
+  APPROVAL_STATUSES,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -44,10 +46,8 @@ import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
-
 const correctionStatusQuery = z.object({
-  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']).optional(),
+  status: z.enum(APPROVAL_STATUSES).optional(),
 });
 
 /** Property-level HR: clock, attendance, schedule, leave approvals, birthdays. */
@@ -98,7 +98,7 @@ export class PropertyHrController {
 
   @Get('attendance')
   @RequirePermission('attendance.read')
-  @ZodResponse(200, items(attendanceDaySchema))
+  @ZodResponse(200, listOf(attendanceDaySchema))
   async attendanceDays(
     @Param('propertyId') propertyId: string,
     @ZodQuery(dateRangeQuerySchema) query: DateRangeQuery,
@@ -108,7 +108,7 @@ export class PropertyHrController {
 
   @Get('attendance/corrections')
   @RequirePermission('attendance.read')
-  @ZodResponse(200, items(attendanceCorrectionSchema))
+  @ZodResponse(200, listOf(attendanceCorrectionSchema))
   async corrections(
     @Param('propertyId') propertyId: string,
     @ZodQuery(correctionStatusQuery) query: z.infer<typeof correctionStatusQuery>,
@@ -131,14 +131,14 @@ export class PropertyHrController {
 
   @Get('shift-templates')
   @RequirePermission('schedule.read')
-  @ZodResponse(200, items(shiftTemplateSchema))
+  @ZodResponse(200, listOf(shiftTemplateSchema))
   async templates(@Param('propertyId') propertyId: string) {
     return { items: await this.schedule.templates(propertyId) };
   }
 
   @Post('shift-templates')
   @RequirePermission('schedule.manage')
-  @ZodResponse(201, items(shiftTemplateSchema))
+  @ZodResponse(201, listOf(shiftTemplateSchema))
   async createTemplate(
     @Param('propertyId') propertyId: string,
     @ZodBody(createShiftTemplateRequestSchema) body: CreateShiftTemplateRequest,
@@ -212,7 +212,7 @@ export class PropertyHrController {
 
   @Get('leave-requests')
   @RequirePermission('leave.read')
-  @ZodResponse(200, items(leaveRequestSchema))
+  @ZodResponse(200, listOf(leaveRequestSchema))
   async leaveRequests(
     @Param('propertyId') propertyId: string,
     @ZodQuery(leaveRequestListQuerySchema) query: LeaveRequestListQuery,
@@ -235,7 +235,7 @@ export class PropertyHrController {
 
   @Get('birthdays')
   @RequirePermission('birthday.read')
-  @ZodResponse(200, items(birthdaySchema))
+  @ZodResponse(200, listOf(birthdaySchema))
   async birthdays(@Param('propertyId') propertyId: string) {
     return { items: await this.people.birthdays(propertyId) };
   }

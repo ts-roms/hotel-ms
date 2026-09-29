@@ -1,8 +1,9 @@
+import type { HOUSEKEEPING_STATUSES, HOUSEKEEPING_TASK_TYPES } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
 import type { OutboxService } from '../../outbox/outbox.service.js';
 
-type HousekeepingStatus = 'DIRTY' | 'CLEANING' | 'CLEAN' | 'INSPECTED';
-type TaskType = 'CHECKOUT_CLEAN' | 'STAYOVER' | 'TOUCH_UP' | 'INSPECTION';
+type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
+type TaskType = (typeof HOUSEKEEPING_TASK_TYPES)[number];
 
 /**
  * Changes a room's housekeeping status with its history row and event, inside the

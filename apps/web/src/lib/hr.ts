@@ -1,4 +1,4 @@
-import type { EMPLOYEE_DOCUMENT_CATEGORIES } from '@hotel/contracts';
+import type { EMPLOYEE_DOCUMENT_CATEGORIES, PunchType } from '@hotel/contracts';
 import { addDays } from '@hotel/format';
 
 /** Today's calendar date on this device. */
@@ -33,7 +33,8 @@ export function clock(iso: string | null): string {
   });
 }
 
-export const PUNCH_NEXT: Record<string, ('IN' | 'OUT' | 'BREAK_START' | 'BREAK_END')[]> = {
+/** Punches allowed after the last one (NONE: no punch yet). */
+export const PUNCH_NEXT: Record<PunchType | 'NONE', PunchType[]> = {
   NONE: ['IN'],
   OUT: ['IN'],
   IN: ['BREAK_START', 'OUT'],

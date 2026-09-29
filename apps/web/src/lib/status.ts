@@ -1,7 +1,40 @@
+import type {
+  APPROVAL_STATUSES,
+  ATTENDANCE_DAY_STATUSES,
+  EMPLOYEE_STATUSES,
+  HOUSEKEEPING_STATUSES,
+  MEMBERSHIP_STATUSES,
+  ORDER_STATUSES,
+  RESERVATION_ROOM_STATUSES,
+  RESERVATION_STATUSES,
+  SERVICE_PRIORITIES,
+  SERVICE_REQUEST_STATUSES,
+  SERVICE_STATUSES,
+  SHIFT_STATUSES,
+} from '@hotel/contracts';
 import type { BadgeVariant } from '@hotel/ui';
 
+type Values<T extends readonly string[]> = T[number];
+
+/** Every status value the staff app renders as a badge, taken from the contract enums. */
+type KnownStatus =
+  | Values<typeof HOUSEKEEPING_STATUSES>
+  | Values<typeof SERVICE_STATUSES>
+  | Values<typeof RESERVATION_STATUSES>
+  | Values<typeof RESERVATION_ROOM_STATUSES>
+  | Values<typeof MEMBERSHIP_STATUSES>
+  | Values<typeof SERVICE_REQUEST_STATUSES>
+  | Values<typeof SERVICE_PRIORITIES>
+  | Values<typeof ORDER_STATUSES>
+  | Values<typeof APPROVAL_STATUSES>
+  | Values<typeof SHIFT_STATUSES>
+  | Values<typeof ATTENDANCE_DAY_STATUSES>
+  | Values<typeof EMPLOYEE_STATUSES>
+  // Folio status is an inline enum in the contracts ('OPEN' | 'CLOSED').
+  | 'CLOSED';
+
 /** Badge colors for the statuses shown across the staff app. Unknown values stay neutral. */
-const STATUS_VARIANTS: Record<string, BadgeVariant> = {
+const STATUS_VARIANTS: Partial<Record<KnownStatus, BadgeVariant>> = {
   // Housekeeping
   DIRTY: 'danger',
   CLEANING: 'warning',
@@ -53,7 +86,7 @@ const STATUS_VARIANTS: Record<string, BadgeVariant> = {
 };
 
 export function statusVariant(status: string): BadgeVariant {
-  return STATUS_VARIANTS[status] ?? 'neutral';
+  return STATUS_VARIANTS[status as KnownStatus] ?? 'neutral';
 }
 
 /** IN_HOUSE → "In house". */
