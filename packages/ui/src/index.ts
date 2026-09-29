@@ -39,6 +39,7 @@ export * from './blocks/form-field.js';
 export * from './blocks/loading.js';
 export * from './blocks/page-header.js';
 export * from './blocks/section-card.js';
+export * from './blocks/star-rating.js';
 export * from './blocks/stat-card.js';
 export * from './blocks/top-progress.js';
 export * from './blocks/weekday-picker.js';
