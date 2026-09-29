@@ -1,6 +1,11 @@
 import type { TenantJob } from '@hotel/contracts';
 import { createPrismaClient, type PrismaClient } from '@hotel/database';
-import { type DemoWorld, prepareTestDatabase, testDatabaseUrls } from '@hotel/database/testing';
+import {
+  type DemoWorld,
+  prepareTestDatabase,
+  testDatabaseUrls,
+  testRedisPath,
+} from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { pino } from 'pino';
@@ -17,7 +22,7 @@ beforeAll(async () => {
   world = await prepareTestDatabase();
   system = createPrismaClient({ connectionString: testDatabaseUrls().system, maxConnections: 2 });
   const url = new URL(process.env.REDIS_QUEUE_URL ?? 'redis://localhost:56380');
-  url.pathname = '/15';
+  url.pathname = testRedisPath();
   connection = new Redis(url.toString(), { maxRetriesPerRequest: null });
   queue = new Queue<TenantJob>('test-tenant-jobs', { connection });
   await queue.obliterate({ force: true });

@@ -8,6 +8,7 @@ import {
   type DemoWorld,
   prepareTestDatabase,
   testDatabaseUrls,
+  testRedisPath,
 } from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
@@ -45,9 +46,9 @@ export async function startTestApp(overrides: NodeJS.ProcessEnv = {}): Promise<T
   const urls = testDatabaseUrls();
 
   const redisUrl = new URL(process.env.REDIS_CACHE_URL ?? 'redis://localhost:56379');
-  redisUrl.pathname = '/15';
+  redisUrl.pathname = testRedisPath();
   const queueUrl = new URL(process.env.REDIS_QUEUE_URL ?? 'redis://localhost:56380');
-  queueUrl.pathname = '/15';
+  queueUrl.pathname = testRedisPath();
   for (const url of [redisUrl, queueUrl]) {
     const redis = new Redis(url.toString());
     await redis.flushdb();
