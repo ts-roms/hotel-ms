@@ -19,132 +19,158 @@ import type {
   Refund,
   RoutingRule,
 } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
 /** Folios, payments, holds, discounts, accounts, invoices, cashier and finance reports. */
-export function financeClient({ call, qs, p, id }: PropertyTransport) {
+export function financeClient({ call, propertyId }: PropertyTransport) {
   return {
     folio: (folioId: string) =>
-      call<Folio>('GET', `${p}/folios/${id(folioId)}`).then((r) => r.data),
+      op.FolioController_folio<Folio>(call, { propertyId, folioId }).then(data),
     postCharge: (folioId: string, body: PostChargeRequest, idempotencyKey: string) =>
-      call<Folio>('POST', `${p}/folios/${id(folioId)}/charges`, body, {
-        'idempotency-key': idempotencyKey,
-      }).then((r) => r.data),
+      op
+        .FolioController_postCharge<Folio>(call, { propertyId, folioId }, body, { idempotencyKey })
+        .then(data),
     recordPayment: (folioId: string, body: RecordPaymentRequest, idempotencyKey: string) =>
-      call<Folio>('POST', `${p}/folios/${id(folioId)}/payments`, body, {
-        'idempotency-key': idempotencyKey,
-      }).then((r) => r.data),
+      op
+        .FolioController_recordPayment<Folio>(call, { propertyId, folioId }, body, {
+          idempotencyKey,
+        })
+        .then(data),
     adjust: (folioId: string, body: AdjustmentRequest, idempotencyKey: string) =>
-      call<Folio>('POST', `${p}/folios/${id(folioId)}/adjustments`, body, {
-        'idempotency-key': idempotencyKey,
-      }).then((r) => r.data),
+      op
+        .FolioController_adjust<Folio>(call, { propertyId, folioId }, body, { idempotencyKey })
+        .then(data),
     voidLine: (folioId: string, lineId: string, reason: string) =>
-      call<Folio>('POST', `${p}/folios/${id(folioId)}/lines/${id(lineId)}/void`, {
-        reason,
-      }).then((r) => r.data),
+      op
+        .FolioController_voidLine<Folio>(call, { propertyId, folioId, lineId }, { reason })
+        .then(data),
     paymentLink: (folioId: string, amountMinor: number, idempotencyKey: string) =>
-      call<PaymentIntent>(
-        'POST',
-        `${p}/folios/${id(folioId)}/payment-links`,
-        { amountMinor },
-        {
-          'idempotency-key': idempotencyKey,
-        },
-      ).then((r) => r.data),
+      op
+        .FinanceController_paymentLink<PaymentIntent>(
+          call,
+          { propertyId, folioId },
+          { amountMinor },
+          { idempotencyKey },
+        )
+        .then(data),
     paymentIntents: (folioId: string) =>
-      call<{ items: PaymentIntent[] }>('GET', `${p}/folios/${id(folioId)}/payment-intents`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .FinanceController_intents<{ items: PaymentIntent[] }>(call, { propertyId, folioId })
+        .then(items),
     refund: (paymentId: string, amountMinor: number, reason: string, idempotencyKey: string) =>
-      call<Refund>(
-        'POST',
-        `${p}/payments/${id(paymentId)}/refunds`,
-        { amountMinor, reason },
-        {
-          'idempotency-key': idempotencyKey,
-        },
-      ).then((r) => r.data),
+      op
+        .FinanceController_refund<Refund>(
+          call,
+          { propertyId, paymentId },
+          { amountMinor, reason },
+          { idempotencyKey },
+        )
+        .then(data),
     paymentSettings: () =>
-      call<PaymentSettings>('GET', `${p}/payment-settings`).then((r) => r.data),
+      op.FinanceController_paymentSettings<PaymentSettings>(call, { propertyId }).then(data),
     updatePaymentSettings: (body: PaymentSettings) =>
-      call<PaymentSettings>('PUT', `${p}/payment-settings`, body).then((r) => r.data),
+      op
+        .FinanceController_updatePaymentSettings<PaymentSettings>(call, { propertyId }, body)
+        .then(data),
     captureHold: (intentId: string, amountMinor: number, idempotencyKey: string) =>
-      call<PaymentIntent>(
-        'POST',
-        `${p}/holds/${id(intentId)}/capture`,
-        { amountMinor },
-        { 'idempotency-key': idempotencyKey },
-      ).then((r) => r.data),
+      op
+        .FinanceController_captureHold<PaymentIntent>(
+          call,
+          { propertyId, intentId },
+          { amountMinor },
+          { idempotencyKey },
+        )
+        .then(data),
     releaseHold: (intentId: string) =>
-      call<PaymentIntent>('POST', `${p}/holds/${id(intentId)}/release`).then((r) => r.data),
+      op.FinanceController_releaseHold<PaymentIntent>(call, { propertyId, intentId }).then(data),
     exchangeRates: () =>
-      call<{ items: ExchangeRate[] }>('GET', `${p}/exchange-rates`).then((r) => r.data.items),
+      op
+        .FinanceController_exchangeRates<{ items: ExchangeRate[] }>(call, { propertyId })
+        .then(items),
     setExchangeRate: (currency: string, rate: string) =>
-      call<ExchangeRate>('POST', `${p}/exchange-rates`, { currency, rate }).then((r) => r.data),
+      op
+        .FinanceController_setExchangeRate<ExchangeRate>(call, { propertyId }, { currency, rate })
+        .then(data),
     discountProfiles: () =>
-      call<{ items: DiscountProfile[] }>('GET', `${p}/discount-profiles`).then((r) => r.data.items),
+      op
+        .FinanceController_discountProfiles<{ items: DiscountProfile[] }>(call, { propertyId })
+        .then(items),
     createDiscountProfile: (body: CreateDiscountProfileRequest) =>
-      call<DiscountProfile>('POST', `${p}/discount-profiles`, body).then((r) => r.data),
+      op
+        .FinanceController_createDiscountProfile<DiscountProfile>(call, { propertyId }, body)
+        .then(data),
     archiveDiscountProfile: (profileId: string) =>
-      call<void>('POST', `${p}/discount-profiles/${id(profileId)}/archive`).then((r) => r.data),
+      op.FinanceController_archiveDiscountProfile(call, { propertyId, profileId }).then(data),
     applyDiscount: (folioId: string, body: ApplyDiscountRequest) =>
-      call<Folio>('PUT', `${p}/folios/${id(folioId)}/discount`, body).then((r) => r.data),
+      op.FinanceController_applyDiscount<Folio>(call, { propertyId, folioId }, body).then(data),
     removeDiscount: (folioId: string) =>
-      call<Folio>('DELETE', `${p}/folios/${id(folioId)}/discount`).then((r) => r.data),
+      op.FinanceController_removeDiscount<Folio>(call, { propertyId, folioId }).then(data),
     accounts: () =>
-      call<{ items: AccountFolio[] }>('GET', `${p}/accounts`).then((r) => r.data.items),
+      op.FinanceController_accounts<{ items: AccountFolio[] }>(call, { propertyId }).then(items),
     createAccount: (label: string) =>
-      call<Folio>('POST', `${p}/accounts`, { label }).then((r) => r.data),
+      op.FinanceController_createAccount<Folio>(call, { propertyId }, { label }).then(data),
     routingRules: (folioId: string) =>
-      call<{ items: RoutingRule[] }>('GET', `${p}/folios/${id(folioId)}/routing-rules`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .FinanceController_routingRules<{ items: RoutingRule[] }>(call, { propertyId, folioId })
+        .then(items),
     addRoutingRule: (folioId: string, targetFolioId: string, departments: string[]) =>
-      call<{ items: RoutingRule[] }>('POST', `${p}/folios/${id(folioId)}/routing-rules`, {
-        targetFolioId,
-        departments,
-      }).then((r) => r.data.items),
+      op
+        .FinanceController_addRoutingRule<{ items: RoutingRule[] }>(
+          call,
+          { propertyId, folioId },
+          { targetFolioId, departments },
+        )
+        .then(items),
     removeRoutingRule: (ruleId: string) =>
-      call<void>('DELETE', `${p}/routing-rules/${id(ruleId)}`).then((r) => r.data),
+      op.FinanceController_removeRoutingRule(call, { propertyId, ruleId }).then(data),
     transfer: (folioId: string, targetFolioId: string, lineIds: string[], reason: string) =>
-      call<Folio>('POST', `${p}/folios/${id(folioId)}/transfers`, {
-        targetFolioId,
-        lineIds,
-        reason,
-      }).then((r) => r.data),
+      op
+        .FinanceController_transfer<Folio>(
+          call,
+          { propertyId, folioId },
+          { targetFolioId, lineIds, reason },
+        )
+        .then(data),
     issueDocument: (folioId: string, body: IssueDocumentRequest) =>
-      call<FolioDocument>('POST', `${p}/folios/${id(folioId)}/documents`, body).then((r) => r.data),
+      op.FinanceController_issue<FolioDocument>(call, { propertyId, folioId }, body).then(data),
     documents: (folioId: string) =>
-      call<{ items: FolioDocument[] }>('GET', `${p}/folios/${id(folioId)}/documents`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .FinanceController_documentList<{ items: FolioDocument[] }>(call, { propertyId, folioId })
+        .then(items),
     document: (documentId: string) =>
-      call<FolioDocument>('GET', `${p}/documents/${id(documentId)}`).then((r) => r.data),
+      op.FinanceController_document<FolioDocument>(call, { propertyId, documentId }).then(data),
     cashierShift: () =>
-      call<{ shift: CashierShift | null }>('GET', `${p}/cashier/shift`).then((r) => r.data.shift),
+      op
+        .FinanceController_currentShift<{ shift: CashierShift | null }>(call, { propertyId })
+        .then((r) => r.data.shift),
     openCashierShift: (openingFloatMinor: number) =>
-      call<CashierShift>('POST', `${p}/cashier/shift`, { openingFloatMinor }).then((r) => r.data),
+      op
+        .FinanceController_openShift<CashierShift>(call, { propertyId }, { openingFloatMinor })
+        .then(data),
     closeCashierShift: (
       shiftId: string,
       version: number,
       countedCashMinor: number,
       notes: string,
     ) =>
-      call<CashierShift>(
-        'POST',
-        `${p}/cashier/shifts/${id(shiftId)}/close`,
-        { countedCashMinor, notes },
-        { 'if-match': `W/"${version}"` },
-      ).then((r) => r.data),
+      op
+        .FinanceController_closeShift<CashierShift>(
+          call,
+          { propertyId, shiftId },
+          { countedCashMinor, notes },
+          { ifMatch: `W/"${version}"` },
+        )
+        .then(data),
     cashierShifts: () =>
-      call<{ items: CashierShift[] }>('GET', `${p}/cashier/shifts`).then((r) => r.data.items),
+      op.FinanceController_shifts<{ items: CashierShift[] }>(call, { propertyId }).then(items),
     dailyReport: (date?: string) =>
-      call<DailyReport>('GET', `${p}/reports/daily${qs({ date })}`).then((r) => r.data),
+      op.FinanceController_daily<DailyReport>(call, { propertyId }, { date }).then(data),
     reconciliation: () =>
-      call<Reconciliation>('GET', `${p}/reports/reconciliation`).then((r) => r.data),
+      op.FinanceController_reconciliation<Reconciliation>(call, { propertyId }).then(data),
     reconciliationRuns: () =>
-      call<{ items: ReconciliationRun[] }>('GET', `${p}/reports/reconciliation-runs`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .FinanceController_reconciliationRuns<{ items: ReconciliationRun[] }>(call, { propertyId })
+        .then(items),
   };
 }

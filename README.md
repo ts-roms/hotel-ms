@@ -30,7 +30,8 @@ packages/
   contracts/  Zod schemas, permission catalog, error codes, event types (shared by all)
   database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed,
               password hashing; @hotel/database/testing is the test harness
-  api-client/ Hand-written typed clients for the staff, guest and kiosk apps (+ ./react)
+  api-client/ Typed clients for the staff, guest and kiosk apps (+ ./react); request functions
+              generated from docs/api/openapi.json (pnpm --filter @hotel/api-client generate)
   format/     Money, date, time zone and relative-time formatting for the staff and guest apps
   i18n/       Message catalogs for the staff and guest apps (formatting lives in @hotel/format)
   ui/         Shared shadcn-style components and theme.css design tokens

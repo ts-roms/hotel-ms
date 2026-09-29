@@ -95,6 +95,12 @@ jobs:
           pnpm --filter @hotel/api openapi
           git diff --exit-code docs/api/openapi.json
 
+      # The client's request functions are generated from that document (ADR-0034).
+      - name: Generated API client is up to date
+        run: |
+          pnpm --filter @hotel/api-client generate
+          git diff --exit-code packages/api-client/src/generated
+
       - name: Dependency audit (production dependencies)
         run: pnpm audit --prod --audit-level high
 

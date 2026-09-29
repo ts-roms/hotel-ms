@@ -52,6 +52,9 @@ export function cursorPage<T extends z.ZodType>(item: T) {
   });
 }
 
+/** A page of `T`s: the type of `cursorPage(schemaOfT)`. */
+export type CursorPage<T> = z.infer<ReturnType<typeof cursorPage<z.ZodType<T>>>>;
+
 /** Unpaginated list envelope: `{ items: T[] }`. */
 export function listOf<T extends z.ZodType>(item: T) {
   return z.object({ items: z.array(item) });

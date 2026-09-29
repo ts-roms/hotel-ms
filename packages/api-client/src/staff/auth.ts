@@ -10,44 +10,39 @@ import type {
   SessionInfo,
   TotpEnrollment,
 } from '@hotel/contracts';
-import type { Transport } from '../http.js';
+import * as op from '../generated/operations.js';
+import { data, type Transport } from '../http.js';
 
 /** Sign-in, MFA, passwords, invitations and the session. */
 export function authClient({ call }: Transport) {
   return {
     auth: {
-      login: (body: LoginRequest) =>
-        call<SessionInfo>('POST', '/auth/login', body).then((r) => r.data),
+      login: (body: LoginRequest) => op.AuthController_login<SessionInfo>(call, body).then(data),
       mfaChallenge: (body: MfaChallengeRequest) =>
-        call<SessionInfo>('POST', '/auth/mfa/challenge', body).then((r) => r.data),
-      startTotpEnrollment: () =>
-        call<TotpEnrollment>('POST', '/auth/mfa/totp/enrollment').then((r) => r.data),
+        op.AuthController_challenge<SessionInfo>(call, body).then(data),
+      startTotpEnrollment: () => op.AuthController_startEnrollment<TotpEnrollment>(call).then(data),
       confirmTotpEnrollment: (body: ConfirmEnrollmentRequest) =>
-        call<RecoveryCodes & { session: SessionInfo }>(
-          'POST',
-          '/auth/mfa/totp/enrollment/confirm',
-          body,
-        ).then((r) => r.data),
+        op
+          .AuthController_confirmEnrollment<RecoveryCodes & { session: SessionInfo }>(call, body)
+          .then(data),
       regenerateRecoveryCodes: (code: string) =>
-        call<RecoveryCodes>('POST', '/auth/mfa/recovery-codes', { code }).then((r) => r.data),
+        op.AuthController_regenerateRecoveryCodes<RecoveryCodes>(call, { code }).then(data),
       disableMfa: (body: MfaChallengeRequest) =>
-        call<void>('POST', '/auth/mfa/disable', body).then((r) => r.data),
+        op.AuthController_disableMfa(call, body).then(data),
       forgotPassword: (email: string) =>
-        call<object>('POST', '/auth/password/forgot', { email }).then((r) => r.data),
+        op.AuthController_forgotPassword<object>(call, { email }).then(data),
       resetPassword: (body: ResetPasswordRequest) =>
-        call<void>('POST', '/auth/password/reset', body).then((r) => r.data),
+        op.AuthController_resetPassword(call, body).then(data),
       changePassword: (body: ChangePasswordRequest) =>
-        call<void>('POST', '/auth/password/change', body).then((r) => r.data),
+        op.AuthController_changePassword(call, body).then(data),
       previewInvitation: (token: string) =>
-        call<InvitationPreview>('POST', '/auth/invitations/preview', { token }).then((r) => r.data),
+        op.AuthController_previewInvitation<InvitationPreview>(call, { token }).then(data),
       acceptInvitation: (body: AcceptInvitationRequest) =>
-        call<void>('POST', '/auth/invitations/accept', body).then((r) => r.data),
-      logout: () => call<void>('POST', '/auth/logout').then((r) => r.data),
-      session: () => call<SessionInfo>('GET', '/auth/session').then((r) => r.data),
+        op.AuthController_acceptInvitation(call, body).then(data),
+      logout: () => op.AuthController_logout(call).then(data),
+      session: () => op.AuthController_session<SessionInfo>(call).then(data),
       switchOrganization: (organizationId: string) =>
-        call<SessionInfo>('POST', '/auth/switch-organization', { organizationId }).then(
-          (r) => r.data,
-        ),
+        op.AuthController_switchOrganization<SessionInfo>(call, { organizationId }).then(data),
     },
   };
 }

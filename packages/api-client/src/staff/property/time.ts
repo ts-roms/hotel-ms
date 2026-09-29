@@ -1,7 +1,7 @@
 import type {
   AttendanceCorrection,
   AttendanceDay,
-  Birthday,
+  CancelSeriesRequest,
   ClockPhoto,
   CoverageGap,
   CreateRecurringShiftsInput,
@@ -21,88 +21,118 @@ import type {
   StaffingRequirement,
   UpdateShiftRequest,
 } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
-/** Attendance, time clock photos, scheduling, staffing, leave and payroll export. */
-export function timeClient({ call, qs, baseUrl, p, id }: PropertyTransport) {
+/** HR time: attendance, time clock photos, scheduling, staffing, leave and payroll export. */
+export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
     /** Download URL of the payroll CSV (same-origin; the session cookie authenticates). */
     payrollExportUrl: (from: string, to: string) =>
-      `${baseUrl}${p}/payroll-export${qs({ from, to })}`,
+      `${baseUrl}${op.paths.PropertyHrController_payrollExport({ propertyId }, { from, to })}`,
     clockPhotos: (from: string, to: string) =>
-      call<{ items: ClockPhoto[] }>('GET', `${p}/attendance/photos${qs({ from, to })}`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .ClockPhotosController_list<{ items: ClockPhoto[] }>(call, { propertyId }, { from, to })
+        .then(items),
     /** Same-origin image URL; each load is audited. */
-    clockPhotoUrl: (punchId: string) => `${baseUrl}${p}/attendance/photos/${id(punchId)}`,
+    clockPhotoUrl: (punchId: string) =>
+      `${baseUrl}${op.paths.ClockPhotosController_photo({ propertyId, punchId })}`,
     /** Web punch: the selfie taken now is the body (ADR-0022). */
     punch: (type: PunchType, selfie: Blob) =>
-      call<Punch>('POST', `${p}/attendance/punches${qs({ type })}`, selfie).then((r) => r.data),
+      op.PropertyHrController_punch<Punch>(call, { propertyId }, { type }, selfie).then(data),
     attendance: (from: string, to: string) =>
-      call<{ items: AttendanceDay[] }>('GET', `${p}/attendance${qs({ from, to })}`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .PropertyHrController_attendanceDays<{ items: AttendanceDay[] }>(
+          call,
+          { propertyId },
+          { from, to },
+        )
+        .then(items),
     attendanceCorrections: (status?: AttendanceCorrection['status']) =>
-      call<{ items: AttendanceCorrection[] }>(
-        'GET',
-        `${p}/attendance/corrections${qs({ status })}`,
-      ).then((r) => r.data.items),
-    decideCorrection: (id: string, version: number, body: DecisionRequest) =>
-      call<AttendanceCorrection>(
-        'POST',
-        `${p}/attendance/corrections/${encodeURIComponent(id)}/decision`,
-        body,
-        { 'if-match': `W/"${version}"` },
-      ).then((r) => r.data),
+      op
+        .PropertyHrController_corrections<{ items: AttendanceCorrection[] }>(
+          call,
+          { propertyId },
+          { status },
+        )
+        .then(items),
+    decideCorrection: (correctionId: string, version: number, body: DecisionRequest) =>
+      op
+        .PropertyHrController_decideCorrection<AttendanceCorrection>(
+          call,
+          { propertyId, correctionId },
+          body,
+          { ifMatch: `W/"${version}"` },
+        )
+        .then(data),
     shiftTemplates: () =>
-      call<{ items: ShiftTemplate[] }>('GET', `${p}/shift-templates`).then((r) => r.data.items),
+      op
+        .PropertyHrController_templates<{ items: ShiftTemplate[] }>(call, { propertyId })
+        .then(items),
     schedule: (from: string, to: string) =>
-      call<Schedule>('GET', `${p}/schedule${qs({ from, to })}`).then((r) => r.data),
+      op.PropertyHrController_scheduleView<Schedule>(call, { propertyId }, { from, to }).then(data),
     createShift: (body: CreateShiftRequest) =>
-      call<ShiftWithWarnings>('POST', `${p}/shifts`, body).then((r) => r.data),
-    updateShift: (id: string, version: number, body: UpdateShiftRequest) =>
-      call<ShiftWithWarnings>('PATCH', `${p}/shifts/${encodeURIComponent(id)}`, body, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
-    cancelShift: (id: string, version: number) =>
-      call<Shift>('POST', `${p}/shifts/${encodeURIComponent(id)}/cancel`, undefined, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
+      op.PropertyHrController_createShift<ShiftWithWarnings>(call, { propertyId }, body).then(data),
+    updateShift: (shiftId: string, version: number, body: UpdateShiftRequest) =>
+      op
+        .PropertyHrController_updateShift<ShiftWithWarnings>(call, { propertyId, shiftId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
+        .then(data),
+    cancelShift: (shiftId: string, version: number) =>
+      op
+        .PropertyHrController_cancelShift<Shift>(
+          call,
+          { propertyId, shiftId },
+          { ifMatch: `W/"${version}"` },
+        )
+        .then(data),
     publishSchedule: (from: string, to: string) =>
-      call<PublishResult>('POST', `${p}/schedule/publish`, { from, to }).then((r) => r.data),
+      op.PropertyHrController_publish<PublishResult>(call, { propertyId }, { from, to }).then(data),
     createRecurringShifts: (body: CreateRecurringShiftsInput) =>
-      call<RecurringShiftsResult>('POST', `${p}/shifts/recurring`, body).then((r) => r.data),
-    cancelShiftSeries: (seriesId: string, body: { fromDate?: string; employeeId?: string }) =>
-      call<{ cancelled: number }>('POST', `${p}/shift-series/${id(seriesId)}/cancel`, body).then(
-        (r) => r.data,
-      ),
+      op.StaffingController_recurring<RecurringShiftsResult>(call, { propertyId }, body).then(data),
+    cancelShiftSeries: (seriesId: string, body: CancelSeriesRequest) =>
+      op
+        .StaffingController_cancelSeries<{ cancelled: number }>(
+          call,
+          { propertyId, seriesId },
+          body,
+        )
+        .then(data),
     staffingRequirements: () =>
-      call<{ items: StaffingRequirement[] }>('GET', `${p}/staffing-requirements`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .StaffingController_requirements<{ items: StaffingRequirement[] }>(call, { propertyId })
+        .then(items),
     createStaffingRequirement: (body: CreateStaffingRequirementRequest) =>
-      call<{ items: StaffingRequirement[] }>('POST', `${p}/staffing-requirements`, body).then(
-        (r) => r.data.items,
-      ),
+      op
+        .StaffingController_createRequirement<{ items: StaffingRequirement[] }>(
+          call,
+          { propertyId },
+          body,
+        )
+        .then(items),
     archiveStaffingRequirement: (requirementId: string) =>
-      call<void>('POST', `${p}/staffing-requirements/${id(requirementId)}/archive`).then(
-        (r) => r.data,
-      ),
+      op.StaffingController_archiveRequirement(call, { propertyId, requirementId }).then(data),
     coverage: (from: string, to: string) =>
-      call<{ items: CoverageGap[] }>('GET', `${p}/schedule/coverage${qs({ from, to })}`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .StaffingController_coverage<{ items: CoverageGap[] }>(call, { propertyId }, { from, to })
+        .then(items),
     leaveRequests: (status?: LeaveRequest['status']) =>
-      call<{ items: LeaveRequest[] }>('GET', `${p}/leave-requests${qs({ status })}`).then(
-        (r) => r.data.items,
-      ),
-    decideLeave: (id: string, version: number, body: DecisionRequest) =>
-      call<LeaveDecisionResult>(
-        'POST',
-        `${p}/leave-requests/${encodeURIComponent(id)}/decision`,
-        body,
-        { 'if-match': `W/"${version}"` },
-      ).then((r) => r.data),
-    birthdays: () => call<{ items: Birthday[] }>('GET', `${p}/birthdays`).then((r) => r.data.items),
+      op
+        .PropertyHrController_leaveRequests<{ items: LeaveRequest[] }>(
+          call,
+          { propertyId },
+          { status },
+        )
+        .then(items),
+    decideLeave: (leaveRequestId: string, version: number, body: DecisionRequest) =>
+      op
+        .PropertyHrController_decideLeave<LeaveDecisionResult>(
+          call,
+          { propertyId, leaveRequestId },
+          body,
+          { ifMatch: `W/"${version}"` },
+        )
+        .then(data),
   };
 }

@@ -4,25 +4,34 @@ import type {
   NightAuditPreview,
   Reservation,
 } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, type PropertyTransport } from '../../http.js';
 
 /** Front desk: arrivals, check-in and check-out, night audit. */
-export function frontOfficeClient({ call, p, id }: PropertyTransport) {
+export function frontOfficeClient({ call, propertyId }: PropertyTransport) {
   return {
-    frontDesk: () => call<FrontDesk>('GET', `${p}/front-desk`).then((r) => r.data),
+    frontDesk: () => op.FrontOfficeController_board<FrontDesk>(call, { propertyId }).then(data),
     checkIn: (reservationId: string, lineId: string) =>
-      call<Reservation>(
-        'POST',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/check-in`,
-      ).then((r) => r.data),
+      op
+        .FrontOfficeController_checkIn<Reservation>(call, { propertyId, reservationId, lineId })
+        .then(data),
     checkOut: (reservationId: string, lineId: string) =>
-      call<Reservation>(
-        'POST',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/check-out`,
-      ).then((r) => r.data),
-    nightAuditPreview: () => call<NightAuditPreview>('GET', `${p}/night-audit`).then((r) => r.data),
+      op
+        .FrontOfficeController_checkOut<Reservation>(call, { propertyId, reservationId, lineId })
+        .then(data),
+    nightAuditPreview: () =>
+      op
+        .FrontOfficeController_nightAuditPreview<NightAuditPreview>(call, { propertyId })
+        .then(data),
     runNightAudit: (businessDate: string) =>
-      call<BusinessDayClosing>('POST', `${p}/night-audit`, { businessDate }).then((r) => r.data),
-    businessDays: () => call<BusinessDayClosing[]>('GET', `${p}/business-days`).then((r) => r.data),
+      op
+        .FrontOfficeController_runNightAudit<BusinessDayClosing>(
+          call,
+          { propertyId },
+          { businessDate },
+        )
+        .then(data),
+    businessDays: () =>
+      op.FrontOfficeController_closings<BusinessDayClosing[]>(call, { propertyId }).then(data),
   };
 }

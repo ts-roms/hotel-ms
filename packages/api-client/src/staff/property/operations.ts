@@ -18,73 +18,95 @@ import type {
   StaffRef,
   StaffServiceRequestCreate,
 } from '@hotel/contracts';
-import type { PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, items, type PropertyTransport } from '../../http.js';
 
 /** Housekeeping, guest service requests, maintenance, lost and found. */
-export function operationsClient({ call, qs, baseUrl, p, id }: PropertyTransport) {
+export function operationsClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
-    housekeeping: () => call<HousekeepingBoard>('GET', `${p}/housekeeping`).then((r) => r.data),
-    housekeepingStaff: () => call<StaffRef[]>('GET', `${p}/housekeeping/staff`).then((r) => r.data),
+    housekeeping: () =>
+      op
+        .HousekeepingController_housekeepingBoard<HousekeepingBoard>(call, { propertyId })
+        .then(data),
+    housekeepingStaff: () =>
+      op.HousekeepingController_housekeepingStaff<StaffRef[]>(call, { propertyId }).then(data),
     setHousekeepingStatus: (roomId: string, body: SetHousekeepingStatusRequest) =>
-      call<HousekeepingBoard['rooms'][number]>(
-        'PUT',
-        `${p}/rooms/${id(roomId)}/housekeeping-status`,
-        body,
-      ).then((r) => r.data),
+      op
+        .HousekeepingController_setHousekeepingStatus<HousekeepingBoard['rooms'][number]>(
+          call,
+          { propertyId, roomId },
+          body,
+        )
+        .then(data),
     createHousekeepingTask: (body: CreateHousekeepingTaskRequest) =>
-      call<HousekeepingTask>('POST', `${p}/housekeeping/tasks`, body).then((r) => r.data),
+      op.HousekeepingController_createTask<HousekeepingTask>(call, { propertyId }, body).then(data),
     assignHousekeepingTask: (taskId: string, assignedMembershipId: string | null) =>
-      call<HousekeepingTask>('PUT', `${p}/housekeeping/tasks/${id(taskId)}/assignee`, {
-        assignedMembershipId,
-      }).then((r) => r.data),
+      op
+        .HousekeepingController_assignTask<HousekeepingTask>(
+          call,
+          { propertyId, taskId },
+          { assignedMembershipId },
+        )
+        .then(data),
     serviceRequests: (query: Partial<ServiceRequestListQuery> = {}) =>
-      call<{ items: ServiceRequest[] }>('GET', `${p}/service-requests${qs(query)}`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .ServiceRequestsController_list<{ items: ServiceRequest[] }>(call, { propertyId }, query)
+        .then(items),
     serviceRequestAssignees: () =>
-      call<{ items: StaffRef[] }>('GET', `${p}/service-requests/assignees`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .ServiceRequestsController_assignees<{ items: StaffRef[] }>(call, { propertyId })
+        .then(items),
     createServiceRequest: (body: StaffServiceRequestCreate) =>
-      call<ServiceRequest>('POST', `${p}/service-requests`, body).then((r) => r.data),
+      op.ServiceRequestsController_create<ServiceRequest>(call, { propertyId }, body).then(data),
     updateServiceRequest: (requestId: string, version: number, body: ServiceRequestUpdate) =>
-      call<ServiceRequest>('PATCH', `${p}/service-requests/${id(requestId)}`, body, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
+      op
+        .ServiceRequestsController_update<ServiceRequest>(call, { propertyId, requestId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
+        .then(data),
     maintenance: (query: Partial<MaintenanceListQuery> = {}) =>
-      call<{ items: MaintenanceRequest[] }>(
-        'GET',
-        `${p}/maintenance${qs({
-          status: query.status,
-          roomId: query.roomId,
-          assignedToMe: query.assignedToMe ? 'true' : undefined,
-        })}`,
-      ).then((r) => r.data.items),
+      op
+        .MaintenanceController_list<{ items: MaintenanceRequest[] }>(
+          call,
+          { propertyId },
+          {
+            status: query.status,
+            roomId: query.roomId,
+            assignedToMe: query.assignedToMe ? 'true' : undefined,
+          },
+        )
+        .then(items),
     maintenanceRequest: (requestId: string) =>
-      call<MaintenanceDetail>('GET', `${p}/maintenance/${id(requestId)}`).then((r) => r.data),
+      op
+        .MaintenanceController_detail<MaintenanceDetail>(call, { propertyId, requestId })
+        .then(data),
     maintenanceTechnicians: () =>
-      call<{ items: StaffRef[] }>('GET', `${p}/maintenance/technicians`).then((r) => r.data.items),
+      op.MaintenanceController_technicians<{ items: StaffRef[] }>(call, { propertyId }).then(items),
     reportMaintenance: (body: CreateMaintenanceInput) =>
-      call<MaintenanceRequest>('POST', `${p}/maintenance`, body).then((r) => r.data),
+      op.MaintenanceController_create<MaintenanceRequest>(call, { propertyId }, body).then(data),
     maintenanceAction: (requestId: string, version: number, body: MaintenanceAction) =>
-      call<MaintenanceRequest>('POST', `${p}/maintenance/${id(requestId)}/actions`, body, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
+      op
+        .MaintenanceController_act<MaintenanceRequest>(call, { propertyId, requestId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
+        .then(data),
     addMaintenancePhoto: (requestId: string, photo: Blob) =>
-      call<MaintenanceDetail>('POST', `${p}/maintenance/${id(requestId)}/photos`, photo).then(
-        (r) => r.data,
-      ),
+      op
+        .MaintenanceController_addPhoto<MaintenanceDetail>(call, { propertyId, requestId }, photo)
+        .then(data),
     maintenancePhotoUrl: (requestId: string, photoId: string) =>
-      `${baseUrl}${p}/maintenance/${id(requestId)}/photos/${id(photoId)}`,
+      `${baseUrl}${op.paths.MaintenanceController_photo({ propertyId, requestId, photoId })}`,
     lostFound: (query: Partial<LostFoundListQuery> = {}) =>
-      call<{ items: LostFoundItem[] }>('GET', `${p}/lost-found${qs(query)}`).then(
-        (r) => r.data.items,
-      ),
+      op
+        .LostFoundController_list<{ items: LostFoundItem[] }>(call, { propertyId }, query)
+        .then(items),
     logLostItem: (body: CreateLostFoundInput) =>
-      call<LostFoundItem>('POST', `${p}/lost-found`, body).then((r) => r.data),
+      op.LostFoundController_create<LostFoundItem>(call, { propertyId }, body).then(data),
     closeLostItem: (itemId: string, version: number, body: CloseLostFoundItem) =>
-      call<LostFoundItem>('POST', `${p}/lost-found/${id(itemId)}/close`, body, {
-        'if-match': `W/"${version}"`,
-      }).then((r) => r.data),
+      op
+        .LostFoundController_close<LostFoundItem>(call, { propertyId, itemId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
+        .then(data),
   };
 }

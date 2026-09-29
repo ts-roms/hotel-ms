@@ -15,74 +15,67 @@ import type {
   SelfCheckInResult,
   ServiceRequest,
 } from '@hotel/contracts';
-import { type ApiClientOptions, createCaller } from './http.js';
+import * as op from './generated/operations.js';
+import { type ApiClientOptions, createCaller, data, items } from './http.js';
 
 /**
  * Guest portal client (the guest app). Same transport; the guest cookie and the CSRF token
  * from the last stay response authenticate it.
  */
 export function createGuestApiClient(options: ApiClientOptions = {}) {
-  const { call } = createCaller(options);
-  const baseUrl = options.baseUrl ?? '/api/v1';
-  const data = <T>(r: { data: T }) => r.data;
+  const { call, baseUrl } = createCaller(options);
   return {
-    exchange: (token: string) => call<GuestStay>('POST', '/guest/session', { token }).then(data),
-    logout: () => call<void>('DELETE', '/guest/session').then(data),
-    stay: () => call<GuestStay>('GET', '/guest/stay').then(data),
-    requestCode: () => call<void>('POST', '/guest/verification').then(data),
+    exchange: (token: string) =>
+      op.GuestPortalController_exchange<GuestStay>(call, { token }).then(data),
+    logout: () => op.GuestPortalController_logout(call).then(data),
+    stay: () => op.GuestPortalController_stay<GuestStay>(call).then(data),
+    requestCode: () => op.GuestPortalController_requestCode(call).then(data),
     verifyCode: (code: string) =>
-      call<GuestStay>('POST', '/guest/verification/confirm', { code }).then(data),
+      op.GuestPortalController_verifyCode<GuestStay>(call, { code }).then(data),
     preCheckIn: (body: PreCheckInRequest) =>
-      call<GuestStay>('PUT', '/guest/pre-check-in', body).then(data),
-    selfCheckIn: () => call<SelfCheckInResult>('POST', '/guest/check-in').then(data),
-    bill: () => call<GuestBill>('GET', '/guest/bill').then(data),
+      op.GuestPortalController_preCheckIn<GuestStay>(call, body).then(data),
+    selfCheckIn: () => op.GuestPortalController_selfCheckIn<SelfCheckInResult>(call).then(data),
+    bill: () => op.GuestPortalController_bill<GuestBill>(call).then(data),
     serviceRequests: () =>
-      call<{ items: ServiceRequest[] }>('GET', '/guest/service-requests').then((r) => r.data.items),
+      op.GuestPortalController_listRequests<{ items: ServiceRequest[] }>(call).then(items),
     createServiceRequest: (body: GuestServiceRequestCreate) =>
-      call<ServiceRequest>('POST', '/guest/service-requests', body).then(data),
+      op.GuestPortalController_createRequest<ServiceRequest>(call, body).then(data),
     pay: (amountMinor: number | undefined, idempotencyKey: string) =>
-      call<PaymentIntent>(
-        'POST',
-        '/guest/payments',
-        amountMinor === undefined ? {} : { amountMinor },
-        { 'idempotency-key': idempotencyKey },
-      ).then(data),
-    payments: () =>
-      call<{ items: PaymentIntent[] }>('GET', '/guest/payments').then((r) => r.data.items),
+      op
+        .GuestPaymentsController_pay<PaymentIntent>(
+          call,
+          amountMinor === undefined ? {} : { amountMinor },
+          { idempotencyKey },
+        )
+        .then(data),
+    payments: () => op.GuestPaymentsController_list<{ items: PaymentIntent[] }>(call).then(items),
     /** Card hold (pre-authorization) for self check-in; returns the hosted checkout. */
     hold: (idempotencyKey: string) =>
-      call<PaymentIntent>('POST', '/guest/holds', {}, { 'idempotency-key': idempotencyKey }).then(
-        data,
-      ),
-    events: () => call<{ items: GuestEvent[] }>('GET', '/guest/events').then((r) => r.data.items),
+      op.GuestPaymentsController_hold<PaymentIntent>(call, {}, { idempotencyKey }).then(data),
+    events: () => op.GuestEventsController_list<{ items: GuestEvent[] }>(call).then(items),
     /** The file is the body (photo or PDF). */
     uploadId: (file: Blob, documentType: GuestIdType) =>
-      call<GuestStay>('POST', `/guest/identity?documentType=${documentType}`, file).then(data),
-    hotelInfo: () => call<GuestHotelInfo>('GET', '/guest/hotel-info').then(data),
+      op.GuestExtrasController_uploadId<GuestStay>(call, { documentType }, file).then(data),
+    hotelInfo: () => op.GuestExtrasController_hotelInfo<GuestHotelInfo>(call).then(data),
     hotelImageUrl: (imageId: string, version: string) =>
-      `${baseUrl}/guest/hotel-images/${encodeURIComponent(imageId)}?v=${encodeURIComponent(version)}`,
+      `${baseUrl}${op.paths.GuestImagesController_hotelImage({ imageId })}?v=${encodeURIComponent(version)}`,
     menuItemImageUrl: (itemId: string, version: string) =>
-      `${baseUrl}/guest/menu-items/${encodeURIComponent(itemId)}/image?v=${encodeURIComponent(version)}`,
+      `${baseUrl}${op.paths.GuestImagesController_menuImage({ itemId })}?v=${encodeURIComponent(version)}`,
     notifications: () =>
-      call<{ items: GuestNotification[] }>('GET', '/guest/notifications').then((r) => r.data.items),
-    markNotificationsRead: () => call<void>('POST', '/guest/notifications/read').then(data),
+      op.GuestExtrasController_notifications<{ items: GuestNotification[] }>(call).then(items),
+    markNotificationsRead: () => op.GuestExtrasController_markRead(call).then(data),
     requestCheckout: (body: GuestCheckoutRequestInput) =>
-      call<ServiceRequest>('POST', '/guest/checkout-request', body).then(data),
-    menus: () => call<{ items: Menu[] }>('GET', '/guest/menus').then((r) => r.data.items),
-    orders: () => call<{ items: Order[] }>('GET', '/guest/orders').then((r) => r.data.items),
+      op.GuestExtrasController_requestCheckout<ServiceRequest>(call, body).then(data),
+    menus: () => op.GuestFnbController_menus<{ items: Menu[] }>(call).then(items),
+    orders: () => op.GuestFnbController_list<{ items: Order[] }>(call).then(items),
     placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>
-      call<Order>('POST', '/guest/orders', body, { 'idempotency-key': idempotencyKey }).then(data),
+      op.GuestFnbController_place<Order>(call, body, { idempotencyKey }).then(data),
     cancelOrder: (orderId: string) =>
-      call<Order>('POST', `/guest/orders/${encodeURIComponent(orderId)}/cancel`).then(data),
+      op.GuestFnbController_cancel<Order>(call, { orderId }).then(data),
     rate: (requestId: string, rating: number, feedback = '') =>
-      call<ServiceRequest>(
-        'PUT',
-        `/guest/service-requests/${encodeURIComponent(requestId)}/rating`,
-        {
-          rating,
-          feedback,
-        },
-      ).then(data),
+      op
+        .GuestPortalController_rate<ServiceRequest>(call, { requestId }, { rating, feedback })
+        .then(data),
   };
 }
 

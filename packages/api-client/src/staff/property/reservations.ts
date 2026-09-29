@@ -1,68 +1,61 @@
 import type {
   AssignRoomRequest,
-  CreateGuestRequest,
   CreateReservationRequest,
-  Guest,
   Reservation,
+  ReservationListQuery,
   UpdateReservationRoomRequest,
 } from '@hotel/contracts';
-import type { Page, PropertyTransport } from '../../http.js';
+import * as op from '../../generated/operations.js';
+import { data, type Page, type PropertyTransport } from '../../http.js';
 
-/** Reservations, their room lines and new guest profiles. */
-export function reservationsClient({ call, qs, p, id }: PropertyTransport) {
+/** Reservations and their room lines. */
+export function reservationsClient({ call, propertyId }: PropertyTransport) {
   return {
-    createGuest: (body: CreateGuestRequest) =>
-      call<Guest>('POST', `${p}/guests`, body).then((r) => r.data),
-    reservations: (
-      params: {
-        q?: string;
-        arrivalFrom?: string;
-        arrivalTo?: string;
-        status?: string;
-        cursor?: string;
-        limit?: number;
-      } = {},
-    ) => call<Page<Reservation>>('GET', `${p}/reservations${qs(params)}`).then((r) => r.data),
+    reservations: (params: Partial<ReservationListQuery> = {}) =>
+      op.ReservationsController_list<Page<Reservation>>(call, { propertyId }, params).then(data),
     reservation: (reservationId: string) =>
-      call<Reservation>('GET', `${p}/reservations/${id(reservationId)}`).then((r) => r.data),
+      op.ReservationsController_get<Reservation>(call, { propertyId, reservationId }).then(data),
     createReservation: (body: CreateReservationRequest, idempotencyKey: string) =>
-      call<Reservation>('POST', `${p}/reservations`, body, {
-        'idempotency-key': idempotencyKey,
-      }).then((r) => r.data),
+      op
+        .ReservationsController_create<Reservation>(call, { propertyId }, body, { idempotencyKey })
+        .then(data),
     updateReservationRoom: (
       reservationId: string,
       lineId: string,
       version: number,
       body: UpdateReservationRoomRequest,
     ) =>
-      call<Reservation>(
-        'PATCH',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}`,
-        body,
-        {
-          'if-match': `W/"${version}"`,
-        },
-      ).then((r) => r.data),
+      op
+        .ReservationsController_updateLine<Reservation>(
+          call,
+          { propertyId, reservationId, lineId },
+          body,
+          { ifMatch: `W/"${version}"` },
+        )
+        .then(data),
     assignRoom: (reservationId: string, lineId: string, body: AssignRoomRequest) =>
-      call<Reservation>(
-        'PUT',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/assignment`,
-        body,
-      ).then((r) => r.data),
+      op
+        .ReservationsController_assign<Reservation>(
+          call,
+          { propertyId, reservationId, lineId },
+          body,
+        )
+        .then(data),
     unassignRoom: (reservationId: string, lineId: string) =>
-      call<Reservation>(
-        'DELETE',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/assignment`,
-      ).then((r) => r.data),
+      op
+        .ReservationsController_unassign<Reservation>(call, { propertyId, reservationId, lineId })
+        .then(data),
     cancelReservation: (reservationId: string, reason: string) =>
-      call<Reservation>('POST', `${p}/reservations/${id(reservationId)}/cancel`, {
-        reason,
-      }).then((r) => r.data),
+      op
+        .ReservationsController_cancel<Reservation>(call, { propertyId, reservationId }, { reason })
+        .then(data),
     cancelReservationRoom: (reservationId: string, lineId: string, reason: string) =>
-      call<Reservation>(
-        'POST',
-        `${p}/reservations/${id(reservationId)}/rooms/${id(lineId)}/cancel`,
-        { reason },
-      ).then((r) => r.data),
+      op
+        .ReservationsController_cancelLine<Reservation>(
+          call,
+          { propertyId, reservationId, lineId },
+          { reason },
+        )
+        .then(data),
   };
 }
