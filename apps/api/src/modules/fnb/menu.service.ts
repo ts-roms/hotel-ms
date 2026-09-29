@@ -12,12 +12,12 @@ import type {
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { isUniqueViolation, withConstraintMapping } from '../../common/db-errors.js';
+import { toMinor } from '../../common/money.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { toLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
-import { toMinor } from '../pms/pricing.js';
 
 type OutletRow = Prisma.OutletGetPayload<object>;
 

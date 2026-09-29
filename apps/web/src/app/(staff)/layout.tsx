@@ -1,6 +1,19 @@
 'use client';
 
-import { Avatar, Button, cn, Select, Skeleton, SkeletonCard } from '@hotel/ui';
+import {
+  Avatar,
+  Button,
+  cn,
+  Input,
+  NativeSelect,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+  Skeleton,
+  SkeletonCard,
+} from '@hotel/ui';
 import {
   Activity,
   ArrowLeftRight,
@@ -180,11 +193,13 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
   if (!info?.activeOrganizationId || info.mfaPending) return <ShellSkeleton />;
   const org = info.memberships.find((m) => m.organizationId === info.activeOrganizationId);
 
-  // Keep the same page when switching property (/p/A/rooms → /p/B/rooms).
+  // Keep the same section when switching property (/p/A/rooms → /p/B/rooms). Record pages
+  // with no list of their own (/p/A/folios/X, /p/A/documents/Y) fall back to reservations.
   const switchProperty = (id: string) => {
     rememberProperty(id);
-    const section = routePropertyId ? pathname.split('/')[3] : 'reservations';
-    router.push(`/p/${id}/${section ?? 'reservations'}`);
+    const current = routePropertyId ? pathname.split('/')[3] : undefined;
+    const section = PROPERTY_NAV.some((i) => i.href === current) ? current : 'reservations';
+    router.push(`/p/${id}/${section}`);
   };
 
   const allowed = (i: NavItem) => !i.permission || hasPermission(info, i.permission);
@@ -210,7 +225,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
       </Link>
 
       {propertyList.length > 1 && propertyId && (
-        <Select
+        <NativeSelect
           aria-label={t('nav.property')}
           className="h-9"
           value={propertyId}
@@ -221,7 +236,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
               {p.name}
             </option>
           ))}
-        </Select>
+        </NativeSelect>
       )}
 
       <nav className="-mx-1 flex flex-1 flex-col gap-5 overflow-y-auto px-1">
@@ -242,11 +257,11 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
           }}
         >
           <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <input
+          <Input
             name="q"
             aria-label={t('search.title')}
             placeholder={t('search.placeholder')}
-            className="h-9 w-full rounded-lg border bg-background pl-8 pr-2 text-sm outline-none focus:ring-2 focus:ring-ring/40"
+            className="h-9 bg-background pl-8 pr-2"
           />
         </form>
         {propertyNav.length > 0 && (
@@ -309,38 +324,33 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
         </Link>
         <span className="flex-1" />
         <NotificationBell placement="down" />
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={t('nav.openMenu')}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(true)}
-        >
-          <Menu />
-        </Button>
-      </header>
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
-          <button
-            type="button"
-            aria-label={t('nav.closeMenu')}
-            className="absolute inset-0 animate-fade-in bg-black/40 backdrop-blur-sm"
-            onClick={() => setMenuOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] animate-slide-in-left border-r bg-sidebar shadow-2xl">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-3 top-3"
-              aria-label={t('nav.closeMenu')}
-              onClick={() => setMenuOpen(false)}
-            >
-              <X />
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label={t('nav.openMenu')}>
+              <Menu />
             </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            hideClose
+            aria-describedby={undefined}
+            className="w-72 max-w-[85vw] gap-0 bg-sidebar shadow-2xl lg:hidden"
+          >
+            <SheetTitle className="sr-only">{org?.organizationName ?? t('app.name')}</SheetTitle>
+            <SheetClose asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-3 top-3"
+                aria-label={t('nav.closeMenu')}
+              >
+                <X />
+              </Button>
+            </SheetClose>
             {sidebar}
-          </aside>
-        </div>
-      )}
+          </SheetContent>
+        </Sheet>
+      </header>
 
       {/* Re-keyed per path so every page gets the entrance animation. */}
       <main key={pathname} className="mx-auto max-w-6xl animate-slide-up p-4 sm:p-6 lg:p-8">

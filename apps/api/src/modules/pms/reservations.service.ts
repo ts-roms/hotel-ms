@@ -9,14 +9,16 @@ import { Prisma, type Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, nightsOf, toDbDate } from '../../common/dates.js';
 import { withConstraintMapping } from '../../common/db-errors.js';
-import { ProblemException, Problems } from '../../common/problem.js';
+import { toMinor } from '../../common/money.js';
+import { nextNumber } from '../../common/numbering.js';
+import { invalidState, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { GuestsService, toGuestSummary } from './guests.service.js';
 import { releaseInventory, takeInventory } from './inventory.js';
-import { priceStay, toMinor } from './pricing.js';
+import { priceStay } from './pricing.js';
 import { businessDateOf } from './rooms.service.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 
@@ -86,24 +88,6 @@ export function toReservationDto(r: ReservationRow): Reservation {
     createdAt: r.createdAt.toISOString(),
     version: r.version,
   };
-}
-
-export const invalidState = (detail: string) =>
-  new ProblemException(409, 'INVALID_STATE', 'Not allowed in the current state', detail);
-
-/** Next value of a per-property counter; row-locked, so concurrent callers get distinct values. */
-export async function nextNumber(
-  tx: Tx,
-  organizationId: string,
-  propertyId: string,
-  name: string,
-): Promise<bigint> {
-  const [row] = await tx.$queryRaw<{ value: bigint }[]>`
-    INSERT INTO number_sequences (organization_id, property_id, name, next_value)
-    VALUES (${organizationId}::uuid, ${propertyId}::uuid, ${name}, 2)
-    ON CONFLICT (property_id, name) DO UPDATE SET next_value = number_sequences.next_value + 1
-    RETURNING next_value - 1 AS value`;
-  return row!.value;
 }
 
 @Injectable()

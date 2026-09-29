@@ -11,7 +11,7 @@ import { EmployeeDocumentsService } from '../hr/documents.service.js';
 import { LeaveService } from '../hr/leave.service.js';
 import { ProfileRecordsService } from '../hr/profile-records.service.js';
 import { TimeClockService } from '../hr/time-clock.service.js';
-import { RemindersService } from '../notifications/reminders.service.js';
+import { RemindersService } from './reminders.service.js';
 import { ReportsService } from '../payments/reports.service.js';
 
 /**

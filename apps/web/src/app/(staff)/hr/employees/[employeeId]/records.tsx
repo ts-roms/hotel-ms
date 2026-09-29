@@ -11,7 +11,7 @@ import {
   CardTitle,
   Input,
   Label,
-  Select,
+  NativeSelect,
   Textarea,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -127,13 +127,13 @@ export function EmploymentDetails({
         <form className="flex flex-col gap-3" onSubmit={submit}>
           <Label className="flex flex-col gap-1">
             {t('hrx.employmentType')}
-            <Select value={type} onChange={(ev) => setType(ev.target.value as typeof type)}>
+            <NativeSelect value={type} onChange={(ev) => setType(ev.target.value as typeof type)}>
               {EMPLOYMENT_TYPES.map((x) => (
                 <option key={x} value={x}>
                   {statusLabel(x)}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </Label>
           {e.personal && (
             <fieldset className="grid gap-2 sm:grid-cols-3">
@@ -269,7 +269,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
               value={form.currency}
               onChange={(ev) => setForm({ ...form, currency: ev.target.value.toUpperCase() })}
             />
-            <Select
+            <NativeSelect
               className="w-auto"
               aria-label={t('hrx.payBasis')}
               value={form.payBasis}
@@ -282,7 +282,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
                   {per(b)}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
             <Input
               className="min-w-40 flex-1"
               aria-label={t('hr.note')}
@@ -409,14 +409,14 @@ export function TrainingCard({
             add.mutate();
           }}
         >
-          <Select
+          <NativeSelect
             aria-label={t('hrx.kind')}
             value={form.kind}
             onChange={(ev) => setForm({ ...form, kind: ev.target.value as TrainingRecord['kind'] })}
           >
             <option value="CERTIFICATION">{statusLabel('CERTIFICATION')}</option>
             <option value="TRAINING">{statusLabel('TRAINING')}</option>
-          </Select>
+          </NativeSelect>
           <Input
             required
             maxLength={160}
@@ -594,7 +594,7 @@ export function ReviewsCard({ employeeId }: { employeeId: string }) {
             </Label>
             <Label className="flex flex-col gap-1">
               {t('hrx.rating')}
-              <Select
+              <NativeSelect
                 value={String(form.rating)}
                 onChange={(ev) => setForm({ ...form, rating: Number(ev.target.value) })}
               >
@@ -603,7 +603,7 @@ export function ReviewsCard({ employeeId }: { employeeId: string }) {
                     {n} · {t(`hrx.rating.${n}` as 'hrx.rating.1')}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </Label>
           </div>
           {text('summary', t('hrx.summary'))}

@@ -26,7 +26,7 @@ import { Public, RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { TimeClockService } from '../hr/time-clock.service.js';
 import { DevicesService } from './devices.service.js';
-import { KioskAuth } from './kiosk-auth.js';
+import { KioskAuth } from '../auth/kiosk-auth.js';
 
 /** Managers register, pair and revoke a property's shared devices (ADR-0020). */
 @ApiTags('devices')

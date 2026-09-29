@@ -3,6 +3,7 @@ import type { BusinessDayClosing, DayStats, NightAuditPreview } from '@hotel/con
 import { Prisma, type Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
+import { toMinor } from '../../common/money.js';
 import { ProblemException } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
@@ -10,7 +11,6 @@ import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { releaseInventory } from '../pms/inventory.js';
-import { toMinor } from '../pms/pricing.js';
 import { businessDateOf } from '../pms/rooms.service.js';
 import { frontDeskInclude, toFrontDeskItem } from './front-office.service.js';
 import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';

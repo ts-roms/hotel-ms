@@ -66,13 +66,14 @@ export default function IdReviewPage() {
         <div className="flex flex-col gap-2">
           {list.data?.length === 0 && <EmptyState icon={<IdCard />} title={t('idr.none')} />}
           {list.data?.map((d) => (
-            <button
+            <Button
               key={d.id}
               type="button"
+              variant="outline"
               onClick={() => setSelected(d.id)}
               className={cn(
-                'flex flex-col gap-1 rounded-xl border bg-card p-3 text-left text-sm transition-colors hover:border-primary/40',
-                selected === d.id && 'border-primary',
+                'h-auto flex-col items-stretch justify-start gap-1 whitespace-normal rounded-xl p-3 text-left font-normal text-foreground hover:border-primary/40 hover:bg-card hover:text-foreground active:scale-100',
+                selected === d.id && 'border-primary hover:border-primary',
               )}
             >
               <span className="flex items-center justify-between gap-2">
@@ -85,7 +86,7 @@ export default function IdReviewPage() {
                 {statusLabel(d.documentType)} · {d.confirmationNo} · {formatDate(d.arrivalDate)} →{' '}
                 {formatDate(d.departureDate)}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
         {current && (

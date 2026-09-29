@@ -10,12 +10,11 @@ import type {
 } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
-import { Problems } from '../../common/problem.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import { fromLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
 import { computeAttendanceDays } from './attendance-rules.js';
 import { photoRetentionDaysInTx } from './photo-retention.js';
 import { employeeName, HrAccess, toEmployeeSummary } from './hr-access.js';

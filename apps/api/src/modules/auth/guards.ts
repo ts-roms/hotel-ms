@@ -16,7 +16,7 @@ import {
 } from '../../common/route-metadata.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { GrantsService } from '../access/grants.service.js';
-import { KioskAuth } from '../devices/kiosk-auth.js';
+import { KioskAuth } from './kiosk-auth.js';
 import { SessionService } from './session.service.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

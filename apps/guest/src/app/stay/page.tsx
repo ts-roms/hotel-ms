@@ -22,7 +22,7 @@ import {
   Label,
   LoadingRegion,
   Notice,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonCard,
   Textarea,
@@ -556,7 +556,7 @@ function Requests() {
           {create.error && <Alert>{errorMessage(create.error)}</Alert>}
           <div className="flex flex-col gap-2">
             <Label htmlFor="category">Request</Label>
-            <Select
+            <NativeSelect
               id="category"
               value={category}
               onChange={(e) => setCategory(e.target.value as typeof category)}
@@ -566,7 +566,7 @@ function Requests() {
                   {CATEGORY_LABELS[c]}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="details">Details (optional)</Label>
@@ -634,12 +634,14 @@ function StarRating({ disabled, onRate }: { disabled: boolean; onRate: (n: numbe
         onMouseLeave={() => setHover(0)}
       >
         {[1, 2, 3, 4, 5].map((n) => (
-          <button
+          <Button
             key={n}
             type="button"
+            variant="ghost"
+            size="icon"
             aria-label={`${n} out of 5`}
             disabled={disabled}
-            className="rounded p-1 transition-transform duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            className="size-auto rounded p-1 duration-150 hover:scale-125 hover:bg-transparent active:scale-100 [&_svg]:size-5"
             onMouseEnter={() => setHover(n)}
             onFocus={() => setHover(n)}
             onBlur={() => setHover(0)}
@@ -651,7 +653,7 @@ function StarRating({ disabled, onRate }: { disabled: boolean; onRate: (n: numbe
                 n <= hover ? 'fill-warning text-warning' : 'text-muted-foreground/50',
               )}
             />
-          </button>
+          </Button>
         ))}
       </div>
     </div>

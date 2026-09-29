@@ -9,6 +9,7 @@ import {
 } from '@hotel/contracts';
 import { hashPassword, type Prisma, type Tx, verifyPassword } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { newToken, sha256 } from '../../common/crypto.js';
 import { ProblemException, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { PrismaService, TenantDb } from '../../infrastructure/database.js';
@@ -17,12 +18,10 @@ import { AuditService } from '../audit/audit.service.js';
 import { photoRetentionDaysInTx } from '../hr/photo-retention.js';
 import {
   KioskAuth,
-  newToken,
   OPERATOR_MAX_MS,
   type ResolvedDevice,
   type ResolvedOperator,
-  sha256,
-} from './kiosk-auth.js';
+} from '../auth/kiosk-auth.js';
 
 const PAIRING_TTL_MS = 15 * 60_000;
 /** No 0/O, 1/I/L: codes are read off one screen and typed on another. */

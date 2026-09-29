@@ -17,8 +17,9 @@ import {
   Input,
   LoadingRegion,
   PageHeader,
-  Select,
+  NativeSelect,
   Skeleton,
+  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Check, Plus, Star } from 'lucide-react';
@@ -106,23 +107,18 @@ export default function ServiceRequestsPage() {
           <>
             <div className="flex rounded-lg border bg-card p-0.5">
               {(['ACTIVE', 'DONE'] as const).map((s) => (
-                <button
+                <Toggle
                   key={s}
-                  type="button"
-                  aria-pressed={status === s}
-                  onClick={() => setStatus(s)}
-                  className={cn(
-                    'h-8 rounded-md px-3 text-xs font-medium transition-all duration-200',
-                    status === s
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
+                  size="sm"
+                  pressed={status === s}
+                  onPressedChange={() => setStatus(s)}
+                  className="px-3 hover:bg-transparent hover:text-foreground active:scale-100 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground"
                 >
                   {t(s === 'ACTIVE' ? 'sr.active' : 'sr.done')}
-                </button>
+                </Toggle>
               ))}
             </div>
-            <Select
+            <NativeSelect
               className="h-9 w-auto"
               aria-label={t('sr.all')}
               value={department}
@@ -134,7 +130,7 @@ export default function ServiceRequestsPage() {
                   {statusLabel(d)}
                 </option>
               ))}
-            </Select>
+            </NativeSelect>
           </>
         }
       />
@@ -202,7 +198,7 @@ export default function ServiceRequestsPage() {
               )}
               {canUpdate && r.status !== 'DONE' && r.status !== 'CANCELLED' && (
                 <>
-                  <Select
+                  <NativeSelect
                     aria-label={t('sr.assignee')}
                     className="h-9"
                     value={r.assignee?.membershipId ?? ''}
@@ -220,7 +216,7 @@ export default function ServiceRequestsPage() {
                         {a.displayName}
                       </option>
                     ))}
-                  </Select>
+                  </NativeSelect>
                   <div className="flex flex-wrap gap-2">
                     {r.status === 'OPEN' && (
                       <Button
@@ -322,7 +318,7 @@ function NewRequest({
     <Card className="animate-fade-in">
       <CardContent className="pt-5">
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
-          <Select
+          <NativeSelect
             className="w-auto"
             aria-label={t('sr.room')}
             value={roomId}
@@ -336,8 +332,8 @@ function NewRequest({
                   {r.number}
                 </option>
               ))}
-          </Select>
-          <Select
+          </NativeSelect>
+          <NativeSelect
             className="w-auto"
             aria-label={t('sr.new')}
             value={category}
@@ -348,7 +344,7 @@ function NewRequest({
                 {statusLabel(c)}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Input
             className="min-w-48 flex-1"
             placeholder={t('sr.description')}

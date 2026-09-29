@@ -1,6 +1,19 @@
 'use client';
 
-import { Alert, buttonVariants, Button, Card, CardContent, Input } from '@hotel/ui';
+import {
+  Alert,
+  buttonVariants,
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
@@ -125,32 +138,32 @@ function Occupancy({
         <Row label={t('mgmt.cancellations')} value={data.totals.cancellations} />
         <Row label={t('mgmt.closedDays')} value={data.closedDays} />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="text-left text-muted-foreground">
-            <tr>
-              <th className="py-1">{t('mgmt.date')}</th>
-              <th className="text-right">{t('mgmt.occupancy')}</th>
-              <th className="text-right">ADR</th>
-              <th className="text-right">RevPAR</th>
-              <th className="text-right">{t('mgmt.arrivals')}</th>
-              <th className="text-right">{t('mgmt.departures')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.days.map((d) => (
-              <tr key={d.date} className="border-t">
-                <td className="py-1">{formatDate(d.date)}</td>
-                <td className="text-right tabular-nums">{d.occupancyPct}%</td>
-                <td className="text-right tabular-nums">{m(d.adrMinor)}</td>
-                <td className="text-right tabular-nums">{m(d.revparMinor)}</td>
-                <td className="text-right tabular-nums">{d.arrivals}</td>
-                <td className="text-right tabular-nums">{d.departures}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table className="text-xs">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="h-8 px-2">{t('mgmt.date')}</TableHead>
+            <TableHead className="h-8 px-2 text-right">{t('mgmt.occupancy')}</TableHead>
+            <TableHead className="h-8 px-2 text-right">ADR</TableHead>
+            <TableHead className="h-8 px-2 text-right">RevPAR</TableHead>
+            <TableHead className="h-8 px-2 text-right">{t('mgmt.arrivals')}</TableHead>
+            <TableHead className="h-8 px-2 text-right">{t('mgmt.departures')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.days.map((d) => (
+            <TableRow key={d.date}>
+              <TableCell className="px-2 py-1">{formatDate(d.date)}</TableCell>
+              <TableCell className="px-2 py-1 text-right tabular-nums">{d.occupancyPct}%</TableCell>
+              <TableCell className="px-2 py-1 text-right tabular-nums">{m(d.adrMinor)}</TableCell>
+              <TableCell className="px-2 py-1 text-right tabular-nums">
+                {m(d.revparMinor)}
+              </TableCell>
+              <TableCell className="px-2 py-1 text-right tabular-nums">{d.arrivals}</TableCell>
+              <TableCell className="px-2 py-1 text-right tabular-nums">{d.departures}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

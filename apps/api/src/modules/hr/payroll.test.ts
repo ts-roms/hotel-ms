@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { field } from './payroll.service.js';
+import { csvField } from '../../common/csv.js';
 
 describe('payroll CSV fields', () => {
   it('quote separators, quotes and line breaks', () => {
-    expect(field('Cruz, Carlo')).toBe('"Cruz, Carlo"');
-    expect(field('Say "hi"')).toBe('"Say ""hi"""');
-    expect(field('a\nb')).toBe('"a\nb"');
-    expect(field(null)).toBe('');
-    expect(field(480)).toBe('480');
+    expect(csvField('Cruz, Carlo')).toBe('"Cruz, Carlo"');
+    expect(csvField('Say "hi"')).toBe('"Say ""hi"""');
+    expect(csvField('a\nb')).toBe('"a\nb"');
+    expect(csvField(null)).toBe('');
+    expect(csvField(480)).toBe('480');
   });
 
   it('defuse spreadsheet formulas in text', () => {
-    expect(field('=HYPERLINK("x")')).toBe(`"'=HYPERLINK(""x"")"`);
-    expect(field('+1')).toBe("'+1");
-    expect(field('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(csvField('=HYPERLINK("x")')).toBe(`"'=HYPERLINK(""x"")"`);
+    expect(csvField('+1')).toBe("'+1");
+    expect(csvField('@SUM(A1)')).toBe("'@SUM(A1)");
     // Numbers are data, not formulas.
-    expect(field(-15)).toBe('-15');
+    expect(csvField(-15)).toBe('-15');
   });
 });

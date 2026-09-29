@@ -3,6 +3,7 @@ import type { EmailTemplate } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../common/dates.js';
+import { formatMinor } from '../../common/money.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
@@ -13,8 +14,7 @@ interface Outgoing {
   sms: { to: string | null; text: string } | null;
 }
 
-const money = (minor: bigint, currency: string) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency }).format(Number(minor) / 100);
+const money = (minor: bigint, currency: string) => formatMinor(minor, currency);
 
 /**
  * Messages to guests about their booking (spec §40, ADR-0024): confirmation, cancellation,

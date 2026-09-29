@@ -11,12 +11,12 @@ import type {
 } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
+import { toMinor } from '../../common/money.js';
 import { Problems } from '../../common/problem.js';
 import { localToday } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
-import { toMinor } from '../pms/pricing.js';
 import { employeeName, HrAccess } from './hr-access.js';
 
 /** A certification counts as expiring this many days ahead. */

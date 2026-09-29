@@ -1,7 +1,17 @@
 'use client';
 
 import type { LeaveType } from '@hotel/contracts';
-import { Alert, Badge, Button, Card, CardContent, Input, Label, PageHeader } from '@hotel/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Input,
+  Label,
+  PageHeader,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '@/lib/api';
@@ -81,14 +91,14 @@ function LeaveTypeRow({ type }: { type: LeaveType }) {
             />
           </div>
         </div>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={hr} onChange={(e) => setHr(e.target.checked)} />
+        <Label className="flex items-center gap-2 font-normal">
+          <Checkbox checked={hr} onCheckedChange={(v) => setHr(v === true)} />
           {t('hr.hrApproval')}
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
+        </Label>
+        <Label className="flex items-center gap-2 font-normal">
+          <Checkbox checked={paid} onCheckedChange={(v) => setPaid(v === true)} />
           {t('hr.paidLeave')}
-        </label>
+        </Label>
         {save.error && <Alert>{errorMessage(save.error)}</Alert>}
         <Button
           className="self-start"

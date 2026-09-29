@@ -7,12 +7,12 @@ import type {
 } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
-import { Problems } from '../../common/problem.js';
+import { nextNumber } from '../../common/numbering.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState, nextNumber } from '../pms/reservations.service.js';
 
 const include = { room: { select: { number: true } } } satisfies Prisma.LostFoundItemInclude;
 type Row = Prisma.LostFoundItemGetPayload<{ include: typeof include }>;

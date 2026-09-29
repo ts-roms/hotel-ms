@@ -11,9 +11,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   cn,
+  Label,
   Notice,
-  Select,
+  NativeSelect,
+  RadioGroup,
+  RadioGroupItem,
   SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -195,49 +199,69 @@ export function RoomService() {
                     </Button>
                   </span>
                 </div>
-                {l.item.modifierGroups.map((g) => (
-                  <div key={g.id} className="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-muted-foreground">{g.name}</span>
-                    {g.modifiers.map((m) => {
-                      const on = l.modifierIds.includes(m.id);
-                      return (
-                        <label
-                          key={m.id}
-                          className={cn(
-                            'flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40',
-                            on
-                              ? 'border-primary/40 bg-primary/10 text-primary'
-                              : 'bg-card hover:border-ring/40',
-                          )}
-                        >
-                          <input
-                            type={g.maxSelect === 1 ? 'radio' : 'checkbox'}
-                            className="sr-only"
-                            name={`${index}-${g.id}`}
-                            checked={on}
-                            onChange={() => {
-                              const ids = new Set(g.modifiers.map((x) => x.id));
-                              const others = l.modifierIds.filter((id) => !ids.has(id));
-                              const inGroup = l.modifierIds.filter((id) => ids.has(id));
-                              const next =
-                                g.maxSelect === 1
-                                  ? [m.id]
-                                  : on
-                                    ? inGroup.filter((id) => id !== m.id)
-                                    : [...inGroup, m.id].slice(-g.maxSelect);
-                              update(index, { modifierIds: [...others, ...next] });
-                            }}
+                {l.item.modifierGroups.map((g) => {
+                  const ids = new Set(g.modifiers.map((x) => x.id));
+                  const others = l.modifierIds.filter((id) => !ids.has(id));
+                  const inGroup = l.modifierIds.filter((id) => ids.has(id));
+                  const single = g.maxSelect === 1;
+                  const toggle = (id: string) => {
+                    const next = single
+                      ? [id]
+                      : inGroup.includes(id)
+                        ? inGroup.filter((x) => x !== id)
+                        : [...inGroup, id].slice(-g.maxSelect);
+                    update(index, { modifierIds: [...others, ...next] });
+                  };
+                  const chips = g.modifiers.map((m) => {
+                    const on = inGroup.includes(m.id);
+                    return (
+                      <Label
+                        key={m.id}
+                        className={cn(
+                          'flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-normal leading-normal transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40',
+                          on
+                            ? 'border-primary/40 bg-primary/10 text-primary'
+                            : 'bg-card text-foreground hover:border-ring/40',
+                        )}
+                      >
+                        {single ? (
+                          <RadioGroupItem
+                            value={m.id}
+                            className="size-3.5 focus-visible:ring-0 [&_span]:size-1.5"
                           />
-                          {m.name}
-                          {m.priceMinor > 0 && ` +${formatMoney(m.priceMinor, menu.currency)}`}
-                        </label>
-                      );
-                    })}
-                  </div>
-                ))}
+                        ) : (
+                          <Checkbox
+                            className="size-3.5 rounded-[3px] focus-visible:ring-0 [&_svg]:size-3"
+                            checked={on}
+                            onCheckedChange={() => toggle(m.id)}
+                          />
+                        )}
+                        {m.name}
+                        {m.priceMinor > 0 && ` +${formatMoney(m.priceMinor, menu.currency)}`}
+                      </Label>
+                    );
+                  });
+                  return (
+                    <div key={g.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="text-muted-foreground">{g.name}</span>
+                      {single ? (
+                        <RadioGroup
+                          aria-label={g.name}
+                          className="flex flex-wrap gap-1.5"
+                          value={inGroup[0] ?? ''}
+                          onValueChange={toggle}
+                        >
+                          {chips}
+                        </RadioGroup>
+                      ) : (
+                        chips
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
-            <Select
+            <NativeSelect
               aria-label="Payment"
               value={payment}
               onChange={(e) => setChargeMethod(e.target.value as typeof chargeMethod)}
@@ -246,7 +270,7 @@ export function RoomService() {
                 <option value="ROOM_CHARGE">Charge to my room</option>
               )}
               <option value="PAY_ON_DELIVERY">Pay on delivery</option>
-            </Select>
+            </NativeSelect>
             {place.error && <Alert>{errorMessage(place.error)}</Alert>}
             <Button size="lg" loading={place.isPending} onClick={() => place.mutate()}>
               Order · <span className="tabular-nums">{formatMoney(total, menu.currency)}</span>

@@ -14,6 +14,12 @@ import {
   LoadingRegion,
   PageHeader,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock, X } from 'lucide-react';
@@ -151,58 +157,55 @@ export default function AttendancePage() {
         <Card
           className={
             days.isPlaceholderData
-              ? 'overflow-x-auto opacity-60 transition-opacity'
-              : 'animate-fade-in overflow-x-auto transition-opacity'
+              ? 'overflow-hidden opacity-60 transition-opacity'
+              : 'animate-fade-in overflow-hidden transition-opacity'
           }
           aria-busy={days.isPlaceholderData}
         >
-          <table className="w-full min-w-180 text-left text-sm [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-              <tr className="border-b bg-muted/40">
-                <th className="px-3 py-3 font-semibold">{t('hr.employee')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.date')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.status')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.shift')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.in')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.out')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.worked')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.late')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.undertime')}</th>
-                <th className="px-3 py-3 font-semibold">{t('hr.overtime')}</th>
-              </tr>
-            </thead>
-            <tbody className="tabular-nums">
+          <Table className="min-w-180 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead>{t('hr.employee')}</TableHead>
+                <TableHead>{t('hr.date')}</TableHead>
+                <TableHead>{t('hr.status')}</TableHead>
+                <TableHead>{t('hr.shift')}</TableHead>
+                <TableHead>{t('hr.in')}</TableHead>
+                <TableHead>{t('hr.out')}</TableHead>
+                <TableHead>{t('hr.worked')}</TableHead>
+                <TableHead>{t('hr.late')}</TableHead>
+                <TableHead>{t('hr.undertime')}</TableHead>
+                <TableHead>{t('hr.overtime')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="tabular-nums">
               {days.data.map((d) => (
-                <tr
-                  key={`${d.employeeId}-${d.date}`}
-                  className="border-t transition-colors hover:bg-accent/40"
-                >
-                  <td className="px-3 py-2.5 font-medium">{d.employeeName}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{formatDate(d.date)}</td>
-                  <td className="px-3 py-2.5">
+                <TableRow key={`${d.employeeId}-${d.date}`}>
+                  <TableCell className="font-medium">{d.employeeName}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(d.date)}</TableCell>
+                  <TableCell>
                     <Badge variant={statusVariant(d.status)} dot>
                       {statusLabel(d.status)}
                     </Badge>
-                  </td>
-                  <td className="px-3 py-2.5">
+                  </TableCell>
+                  <TableCell>
                     {d.shift ? `${clock(d.shift.startsAt)}–${clock(d.shift.endsAt)}` : '—'}
-                  </td>
-                  <td className="px-3 py-2.5">{clock(d.firstIn)}</td>
-                  <td className="px-3 py-2.5">{clock(d.lastOut)}</td>
-                  <td className="px-3 py-2.5 font-medium">{duration(d.workedMinutes)}</td>
-                  <td className={d.lateMinutes ? 'px-3 py-2.5 text-warning' : 'px-3 py-2.5'}>
+                  </TableCell>
+                  <TableCell>{clock(d.firstIn)}</TableCell>
+                  <TableCell>{clock(d.lastOut)}</TableCell>
+                  <TableCell className="font-medium">{duration(d.workedMinutes)}</TableCell>
+                  <TableCell className={d.lateMinutes ? 'text-warning' : undefined}>
                     {duration(d.lateMinutes)}
-                  </td>
-                  <td className={d.undertimeMinutes ? 'px-3 py-2.5 text-warning' : 'px-3 py-2.5'}>
+                  </TableCell>
+                  <TableCell className={d.undertimeMinutes ? 'text-warning' : undefined}>
                     {duration(d.undertimeMinutes)}
-                  </td>
-                  <td className={d.overtimeMinutes ? 'px-3 py-2.5 text-info' : 'px-3 py-2.5'}>
+                  </TableCell>
+                  <TableCell className={d.overtimeMinutes ? 'text-info' : undefined}>
                     {duration(d.overtimeMinutes)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </Card>
       )}
       <ClockPhotos propertyId={propertyId} from={from} to={to} />

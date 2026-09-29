@@ -8,6 +8,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
   Input,
   Label,
   Notice,
@@ -87,18 +88,17 @@ function SettingsForm({
             <CardTitle className="text-base">{t('gps.selfCheckIn')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
+            <Label className="flex items-start gap-2 font-normal leading-normal">
+              <Checkbox
                 className="mt-0.5"
                 checked={s.requireIdForSelfCheckIn}
-                onChange={(e) => set('requireIdForSelfCheckIn', e.target.checked)}
+                onCheckedChange={(v) => set('requireIdForSelfCheckIn', v === true)}
               />
               <span>
                 {t('gps.requireId')}
                 <span className="block text-muted-foreground">{t('gps.requireIdHint')}</span>
               </span>
-            </label>
+            </Label>
           </CardContent>
         </Card>
 

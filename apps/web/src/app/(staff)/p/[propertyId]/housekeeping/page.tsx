@@ -12,8 +12,9 @@ import {
   LoadingRegion,
   Notice,
   PageHeader,
-  Select,
+  NativeSelect,
   Skeleton,
+  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BedDouble } from 'lucide-react';
@@ -161,7 +162,7 @@ export default function HousekeepingPage() {
                     {statusLabel(room.openTask.type)} · {statusLabel(room.openTask.status)}
                   </span>
                   {canAssign ? (
-                    <Select
+                    <NativeSelect
                       className="ml-auto h-8 w-auto text-xs"
                       aria-label={t('hk.assignTo')}
                       value={room.openTask.assignee?.membershipId ?? ''}
@@ -180,7 +181,7 @@ export default function HousekeepingPage() {
                           {s.displayName}
                         </option>
                       ))}
-                    </Select>
+                    </NativeSelect>
                   ) : (
                     <span className="ml-auto text-muted-foreground">
                       {room.openTask.assignee?.displayName ?? t('hk.unassigned')}
@@ -231,18 +232,17 @@ function FilterChip({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
+    <Toggle
+      variant="outline"
+      size="sm"
+      pressed={active}
+      onPressedChange={onClick}
       className={cn(
-        'inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-all duration-200 active:scale-95',
-        active
-          ? 'border-primary/40 bg-primary/10 text-primary shadow-sm'
-          : 'bg-card text-muted-foreground hover:border-ring/40 hover:text-foreground',
+        'rounded-full px-3 active:scale-95 data-[state=on]:hover:bg-primary/10 data-[state=on]:hover:text-primary',
+        active ? 'shadow-sm' : 'text-muted-foreground hover:border-ring/40 hover:text-foreground',
       )}
     >
       {children}
-    </button>
+    </Toggle>
   );
 }

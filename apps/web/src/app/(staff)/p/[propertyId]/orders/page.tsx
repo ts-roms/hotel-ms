@@ -14,9 +14,15 @@ import {
   Input,
   LoadingRegion,
   PageHeader,
-  Select,
+  NativeSelect,
   Skeleton,
   SkeletonTable,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, ReceiptText, ShoppingBag, X } from 'lucide-react';
@@ -125,7 +131,7 @@ export default function OrdersPage() {
           <Card className="animate-fade-in">
             <CardHeader className="gap-3 pb-4">
               <CardTitle className="text-base">{t('fnb.menu')}</CardTitle>
-              <Select
+              <NativeSelect
                 aria-label={t('fnb.outlet')}
                 value={outlet}
                 onChange={(e) => {
@@ -140,7 +146,7 @@ export default function OrdersPage() {
                       {o.name}
                     </option>
                   ))}
-              </Select>
+              </NativeSelect>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-sm">
               {menuLoading && (
@@ -173,12 +179,13 @@ export default function OrdersPage() {
                     {c.items
                       .filter((i) => !i.archived)
                       .map((i) => (
-                        <button
+                        <Button
                           key={i.id}
                           type="button"
+                          variant="outline"
                           disabled={!i.available}
                           onClick={() => add(i)}
-                          className="group flex items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2.5 text-left transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="group h-auto justify-between whitespace-normal px-3 py-2.5 text-left font-normal text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground active:scale-[0.98]"
                         >
                           <span className="flex flex-col">
                             <span className="font-medium">{i.name}</span>
@@ -189,7 +196,7 @@ export default function OrdersPage() {
                             </span>
                           </span>
                           <Plus className="size-4 text-muted-foreground transition-colors group-hover:text-primary" />
-                        </button>
+                        </Button>
                       ))}
                   </div>
                 </div>
@@ -293,7 +300,7 @@ export default function OrdersPage() {
                 </div>
               ))}
               <div className="flex flex-wrap gap-2">
-                <Select
+                <NativeSelect
                   className="w-auto"
                   aria-label={t('fnb.chargeMethod')}
                   value={chargeMethod}
@@ -302,8 +309,8 @@ export default function OrdersPage() {
                   <option value="ROOM_CHARGE">{t('fnb.roomCharge')}</option>
                   <option value="PAY_ON_DELIVERY">{t('fnb.payOnDelivery')}</option>
                   <option value="PAY_AT_OUTLET">{t('fnb.payAtOutlet')}</option>
-                </Select>
-                <Select
+                </NativeSelect>
+                <NativeSelect
                   className="w-auto"
                   aria-label={t('fnb.room')}
                   value={roomId}
@@ -317,7 +324,7 @@ export default function OrdersPage() {
                         {r.number}
                       </option>
                     ))}
-                </Select>
+                </NativeSelect>
                 <Input
                   className="min-w-40 flex-1"
                   placeholder={t('fnb.notes')}
@@ -353,33 +360,33 @@ export default function OrdersPage() {
         <EmptyState icon={<ReceiptText />} title={t('fnb.noActiveOrders')} />
       )}
       {!!recent.data?.length && (
-        <Card className="animate-fade-in overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-              <tr className="border-b bg-muted/40">
-                <th className="px-3 py-3 font-semibold">{t('fnb.order')}</th>
-                <th className="px-3 py-3 font-semibold">{t('fnb.outlet')}</th>
-                <th className="px-3 py-3 font-semibold">{t('fnb.room')}</th>
-                <th className="px-3 py-3 font-semibold">{t('fnb.status')}</th>
-                <th className="px-3 py-3 text-right font-semibold">{t('fnb.total')}</th>
-                <th className="px-3 py-3" />
-              </tr>
-            </thead>
-            <tbody className="stagger">
+        <Card className="animate-fade-in overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead>{t('fnb.order')}</TableHead>
+                <TableHead>{t('fnb.outlet')}</TableHead>
+                <TableHead>{t('fnb.room')}</TableHead>
+                <TableHead>{t('fnb.status')}</TableHead>
+                <TableHead className="text-right">{t('fnb.total')}</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody className="stagger">
               {recent.data.map((o) => (
-                <tr key={o.id} className="border-t transition-colors hover:bg-accent/40">
-                  <td className="px-3 py-2.5 font-mono text-xs">{o.orderNo}</td>
-                  <td className="px-3 py-2.5">{o.outletName}</td>
-                  <td className="px-3 py-2.5">{o.roomNumber ?? '—'}</td>
-                  <td className="px-3 py-2.5">
+                <TableRow key={o.id}>
+                  <TableCell className="font-mono text-xs">{o.orderNo}</TableCell>
+                  <TableCell>{o.outletName}</TableCell>
+                  <TableCell>{o.roomNumber ?? '—'}</TableCell>
+                  <TableCell>
                     <Badge variant={statusVariant(o.status)} dot>
                       {statusLabel(o.status)}
                     </Badge>
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-medium tabular-nums">
+                  </TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">
                     {formatMoney(o.totalMinor, o.currency)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
+                  </TableCell>
+                  <TableCell className="py-1.5 text-right">
                     {hasPermission(session.data, 'fnb.order.update') && (
                       <Button
                         size="sm"
@@ -392,11 +399,11 @@ export default function OrdersPage() {
                         {t('fnb.cancel')}
                       </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </Card>
       )}
     </div>

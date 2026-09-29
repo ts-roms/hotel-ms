@@ -12,7 +12,7 @@ import {
   EmptyState,
   Input,
   PageHeader,
-  Select,
+  NativeSelect,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageSearch } from 'lucide-react';
@@ -119,7 +119,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-          <Select
+          <NativeSelect
             aria-label={t('lf.category')}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -129,7 +129,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
                 {statusLabel(c)}
               </option>
             ))}
-          </Select>
+          </NativeSelect>
           <Input
             required
             aria-label={t('lf.foundWhere')}
@@ -137,7 +137,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
             value={foundLocation}
             onChange={(e) => setFoundLocation(e.target.value)}
           />
-          <Select
+          <NativeSelect
             aria-label={t('mnt.room')}
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
@@ -150,7 +150,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
                   {t('mnt.room')} {r.number}
                 </option>
               ))}
-          </Select>
+          </NativeSelect>
           <Input
             required
             aria-label={t('lf.storedAt')}

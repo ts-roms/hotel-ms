@@ -6,6 +6,13 @@ export function currencyDigits(currency: string): number {
   );
 }
 
+/** 123_450n PHP → "₱1,234.50"; scales by the currency's own minor units (JPY 0, KWD 3). */
+export function formatMinor(minor: bigint, currency: string, locale = 'en-PH'): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(
+    Number(minor) / 10 ** currencyDigits(currency),
+  );
+}
+
 const MICROS = 1_000_000n;
 
 /** "56.25" → 56_250_000n (exact; up to 6 decimals). */
@@ -34,4 +41,11 @@ export function convertMinor(
   const numerator = amountMinor * rateMicros * 10n ** BigInt(currencyDigits(toCurrency));
   const denominator = MICROS * 10n ** BigInt(currencyDigits(fromCurrency));
   return (numerator * 2n + denominator) / (denominator * 2n);
+}
+
+/** Minor units as a JSON-safe number (contracts use integers; bigint stays in the DB layer). */
+export function toMinor(value: bigint): number {
+  const n = Number(value);
+  if (!Number.isSafeInteger(n)) throw new Error('Amount exceeds safe integer range');
+  return n;
 }

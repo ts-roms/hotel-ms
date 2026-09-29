@@ -3,7 +3,7 @@ import type { FrontDesk, FrontDeskItem, Reservation } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, nightsOf, toDbDate } from '../../common/dates.js';
-import { ProblemException, Problems } from '../../common/problem.js';
+import { ProblemException, Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -11,15 +11,11 @@ import { FolioService } from '../folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { toGuestSummary } from '../pms/guests.service.js';
 import { releaseInventory } from '../pms/inventory.js';
-import {
-  invalidState,
-  ReservationsService,
-  toReservationDto,
-} from '../pms/reservations.service.js';
+import { ReservationsService, toReservationDto } from '../pms/reservations.service.js';
 import { businessDateOf } from '../pms/rooms.service.js';
 import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
-import { GuestInboxService } from '../guest-portal/guest-inbox.service.js';
+import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 
 export const frontDeskInclude = {
   reservation: { select: { id: true, confirmationNo: true, currency: true, status: true } },

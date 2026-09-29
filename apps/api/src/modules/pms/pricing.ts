@@ -44,10 +44,3 @@ export async function priceStay(
     nights: nights.map((date) => ({ date, amountMinor: byDate.get(date) ?? base.baseAmountMinor })),
   };
 }
-
-/** Minor units as a JSON-safe number (contracts use integers; bigint stays in the DB layer). */
-export function toMinor(value: bigint): number {
-  const n = Number(value);
-  if (!Number.isSafeInteger(n)) throw new Error('Amount exceeds safe integer range');
-  return n;
-}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { convertMinor, currencyDigits, formatRate, parseRateMicros } from './money.js';
+import { convertMinor, currencyDigits, formatMinor, formatRate, parseRateMicros } from './money.js';
 
 describe('money', () => {
   it('knows minor units per currency', () => {
@@ -26,5 +26,12 @@ describe('money', () => {
     expect(convertMinor(1n, 'USD', 56_255_000n, 'PHP')).toBe(56n);
     // USD 0.01 at 56.25 = 0.5625 → 0.56; at 56.5 = 0.565 → 0.57 (half up)
     expect(convertMinor(1n, 'USD', 56_500_000n, 'PHP')).toBe(57n);
+  });
+
+  it('formats minor units by the currency, not a fixed /100', () => {
+    const plain = (s: string) => s.replace(/[^\d.,]/g, '');
+    expect(plain(formatMinor(123_450n, 'PHP'))).toBe('1,234.50');
+    expect(plain(formatMinor(1_500n, 'JPY'))).toBe('1,500');
+    expect(plain(formatMinor(1_500n, 'KWD'))).toBe('1.500');
   });
 });

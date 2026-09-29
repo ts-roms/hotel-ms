@@ -1,11 +1,10 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
+import { sha256 } from '../../common/crypto.js';
 import { ENV, type Env } from '../../config/env.js';
 import { TenantDb } from '../../infrastructure/database.js';
 
-export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-export const newToken = () => randomBytes(32).toString('base64url');
 const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 
 /** An operator is signed out after this long without a request… */
