@@ -9,6 +9,7 @@ import { FolioService } from './folio/folio.service.js';
 import { GuestPaymentsController } from './payments/guest-payments.controller.js';
 import { PaymentWebhooksController } from './payments/payment-webhooks.controller.js';
 import { PaymentsService } from './payments/payments.service.js';
+import { PaymongoProvider } from './payments/paymongo.provider.js';
 import { PAYMENT_PROVIDERS, type PaymentProvider, SandboxProvider } from './payments/providers.js';
 import { SandboxGatewayController } from './payments/sandbox-gateway.controller.js';
 import { FinanceReportsService } from './reports/finance-reports.service.js';
@@ -35,10 +36,24 @@ import { FinanceSettingsService } from './settings/finance-settings.service.js';
     FinanceReportsService,
     {
       provide: PAYMENT_PROVIDERS,
-      useFactory: (env: Env) =>
-        new Map<string, PaymentProvider>(
-          env.PAYMENT_SANDBOX_ENABLED ? [['sandbox', new SandboxProvider(env)]] : [],
-        ),
+      useFactory: (env: Env) => {
+        const providers = new Map<string, PaymentProvider>();
+        if (env.PAYMENT_SANDBOX_ENABLED) providers.set('sandbox', new SandboxProvider(env));
+        // Registered whenever configured, so webhooks and refunds of earlier PayMongo
+        // payments keep working if PAYMENT_PROVIDER changes.
+        if (env.PAYMONGO_SECRET_KEY && env.PAYMONGO_WEBHOOK_SECRET) {
+          providers.set(
+            'paymongo',
+            new PaymongoProvider({
+              secretKey: env.PAYMONGO_SECRET_KEY,
+              webhookSecret: env.PAYMONGO_WEBHOOK_SECRET,
+              methods: env.PAYMONGO_PAYMENT_METHODS,
+              apiBase: env.PAYMONGO_API_BASE,
+            }),
+          );
+        }
+        return providers;
+      },
       inject: [ENV],
     },
   ],

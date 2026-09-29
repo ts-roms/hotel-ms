@@ -35,11 +35,14 @@ export interface PaymentProvider {
     description: string;
     returnUrl: string;
   }): Promise<{ reference: string; checkoutUrl: string }>;
-  /** Throws INVALID_SIGNATURE unless the request is authentic and fresh. */
+  /**
+   * Throws INVALID_SIGNATURE unless the request is authentic and fresh. Null: authentic,
+   * but not an event we act on (acknowledged and ignored).
+   */
   verifyWebhook(
     rawBody: Buffer,
     headers: Record<string, string | string[] | undefined>,
-  ): ProviderEvent;
+  ): ProviderEvent | null;
   /** SUCCEEDED when the provider refunds synchronously; PENDING when a webhook follows. */
   refund(input: { paymentReference: string; amountMinor: number; currency: string }): Promise<{
     reference: string;

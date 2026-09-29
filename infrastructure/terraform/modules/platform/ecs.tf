@@ -14,7 +14,14 @@ resource "aws_ecs_cluster" "main" {
 
 locals {
   app_secret = aws_secretsmanager_secret.app.arn
-  secret     = { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD", "PAYMENT_SANDBOX_SECRET", "SENTRY_DSN"] : key => "${local.app_secret}:${key}::" }
+  secret = merge(
+    { for key in ["DATABASE_URL", "DATABASE_OWNER_URL", "DATABASE_SYSTEM_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS", "DB_OWNER_PASSWORD", "DB_APP_PASSWORD", "DB_SYSTEM_PASSWORD", "PAYMENT_SANDBOX_SECRET", "SENTRY_DSN"] : key => "${local.app_secret}:${key}::" },
+    { for key in local.paymongo_secrets : key => "${aws_secretsmanager_secret.paymongo[0].arn}:${key}::" },
+  )
+
+  # Online payments (ADR-0016, ADR-0032).
+  paymongo_secrets = var.payment_provider == "paymongo" ? ["PAYMONGO_SECRET_KEY", "PAYMONGO_WEBHOOK_SECRET"] : []
+  payment_env      = var.payment_provider == null ? {} : { PAYMENT_PROVIDER = var.payment_provider }
 
   # Observability (ADR-0029): traces to the collector sidecar, errors to Sentry.
   tracing_env = var.tracing_enabled ? {
@@ -33,7 +40,7 @@ locals {
       image   = "api"
       command = null
       port    = local.ports.api
-      environment = {
+      environment = merge(local.payment_env, {
         NODE_ENV                = "production"
         API_PORT                = tostring(local.ports.api)
         WEB_ORIGIN              = local.public_url
@@ -50,10 +57,11 @@ locals {
         STORAGE_BUCKET          = aws_s3_bucket.documents.bucket
         STORAGE_KMS_KEY_ID      = aws_kms_key.platform.arn
         AWS_REGION              = local.region
-      }
+      })
       secrets = concat(
         ["DATABASE_URL", "REDIS_CACHE_URL", "REDIS_QUEUE_URL", "SESSION_SECRET", "DATA_ENCRYPTION_KEYS"],
         var.payment_sandbox_enabled ? ["PAYMENT_SANDBOX_SECRET"] : [],
+        local.paymongo_secrets,
         local.error_secrets,
       )
     }
