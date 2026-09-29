@@ -19,6 +19,7 @@ import { cardHoldStateInTx } from '../finance/payments/holds.js';
 import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { guestPortalSettingsInTx } from './guest-info.service.js';
 import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
+import { GuestsService } from '../pms/guests/guests.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { GuestSessions } from './guest-session.js';
 import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
@@ -67,6 +68,7 @@ export class GuestPortalService {
     private readonly identity: GuestIdentityService,
     private readonly guestInbox: GuestInboxService,
     private readonly requests: ServiceRequestsService,
+    private readonly guests: GuestsService,
   ) {}
 
   private get guest() {
@@ -367,27 +369,14 @@ export class GuestPortalService {
       const line = await this.loadLine(tx);
       if (line.status !== 'RESERVED')
         throw Problems.conflict('Pre-check-in is only available before arrival.');
-      await tx.reservationRoom.update({
-        where: { id: line.id },
-        data: { expectedArrivalTime: input.expectedArrivalTime, preCheckInAt: new Date() },
-      });
-      if (input.phone) {
-        await tx.guest.update({
-          where: { id: line.guestId },
-          data: { phone: input.phone, version: { increment: 1 } },
-        });
-      }
+      await this.reservations.markPreCheckedInInTx(tx, line.id, input.expectedArrivalTime);
+      if (input.phone) await this.guests.setPhoneFromPortalInTx(tx, line.guestId, input.phone);
       if (input.specialRequests) {
-        const existing = line.reservation.specialRequests;
-        await tx.reservation.update({
-          where: { id: line.reservationId },
-          data: {
-            specialRequests: [existing, `Guest: ${input.specialRequests}`]
-              .filter(Boolean)
-              .join('\n')
-              .slice(0, 2000),
-          },
-        });
+        await this.reservations.appendGuestRequestsInTx(
+          tx,
+          line.reservation,
+          input.specialRequests,
+        );
       }
       await this.audit.record(tx, {
         action: 'guest.pre_checked_in',

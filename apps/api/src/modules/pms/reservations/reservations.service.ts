@@ -118,6 +118,39 @@ export class ReservationsService {
     return row;
   }
 
+  // ---- Guest pre-check-in (called by Guest Experience, blueprint §11) ------------------
+  // Both run inside the caller's transaction; the caller checks the line is still upcoming
+  // and records the pre-check-in's audit entry and event.
+
+  /** Marks the line pre-checked-in with the guest's expected arrival time. */
+  async markPreCheckedInInTx(
+    tx: Tx,
+    reservationRoomId: string,
+    expectedArrivalTime: string,
+  ): Promise<void> {
+    await tx.reservationRoom.update({
+      where: { id: reservationRoomId },
+      data: { expectedArrivalTime, preCheckInAt: new Date() },
+    });
+  }
+
+  /** Appends the guest's own requests to the booking's special requests. */
+  async appendGuestRequestsInTx(
+    tx: Tx,
+    reservation: { id: string; specialRequests: string | null },
+    requests: string,
+  ): Promise<void> {
+    await tx.reservation.update({
+      where: { id: reservation.id },
+      data: {
+        specialRequests: [reservation.specialRequests, `Guest: ${requests}`]
+          .filter(Boolean)
+          .join('\n')
+          .slice(0, 2000),
+      },
+    });
+  }
+
   async get(reservationId: string): Promise<Reservation> {
     return toReservationDto(await this.db.run((tx) => this.load(tx, reservationId)));
   }
