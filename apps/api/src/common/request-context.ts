@@ -1,6 +1,6 @@
 import type { ClsStore } from 'nestjs-cls';
 import type { FastifyBaseLogger } from 'fastify';
-import type { GrantSet } from '../modules/access/grant-set.js';
+import type { GrantSet } from './grant-set.js';
 
 /**
  * Per-request context, carried through AsyncLocalStorage (nestjs-cls).

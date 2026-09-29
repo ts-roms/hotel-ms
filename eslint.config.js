@@ -14,6 +14,7 @@ export default tseslint.config(
       '**/generated/**',
       '**/node_modules/**',
       '**/*.config.*',
+      '.dependency-cruiser.cjs',
       'apps/web/next-env.d.ts',
     ],
   },

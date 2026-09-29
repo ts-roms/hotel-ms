@@ -4,7 +4,7 @@ import {
   permissionAllowsScope,
   type ScopeType,
 } from '@hotel/contracts';
-import type { GrantSet } from './grant-set.js';
+import type { GrantSet } from '../../common/grant-set.js';
 
 /**
  * Anti-escalation rules for access administration (ADR-0004). Pure functions over the
