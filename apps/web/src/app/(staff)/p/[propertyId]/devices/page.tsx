@@ -1,6 +1,7 @@
 'use client';
 
 import { DEVICE_PERMISSIONS, type DeviceKind, type DevicePairing } from '@hotel/contracts';
+import { formatDateTime } from '@hotel/format';
 import {
   Alert,
   AlertDialog,
@@ -103,8 +104,7 @@ export default function DevicesPage() {
                   {d.kind === 'TIME_CLOCK'
                     ? t('dev.timeClock')
                     : d.permissions.map((p) => PERMISSION_LABELS[p]).join(' · ')}
-                  {d.lastSeenAt &&
-                    ` · ${t('dev.lastSeen')} ${new Date(d.lastSeenAt).toLocaleString('en-PH')}`}
+                  {d.lastSeenAt && ` · ${t('dev.lastSeen')} ${formatDateTime(d.lastSeenAt)}`}
                 </span>
               </span>
               {d.status !== 'REVOKED' && (

@@ -2,6 +2,7 @@
 
 import { ApiError } from '@hotel/api-client';
 import type { MenuItem, Order } from '@hotel/contracts';
+import { formatMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -23,7 +24,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Minus, Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { api, errorMessage, formatMoney } from '@/lib/api';
+import { api, errorMessage } from '@/lib/api';
 
 const STATUS: Record<Order['status'], [string, BadgeVariant]> = {
   PENDING: ['Sent to the kitchen', 'info'],

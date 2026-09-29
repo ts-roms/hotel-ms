@@ -1,6 +1,7 @@
 'use client';
 
 import { EMPLOYMENT_TYPES, type Employee, PAY_BASES, type TrainingRecord } from '@hotel/contracts';
+import { formatDate, formatMoney, parseMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -19,7 +20,6 @@ import { Award, Banknote, ClipboardCheck, Star, Trash2, UserRound } from 'lucide
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { formatDate, formatMoney, parseMoney } from '@/lib/format';
 import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { statusLabel } from '@/lib/status';

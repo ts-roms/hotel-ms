@@ -1,10 +1,10 @@
 'use client';
 
+import { formatDate, formatDateTime, formatMoney } from '@hotel/format';
 import { Alert, Button, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
-import { formatDate, formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 
@@ -33,7 +33,7 @@ export default function DocumentPage() {
             {d.type === 'INVOICE' ? t('fin.invoice') : t('fin.receipt')}
           </div>
           <div className="font-mono">{d.documentNo}</div>
-          <div className="text-muted-foreground">{new Date(d.issuedAt).toLocaleString()}</div>
+          <div className="text-muted-foreground">{formatDateTime(d.issuedAt)}</div>
         </div>
       </header>
       <div>

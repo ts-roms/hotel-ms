@@ -1,6 +1,7 @@
 'use client';
 
 import type { CoverageGap, RecurringShiftsResult } from '@hotel/contracts';
+import { addDays, formatDate } from '@hotel/format';
 import {
   Alert,
   Button,
@@ -20,7 +21,6 @@ import { Repeat, TriangleAlert, Trash2, Users } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { addDays, formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 

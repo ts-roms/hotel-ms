@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDateTime, formatMoney, parseMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -20,7 +21,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatMoney, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { useProperty, usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
@@ -143,7 +143,7 @@ export default function CashierPage() {
             {history.data.map((h) => (
               <TableRow key={h.id}>
                 <TableCell>{h.cashierName}</TableCell>
-                <TableCell>{new Date(h.openedAt).toLocaleString()}</TableCell>
+                <TableCell>{formatDateTime(h.openedAt)}</TableCell>
                 <TableCell>
                   <Badge>{h.status.toLowerCase()}</Badge>
                 </TableCell>

@@ -1,5 +1,6 @@
 'use client';
 
+import { elapsed } from '@hotel/format';
 import { Button, cn, Popover, PopoverContent, PopoverTrigger } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
@@ -9,11 +10,11 @@ import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
 const ago = (iso: string) => {
-  const minutes = Math.round((Date.now() - Date.parse(iso)) / 60_000);
-  if (minutes < 1) return t('notif.now');
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.round(minutes / 60);
-  return hours < 24 ? `${hours} h` : new Date(iso).toLocaleDateString('en-PH');
+  const e = elapsed(iso);
+  if (e.unit === 'now') return t('notif.now');
+  if (e.unit === 'minutes') return `${e.value} min`;
+  if (e.unit === 'hours') return `${e.value} h`;
+  return new Date(iso).toLocaleDateString('en-PH');
 };
 
 /** In-app notifications (ADR-0024): unread count, a short list, open or mark read. */

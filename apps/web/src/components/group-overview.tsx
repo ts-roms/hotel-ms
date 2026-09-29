@@ -1,5 +1,6 @@
 'use client';
 
+import { formatMoney } from '@hotel/format';
 import {
   Card,
   CardContent,
@@ -16,7 +17,6 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
 /**

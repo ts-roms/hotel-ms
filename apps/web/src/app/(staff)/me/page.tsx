@@ -1,6 +1,7 @@
 'use client';
 
 import type { PunchType } from '@hotel/contracts';
+import { addDays, formatDate, localDate } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -31,7 +32,6 @@ import { type FormEvent, useState } from 'react';
 import { SelfiePreview, useSelfieCamera } from '@/components/selfie-camera';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { addDays, formatDate } from '@/lib/format';
 import { clock, duration, mondayOf, PUNCH_NEXT, today } from '@/lib/hr';
 import { type MessageKey, t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
@@ -114,7 +114,7 @@ function Clock() {
             }
           />
           {last
-            ? `${t(PUNCH_LABEL[last.type])} · ${formatDate(new Date(last.at).toLocaleDateString('en-CA'))} ${clock(last.at)}`
+            ? `${t(PUNCH_LABEL[last.type])} · ${formatDate(localDate(last.at))} ${clock(last.at)}`
             : t('hr.noPunches')}
         </p>
         {employee.assignments.map((a) => (
@@ -346,8 +346,7 @@ function MyAttendance() {
         {corrections.data?.slice(0, 5).map((c) => (
           <div key={c.id} className="flex justify-between gap-2 text-muted-foreground">
             <span>
-              {t(PUNCH_LABEL[c.type])} · {formatDate(new Date(c.at).toLocaleDateString('en-CA'))}{' '}
-              {clock(c.at)}
+              {t(PUNCH_LABEL[c.type])} · {formatDate(localDate(c.at))} {clock(c.at)}
             </span>
             <Badge variant={statusVariant(c.status)} dot>
               {statusLabel(c.status)}

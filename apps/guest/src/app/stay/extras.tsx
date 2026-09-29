@@ -1,6 +1,7 @@
 'use client';
 
 import { GUEST_ID_TYPES, type GuestIdType, type GuestStay } from '@hotel/contracts';
+import { elapsed } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -44,11 +45,10 @@ const ID_LABELS: Record<GuestIdType, string> = {
 };
 
 const timeAgo = (iso: string) => {
-  const minutes = Math.round((Date.now() - Date.parse(iso)) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
+  const e = elapsed(iso);
+  if (e.unit === 'now') return 'just now';
+  if (e.unit === 'minutes') return `${e.value} min ago`;
+  if (e.unit === 'hours') return `${e.value} h ago`;
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 };
 

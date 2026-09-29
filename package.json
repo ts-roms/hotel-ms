@@ -10,7 +10,8 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "typecheck": "turbo run typecheck",
-    "lint": "eslint .",
+    "lint": "eslint . && pnpm lint:deps",
+    "lint:deps": "depcruise apps/api/src --config .dependency-cruiser.cjs",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration --concurrency=1",
     "db:up": "docker compose up -d --wait",
@@ -23,12 +24,13 @@
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.0",
+    "dependency-cruiser": "^18.4.0",
+    "eslint": "^10.11.0",
     "prettier": "^3.6.0",
     "turbo": "^2.11.4",
     "typescript": "~6.0.3",
-    "eslint": "^10.11.0",
-    "@eslint/js": "^10.0.1",
     "typescript-eslint": "^8.70.1"
   }
 }

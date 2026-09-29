@@ -1,6 +1,7 @@
 'use client';
 
 import type { MenuItem, Order, OrderItemInput, StaffOrderRequest } from '@hotel/contracts';
+import { formatMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -28,7 +29,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, ReceiptText, ShoppingBag, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';

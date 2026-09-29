@@ -9,7 +9,7 @@ import {
 } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
 import { CacheRedis } from '../../infrastructure/redis.js';
-import { GrantSet } from './grant-set.js';
+import { GrantSet } from '../../common/grant-set.js';
 
 const CACHE_TTL_SECONDS = 600;
 

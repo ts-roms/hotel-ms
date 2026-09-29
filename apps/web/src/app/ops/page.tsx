@@ -13,6 +13,12 @@ import {
   EmptyState,
   PageHeader,
   SkeletonCard,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, ArrowLeft, Inbox, ListRestart, Webhook } from 'lucide-react';
@@ -130,37 +136,35 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="py-2 pr-3">{t('ops.queue')}</th>
-                  <th className="px-3 text-right">{t('ops.waiting')}</th>
-                  <th className="px-3 text-right">{t('ops.active')}</th>
-                  <th className="px-3 text-right">{t('ops.delayed')}</th>
-                  <th className="pl-3 text-right">{t('ops.failed')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.queues.map((q) => (
-                  <tr key={q.name} className="border-t">
-                    <td className="py-2 pr-3 font-mono">{q.name}</td>
-                    <td className="px-3 text-right tabular-nums">{q.waiting}</td>
-                    <td className="px-3 text-right tabular-nums">{q.active}</td>
-                    <td className="px-3 text-right tabular-nums">{q.delayed}</td>
-                    <td
-                      className={cn(
-                        'pl-3 text-right tabular-nums',
-                        q.failed > 0 && 'font-semibold text-destructive',
-                      )}
-                    >
-                      {q.failed}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-0">{t('ops.queue')}</TableHead>
+                <TableHead className="text-right">{t('ops.waiting')}</TableHead>
+                <TableHead className="text-right">{t('ops.active')}</TableHead>
+                <TableHead className="text-right">{t('ops.delayed')}</TableHead>
+                <TableHead className="pr-0 text-right">{t('ops.failed')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="tabular-nums">
+              {s.queues.map((q) => (
+                <TableRow key={q.name}>
+                  <TableCell className="pl-0 font-mono">{q.name}</TableCell>
+                  <TableCell className="text-right">{q.waiting}</TableCell>
+                  <TableCell className="text-right">{q.active}</TableCell>
+                  <TableCell className="text-right">{q.delayed}</TableCell>
+                  <TableCell
+                    className={cn(
+                      'pr-0 text-right',
+                      q.failed > 0 && 'font-semibold text-destructive',
+                    )}
+                  >
+                    {q.failed}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           <p
             className={cn('text-xs', schedulerLate ? 'text-destructive' : 'text-muted-foreground')}
           >

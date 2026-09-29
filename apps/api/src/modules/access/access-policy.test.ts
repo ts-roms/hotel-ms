@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canDefineRole, canGrantRole, coversMember } from './access-policy.js';
-import { GrantSet } from './grant-set.js';
+import { GrantSet } from '../../common/grant-set.js';
 
 const A = '00000000-0000-7000-8000-00000000000a';
 const B = '00000000-0000-7000-8000-00000000000b';

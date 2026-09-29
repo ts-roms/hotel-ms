@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@hotel/api-client": "workspace:*",
     "@hotel/contracts": "workspace:*",
+    "@hotel/format": "workspace:*",
     "@hotel/ui": "workspace:*",
     "@tanstack/react-query": "^5.104.0",
     "lucide-react": "^1.48.0",
