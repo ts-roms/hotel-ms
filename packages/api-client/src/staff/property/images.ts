@@ -2,7 +2,7 @@ import type { PropertyImage, UpdatePropertyImageRequest } from '@hotel/contracts
 import * as op from '../../generated/operations.js';
 import { data, items, type PropertyTransport } from '../../http.js';
 
-/** Hotel photos shown in the guest portal (ADR-0030). */
+/** Hotel photos and menu item images shown in the guest portal (ADR-0030). */
 export function imagesClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
     images: () =>
@@ -24,5 +24,13 @@ export function imagesClient({ call, baseUrl, propertyId }: PropertyTransport) {
       op.ImagesController_remove(call, { propertyId, imageId }).then(data),
     imageUrl: (imageId: string, version: string) =>
       `${baseUrl}${op.paths.ImagesController_content({ propertyId, imageId })}?v=${encodeURIComponent(version)}`,
+    setMenuItemImage: (itemId: string, file: Blob) =>
+      op
+        .ImagesController_setMenuImage<{ imageVersion: string }>(call, { propertyId, itemId }, file)
+        .then(data),
+    removeMenuItemImage: (itemId: string) =>
+      op.ImagesController_removeMenuImage(call, { propertyId, itemId }).then(data),
+    menuItemImageUrl: (itemId: string, version: string) =>
+      `${baseUrl}${op.paths.ImagesController_menuImage({ propertyId, itemId })}?v=${encodeURIComponent(version)}`,
   };
 }

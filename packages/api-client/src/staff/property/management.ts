@@ -8,15 +8,15 @@ import type {
 import * as op from '../../generated/operations.js';
 import { data, qs, type PropertyTransport, type RouteSegment } from '../../http.js';
 
-/** Report kinds with a CSV export route (PropertyReportsController_<kind>Csv). */
-type ExportKind = 'occupancy' | 'hr' | 'fnb' | 'guest-services';
-/** Fails to type-check if the API drops the export route of any ExportKind. */
-type Exported = RouteSegment<'GET /properties/{propertyId}/reports/', '/export'>;
+/**
+ * Report kinds with a CSV export route (PropertyReportsController_<kind>Csv), read from the
+ * generated route table: "occupancy" | "hr" | "fnb" | "guest-services".
+ */
+type ReportExportKind = RouteSegment<'GET /properties/{propertyId}/reports/', '/export'>;
 
-/** Property dashboard and operational reports. */
-export function insightsClient({ call, baseUrl, propertyId }: PropertyTransport) {
-  const exportPath = (kind: Exported) =>
-    `${op.paths.PropertiesController_get({ propertyId })}/reports/${kind}/export`;
+/** Management: the property dashboard and operational reports. */
+export function managementClient({ call, baseUrl, propertyId }: PropertyTransport) {
+  const property = op.paths.PropertiesController_get({ propertyId });
   return {
     dashboard: () =>
       op.PropertyReportsController_dashboard<PropertyDashboard>(call, { propertyId }).then(data),
@@ -37,7 +37,7 @@ export function insightsClient({ call, baseUrl, propertyId }: PropertyTransport)
         )
         .then(data),
     /** CSV download (same-origin; the session cookie authenticates). */
-    reportExportUrl: (kind: ExportKind, from: string, to: string) =>
-      `${baseUrl}${exportPath(kind)}${qs({ from, to })}`,
+    reportExportUrl: (kind: ReportExportKind, from: string, to: string) =>
+      `${baseUrl}${property}/reports/${kind}/export${qs({ from, to })}`,
   };
 }

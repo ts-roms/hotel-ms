@@ -60,11 +60,16 @@ not** (amended 2026-09-29). `pnpm --filter @hotel/api-client generate` runs
 `docs/api/openapi.json`, which writes `src/generated/operations.ts`: one typed request
 function per operationId (`<Controller>_<method>`) carrying the method, path, path and query
 parameters, the `If-Match`/`Idempotency-Key` headers and whether a body (JSON or a raw `Blob`)
-is sent, plus a URL builder per operation for same-origin links. The files split per context
-(`staff/`, `staff/property/`, `guest.ts`, `kiosk.ts`) stay as thin facades that map those
+is sent, plus a URL builder per operation for same-origin links. Thin facades map those
 functions onto the methods the apps call (`api.pms(id).rooms()`, `api.auth.login(...)`,
 `createGuestApiClient`, ...) and give them their `@hotel/contracts` request and response
-types; the transport (`http.ts`: CSRF header, same-origin credentials, 204, ETag, RFC 9457
+types (query types too, e.g. `ReservationListQuery`; `Page<T>` is the contracts
+`CursorPage<T>`). Staff facades follow the API modules (ADR-0031), organization-level ones in
+`staff/` and property ones in `staff/property/`, one file per context (`tenancy.ts`,
+`access.ts`, `workforce.ts`, `time.ts`, `guest-portal.ts`, `management.ts`, ...), matched by
+the operationId's controller; the `hr` and `me` groups span contexts and are merged in
+`staff/index.ts`. `guest.ts` and `kiosk.ts` are the guest portal's and shared devices'
+clients. The transport (`http.ts`: CSRF header, same-origin credentials, 204, ETag, RFC 9457
 problems as `ApiError`) stays hand-written. A renamed, removed or re-parameterized route
 therefore breaks the client's type check instead of drifting. The two route families the
 client addresses by a kind segment (CSV import preview/commit, report CSV exports) are

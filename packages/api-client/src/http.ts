@@ -8,7 +8,7 @@
  * The per-operation request functions are generated from the OpenAPI document into
  * src/generated (ADR-0034); the facades map them onto the client's methods.
  */
-import type { Problem } from '@hotel/contracts';
+import type { CursorPage, Problem } from '@hotel/contracts';
 import type { Routes } from './generated/operations.js';
 
 /** A failed call, carrying the RFC 9457 problem details the API returned. */
@@ -33,18 +33,14 @@ export function problemText(error: ApiError): string {
   return error.problem.detail ?? error.problem.title;
 }
 
-/** Reads `token` from the URL fragment (#token=...), which is never sent to servers. */
-export function tokenFromHash(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.hash.slice(1)).get('token');
-}
+/** A page of a cursor-paginated list (`cursorPage` in @hotel/contracts). */
+export type Page<T> = CursorPage<T>;
 
-export interface Page<T> {
-  items: T[];
-  nextCursor: string | null;
-}
+/** Where the API is mounted when no `baseUrl` is given: same-origin, proxied by the apps. */
+const DEFAULT_BASE_URL = '/api/v1';
 
 export interface ApiClientOptions {
+  /** Defaults to "/api/v1". */
   baseUrl?: string;
   /** Returns the CSRF token from the last session response. */
   getCsrfToken?: () => string | undefined;
@@ -66,7 +62,7 @@ export function qs(params: object): string {
 }
 
 export function createCaller(options: ApiClientOptions) {
-  const baseUrl = options.baseUrl ?? '/api/v1';
+  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL;
   const doFetch = options.fetch ?? fetch;
 
   async function call<T>(

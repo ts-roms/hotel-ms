@@ -1,19 +1,18 @@
 import type {
-  GuestPortalSettings,
-  GuestPortalSettingsInput,
+  CreateGuestRequest,
+  Guest,
   IdentityDocument,
   IdentityDocumentListQuery,
   IdentityReviewInput,
-  StaffGuestMessageInput,
 } from '@hotel/contracts';
 import * as op from '../../generated/operations.js';
 import { data, items, type PropertyTransport } from '../../http.js';
 
-/** Guest portal links and settings, guest ID review, messages to guests. */
-export function guestServicesClient({ call, baseUrl, propertyId }: PropertyTransport) {
+/** PMS guests: new guest profiles and the review of uploaded guest IDs. */
+export function guestsClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
-    sendGuestPortalLink: (reservationId: string) =>
-      op.GuestServiceController_sendLink(call, { propertyId, reservationId }).then(data),
+    createGuest: (body: CreateGuestRequest) =>
+      op.GuestsController_create<Guest>(call, { propertyId }, body).then(data),
     guestIds: (status: IdentityDocumentListQuery['status'] = 'PENDING') =>
       op
         .GuestIdentityController_listIds<{ items: IdentityDocument[] }>(
@@ -31,13 +30,5 @@ export function guestServicesClient({ call, baseUrl, propertyId }: PropertyTrans
           ifMatch: `W/"${version}"`,
         })
         .then(data),
-    guestPortalSettings: () =>
-      op.GuestAdminController_settings<GuestPortalSettings>(call, { propertyId }).then(data),
-    updateGuestPortalSettings: (body: GuestPortalSettingsInput) =>
-      op
-        .GuestAdminController_updateSettings<GuestPortalSettings>(call, { propertyId }, body)
-        .then(data),
-    messageGuest: (reservationId: string, lineId: string, body: StaffGuestMessageInput) =>
-      op.GuestAdminController_message(call, { propertyId, reservationId, lineId }, body).then(data),
   };
 }

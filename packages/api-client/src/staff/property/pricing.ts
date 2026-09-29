@@ -2,6 +2,7 @@ import type {
   Availability,
   CreateRatePlanRequest,
   Quote,
+  QuoteQuery,
   RatePlan,
   SetRateOverridesRequest,
   TaxRule,
@@ -25,12 +26,8 @@ export function pricingClient({ call, propertyId }: PropertyTransport) {
         .then(data),
     setRateOverrides: (ratePlanId: string, body: SetRateOverridesRequest) =>
       op.PricingController_setOverrides(call, { propertyId, ratePlanId }, body).then(data),
-    quote: (params: {
-      roomTypeId: string;
-      ratePlanId: string;
-      arrivalDate: string;
-      departureDate: string;
-    }) => op.PricingController_quote<Quote>(call, { propertyId }, params).then(data),
+    quote: (params: QuoteQuery) =>
+      op.PricingController_quote<Quote>(call, { propertyId }, params).then(data),
     availability: (from: string, to: string) =>
       op
         .PricingController_availability<Availability>(call, { propertyId }, { from, to })

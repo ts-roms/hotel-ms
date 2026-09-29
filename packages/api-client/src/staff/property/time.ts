@@ -1,7 +1,7 @@
 import type {
   AttendanceCorrection,
   AttendanceDay,
-  Birthday,
+  CancelSeriesRequest,
   ClockPhoto,
   CoverageGap,
   CreateRecurringShiftsInput,
@@ -24,7 +24,7 @@ import type {
 import * as op from '../../generated/operations.js';
 import { data, items, type PropertyTransport } from '../../http.js';
 
-/** Attendance, time clock photos, scheduling, staffing, leave and payroll export. */
+/** HR time: attendance, time clock photos, scheduling, staffing, leave and payroll export. */
 export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
   return {
     /** Download URL of the payroll CSV (same-origin; the session cookie authenticates). */
@@ -56,11 +56,11 @@ export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
           { status },
         )
         .then(items),
-    decideCorrection: (id: string, version: number, body: DecisionRequest) =>
+    decideCorrection: (correctionId: string, version: number, body: DecisionRequest) =>
       op
         .PropertyHrController_decideCorrection<AttendanceCorrection>(
           call,
-          { propertyId, correctionId: id },
+          { propertyId, correctionId },
           body,
           { ifMatch: `W/"${version}"` },
         )
@@ -73,20 +73,17 @@ export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
       op.PropertyHrController_scheduleView<Schedule>(call, { propertyId }, { from, to }).then(data),
     createShift: (body: CreateShiftRequest) =>
       op.PropertyHrController_createShift<ShiftWithWarnings>(call, { propertyId }, body).then(data),
-    updateShift: (id: string, version: number, body: UpdateShiftRequest) =>
+    updateShift: (shiftId: string, version: number, body: UpdateShiftRequest) =>
       op
-        .PropertyHrController_updateShift<ShiftWithWarnings>(
-          call,
-          { propertyId, shiftId: id },
-          body,
-          { ifMatch: `W/"${version}"` },
-        )
+        .PropertyHrController_updateShift<ShiftWithWarnings>(call, { propertyId, shiftId }, body, {
+          ifMatch: `W/"${version}"`,
+        })
         .then(data),
-    cancelShift: (id: string, version: number) =>
+    cancelShift: (shiftId: string, version: number) =>
       op
         .PropertyHrController_cancelShift<Shift>(
           call,
-          { propertyId, shiftId: id },
+          { propertyId, shiftId },
           { ifMatch: `W/"${version}"` },
         )
         .then(data),
@@ -94,7 +91,7 @@ export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
       op.PropertyHrController_publish<PublishResult>(call, { propertyId }, { from, to }).then(data),
     createRecurringShifts: (body: CreateRecurringShiftsInput) =>
       op.StaffingController_recurring<RecurringShiftsResult>(call, { propertyId }, body).then(data),
-    cancelShiftSeries: (seriesId: string, body: { fromDate?: string; employeeId?: string }) =>
+    cancelShiftSeries: (seriesId: string, body: CancelSeriesRequest) =>
       op
         .StaffingController_cancelSeries<{ cancelled: number }>(
           call,
@@ -128,16 +125,14 @@ export function timeClient({ call, baseUrl, propertyId }: PropertyTransport) {
           { status },
         )
         .then(items),
-    decideLeave: (id: string, version: number, body: DecisionRequest) =>
+    decideLeave: (leaveRequestId: string, version: number, body: DecisionRequest) =>
       op
         .PropertyHrController_decideLeave<LeaveDecisionResult>(
           call,
-          { propertyId, leaveRequestId: id },
+          { propertyId, leaveRequestId },
           body,
           { ifMatch: `W/"${version}"` },
         )
         .then(data),
-    birthdays: () =>
-      op.BirthdaysController_birthdays<{ items: Birthday[] }>(call, { propertyId }).then(items),
   };
 }

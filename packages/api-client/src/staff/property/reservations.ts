@@ -1,29 +1,18 @@
 import type {
   AssignRoomRequest,
-  CreateGuestRequest,
   CreateReservationRequest,
-  Guest,
   Reservation,
+  ReservationListQuery,
   UpdateReservationRoomRequest,
 } from '@hotel/contracts';
 import * as op from '../../generated/operations.js';
 import { data, type Page, type PropertyTransport } from '../../http.js';
 
-/** Reservations, their room lines and new guest profiles. */
+/** Reservations and their room lines. */
 export function reservationsClient({ call, propertyId }: PropertyTransport) {
   return {
-    createGuest: (body: CreateGuestRequest) =>
-      op.GuestsController_create<Guest>(call, { propertyId }, body).then(data),
-    reservations: (
-      params: {
-        q?: string;
-        arrivalFrom?: string;
-        arrivalTo?: string;
-        status?: string;
-        cursor?: string;
-        limit?: number;
-      } = {},
-    ) => op.ReservationsController_list<Page<Reservation>>(call, { propertyId }, params).then(data),
+    reservations: (params: Partial<ReservationListQuery> = {}) =>
+      op.ReservationsController_list<Page<Reservation>>(call, { propertyId }, params).then(data),
     reservation: (reservationId: string) =>
       op.ReservationsController_get<Reservation>(call, { propertyId, reservationId }).then(data),
     createReservation: (body: CreateReservationRequest, idempotencyKey: string) =>

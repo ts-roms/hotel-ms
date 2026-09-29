@@ -53,13 +53,5 @@ export function fnbClient({ call, baseUrl, propertyId }: PropertyTransport) {
     /** Server-Sent Events URL for the outlet's kitchen board. */
     orderStreamUrl: (outletId: string) =>
       `${baseUrl}${op.paths.FnbController_stream({ propertyId, outletId })}`,
-    setMenuItemImage: (itemId: string, file: Blob) =>
-      op
-        .ImagesController_setMenuImage<{ imageVersion: string }>(call, { propertyId, itemId }, file)
-        .then(data),
-    removeMenuItemImage: (itemId: string) =>
-      op.ImagesController_removeMenuImage(call, { propertyId, itemId }).then(data),
-    menuItemImageUrl: (itemId: string, version: string) =>
-      `${baseUrl}${op.paths.ImagesController_menuImage({ propertyId, itemId })}?v=${encodeURIComponent(version)}`,
   };
 }
