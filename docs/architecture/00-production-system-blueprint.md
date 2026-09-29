@@ -228,7 +228,7 @@ The spec's module list has ~40 entries. Many of them are sub-modules of one doma
 
 ⚠ Spec adjustment: Prisma goes in `packages/database` instead of a root `prisma/` folder, because both `api` and `worker` import the generated client.
 
-⚠ As built ([ADR-0032](../adr/0032-monorepo-package-layout.md)): there are no `domain`, `config` or `testing` packages. Bounded-context modules live in `apps/api` (ADR-0031), the worker is a plain Node process, the API client is hand-written, and shared lint and TypeScript settings are root files. The read models (dashboards, reports, calendar) read other contexts' tables directly, an exception to 6.2 recorded in the ADR.
+⚠ As built ([ADR-0033](../adr/0033-monorepo-package-layout.md)): there are no `domain`, `config` or `testing` packages. Bounded-context modules live in `apps/api` (ADR-0031), the worker is a plain Node process, the API client is hand-written, and shared lint and TypeScript settings are root files. The read models (dashboards, reports, calendar) read other contexts' tables directly, an exception to 6.2 recorded in the ADR.
 
 ```
 hotel-platform/

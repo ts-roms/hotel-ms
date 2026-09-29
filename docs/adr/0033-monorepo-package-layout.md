@@ -1,4 +1,4 @@
-# ADR-0032: Monorepo package layout as built
+# ADR-0033: Monorepo package layout as built
 
 - Status: Accepted, 2026-09-29
 - Spec: blueprint §6.2 (module rules), §6.3 (monorepo layout)
