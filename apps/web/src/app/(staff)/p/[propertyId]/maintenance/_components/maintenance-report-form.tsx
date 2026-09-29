@@ -22,8 +22,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 
 export function MaintenanceReportForm({
@@ -34,7 +33,7 @@ export function MaintenanceReportForm({
   onCreated: (id: string) => void;
 }) {
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const rooms = useQuery({ queryKey: ['rooms', propertyId], queryFn: pms.rooms });
   const [roomId, setRoomId] = useState('');
@@ -46,7 +45,7 @@ export function MaintenanceReportForm({
   const [outOfOrder, setOutOfOrder] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const manage = hasPermission(session.data, 'maintenance.manage');
+  const manage = can('maintenance.manage');
   const report = useMutation({
     mutationFn: () =>
       pms.reportMaintenance({

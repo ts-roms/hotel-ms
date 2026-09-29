@@ -34,7 +34,9 @@ import {
   Wallet,
   Wrench,
 } from 'lucide-react';
+import type { SessionInfo } from '@hotel/contracts';
 import type { MessageKey } from './i18n';
+import { hasPermission, hasPropertyPermission } from './permissions';
 
 /** Staff navigation catalog. The shell filters it by permission; the API enforces access. */
 export interface NavItem {
@@ -177,9 +179,14 @@ export const PROPERTY_NAV: NavSection[] = [
   },
 ];
 
+/** The signed-in member's own pages (absolute paths), whatever their role. */
+export const ME_NAV: NavItem[] = [
+  { href: '/me', label: 'nav.myTime', icon: Timer, permission: 'attendance.punch.own' },
+  { href: '/settings/security', label: 'nav.security', icon: KeyRound },
+];
+
 /** Organization-wide pages (absolute paths). */
 export const ORG_NAV: NavItem[] = [
-  { href: '/me', label: 'nav.myTime', icon: Timer, permission: 'attendance.punch.own' },
   { href: '/hr/leave-types', label: 'nav.leaveTypes', icon: Plane, permission: 'leave.configure' },
   { href: '/hr/employees', label: 'nav.employees', icon: IdCard, permission: 'employee.read' },
   {
@@ -191,21 +198,47 @@ export const ORG_NAV: NavItem[] = [
   { href: '/members', label: 'nav.members', icon: Users, permission: 'member.read' },
   { href: '/roles', label: 'nav.roles', icon: ShieldCheck, permission: 'role.read' },
   { href: '/privacy', label: 'nav.privacy', icon: UserX, permission: 'privacy.manage' },
-  { href: '/settings/security', label: 'nav.security', icon: KeyRound },
 ];
 
 /** Platform operators (ADR-0029): the ops dashboard, outside any organization. */
 export const OPS_NAV: NavItem = { href: '/ops', label: 'nav.ops', icon: Activity };
 
-const PROPERTY_SECTIONS = new Set(PROPERTY_NAV.flatMap((s) => s.items.map((i) => i.href)));
+type Session = SessionInfo | null | undefined;
+
+/** An organization-level nav item the member may open (held at any scope). */
+export function canOpen(info: Session, item: NavItem): boolean {
+  return !item.permission || hasPermission(info, item.permission);
+}
+
+/** A property nav item the member may open at this property. */
+export function canOpenAt(info: Session, item: NavItem, propertyId: string): boolean {
+  return !item.permission || hasPropertyPermission(info, item.permission, propertyId);
+}
+
+const PROPERTY_ITEMS = PROPERTY_NAV.flatMap((s) => s.items);
+
+/** The first property page (in sidebar order) the member may open at a property, if any. */
+export function firstPropertyPage(info: Session, propertyId: string): string | undefined {
+  return PROPERTY_ITEMS.find((i) => canOpenAt(info, i, propertyId))?.href;
+}
+
+/** The first organization page (under `prefix`, in sidebar order) the member may open, if any. */
+export function firstOrgPage(info: Session, prefix: string): string | undefined {
+  return ORG_NAV.find((i) => i.href.startsWith(prefix) && canOpen(info, i))?.href;
+}
 
 /**
  * Where to go when switching to another property. Keeps the same section when it is a nav page
- * (/p/A/rooms → /p/B/rooms); record pages with no list of their own (/p/A/folios/X,
- * /p/A/documents/Y) and non-property pages fall back to reservations.
+ * the member may open there (/p/A/rooms → /p/B/rooms); record pages with no list of their own
+ * (/p/A/folios/X, /p/A/documents/Y), non-property pages and sections not permitted at the
+ * target fall back to the first page the member may open there (else the dashboard).
  */
-export function propertySwitchTarget(pathname: string, propertyId: string): string {
+export function propertySwitchTarget(pathname: string, propertyId: string, info: Session): string {
   const [, root, , section] = pathname.split('/');
-  const keep = root === 'p' && section !== undefined && PROPERTY_SECTIONS.has(section);
-  return `/p/${propertyId}/${keep ? section : 'reservations'}`;
+  const current = root === 'p' ? PROPERTY_ITEMS.find((i) => i.href === section) : undefined;
+  const target =
+    current && canOpenAt(info, current, propertyId)
+      ? current.href
+      : firstPropertyPage(info, propertyId);
+  return target ? `/p/${propertyId}/${target}` : '/dashboard';
 }

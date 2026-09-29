@@ -28,8 +28,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { clock, duration, today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { ClockPhotos } from './_components/clock-photos';
 
@@ -37,7 +36,7 @@ import { ClockPhotos } from './_components/clock-photos';
 export default function AttendancePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [to, setTo] = useState(today);
   const from = addDays(to, -6);
@@ -58,7 +57,7 @@ export default function AttendancePage() {
   });
   const running = (id: string, decision: 'APPROVE' | 'REJECT') =>
     decide.isPending && decide.variables?.id === id && decide.variables.decision === decision;
-  const canDecide = hasPermission(session.data, 'attendance.manage');
+  const canDecide = can('attendance.manage');
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +77,7 @@ export default function AttendancePage() {
               value={to}
               onChange={(e) => e.target.value && setTo(e.target.value)}
             />
-            {hasPermission(session.data, 'payroll.export') && (
+            {can('payroll.export') && (
               <a
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
                 href={pms.payrollExportUrl(from, to)}

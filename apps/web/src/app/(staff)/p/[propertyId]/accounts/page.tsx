@@ -7,14 +7,13 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useProperty, usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
 
 /** Company and group accounts (city ledger): folios without a stay. */
 export default function AccountsPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
   const accounts = useQuery({ queryKey: ['accounts', propertyId], queryFn: pms.accounts });
@@ -33,7 +32,7 @@ export default function AccountsPage() {
       {(accounts.error || create.error) && (
         <Alert>{errorMessage(accounts.error ?? create.error)}</Alert>
       )}
-      {hasPermission(session.data, 'folio.transfer') && (
+      {can('folio.transfer') && (
         <Card>
           <CardContent className="flex flex-wrap gap-2 pt-4">
             <Input

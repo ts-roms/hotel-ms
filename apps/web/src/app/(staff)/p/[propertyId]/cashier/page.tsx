@@ -22,14 +22,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useProperty, usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
 
 /** The cashier's drawer (blueprint §15.2): open with a float, close with a count. */
 export default function CashierPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const currency = property.data?.currency ?? 'PHP';
   const queryClient = useQueryClient();
@@ -37,7 +36,7 @@ export default function CashierPage() {
   const history = useQuery({
     queryKey: ['cashier-shifts', propertyId],
     queryFn: pms.cashierShifts,
-    enabled: hasPermission(session.data, 'finance.report.read'),
+    enabled: can('finance.report.read'),
   });
   const refresh = () =>
     queryClient

@@ -919,6 +919,7 @@ export const en = {
   'theme.dark': 'Dark',
   'nav.sectionProperty': 'Operations',
   'nav.sectionOrganization': 'Organization',
+  'nav.sectionMe': 'Me',
   'nav.openMenu': 'Open menu',
   'nav.closeMenu': 'Close menu',
   'dashboard.welcome': 'Welcome back',

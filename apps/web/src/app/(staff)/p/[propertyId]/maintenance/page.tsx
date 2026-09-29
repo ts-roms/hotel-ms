@@ -6,8 +6,7 @@ import { Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { MaintenanceDetail } from './_components/maintenance-detail';
 import { MaintenanceReportForm } from './_components/maintenance-report-form';
@@ -23,8 +22,7 @@ const FILTERS = [
 export default function MaintenancePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
-  const can = (p: string) => hasPermission(session.data, p);
+  const can = useCan();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('ACTIVE');
   const [selected, setSelected] = useState<string | null>(null);
   const list = useQuery({

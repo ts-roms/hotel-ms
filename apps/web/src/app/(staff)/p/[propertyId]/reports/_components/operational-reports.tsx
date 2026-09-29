@@ -20,8 +20,7 @@ import { type ReactNode, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { duration, today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 
 const TABS = [
@@ -44,8 +43,8 @@ function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
 /** Operational reports with CSV export (spec §41, ADR-0025). */
 export function OperationalReports({ propertyId }: { propertyId: string }) {
   const pms = usePms(propertyId);
-  const session = useSession();
-  const tabs = TABS.filter((tab) => hasPermission(session.data, tab.permission));
+  const can = useCan();
+  const tabs = TABS.filter((tab) => can(tab.permission));
   const [tab, setTab] = useState<Tab | null>(null);
   const [to, setTo] = useState(today());
   const [from, setFrom] = useState(addDays(today(), -29));

@@ -31,8 +31,7 @@ import { Plus, ReceiptText, ShoppingBag, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 interface CartLine {
@@ -45,7 +44,7 @@ interface CartLine {
 export default function OrdersPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const outlets = useQuery({ queryKey: ['outlets', propertyId], queryFn: pms.outlets });
   const rooms = useQuery({ queryKey: ['rooms', propertyId], queryFn: pms.rooms });
@@ -127,7 +126,7 @@ export default function OrdersPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={t('fnb.orders')} />
-      {hasPermission(session.data, 'fnb.order.create') && (
+      {can('fnb.order.create') && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="animate-fade-in">
             <CardHeader className="gap-3 pb-4">
@@ -391,7 +390,7 @@ export default function OrdersPage() {
                     {formatMoney(o.totalMinor, o.currency)}
                   </TableCell>
                   <TableCell className="py-1.5 text-right">
-                    {hasPermission(session.data, 'fnb.order.update') && (
+                    {can('fnb.order.update') && (
                       <Button
                         size="sm"
                         variant="ghost"

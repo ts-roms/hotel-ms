@@ -17,8 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 export function MaintenanceDetail({
@@ -31,9 +30,8 @@ export function MaintenanceDetail({
   onClose: () => void;
 }) {
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
-  const can = (p: string) => hasPermission(session.data, p);
   const detail = useQuery({
     queryKey: ['maintenance-request', propertyId, requestId],
     queryFn: () => pms.maintenanceRequest(requestId),

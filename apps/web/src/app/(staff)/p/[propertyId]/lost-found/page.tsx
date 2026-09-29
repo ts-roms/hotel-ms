@@ -20,8 +20,7 @@ import { PackageSearch } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 
 const CATEGORIES = ['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER'] as const;
@@ -30,14 +29,14 @@ const CATEGORIES = ['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER'
 export default function LostFoundPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const [status, setStatus] = useState<'HELD' | 'CLOSED' | 'ALL'>('HELD');
   const [q, setQ] = useState('');
   const items = useQuery({
     queryKey: ['lost-found', propertyId, status, q],
     queryFn: () => pms.lostFound({ status, ...(q.trim() ? { q: q.trim() } : {}) }),
   });
-  const canClose = hasPermission(session.data, 'lost_found.manage');
+  const canClose = can('lost_found.manage');
 
   return (
     <div className="flex max-w-4xl flex-col gap-4">

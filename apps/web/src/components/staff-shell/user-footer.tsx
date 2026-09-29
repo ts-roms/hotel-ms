@@ -5,8 +5,8 @@ import { Avatar, Button } from '@hotel/ui';
 import { ArrowLeftRight, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { NotificationBell } from '@/components/notification-bell';
-import { ThemeToggle } from '@/components/theme';
+import { NotificationBell } from './notification-bell';
+import { ThemeToggle } from './theme';
 import { t } from '@/lib/i18n';
 import { useLogout } from '@/lib/session';
 

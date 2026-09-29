@@ -28,8 +28,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
@@ -43,11 +42,11 @@ const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
 export default function ServiceRequestsPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<'ACTIVE' | 'DONE'>('ACTIVE');
   const [department, setDepartment] = useState<string>('');
-  const canUpdate = hasPermission(session.data, 'guest_service.update');
+  const canUpdate = can('guest_service.update');
 
   const queryKey = ['service-requests', propertyId, status, department];
   const list = useQuery({
@@ -73,7 +72,7 @@ export default function ServiceRequestsPage() {
     queryClient.invalidateQueries({ queryKey: ['service-requests', propertyId] });
   // A guest's "something is broken" becomes a maintenance request, linked back to it.
   const router = useRouter();
-  const canReportMaintenance = hasPermission(session.data, 'maintenance.report');
+  const canReportMaintenance = can('maintenance.report');
   const toMaintenance = useMutation({
     mutationFn: (r: ServiceRequest) => {
       const roomId = rooms.data?.find((room) => room.number === r.roomNumber)?.id ?? null;

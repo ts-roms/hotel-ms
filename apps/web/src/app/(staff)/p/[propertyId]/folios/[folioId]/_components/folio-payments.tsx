@@ -7,13 +7,12 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { useRefreshFolio } from './folio-cache';
 
 export function FolioPayments({ propertyId, folio }: { propertyId: string; folio: Folio }) {
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const refresh = useRefreshFolio(propertyId, folio.id);
   const [refunding, setRefunding] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
@@ -28,7 +27,7 @@ export function FolioPayments({ propertyId, folio }: { propertyId: string; folio
       return refresh();
     },
   });
-  const canRefund = hasPermission(session.data, 'payment.refund') && folio.status === 'OPEN';
+  const canRefund = can('payment.refund') && folio.status === 'OPEN';
   return (
     <Card>
       <CardHeader>

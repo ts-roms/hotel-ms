@@ -248,6 +248,9 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(yaml@2.9.1))
 
   apps/worker:
     dependencies:

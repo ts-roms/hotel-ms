@@ -21,8 +21,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { GuestMessage } from './_components/guest-message';
 import { DetailSkeleton } from './_components/reservation-skeleton';
@@ -31,7 +30,7 @@ import { RoomLine } from './_components/room-line';
 export default function ReservationPage() {
   const { propertyId, reservationId } = useParams<{ propertyId: string; reservationId: string }>();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const reservation = useQuery({
     queryKey: ['reservation', propertyId, reservationId],
@@ -54,8 +53,8 @@ export default function ReservationPage() {
   if (reservation.error) return <Alert>{errorMessage(reservation.error)}</Alert>;
   if (!r) return <DetailSkeleton />;
 
-  const canUpdate = hasPermission(session.data, 'reservation.update');
-  const canCancel = hasPermission(session.data, 'reservation.cancel');
+  const canUpdate = can('reservation.update');
+  const canCancel = can('reservation.cancel');
   const hasUpcoming = r.rooms.some((l) => l.status === 'RESERVED');
 
   return (
@@ -104,7 +103,7 @@ export default function ReservationPage() {
               {t('res.cancelled')}: {r.cancelReason}
             </span>
           )}
-          {r.status === 'CONFIRMED' && hasPermission(session.data, 'guest_portal.invite') && (
+          {r.status === 'CONFIRMED' && can('guest_portal.invite') && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Button
                 size="sm"
@@ -150,24 +149,18 @@ export default function ReservationPage() {
             reason && action.mutate(() => pms.cancelReservationRoom(r.id, line.id, reason))
           }
           folioHref={
-            line.folioId && hasPermission(session.data, 'folio.read')
-              ? `/p/${propertyId}/folios/${line.folioId}`
-              : null
+            line.folioId && can('folio.read') ? `/p/${propertyId}/folios/${line.folioId}` : null
           }
           onCheckIn={
-            hasPermission(session.data, 'stay.check_in')
-              ? () => action.mutate(() => pms.checkIn(r.id, line.id))
-              : null
+            can('stay.check_in') ? () => action.mutate(() => pms.checkIn(r.id, line.id)) : null
           }
           onCheckOut={
-            hasPermission(session.data, 'stay.check_out')
-              ? () => action.mutate(() => pms.checkOut(r.id, line.id))
-              : null
+            can('stay.check_out') ? () => action.mutate(() => pms.checkOut(r.id, line.id)) : null
           }
           extra={
             r.status === 'CONFIRMED' &&
             (line.status === 'RESERVED' || line.status === 'IN_HOUSE') &&
-            hasPermission(session.data, 'guest_portal.invite') ? (
+            can('guest_portal.invite') ? (
               <GuestMessage propertyId={propertyId} reservationId={r.id} lineId={line.id} />
             ) : null
           }

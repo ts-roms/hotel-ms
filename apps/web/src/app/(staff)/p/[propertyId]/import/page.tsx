@@ -26,8 +26,7 @@ import { Download, FileUp, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 
 const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: string }[] = [
   { kind: 'guests', label: 'imp.guests', permission: 'guest.update' },
@@ -46,8 +45,8 @@ function templateHref(kind: ImportKind): string {
 export default function ImportPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
-  const kinds = KINDS.filter((k) => hasPermission(session.data, k.permission));
+  const can = useCan();
+  const kinds = KINDS.filter((k) => can(k.permission));
   const [kind, setKind] = useState<ImportKind | ''>('');
   const current = kind || kinds[0]?.kind || 'guests';
   const [fileName, setFileName] = useState('');

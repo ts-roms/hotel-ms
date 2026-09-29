@@ -17,8 +17,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useProperty, usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 import { EventPanel } from './event-panel';
 
@@ -38,10 +37,10 @@ export function UnifiedCalendar() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const property = useProperty(propertyId);
-  const session = useSession();
+  const can = useCan();
   const router = useRouter();
   const params = useSearchParams();
-  const canManage = hasPermission(session.data, 'event.manage');
+  const canManage = can('event.manage');
   const [hidden, setHidden] = useState<Set<Kind>>(new Set());
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
   const [editing, setEditing] = useState<{ eventId: string | null; date?: string } | null>(

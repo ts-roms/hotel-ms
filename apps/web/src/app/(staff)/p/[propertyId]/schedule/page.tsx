@@ -17,8 +17,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { Birthdays } from './_components/birthdays';
 import { CoverageGaps } from './_components/coverage-gaps';
 import { NewShift } from './_components/new-shift-form';
@@ -30,12 +29,12 @@ import { StaffingRequirements } from './_components/staffing-requirements';
 export default function SchedulePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [monday, setMonday] = useState(() => mondayOf(today()));
   const days = weekDays(monday);
   const sunday = days[6]!;
-  const canManage = hasPermission(session.data, 'schedule.manage');
+  const canManage = can('schedule.manage');
 
   const schedule = useQuery({
     queryKey: ['schedule', propertyId, monday],
@@ -174,7 +173,7 @@ export default function SchedulePage() {
       )}
 
       <StaffingRequirements canManage={canManage} />
-      {hasPermission(session.data, 'birthday.read') && <Birthdays />}
+      {can('birthday.read') && <Birthdays />}
     </div>
   );
 }

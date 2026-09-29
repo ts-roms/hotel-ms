@@ -4,7 +4,7 @@ import { Button } from '@hotel/ui';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { t } from '@/lib/i18n';
-import { THEME_KEY } from './theme-script';
+import { THEME_KEY } from '@/components/theme-script';
 
 type Theme = 'light' | 'dark' | 'system';
 

@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { createContext, useContext } from 'react';
 import { api } from './api';
+import { hasPropertyPermission } from './permissions';
+import { useSession } from './session';
 
 const LAST_PROPERTY_KEY = 'hotel.lastPropertyId';
 
@@ -25,6 +27,17 @@ export function usePropertyId(): string {
   const propertyId = useContext(PropertyIdContext);
   if (!propertyId) throw new Error('usePropertyId() is only available under /p/[propertyId]');
   return propertyId;
+}
+
+/**
+ * Permission check for the current property: `can('folio.read')` is true for an
+ * organization-wide grant or a grant at this property. Use it for everything under
+ * /p/[propertyId]; `hasPermission` answers "anywhere in the organization" instead.
+ */
+export function useCan(): (permission: string) => boolean {
+  const propertyId = usePropertyId();
+  const session = useSession();
+  return (permission) => hasPropertyPermission(session.data, permission, propertyId);
 }
 
 /** Property details, including its business date, currency and time zone. */

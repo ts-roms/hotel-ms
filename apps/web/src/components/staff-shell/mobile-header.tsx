@@ -5,7 +5,7 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { BrandMark } from '@/components/brand';
-import { NotificationBell } from '@/components/notification-bell';
+import { NotificationBell } from './notification-bell';
 import { t } from '@/lib/i18n';
 
 /** Top bar below the `lg` breakpoint, with the sidebar in a drawer. Hidden when printing. */

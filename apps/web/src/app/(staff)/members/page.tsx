@@ -23,6 +23,7 @@ import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { useProperties } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
 
@@ -35,10 +36,7 @@ function toPropertyId(scope: string, firstPropertyId: string | undefined): strin
 }
 
 function usePropertyNames() {
-  const properties = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => api.properties.list({ limit: 100 }),
-  });
+  const properties = useProperties();
   const items = properties.data?.items ?? [];
   const nameOf = (id: string | null) =>
     id ? (items.find((p) => p.id === id)?.name ?? '—') : t('scope.organization');

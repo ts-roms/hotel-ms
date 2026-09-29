@@ -77,7 +77,4 @@ export function useSwitchOrganization() {
   });
 }
 
-/** Has this permission anywhere in the active organization (for showing navigation). */
-export function hasPermission(info: SessionInfo | null | undefined, permission: string): boolean {
-  return !!info?.grants.some((g) => g.permission === permission);
-}
+export { hasPermission, hasPropertyPermission } from './permissions';

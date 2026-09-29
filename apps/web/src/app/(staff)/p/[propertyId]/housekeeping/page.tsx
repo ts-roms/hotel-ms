@@ -22,8 +22,7 @@ import { BedDouble } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 type BoardRoom = HousekeepingBoard['rooms'][number];
@@ -57,7 +56,7 @@ interface Action {
 export default function HousekeepingPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<Status | null>(null);
   const board = useQuery({
@@ -65,7 +64,7 @@ export default function HousekeepingPage() {
     queryFn: pms.housekeeping,
     refetchInterval: 30_000,
   });
-  const canAssign = hasPermission(session.data, 'housekeeping.assign');
+  const canAssign = can('housekeeping.assign');
   const staff = useQuery({
     queryKey: ['housekeeping-staff', propertyId],
     queryFn: pms.housekeepingStaff,
@@ -188,7 +187,7 @@ export default function HousekeepingPage() {
               )}
               <div className="flex flex-wrap gap-2">
                 {NEXT_ACTIONS[room.housekeepingStatus]
-                  .filter((a) => hasPermission(session.data, a.permission))
+                  .filter((a) => can(a.permission))
                   .map((a) => {
                     const key = `${room.roomId}:${a.to}`;
                     return (

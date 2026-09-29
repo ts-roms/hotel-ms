@@ -27,15 +27,14 @@ import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { FolioFinance } from './_components/folio-finance';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
   const folio = useQuery({
@@ -46,7 +45,6 @@ export default function FolioPage() {
     mutationFn: (fn: () => Promise<Folio>) => fn(),
     onSuccess: (data) => queryClient.setQueryData(['folio', propertyId, folioId], data),
   });
-  const can = (p: string) => hasPermission(session.data, p);
 
   const f = folio.data;
   if (folio.error) return <Alert>{errorMessage(folio.error)}</Alert>;
