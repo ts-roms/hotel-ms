@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import {
   type CancelSeriesRequest,
   cancelSeriesRequestSchema,
+  cancelSeriesResultSchema,
   type CoverageQuery,
   coverageGapSchema,
   coverageQuerySchema,
@@ -14,7 +15,6 @@ import {
   staffingRequirementSchema,
   listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -43,7 +43,7 @@ export class StaffingController {
   @Post('shift-series/:seriesId/cancel')
   @RequirePermission('schedule.manage')
   @HttpCode(200)
-  @ZodResponse(200, z.object({ cancelled: z.number().int() }))
+  @ZodResponse(200, cancelSeriesResultSchema)
   cancelSeries(
     @Param('propertyId') propertyId: string,
     @Param('seriesId') seriesId: string,

@@ -1,14 +1,9 @@
-import { PERMISSIONS, PERMISSION_CODES, ROLE_TEMPLATES } from '@hotel/contracts';
+import { FEATURE_FLAGS, PERMISSIONS, PERMISSION_CODES, ROLE_TEMPLATES } from '@hotel/contracts';
 import type { PrismaClient } from './generated/prisma/client.js';
 import { withDbContext } from './context.js';
 
-export const FEATURE_FLAGS = [
-  { key: 'self_checkin', description: 'Guest self check-in in the guest portal' },
-  { key: 'guest_food_ordering', description: 'Guest food and room-service ordering' },
-  { key: 'digital_room_key', description: 'Digital room keys through a room access provider' },
-  { key: 'multi_currency', description: 'Multi-currency folios and reporting' },
-  { key: 'advanced_reports', description: 'Advanced and group-level reports' },
-] as const;
+/** The flag catalog lives in `@hotel/contracts`; re-exported here for existing imports. */
+export { FEATURE_FLAGS };
 
 /**
  * Synchronizes platform catalogs (permissions, role templates, feature flags) from code.

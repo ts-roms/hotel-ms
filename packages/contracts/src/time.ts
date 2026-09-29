@@ -37,6 +37,8 @@ export const createShiftTemplateRequestSchema = z.strictObject({
   breakMinutes: z.number().int().min(0).max(240).default(60),
 });
 export type CreateShiftTemplateRequest = z.infer<typeof createShiftTemplateRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateShiftTemplateRequestInput = z.input<typeof createShiftTemplateRequestSchema>;
 
 export const shiftSchema = z.object({
   id: z.uuid(),
@@ -88,6 +90,8 @@ export const createShiftRequestSchema = z
     path: ['startTime'],
   });
 export type CreateShiftRequest = z.infer<typeof createShiftRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateShiftRequestInput = z.input<typeof createShiftRequestSchema>;
 
 export const updateShiftRequestSchema = z
   .strictObject({
@@ -200,11 +204,18 @@ export const correctionRequestSchema = z.strictObject({
 });
 export type CorrectionRequest = z.infer<typeof correctionRequestSchema>;
 
+export const correctionListQuerySchema = z.object({
+  status: z.enum(APPROVAL_STATUSES).optional(),
+});
+export type CorrectionListQuery = z.infer<typeof correctionListQuerySchema>;
+
 export const decisionRequestSchema = z.strictObject({
   decision: z.enum(['APPROVE', 'REJECT']),
   note: z.string().trim().max(500).default(''),
 });
 export type DecisionRequest = z.infer<typeof decisionRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type DecisionRequestInput = z.input<typeof decisionRequestSchema>;
 
 // ---- Leave ---------------------------------------------------------------------------------
 
@@ -238,6 +249,8 @@ export const createLeaveTypeRequestSchema = z.strictObject({
   hrApprovalRequired: z.boolean().default(false),
 });
 export type CreateLeaveTypeRequest = z.infer<typeof createLeaveTypeRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateLeaveTypeRequestInput = z.input<typeof createLeaveTypeRequestSchema>;
 
 export const updateLeaveTypeRequestSchema = z
   .strictObject({
@@ -337,6 +350,8 @@ export const createLeaveRequestSchema = z
     path: ['endDate'],
   });
 export type CreateLeaveRequest = z.infer<typeof createLeaveRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateLeaveRequestInput = z.input<typeof createLeaveRequestSchema>;
 
 export const leaveDecisionResultSchema = leaveRequestSchema.extend({
   /** Shifts that overlap approved leave; the scheduler should reassign them. */
@@ -400,6 +415,8 @@ export const createRecurringShiftsRequestSchema = z
     path: ['to'],
   });
 export type CreateRecurringShiftsRequest = z.infer<typeof createRecurringShiftsRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateRecurringShiftsRequestInput = z.input<typeof createRecurringShiftsRequestSchema>;
 export type CreateRecurringShiftsInput = z.input<typeof createRecurringShiftsRequestSchema>;
 
 export const recurringShiftsResultSchema = z.object({
@@ -423,6 +440,9 @@ export const cancelSeriesRequestSchema = z.strictObject({
   employeeId: z.uuid().optional(),
 });
 export type CancelSeriesRequest = z.infer<typeof cancelSeriesRequestSchema>;
+
+export const cancelSeriesResultSchema = z.object({ cancelled: z.number().int() });
+export type CancelSeriesResult = z.infer<typeof cancelSeriesResultSchema>;
 
 /** A department needs at least minStaff people on shift at every moment of the window. */
 export const staffingRequirementSchema = z.object({
@@ -483,3 +503,47 @@ export const publishResultSchema = z.object({
   gaps: z.array(coverageGapSchema),
 });
 export type PublishResult = z.infer<typeof publishResultSchema>;
+
+// ---- Time clock (ADR-0022) --------------------------------------------------------------------
+
+/** Selfie formats a time clock may send (checked against the image's own bytes). */
+export const CLOCK_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+/** Largest accepted selfie: 2 MiB (a camera frame is far smaller). */
+export const CLOCK_PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** The punch travels in the query string; the body is the selfie itself. */
+export const clockPunchQuerySchema = z.strictObject({
+  /** Matched case-insensitively. */
+  employeeNo: z.string().trim().min(1).max(40),
+  type: z.enum(PUNCH_TYPES),
+});
+export type ClockPunchQuery = z.infer<typeof clockPunchQuerySchema>;
+
+export const clockPunchResultSchema = z.object({
+  /** First (or preferred) name only, for the greeting on a shared screen. */
+  employeeName: z.string(),
+  type: z.enum(PUNCH_TYPES),
+  at: z.iso.datetime(),
+});
+export type ClockPunchResult = z.infer<typeof clockPunchResultSchema>;
+
+/** A punch with its selfie, for managers reviewing punches. */
+export const clockPhotoSchema = z.object({
+  punchId: z.uuid(),
+  employeeId: z.uuid(),
+  employeeNo: z.string(),
+  employeeName: z.string(),
+  type: z.enum(PUNCH_TYPES),
+  at: z.iso.datetime(),
+  deviceName: z.string().nullable(),
+  /** WEB: the employee's own session; KIOSK: a time clock. */
+  source: z.enum(['WEB', 'KIOSK']),
+});
+export type ClockPhoto = z.infer<typeof clockPhotoSchema>;
+
+/** How long punch selfies are kept, per organization (default 90 days). */
+export const PHOTO_RETENTION_DEFAULT_DAYS = 90;
+export const photoRetentionSchema = z.strictObject({
+  days: z.number().int().min(7).max(365),
+});
+export type PhotoRetention = z.infer<typeof photoRetentionSchema>;

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { localDateSchema, localTimeSchema } from './common.js';
 import { totpCodeSchema } from './auth.js';
+import { GUEST_ID_REVIEW_STATUSES, GUEST_ID_TYPES } from './guests.js';
+import { RESERVATION_ROOM_STATUSES } from './reservations.js';
 
 /**
  * Guest portal contracts (blueprint §11, spec §23–26). Guests are a separate realm from
@@ -34,7 +36,7 @@ export const guestStaySchema = z.object({
     roomTypeName: z.string(),
     adults: z.number().int(),
     children: z.number().int(),
-    status: z.enum(['RESERVED', 'IN_HOUSE', 'CHECKED_OUT', 'CANCELLED', 'NO_SHOW']),
+    status: z.enum(RESERVATION_ROOM_STATUSES),
     roomNumber: z.string().nullable(),
     preCheckInCompleted: z.boolean(),
     expectedArrivalTime: z.string().nullable(),
@@ -51,8 +53,8 @@ export const guestStaySchema = z.object({
   /** The ID most recently uploaded for this stay (ADR-0027); null when none. */
   identity: z
     .object({
-      documentType: z.enum(['PASSPORT', 'DRIVERS_LICENSE', 'NATIONAL_ID', 'OTHER']),
-      status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
+      documentType: z.enum(GUEST_ID_TYPES),
+      status: z.enum(GUEST_ID_REVIEW_STATUSES),
       rejectionReason: z.string().nullable(),
       uploadedAt: z.iso.datetime(),
     })
@@ -72,6 +74,8 @@ export const preCheckInRequestSchema = z.strictObject({
   specialRequests: z.string().trim().max(1000).default(''),
 });
 export type PreCheckInRequest = z.infer<typeof preCheckInRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type PreCheckInRequestInput = z.input<typeof preCheckInRequestSchema>;
 
 export const roomAccessSchema = z.object({
   method: z.enum(['FRONT_DESK_KEY', 'MOBILE_KEY', 'PIN']),

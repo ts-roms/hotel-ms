@@ -29,10 +29,10 @@ import {
   type UpdateShiftRequest,
   updateShiftRequestSchema,
   listOf,
-  APPROVAL_STATUSES,
+  type CorrectionListQuery,
+  correctionListQuerySchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
@@ -43,10 +43,6 @@ import { PayrollService } from './payroll.service.js';
 import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
-
-const correctionStatusQuery = z.object({
-  status: z.enum(APPROVAL_STATUSES).optional(),
-});
 
 /** Property-level HR: clock, attendance, schedule, leave approvals, payroll export. */
 @ApiTags('hr: property')
@@ -108,7 +104,7 @@ export class PropertyHrController {
   @ZodResponse(200, listOf(attendanceCorrectionSchema))
   async corrections(
     @Param('propertyId') propertyId: string,
-    @ZodQuery(correctionStatusQuery) query: z.infer<typeof correctionStatusQuery>,
+    @ZodQuery(correctionListQuerySchema) query: CorrectionListQuery,
   ) {
     return { items: await this.attendance.corrections(propertyId, query.status) };
   }

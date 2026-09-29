@@ -7,6 +7,7 @@ import {
   type CaptureHoldRequest,
   captureHoldRequestSchema,
   cashierShiftSchema,
+  currentCashierShiftSchema,
   type CreateDiscountProfileRequest,
   createDiscountProfileRequestSchema,
   type CloseShiftRequest,
@@ -44,7 +45,6 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
 import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
@@ -336,7 +336,7 @@ export class FinanceController {
 
   @Get('cashier/shift')
   @RequirePermission('cashier.shift')
-  @ZodResponse(200, z.object({ shift: cashierShiftSchema.nullable() }))
+  @ZodResponse(200, currentCashierShiftSchema)
   async currentShift(@Param('propertyId') propertyId: string) {
     return { shift: await this.cashier.current(propertyId) };
   }

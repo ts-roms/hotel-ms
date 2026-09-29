@@ -13,6 +13,7 @@ import {
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   IMAGE_UPLOAD_TYPES,
+  imageVersionSchema,
   propertyImageSchema,
   type UpdatePropertyImageRequest,
   updatePropertyImageRequestSchema,
@@ -21,7 +22,6 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
@@ -98,7 +98,7 @@ export class ImagesController {
   @RequirePermission('fnb.menu.manage')
   @ApiConsumes(...IMAGE_UPLOAD_TYPES)
   @ApiBody({ schema: { type: 'string', format: 'binary' } })
-  @ZodResponse(200, z.object({ imageVersion: z.string() }))
+  @ZodResponse(200, imageVersionSchema)
   setMenuImage(
     @Param('propertyId') propertyId: string,
     @Param('itemId') itemId: string,

@@ -79,6 +79,8 @@ export const createPropertyRequestSchema = z.strictObject({
   currentBusinessDate: localDateSchema.optional(),
 });
 export type CreatePropertyRequest = z.infer<typeof createPropertyRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreatePropertyRequestInput = z.input<typeof createPropertyRequestSchema>;
 
 /**
  * Timezone and currency are deliberately not editable here: changing them on a property
@@ -90,6 +92,20 @@ export const updatePropertyRequestSchema = z
 export type UpdatePropertyRequest = z.infer<typeof updatePropertyRequestSchema>;
 
 // ---- Feature flags ---------------------------------------------------------------------------
+
+/**
+ * The platform's feature flags. `@hotel/database` syncs them into `feature_flag_definitions`
+ * on every deploy; organizations switch them on or off.
+ */
+export const FEATURE_FLAGS = [
+  { key: 'self_checkin', description: 'Guest self check-in in the guest portal' },
+  { key: 'guest_food_ordering', description: 'Guest food and room-service ordering' },
+  { key: 'digital_room_key', description: 'Digital room keys through a room access provider' },
+  { key: 'multi_currency', description: 'Multi-currency folios and reporting' },
+  { key: 'advanced_reports', description: 'Advanced and group-level reports' },
+] as const;
+export type FeatureFlagKey = (typeof FEATURE_FLAGS)[number]['key'];
+export const FEATURE_FLAG_KEYS: readonly FeatureFlagKey[] = FEATURE_FLAGS.map((flag) => flag.key);
 
 export const featureFlagSchema = z.object({
   key: z.string(),
