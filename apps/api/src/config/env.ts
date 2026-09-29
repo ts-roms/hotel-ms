@@ -45,6 +45,11 @@ const envSchema = z.object({
   /** Number of proxy hops to trust for X-Forwarded-For. */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  /** Error tracking (ADR-0029). Unset: errors are only logged. */
+  SENTRY_DSN: z.url().optional(),
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  /** Release identifier (the image's commit SHA), for error grouping. */
+  RELEASE: z.string().optional(),
   OPENAPI_ENABLED: z
     .enum(['true', 'false'])
     .optional()

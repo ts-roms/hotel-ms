@@ -23,6 +23,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "reset": "prisma migrate reset --force",
     "seed": "node --env-file-if-exists=../../.env dist/seed/run.js",
+    "ops:operator": "node --env-file-if-exists=../../.env dist/ops/platform-operator.js",
     "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {

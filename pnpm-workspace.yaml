@@ -1,6 +1,7 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+  - 'tests/*'
 
 allowBuilds:
   '@prisma/engines': true
@@ -12,6 +13,8 @@ allowBuilds:
   # Optional native accelerator for BullMQ; the prebuilt binary is used without a build.
   msgpackr-extract: false
   prisma: true
+  # Version-check postinstall of the OpenTelemetry exporters' protobuf runtime; not needed.
+  protobufjs: false
   sharp: true
   unrs-resolver: true
 

@@ -3,6 +3,9 @@ import {
   type DomainEventEnvelope,
   type EmailJob,
   NOTIFICATIONS_QUEUE,
+  OPS_COMMANDS_QUEUE,
+  OPS_SNAPSHOT_INTERVAL_MS,
+  type OpsCommand,
   SMS_QUEUE,
   type SmsJob,
   TENANT_JOBS_QUEUE,
@@ -15,8 +18,10 @@ import { pino } from 'pino';
 import { z } from 'zod';
 import { deliverEmail } from './email/deliver.js';
 import { createTransport } from './email/transports.js';
+import { flushErrorReporting, initErrorReporting, reportError } from './error-reporting.js';
 import { dispatch } from './handlers.js';
-import { DOMAIN_EVENTS_QUEUE, relayOutboxBatch } from './outbox-relay.js';
+import { publishOpsSnapshot, runOpsCommand } from './ops.js';
+import { DOMAIN_EVENTS_QUEUE, OUTBOX_MAX_ATTEMPTS, relayOutboxBatch } from './outbox-relay.js';
 import { planTenantJobs } from './scheduler.js';
 import { createSmsTransport, deliverSms } from './sms.js';
 
@@ -41,6 +46,10 @@ const env = z
     SMS_TRANSPORT: z.enum(['file', 'sns']).default('file'),
     /** Alphanumeric sender id where the destination country allows it. */
     SMS_SENDER_ID: z.string().max(11).optional(),
+    /** Error tracking (ADR-0029). Unset: errors are only logged. */
+    SENTRY_DSN: z.url().optional(),
+    SENTRY_ENVIRONMENT: z.string().optional(),
+    RELEASE: z.string().optional(),
   })
   .parse(process.env);
 
@@ -50,6 +59,13 @@ const log = pino({
   ...(env.NODE_ENV === 'development'
     ? { transport: { target: 'pino-pretty', options: { singleLine: true } } }
     : {}),
+});
+
+initErrorReporting({
+  dsn: env.SENTRY_DSN,
+  environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV,
+  release: env.RELEASE,
+  service: 'worker',
 });
 
 // BullMQ requires maxRetriesPerRequest: null on its connections.
@@ -74,7 +90,15 @@ const worker = new Worker<DomainEventEnvelope>(
   },
   { connection, concurrency: 10 },
 );
-worker.on('failed', (job, err) => log.error({ jobId: job?.id, err }, 'event handler failed'));
+worker.on('failed', (job, err) => {
+  log.error({ jobId: job?.id, err }, 'event handler failed');
+  reportError(err, {
+    queue: DOMAIN_EVENTS_QUEUE,
+    jobId: job?.id,
+    eventType: job?.data.type,
+    organizationId: job?.data.organizationId,
+  });
+});
 
 const transport = createTransport(env);
 const mailer = new Worker<EmailJob>(
@@ -83,12 +107,18 @@ const mailer = new Worker<EmailJob>(
   // Provider rate limits (SES sandbox: 1/s; production quotas are higher).
   { connection, concurrency: 5, limiter: { max: 10, duration: 1000 } },
 );
-mailer.on('failed', (job, err) =>
+mailer.on('failed', (job, err) => {
   log.error(
     { jobId: job?.id, template: job?.data.template, attempts: job?.attemptsMade, err },
     'email delivery failed',
-  ),
-);
+  );
+  reportError(err, {
+    queue: NOTIFICATIONS_QUEUE,
+    jobId: job?.id,
+    template: job?.data.template,
+    attempts: job?.attemptsMade,
+  });
+});
 
 const smsTransport = createSmsTransport(env);
 const texter = new Worker<SmsJob>(
@@ -96,9 +126,10 @@ const texter = new Worker<SmsJob>(
   (job) => deliverSms(job.data, smsTransport, log.child({ jobId: job.id })),
   { connection, concurrency: 5, limiter: { max: 5, duration: 1000 } },
 );
-texter.on('failed', (job, err) =>
-  log.error({ jobId: job?.id, attempts: job?.attemptsMade, err }, 'sms delivery failed'),
-);
+texter.on('failed', (job, err) => {
+  log.error({ jobId: job?.id, attempts: job?.attemptsMade, err }, 'sms delivery failed');
+  reportError(err, { queue: SMS_QUEUE, jobId: job?.id, attempts: job?.attemptsMade });
+});
 
 let running = true;
 async function relayLoop(): Promise<void> {
@@ -110,6 +141,7 @@ async function relayLoop(): Promise<void> {
       if (published === 0) await sleep(env.OUTBOX_POLL_MS);
     } catch (error) {
       log.error({ err: error }, 'outbox relay error');
+      reportError(error, { component: 'outbox-relay' });
       await sleep(env.OUTBOX_POLL_MS * 4);
     }
   }
@@ -118,21 +150,50 @@ async function relayLoop(): Promise<void> {
 const relay = relayLoop();
 
 const tenantJobs = new Queue<TenantJob>(TENANT_JOBS_QUEUE, { connection });
+let schedulerRanAt: Date | null = null;
 async function plan(): Promise<void> {
   try {
     await planTenantJobs(system, tenantJobs, log);
+    schedulerRanAt = new Date();
   } catch (error) {
     log.error({ err: error }, 'scheduler planning failed');
+    reportError(error, { component: 'scheduler' });
   }
 }
 void plan();
 const scheduler = setInterval(() => void plan(), env.SCHEDULER_INTERVAL_MS);
+
+// Ops dashboard (ADR-0029): a snapshot for operators, and their commands.
+async function snapshot(): Promise<void> {
+  try {
+    await publishOpsSnapshot(system, connection, {
+      maxAttempts: OUTBOX_MAX_ATTEMPTS,
+      schedulerRanAt,
+    });
+  } catch (error) {
+    log.error({ err: error }, 'ops snapshot failed');
+    reportError(error, { component: 'ops-snapshot' });
+  }
+}
+void snapshot();
+const snapshots = setInterval(() => void snapshot(), OPS_SNAPSHOT_INTERVAL_MS);
+const opsCommands = new Worker<OpsCommand>(
+  OPS_COMMANDS_QUEUE,
+  async (job) => {
+    const result = await runOpsCommand(system, job.data, log);
+    void snapshot();
+    return result;
+  },
+  { connection, concurrency: 1 },
+);
 log.info({ emailTransport: transport.name, smsTransport: smsTransport.name }, 'worker started');
 
 async function shutdown(signal: string): Promise<void> {
   log.info({ signal }, 'shutting down');
   running = false;
   clearInterval(scheduler);
+  clearInterval(snapshots);
+  await opsCommands.close();
   await relay;
   await tenantJobs.close();
   await worker.close();
@@ -141,6 +202,7 @@ async function shutdown(signal: string): Promise<void> {
   await queue.close();
   await system.$disconnect();
   connection.disconnect();
+  await flushErrorReporting();
   process.exit(0);
 }
 process.on('SIGTERM', () => void shutdown('SIGTERM'));

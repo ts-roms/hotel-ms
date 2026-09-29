@@ -5,6 +5,7 @@ import { Redis } from 'ioredis';
 import { ClsService } from 'nestjs-cls';
 import type { RequestContext } from '../../common/request-context.js';
 import { ENV, type Env } from '../../config/env.js';
+import { reportError } from '../../infrastructure/error-reporting.js';
 import { GuestIdentityService } from '../guest-portal/guest-identity.service.js';
 import { EmployeeDocumentsService } from '../hr/documents.service.js';
 import { LeaveService } from '../hr/leave.service.js';
@@ -46,6 +47,14 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
         connection: this.connection,
         concurrency: 2,
       },
+    );
+    this.worker.on('failed', (job, error) =>
+      reportError(error, {
+        job: job?.data.type,
+        jobId: job?.id,
+        organizationId: job?.data.organizationId,
+        attempts: job?.attemptsMade,
+      }),
     );
   }
 

@@ -80,3 +80,17 @@ The subnets and security group are in the `deploy_config` output. The administra
 **Forgot password** to set a password, which also proves they control the address. They
 must enable two-step verification before managing members. A platform-operator console
 for this is on the roadmap.
+
+## 6. Observability and the release gate (ADR-0029)
+
+- **Traces** go to X-Ray through the collector sidecar (`tracing_enabled`, on by default).
+- **Errors to Sentry** (optional): add `SENTRY_DSN` to the app secret, set
+  `sentry_enabled = true`, apply, then deploy.
+- **Smoke tests after each staging deploy** run without signing in unless the staging
+  environment has `E2E_EMAIL` and `E2E_PASSWORD` secrets. Use a dedicated staff user with
+  front-desk access at one property, not an administrator.
+- **Production** releases only commits whose staging run (deploy and smoke) passed.
+- **Platform operators** for the ops dashboard: run the `migrate` task definition with the
+  command `node dist/ops/platform-operator.js` and environment `OPERATOR_EMAIL` and
+  `OPERATOR_ACTION=grant`. The operator must enable two-step verification.
+- **Restore:** follow `docs/operations/restore.md`, and rehearse PITR on staging every quarter.

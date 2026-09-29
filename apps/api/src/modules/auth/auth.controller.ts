@@ -96,6 +96,7 @@ export class AuthController {
   ): Promise<SessionInfo> {
     const { token } = await this.mfa.challenge(body);
     this.setSessionCookie(reply, token);
+    this.cls.set('mfaVerified', true);
     const organizationId = this.cls.get('sessionOrganizationId') ?? null;
     await this.auth.recordLogin(
       this.cls.get('identityId')!,

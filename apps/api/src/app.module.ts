@@ -73,6 +73,8 @@ import {
 } from './modules/hr/hr-records.controller.js';
 import { ProfileRecordsService } from './modules/hr/profile-records.service.js';
 import { StaffingService } from './modules/hr/staffing.service.js';
+import { OpsController } from './modules/ops/ops.controller.js';
+import { OperatorGuard, OpsService } from './modules/ops/ops.service.js';
 import { ScheduleService } from './modules/hr/schedule.service.js';
 import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
 import { MenuService } from './modules/fnb/menu.service.js';
@@ -163,6 +165,7 @@ export const CONTROLLERS = [
   MeController,
   EmployeeRecordsController,
   StaffingController,
+  OpsController,
   PropertyHrController,
   FnbController,
   GuestFnbController,
@@ -230,6 +233,8 @@ export class AppModule {
         HrAccess,
         PeopleService,
         ScheduleService,
+        OpsService,
+        OperatorGuard,
         StaffingService,
         ProfileRecordsService,
         AttendanceService,

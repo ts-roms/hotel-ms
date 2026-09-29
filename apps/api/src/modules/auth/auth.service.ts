@@ -190,6 +190,7 @@ export class AuthService {
         id: true,
         email: true,
         displayName: true,
+        platformRole: true,
         mfaFactors: { where: { verifiedAt: { not: null } }, select: { id: true } },
       },
     });
@@ -222,6 +223,11 @@ export class AuthService {
         email: identity.email,
         displayName: identity.displayName,
         mfaEnabled: identity.mfaFactors.length > 0,
+        // The ops dashboard needs a session that completed two-step verification.
+        platformOperator:
+          identity.platformRole === 'OPERATOR' &&
+          !mfaPending &&
+          this.cls.get('mfaVerified') === true,
       },
       mfaPending,
       memberships,

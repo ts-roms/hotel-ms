@@ -192,3 +192,25 @@ resource "aws_iam_role_policy" "deploy" {
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.deploy.json
 }
+
+# Trace segments from the collector sidecar (ADR-0029). X-Ray write actions take no
+# resource ARNs.
+#trivy:ignore:AWS-0057
+data "aws_iam_policy_document" "xray" {
+  statement {
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "xray" {
+  for_each = toset(local.traced)
+  name     = "write-traces"
+  role     = aws_iam_role.task[each.key].id
+  policy   = data.aws_iam_policy_document.xray.json
+}

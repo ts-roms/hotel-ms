@@ -1,4 +1,5 @@
-# Every commit on main that passes CI goes to staging.
+# Every commit on main that passes CI goes to staging, then the smoke E2E tests run against
+# it. Production only takes commits whose staging run passed (deploy-production.yml).
 name: Deploy staging
 
 on:
@@ -18,3 +19,39 @@ jobs:
     with:
       environment: staging
       sha: ${{ github.event.workflow_run.head_sha }}
+
+  # Read-only browser checks against the deployed site (ADR-0029). Signed-in checks run when
+  # the staging environment has E2E_EMAIL / E2E_PASSWORD secrets (a dedicated staff user).
+  smoke:
+    needs: staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hotel/e2e exec playwright install --with-deps chromium
+      - name: Smoke tests against staging
+        run: pnpm --filter @hotel/e2e e2e:smoke
+        env:
+          E2E_WEB_URL: ${{ fromJSON(vars.DEPLOY_CONFIG).public_url }}
+          E2E_GUEST_URL: ${{ fromJSON(vars.DEPLOY_CONFIG).guest_url }}
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          # Staging has no demo data: never fall back to the seed's demo login.
+          E2E_DEMO: 'false'
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-smoke-report
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+          retention-days: 7
