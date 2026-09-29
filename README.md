@@ -31,6 +31,7 @@ packages/
   database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed
   api-client/ Typed clients for the staff and guest apps
   format/     Money, date, time zone and relative-time formatting for the staff and guest apps
+  i18n/       Message catalogs for the staff and guest apps (formatting lives in @hotel/format)
   ui/         Shared shadcn-style components
 docs/         Architecture blueprint, ADRs, database conventions, generated OpenAPI
 infrastructure/docker/     Local Postgres roles, multi-target Dockerfile
