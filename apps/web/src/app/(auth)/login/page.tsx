@@ -7,7 +7,7 @@ import { Alert, Button, CardContent, Input, Label } from '@hotel/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { t } from '@/lib/i18n';
 import { nextRoute, useLogin } from '@/lib/session';
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
         : null;
 
   return (
-    <AuthShell title={t('login.title')} description={t('login.subtitle')}>
+    <AuthCard title={t('login.title')} description={t('login.subtitle')}>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           {errorMessage && <Alert>{errorMessage}</Alert>}
@@ -72,6 +72,6 @@ export default function LoginPage() {
           </Link>
         </form>
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }

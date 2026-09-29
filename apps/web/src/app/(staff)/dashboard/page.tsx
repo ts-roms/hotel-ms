@@ -21,7 +21,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Building2, CalendarDays, Clock, Coins, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { GroupOverview } from '@/components/group-overview';
+import { GroupOverview } from './_components/group-overview';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';

@@ -6,7 +6,7 @@ import { Alert, Button, CardContent, Input, Label, Notice } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
   });
 
   return (
-    <AuthShell title={t('forgot.title')} description={t('forgot.subtitle')}>
+    <AuthCard title={t('forgot.title')} description={t('forgot.subtitle')}>
       <CardContent className="flex flex-col gap-4">
         {request.isSuccess ? (
           <Notice>{t('forgot.sent')}</Notice>
@@ -46,6 +46,6 @@ export default function ForgotPasswordPage() {
           {t('login.title')}
         </Link>
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }

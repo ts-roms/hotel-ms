@@ -6,7 +6,7 @@ import { Alert, Button, CardContent, Input, Label, Notice } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <AuthShell title={t('reset.title')}>
+    <AuthCard title={t('reset.title')}>
       <CardContent className="flex flex-col gap-4">
         {token === null && <Alert>{t('reset.invalid')}</Alert>}
         {reset.isSuccess ? (
@@ -68,6 +68,6 @@ export default function ResetPasswordPage() {
           {t('login.title')}
         </Link>
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }

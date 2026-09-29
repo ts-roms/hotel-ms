@@ -30,7 +30,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { statusVariant } from '@/lib/status';
 
 const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], string> = {
@@ -41,7 +41,7 @@ const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], string> = {
 
 /** Shared devices of a property (ADR-0020). */
 export default function DevicesPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const devices = useQuery({ queryKey: ['devices', propertyId], queryFn: pms.devices });

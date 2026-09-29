@@ -6,13 +6,11 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   cn,
   EmptyState,
   PageHeader,
+  SectionCard,
   SkeletonCard,
   Table,
   TableBody,
@@ -129,13 +127,7 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
         <Alert className="border-primary/30 bg-primary/5 text-foreground">{t('ops.retried')}</Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ListRestart className="size-4 text-primary" />
-            {t('ops.queues')}
-          </CardTitle>
-        </CardHeader>
+      <SectionCard icon={ListRestart} title={t('ops.queues')}>
         <CardContent className="flex flex-col gap-3 text-sm">
           <Table>
             <TableHeader>
@@ -199,15 +191,9 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
             </div>
           )}
         </CardContent>
-      </Card>
+      </SectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Inbox className="size-4 text-primary" />
-            {t('ops.outbox')}
-          </CardTitle>
-        </CardHeader>
+      <SectionCard icon={Inbox} title={t('ops.outbox')}>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="grid gap-2 sm:grid-cols-4">
             <Stat label={t('ops.pending')} value={s.outbox.pending} />
@@ -250,15 +236,9 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </SectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Webhook className="size-4 text-primary" />
-            {t('ops.webhooks')}
-          </CardTitle>
-        </CardHeader>
+      <SectionCard icon={Webhook} title={t('ops.webhooks')}>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="grid gap-2 sm:grid-cols-3">
             <Stat label={t('ops.received24h')} value={s.webhooks.received24h} />
@@ -283,7 +263,7 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

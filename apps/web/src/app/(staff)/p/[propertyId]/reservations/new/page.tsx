@@ -9,8 +9,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  FormField,
   Input,
-  Label,
   NativeSelect,
   Skeleton,
   Spinner,
@@ -22,10 +22,10 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
+import { usePms, useProperty, usePropertyId } from '@/lib/property';
 
 export default function NewReservationPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const router = useRouter();
   const property = useProperty(propertyId);
@@ -144,39 +144,39 @@ export default function NewReservationPage() {
         <CardContent>
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
             {create.error && <Alert className="sm:col-span-2">{errorMessage(create.error)}</Alert>}
-            <Field label={t('res.firstName')} id="firstName">
+            <FormField label={t('res.firstName')} htmlFor="firstName">
               <Input
                 id="firstName"
                 required
                 value={form.firstName}
                 onChange={(e) => set('firstName', e.target.value)}
               />
-            </Field>
-            <Field label={t('res.lastName')} id="lastName">
+            </FormField>
+            <FormField label={t('res.lastName')} htmlFor="lastName">
               <Input
                 id="lastName"
                 required
                 value={form.lastName}
                 onChange={(e) => set('lastName', e.target.value)}
               />
-            </Field>
-            <Field label={t('login.email')} id="email">
+            </FormField>
+            <FormField label={t('login.email')} htmlFor="email">
               <Input
                 id="email"
                 type="email"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
               />
-            </Field>
-            <Field label={t('res.phone')} id="phone">
+            </FormField>
+            <FormField label={t('res.phone')} htmlFor="phone">
               <Input
                 id="phone"
                 type="tel"
                 value={form.phone}
                 onChange={(e) => set('phone', e.target.value)}
               />
-            </Field>
-            <Field label={t('res.arrival')} id="arrival">
+            </FormField>
+            <FormField label={t('res.arrival')} htmlFor="arrival">
               <Input
                 id="arrival"
                 type="date"
@@ -185,8 +185,8 @@ export default function NewReservationPage() {
                 value={form.arrivalDate}
                 onChange={(e) => set('arrivalDate', e.target.value)}
               />
-            </Field>
-            <Field label={t('res.departure')} id="departure">
+            </FormField>
+            <FormField label={t('res.departure')} htmlFor="departure">
               <Input
                 id="departure"
                 type="date"
@@ -195,8 +195,8 @@ export default function NewReservationPage() {
                 value={form.departureDate}
                 onChange={(e) => set('departureDate', e.target.value)}
               />
-            </Field>
-            <Field label={t('res.roomType')} id="roomType" loading={roomTypes.isPending}>
+            </FormField>
+            <FormField label={t('res.roomType')} htmlFor="roomType" loading={roomTypes.isPending}>
               <NativeSelect
                 id="roomType"
                 value={form.roomTypeId}
@@ -210,8 +210,8 @@ export default function NewReservationPage() {
                     </option>
                   ))}
               </NativeSelect>
-            </Field>
-            <Field label={t('res.ratePlan')} id="ratePlan" loading={ratePlans.isPending}>
+            </FormField>
+            <FormField label={t('res.ratePlan')} htmlFor="ratePlan" loading={ratePlans.isPending}>
               <NativeSelect
                 id="ratePlan"
                 value={form.ratePlanId}
@@ -225,8 +225,8 @@ export default function NewReservationPage() {
                     </option>
                   ))}
               </NativeSelect>
-            </Field>
-            <Field label={t('res.adults')} id="adults">
+            </FormField>
+            <FormField label={t('res.adults')} htmlFor="adults">
               <Input
                 id="adults"
                 type="number"
@@ -235,8 +235,8 @@ export default function NewReservationPage() {
                 value={form.adults}
                 onChange={(e) => set('adults', Number(e.target.value))}
               />
-            </Field>
-            <Field label={t('res.children')} id="children">
+            </FormField>
+            <FormField label={t('res.children')} htmlFor="children">
               <Input
                 id="children"
                 type="number"
@@ -245,8 +245,8 @@ export default function NewReservationPage() {
                 value={form.children}
                 onChange={(e) => set('children', Number(e.target.value))}
               />
-            </Field>
-            <Field label={t('res.source')} id="source">
+            </FormField>
+            <FormField label={t('res.source')} htmlFor="source">
               <NativeSelect
                 id="source"
                 value={form.source}
@@ -258,14 +258,14 @@ export default function NewReservationPage() {
                   </option>
                 ))}
               </NativeSelect>
-            </Field>
-            <Field label={t('res.specialRequests')} id="requests">
+            </FormField>
+            <FormField label={t('res.specialRequests')} htmlFor="requests">
               <Input
                 id="requests"
                 value={form.specialRequests}
                 onChange={(e) => set('specialRequests', e.target.value)}
               />
-            </Field>
+            </FormField>
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 p-4 sm:col-span-2">
               <div className="flex flex-col" aria-live="polite">
@@ -297,26 +297,6 @@ export default function NewReservationPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  id,
-  loading,
-  children,
-}: {
-  label: string;
-  id: string;
-  /** Options are still loading: show a placeholder in place of the control. */
-  loading?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {loading ? <Skeleton className="h-10 w-full rounded-lg" /> : children}
     </div>
   );
 }

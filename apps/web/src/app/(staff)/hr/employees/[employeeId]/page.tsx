@@ -14,6 +14,7 @@ import {
   Input,
   LoadingRegion,
   NativeSelect,
+  SectionCard,
   Skeleton,
   SkeletonCard,
   SkeletonText,
@@ -29,8 +30,13 @@ import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
-import { EmployeeDocuments } from './documents';
-import { CompensationCard, EmploymentDetails, ReviewsCard, TrainingCard } from './records';
+import { EmployeeDocuments } from './_components/employee-documents';
+import {
+  CompensationCard,
+  EmploymentDetails,
+  ReviewsCard,
+  TrainingCard,
+} from './_components/employee-records';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -106,13 +112,7 @@ export default function EmployeePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Briefcase className="size-4 text-primary" />
-            {t('hr.assignments')}
-          </CardTitle>
-        </CardHeader>
+      <SectionCard icon={Briefcase} title={t('hr.assignments')}>
         <CardContent className="stagger flex flex-col gap-2 text-sm">
           {e.assignmentHistory.map((a) => (
             <div
@@ -130,7 +130,7 @@ export default function EmployeePage() {
             </div>
           ))}
         </CardContent>
-      </Card>
+      </SectionCard>
 
       <EmploymentDetails employee={e} canManage={hasPermission(session.data, 'employee.manage')} />
       {hasPermission(session.data, 'employee.compensation') && (
@@ -174,13 +174,7 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
     post.mutate();
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Plane className="size-4 text-primary" />
-          {t('hr.leave')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Plane} title={t('hr.leave')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         {leave.error && <Alert>{errorMessage(leave.error)}</Alert>}
         <div className="flex flex-wrap gap-2">
@@ -256,6 +250,6 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

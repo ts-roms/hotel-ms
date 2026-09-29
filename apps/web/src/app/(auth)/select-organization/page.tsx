@@ -4,10 +4,15 @@ import { Avatar, Button, CardContent, cn, Skeleton, Spinner } from '@hotel/ui';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { t } from '@/lib/i18n';
 import { useSession, useSwitchOrganization } from '@/lib/session';
 
+/**
+ * Unlike the other screens in `(auth)`, this one is signed in: the identity has passed login
+ * (and MFA) but has no active organization yet, so it cannot enter the `(staff)` shell. It
+ * shares the sign-in backdrop because it is the last step before the shell, not part of it.
+ */
 export default function SelectOrganizationPage() {
   const router = useRouter();
   const session = useSession();
@@ -20,7 +25,7 @@ export default function SelectOrganizationPage() {
   }, [session.data, router]);
 
   return (
-    <AuthShell
+    <AuthCard
       title={t('org.select.title')}
       description={t('org.select.subtitle')}
       className="max-w-md"
@@ -61,6 +66,6 @@ export default function SelectOrganizationPage() {
           );
         })}
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }

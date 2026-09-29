@@ -19,7 +19,7 @@ import {
   PageHeader,
   NativeSelect,
   Skeleton,
-  Toggle,
+  SegmentedControl,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Check, Plus, Star } from 'lucide-react';
@@ -27,7 +27,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
 
@@ -40,7 +40,7 @@ const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
 
 /** Guest service queue (spec §26): guest and staff requests routed by department. */
 export default function ServiceRequestsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const queryClient = useQueryClient();
@@ -105,19 +105,14 @@ export default function ServiceRequestsPage() {
         title={t('sr.title')}
         actions={
           <>
-            <div className="flex rounded-lg border bg-card p-0.5">
-              {(['ACTIVE', 'DONE'] as const).map((s) => (
-                <Toggle
-                  key={s}
-                  size="sm"
-                  pressed={status === s}
-                  onPressedChange={() => setStatus(s)}
-                  className="px-3 hover:bg-transparent hover:text-foreground active:scale-100 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground"
-                >
-                  {t(s === 'ACTIVE' ? 'sr.active' : 'sr.done')}
-                </Toggle>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { value: 'ACTIVE', label: t('sr.active') },
+                { value: 'DONE', label: t('sr.done') },
+              ]}
+              value={status}
+              onChange={setStatus}
+            />
             <NativeSelect
               className="h-9 w-auto"
               aria-label={t('sr.all')}
@@ -292,7 +287,7 @@ function NewRequest({
   rooms: { id: string; number: string; archived: boolean }[];
   onCreated: () => void;
 }) {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const [category, setCategory] = useState<(typeof SERVICE_CATEGORIES)[number]>('TOWELS');
   const [roomId, setRoomId] = useState('');

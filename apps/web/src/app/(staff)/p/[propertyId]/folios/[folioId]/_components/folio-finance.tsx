@@ -23,7 +23,7 @@ import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
-import { CardHolds, ForeignCash, StatutoryDiscount } from './extras';
+import { CardHolds, ForeignCash, StatutoryDiscount } from './folio-cash-discount-holds';
 
 /** Payments, refunds, online links, transfers, routing and documents for one folio. */
 export function FolioFinance({ propertyId, folio }: { propertyId: string; folio: Folio }) {

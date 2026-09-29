@@ -6,7 +6,7 @@ import { Alert, Button, CardContent, Input, Label, Notice, Skeleton } from '@hot
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -47,7 +47,7 @@ export default function AcceptInvitationPage() {
   };
 
   return (
-    <AuthShell
+    <AuthCard
       title={t('invite.title')}
       description={
         preview.data ? (
@@ -105,6 +105,6 @@ export default function AcceptInvitationPage() {
           {t('login.title')}
         </Link>
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }

@@ -48,13 +48,17 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
-import { CoverageGaps, RecurringShifts, StaffingRequirements } from './staffing';
+import {
+  CoverageGaps,
+  RecurringShifts,
+  StaffingRequirements,
+} from './_components/recurring-shifts-and-staffing';
 
 /** Weekly staff schedule (blueprint §13.3): plan in drafts, then publish. */
 export default function SchedulePage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const queryClient = useQueryClient();
@@ -342,7 +346,7 @@ function NewShift({
   days: string[];
   onCreated: () => void;
 }) {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const templates = useQuery({
     queryKey: ['shift-templates', propertyId],
@@ -424,7 +428,7 @@ function NewShift({
 }
 
 function Birthdays() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const birthdays = useQuery({ queryKey: ['birthdays', propertyId], queryFn: pms.birthdays });
   if (!birthdays.data?.length) return null;

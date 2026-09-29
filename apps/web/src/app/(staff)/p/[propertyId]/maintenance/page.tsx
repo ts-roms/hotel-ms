@@ -29,7 +29,7 @@ import { Wrench } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
 
@@ -42,7 +42,7 @@ const FILTERS = [
 
 /** Maintenance requests of the property (spec §32, ADR-0023). */
 export default function MaintenancePage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const can = (p: string) => hasPermission(session.data, p);

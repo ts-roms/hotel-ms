@@ -25,7 +25,7 @@ import { Download, FileUp, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 
 const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: string }[] = [
@@ -43,7 +43,7 @@ function templateHref(kind: ImportKind): string {
 
 /** CSV import with a preview before anything is written (spec §74, ADR-0030). */
 export default function ImportPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const kinds = KINDS.filter((k) => hasPermission(session.data, k.permission));

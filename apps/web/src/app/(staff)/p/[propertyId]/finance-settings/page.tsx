@@ -19,12 +19,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
+import { usePms, useProperty, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 
 /** Exchange rates, statutory discount profiles and the self check-in card hold (ADR-0018). */
 export default function FinanceSettingsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const session = useSession();
   const can = (p: string) => hasPermission(session.data, p);
   return (

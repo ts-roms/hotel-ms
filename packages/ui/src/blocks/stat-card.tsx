@@ -11,22 +11,49 @@ const tones = {
   info: 'bg-info/10 text-info',
 };
 
-/** Headline number tile for dashboards. */
+/**
+ * Headline number tile for dashboards. `compact` draws a small bordered tile for grids of many
+ * figures. With `href` the tile is a link; pass the app's router link (e.g. next/link) as
+ * `linkComponent` for client-side navigation.
+ */
 export function StatCard({
   label,
   value,
   icon,
   tone = 'primary',
+  compact,
+  href,
+  linkComponent: LinkComponent = 'a',
   className,
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
   icon?: React.ReactNode;
   tone?: keyof typeof tones;
+  compact?: boolean;
+  href?: string;
+  linkComponent?: React.ElementType;
   className?: string;
 }) {
-  return (
-    <Card className={cn('flex items-center gap-4 p-4 sm:p-5', className)}>
+  const tile = compact ? (
+    <div
+      className={cn(
+        'flex flex-col gap-0.5 rounded-lg border p-3 transition-colors',
+        href && 'hover:bg-accent/40',
+        className,
+      )}
+    >
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xl font-semibold tabular-nums">{value}</span>
+    </div>
+  ) : (
+    <Card
+      className={cn(
+        'flex items-center gap-4 p-4 sm:p-5',
+        href && 'hover:border-ring/40',
+        className,
+      )}
+    >
       {icon && (
         <div
           className={cn(
@@ -43,4 +70,5 @@ export function StatCard({
       </div>
     </Card>
   );
+  return href ? <LinkComponent href={href}>{tile}</LinkComponent> : tile;
 }
