@@ -52,57 +52,18 @@
   --sidebar: oklch(0.175 0.013 268);
 }
 
+/* Shared base styles and .stagger come from @hotel/ui/theme.css. */
 @layer base {
-  * {
-    border-color: var(--border);
-  }
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
   body {
-    background: var(--background);
-    color: var(--foreground);
     font-feature-settings:
       'cv02' 1,
       'cv03' 1,
       'cv04' 1,
       'cv11' 1;
   }
-  ::selection {
-    background: color-mix(in oklch, var(--primary) 25%, transparent);
-  }
 }
 
 @layer utilities {
-  /* Children enter one after another. Add to a list or grid container. */
-  .stagger > * {
-    animation: var(--animate-slide-up);
-  }
-  .stagger > :nth-child(2) {
-    animation-delay: 40ms;
-  }
-  .stagger > :nth-child(3) {
-    animation-delay: 80ms;
-  }
-  .stagger > :nth-child(4) {
-    animation-delay: 120ms;
-  }
-  .stagger > :nth-child(5) {
-    animation-delay: 160ms;
-  }
-  .stagger > :nth-child(6) {
-    animation-delay: 200ms;
-  }
-  .stagger > :nth-child(7) {
-    animation-delay: 240ms;
-  }
-  .stagger > :nth-child(8) {
-    animation-delay: 280ms;
-  }
-  .stagger > :nth-child(n + 9) {
-    animation-delay: 320ms;
-  }
-
   /* Subtle lift for clickable cards. */
   .hover-lift {
     transition:
