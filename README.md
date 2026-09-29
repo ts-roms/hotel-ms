@@ -131,6 +131,12 @@ with expiry reminders. On the schedule, **Repeat a shift** plans the same shift 
 for several people. **Minimum staffing** marks understaffed days, which are also reported when
 publishing (ADR-0028).
 
+**Operations** (ADR-0029): traces go to X-Ray through OpenTelemetry and errors to Sentry when
+configured. Platform operators get an ops dashboard at `/ops` (queues, outbox, webhooks), granted
+with `OPERATOR_EMAIL=... OPERATOR_ACTION=grant pnpm --filter @hotel/database ops:operator`.
+`docs/operations/restore.md` is the restore runbook; `scripts/ops/restore-drill.sh` rehearses it.
+Browser tests live in `tests/e2e`: start the stack, then `pnpm --filter @hotel/e2e e2e`.
+
 Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
 birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
 on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.

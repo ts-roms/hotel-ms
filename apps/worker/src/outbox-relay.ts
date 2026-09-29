@@ -33,6 +33,9 @@ export interface RelayOptions {
  * marking the row published results in a no-op re-enqueue, not a duplicate job.
  * FOR UPDATE SKIP LOCKED lets several relay instances run side by side.
  */
+/** After this many failed publishes an event waits for an operator (ops dashboard). */
+export const OUTBOX_MAX_ATTEMPTS = 20;
+
 export async function relayOutboxBatch(
   system: PrismaClient,
   queue: Queue,
@@ -40,7 +43,7 @@ export async function relayOutboxBatch(
   options: RelayOptions = {},
 ): Promise<number> {
   const batchSize = options.batchSize ?? 100;
-  const maxAttempts = options.maxAttempts ?? 20;
+  const maxAttempts = options.maxAttempts ?? OUTBOX_MAX_ATTEMPTS;
 
   return system.$transaction(
     async (tx) => {

@@ -40,6 +40,8 @@ export const sessionInfoSchema = z.object({
     email: z.string(),
     displayName: z.string(),
     mfaEnabled: z.boolean(),
+    /** Platform staff with the ops dashboard (ADR-0029); false until MFA is done. */
+    platformOperator: z.boolean(),
   }),
   /**
    * Password accepted but the second factor is still outstanding. Until it is completed

@@ -30,7 +30,8 @@ COPY --from=build --chown=node:node /out/api ./
 USER node
 EXPOSE 48100
 HEALTHCHECK --interval=15s --timeout=3s CMD node -e "fetch('http://127.0.0.1:'+(process.env.API_PORT||48100)+'/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node", "dist/main.js"]
+# Tracing starts before the app so its modules are instrumented; off without an endpoint.
+CMD ["node", "--import", "./dist/tracing.js", "dist/main.js"]
 
 # ---- worker -----------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-slim AS worker
@@ -38,7 +39,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out/worker ./
 USER node
-CMD ["node", "dist/main.js"]
+CMD ["node", "--import", "./dist/tracing.js", "dist/main.js"]
 
 # ---- migrate (one-off task run before each deploy; uses the owner role) -----------------
 FROM build AS migrate

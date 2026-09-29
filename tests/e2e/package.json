@@ -1,0 +1,18 @@
+{
+  "name": "@hotel/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser end-to-end tests (ADR-0029), run against a running stack.",
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:smoke": "playwright test --grep @smoke",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@hotel/database": "workspace:*",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.4",
+    "typescript": "~6.0.3"
+  }
+}

@@ -24,6 +24,9 @@ model Identity {
   failedLoginCount Int            @default(0) @map("failed_login_count")
   lockedUntil      DateTime?      @map("locked_until") @db.Timestamptz(3)
   lastLoginAt      DateTime?      @map("last_login_at") @db.Timestamptz(3)
+  /// Platform staff role (ADR-0029): OPERATOR sees the ops dashboard. Set only by the
+  /// database owner (ops/platform-operator), never through the API.
+  platformRole     String?        @map("platform_role")
   createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 

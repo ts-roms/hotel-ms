@@ -1,4 +1,5 @@
 import type {
+  OpsOverview,
   CompensationHistory,
   CoverageGap,
   CreateCompensationInput,
@@ -854,6 +855,17 @@ export function createApiClient(options: ApiClientOptions = {}) {
             { reason },
           ).then((r) => r.data),
       };
+    },
+    /** Platform operators only (ADR-0029). */
+    ops: {
+      overview: () => call<OpsOverview>('GET', '/ops/overview').then((r) => r.data),
+      retryJob: (queue: string, jobId: string) =>
+        call<void>(
+          'POST',
+          `/ops/queues/${encodeURIComponent(queue)}/jobs/${encodeURIComponent(jobId)}/retry`,
+        ).then((r) => r.data),
+      retryOutbox: (eventId: string) =>
+        call<void>('POST', `/ops/outbox/${encodeURIComponent(eventId)}/retry`).then((r) => r.data),
     },
     hr: {
       departments: () =>

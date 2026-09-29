@@ -1,5 +1,6 @@
 # Promote a commit that is already running on staging. The "production" GitHub environment
-# must have required reviewers configured; the job waits for approval there.
+# must have required reviewers configured; the job waits for approval there. The commit must
+# be on main and its staging run (deploy + smoke E2E) must have succeeded (ADR-0029).
 name: Deploy production
 
 on:
@@ -13,6 +14,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  actions: read
 
 jobs:
   verify:
@@ -23,6 +25,17 @@ jobs:
           fetch-depth: 0
       - name: Commit is on main
         run: git merge-base --is-ancestor "${{ inputs.sha }}" origin/main
+      - name: Commit passed staging (deploy and smoke tests)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ inputs.sha }}
+        run: |
+          passed="$(gh run list --workflow deploy-staging.yml --commit "$SHA" \
+            --status success --limit 1 --json databaseId --jq 'length')"
+          if [ "$passed" != "1" ]; then
+            echo "::error::$SHA has no successful staging deploy and smoke run. Release it to staging first."
+            exit 1
+          fi
 
   production:
     needs: verify
