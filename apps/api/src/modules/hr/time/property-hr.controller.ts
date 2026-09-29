@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   attendanceCorrectionSchema,
@@ -29,11 +29,12 @@ import {
   type UpdateShiftRequest,
   updateShiftRequestSchema,
   listOf,
-  APPROVAL_STATUSES,
+  type CorrectionListQuery,
+  correctionListQuerySchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
-import { parseIfMatch } from '../../../common/etag.js';
+import { sendCsv } from '../../../common/download.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -43,10 +44,6 @@ import { PayrollService } from './payroll.service.js';
 import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
-
-const correctionStatusQuery = z.object({
-  status: z.enum(APPROVAL_STATUSES).optional(),
-});
 
 /** Property-level HR: clock, attendance, schedule, leave approvals, payroll export. */
 @ApiTags('hr: property')
@@ -70,13 +67,7 @@ export class PropertyHrController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<string> {
     const csv = await this.payroll.exportCsv(propertyId, query.from, query.to);
-    reply.header('content-type', 'text/csv; charset=utf-8');
-    reply.header(
-      'content-disposition',
-      `attachment; filename="payroll-${query.from}-${query.to}.csv"`,
-    );
-    reply.header('cache-control', 'no-store');
-    return csv;
+    return sendCsv(reply, `payroll-${query.from}-${query.to}.csv`, csv);
   }
 
   /** Punch type in the query; the body is the selfie taken now (ADR-0022). */
@@ -108,7 +99,7 @@ export class PropertyHrController {
   @ZodResponse(200, listOf(attendanceCorrectionSchema))
   async corrections(
     @Param('propertyId') propertyId: string,
-    @ZodQuery(correctionStatusQuery) query: z.infer<typeof correctionStatusQuery>,
+    @ZodQuery(correctionListQuerySchema) query: CorrectionListQuery,
   ) {
     return { items: await this.attendance.corrections(propertyId, query.status) };
   }
@@ -120,7 +111,7 @@ export class PropertyHrController {
   decideCorrection(
     @Param('propertyId') propertyId: string,
     @Param('correctionId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.attendance.decideCorrection(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -189,7 +180,7 @@ export class PropertyHrController {
   updateShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateShiftRequestSchema) body: UpdateShiftRequest,
   ) {
     return this.schedule.updateShift(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -202,7 +193,7 @@ export class PropertyHrController {
   cancelShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
   ) {
     return this.schedule.cancelShift(propertyId, uuidParam(id), parseIfMatch(ifMatch));
   }
@@ -224,7 +215,7 @@ export class PropertyHrController {
   decideLeave(
     @Param('propertyId') propertyId: string,
     @Param('leaveRequestId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.leave.decide(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);

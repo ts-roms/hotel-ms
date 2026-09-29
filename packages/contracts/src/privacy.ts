@@ -88,6 +88,10 @@ export const propertyImageSchema = z.object({
 });
 export type PropertyImage = z.infer<typeof propertyImageSchema>;
 
+/** A menu item's new image version, for cache busting. */
+export const imageVersionSchema = z.object({ imageVersion: z.string() });
+export type ImageVersion = z.infer<typeof imageVersionSchema>;
+
 export const uploadImageQuerySchema = z.object({
   caption: z.string().trim().max(200).default(''),
 });

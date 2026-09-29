@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
@@ -16,7 +15,7 @@ import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../../common/dates.js';
 import { ProblemException, Problems, invalidState } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
-import { matchesType } from '../../../common/uploads.js';
+import { acceptUpload } from '../../../common/uploads.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { RateLimiter } from '../../../infrastructure/redis.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../../infrastructure/storage.js';
@@ -28,8 +27,12 @@ import { GuestInboxService } from '../../notifications/guest-inbox.service.js';
 /** ID files are deleted this many days after the stay's departure date (ADR-0027). */
 export const GUEST_ID_RETENTION_DAYS = 30;
 
-const unsupported = (detail: string) =>
-  new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported file', detail);
+const ID_FILE_RULES = {
+  types: GUEST_ID_FILE_TYPES,
+  maxBytes: GUEST_ID_MAX_BYTES,
+  label: 'file',
+  typeHint: 'Upload a photo (JPEG, PNG, WebP) or a PDF of your ID.',
+};
 
 const include = {
   reservationRoom: {
@@ -107,15 +110,7 @@ export class GuestIdentityService {
     const guest = this.cls.get('guest')!;
     const organizationId = this.cls.get('organizationId')!;
     const propertyId = this.cls.get('propertyId')!;
-    const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
-    if (!(GUEST_ID_FILE_TYPES as readonly string[]).includes(type))
-      throw unsupported('Upload a photo (JPEG, PNG, WebP) or a PDF of your ID.');
-    if (!Buffer.isBuffer(body) || body.length === 0)
-      throw Problems.validation([{ path: 'body', message: 'The file is empty' }]);
-    if (body.length > GUEST_ID_MAX_BYTES)
-      throw new ProblemException(413, 'VALIDATION_FAILED', 'File too large', 'At most 8 MiB.');
-    if (!matchesType(body, type as (typeof GUEST_ID_FILE_TYPES)[number]))
-      throw unsupported(`The file's content is not a ${type} file.`);
+    const { type, body: file, sha256 } = acceptUpload(contentType, body, ID_FILE_RULES);
     await this.rateLimiter.consume(`guest-id-upload:${guest.sessionId}`, 5, 60 * 60, {
       failClosed: true,
     });
@@ -133,8 +128,7 @@ export class GuestIdentityService {
 
     const id = uuidv7();
     const storageKey = `${organizationId}/guest-ids/${id}`;
-    const sha256 = createHash('sha256').update(body).digest('hex');
-    await this.storage.put(storageKey, body, type, sha256);
+    await this.storage.put(storageKey, file, type, sha256);
 
     let superseded: string[] = [];
     try {
@@ -161,7 +155,7 @@ export class GuestIdentityService {
             guestId: guest.guestId,
             documentType: query.documentType,
             contentType: type,
-            sizeBytes: body.length,
+            sizeBytes: file.length,
             sha256,
             storageKey,
           },
@@ -182,7 +176,7 @@ export class GuestIdentityService {
           after: {
             documentId: id,
             documentType: query.documentType,
-            sizeBytes: body.length,
+            sizeBytes: file.length,
             sha256,
           },
         });

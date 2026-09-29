@@ -5,6 +5,7 @@ import { GuestIdentityService } from './guests/guest-identity.service.js';
 import { GuestsController } from './guests/guests.controller.js';
 import { GuestsService } from './guests/guests.service.js';
 import { InventoryController } from './inventory/inventory.controller.js';
+import { RoomTypesService } from './inventory/room-types.service.js';
 import { RoomsService } from './inventory/rooms.service.js';
 import { PricingController } from './pricing/pricing.controller.js';
 import { RatesService } from './pricing/rates.service.js';
@@ -29,6 +30,7 @@ import { ReservationsService } from './reservations/reservations.service.js';
   ],
   providers: [
     RoomsService,
+    RoomTypesService,
     RatesService,
     TaxRulesService,
     GuestsService,

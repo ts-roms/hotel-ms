@@ -7,6 +7,7 @@ import { LostFoundController } from './lost-found/lost-found.controller.js';
 import { LostFoundService } from './lost-found/lost-found.service.js';
 import { MaintenanceController } from './maintenance/maintenance.controller.js';
 import { MaintenanceService } from './maintenance/maintenance.service.js';
+import { GuestServiceRequestsController } from './service-requests/guest-service-requests.controller.js';
 import { ServiceRequestsController } from './service-requests/service-requests.controller.js';
 import { ServiceRequestsService } from './service-requests/service-requests.service.js';
 
@@ -19,6 +20,7 @@ import { ServiceRequestsService } from './service-requests/service-requests.serv
   controllers: [
     HousekeepingController,
     ServiceRequestsController,
+    GuestServiceRequestsController,
     MaintenanceController,
     LostFoundController,
   ],

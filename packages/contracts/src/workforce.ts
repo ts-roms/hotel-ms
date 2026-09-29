@@ -204,6 +204,8 @@ export const newAssignmentSchema = z.strictObject({
   isPrimary: z.boolean().default(false),
 });
 export type NewAssignment = z.infer<typeof newAssignmentSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type NewAssignmentInput = z.input<typeof newAssignmentSchema>;
 
 export const createEmployeeRequestSchema = z.strictObject({
   employeeNo: z.string().trim().min(1).max(30),
@@ -227,6 +229,8 @@ export const createEmployeeRequestSchema = z.strictObject({
   assignment: newAssignmentSchema,
 });
 export type CreateEmployeeRequest = z.infer<typeof createEmployeeRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateEmployeeRequestInput = z.input<typeof createEmployeeRequestSchema>;
 
 export const updateEmployeeRequestSchema = z
   .strictObject({
@@ -248,6 +252,8 @@ export const updateEmployeeRequestSchema = z
   })
   .partial();
 export type UpdateEmployeeRequest = z.infer<typeof updateEmployeeRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type UpdateEmployeeRequestInput = z.input<typeof updateEmployeeRequestSchema>;
 
 export const terminateEmployeeRequestSchema = z.strictObject({ terminatedOn: localDateSchema });
 export type TerminateEmployeeRequest = z.infer<typeof terminateEmployeeRequestSchema>;
@@ -312,6 +318,8 @@ export const createCompensationRequestSchema = z.strictObject({
   notes: z.string().trim().max(500).default(''),
 });
 export type CreateCompensationRequest = z.infer<typeof createCompensationRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateCompensationRequestInput = z.input<typeof createCompensationRequestSchema>;
 export type CreateCompensationInput = z.input<typeof createCompensationRequestSchema>;
 
 export const TRAINING_KINDS = ['TRAINING', 'CERTIFICATION'] as const;
@@ -347,6 +355,8 @@ export const createTrainingRequestSchema = z
     path: ['expiresOn'],
   });
 export type CreateTrainingRequest = z.infer<typeof createTrainingRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateTrainingRequestInput = z.input<typeof createTrainingRequestSchema>;
 export type CreateTrainingInput = z.input<typeof createTrainingRequestSchema>;
 
 /** Performance records: sensitive (employee.performance). */
@@ -382,4 +392,8 @@ export const createPerformanceReviewRequestSchema = z
     path: ['periodTo'],
   });
 export type CreatePerformanceReviewRequest = z.infer<typeof createPerformanceReviewRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreatePerformanceReviewRequestInput = z.input<
+  typeof createPerformanceReviewRequestSchema
+>;
 export type CreatePerformanceReviewInput = z.input<typeof createPerformanceReviewRequestSchema>;

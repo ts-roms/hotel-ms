@@ -18,13 +18,13 @@ portal) and `apps/guest` (guest PWA).
 
 **Packages.**
 
-| Package             | Contents                                                                                                                                                                                                                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@hotel/contracts`  | Zod schemas and their types, enums, permission catalog, role templates, error codes, event and job types. Shared helpers in `common.ts` (`cursorPage`, `listOf`, `staffRefSchema`). The only package every app depends on.                                                           |
-| `@hotel/database`   | Prisma schema (one file per context), migrations incl. RLS, generated client, seed, platform catalog sync, organization provisioning and password hashing. `@hotel/database/testing` is the test harness (test database URLs, reset, demo world); never imported by production code. |
-| `@hotel/api-client` | Typed HTTP clients for the staff, guest and kiosk apps; request functions generated from the OpenAPI document. `@hotel/api-client/react` adds the TanStack Query helpers.                                                                                                            |
-| `@hotel/ui`         | shadcn-style components and blocks, plus the design tokens in `@hotel/ui/theme.css`.                                                                                                                                                                                                 |
-| `@hotel/format`     | Money, date, time zone and relative-time formatting shared by the apps and the worker.                                                                                                                                                                                               |
+| Package             | Contents                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@hotel/contracts`  | Zod schemas and their types (`XRequest` parsed, `XRequestInput` as sent; ADR-0009), enums, permission catalog, role templates, feature flag catalog, error codes, event and job types. Shared helpers in `common.ts` (`cursorPage`, `listOf`, `staffRefSchema`). Every app depends on it. Compiled without Node types, since the browser apps share it.                                                                                                                             |
+| `@hotel/database`   | Prisma schema (one file per context), migrations incl. RLS, generated client, seed, platform catalog sync, organization provisioning and password hashing. `src/bootstrap` is the db-bootstrap task that creates the database roles in cloud environments; `src/ops` holds operator scripts (local reset, organization provisioning, platform operators). `@hotel/database/testing` is the test harness (test database URLs, reset, demo world); never imported by production code. |
+| `@hotel/api-client` | Typed HTTP clients for the staff, guest and kiosk apps; request functions generated from the OpenAPI document. `@hotel/api-client/react` adds the TanStack Query helpers.                                                                                                                                                                                                                                                                                                           |
+| `@hotel/ui`         | shadcn-style components and blocks, plus the design tokens in `@hotel/ui/theme.css`.                                                                                                                                                                                                                                                                                                                                                                                                |
+| `@hotel/format`     | Money, date, time zone and relative-time formatting, and `escapeHtml`. Used by every app: the web apps for display, the API for its date and currency arithmetic (`addDays`, `localToday`, `toLocal`, `currencyDigits`) and email money, the worker for email templates.                                                                                                                                                                                                            |
 
 `@hotel/i18n` holds the message catalogs: `@hotel/i18n/staff` (the staff app) and `@hotel/i18n/guest`
 (the guest portal), with a small typed translator. Formatting stays in `@hotel/format`.
@@ -47,12 +47,15 @@ domain module.
 seed and organization provisioning create identities with passwords and must hash them the
 same way the API verifies them. The API imports `hashPassword` and `verifyPassword` from it.
 
-**Read models read other contexts' tables directly.** This is a documented exception to
-§6.2 ("never direct table access"). The management dashboards and reports, the unified
-calendar and the finance reports are read-only projections over data owned by other
-contexts (stays, folios, shifts, leave, orders). They query those tables inside the
-caller's tenant transaction, so RLS and property permission checks still apply. Writes
-still go only through the owning context's services.
+**Reads and writes across contexts.** A context may read another context's rows inside the
+caller's tenant transaction, where the use case needs them (e.g. the guest inbox checks a
+reservation line, notifications read the stay they write about). RLS and the property
+permission checks apply as to any read. Writes go only through the owning context's services
+(`...InTx(tx, ...)` methods, ADR-0031), apart from the exceptions listed there. The management
+dashboards and reports, the unified calendar and the finance reports are read models built
+this way: read-only projections over data owned by other contexts (stays, folios, shifts,
+leave, orders). This narrows blueprint §6.2 ("never direct table access") to what the code
+does.
 
 **The API client's HTTP layer is generated from the OpenAPI document; its public shape is
 not** (amended 2026-09-29). `pnpm --filter @hotel/api-client generate` runs
@@ -96,6 +99,14 @@ are in `tests/e2e`.
 **Build.** Every package builds with `tsc -p tsconfig.build.json`, which excludes tests;
 `tsconfig.json` is used for type checking and the editor.
 
+**The layout is linted** (`pnpm lint`). `.dependency-cruiser.cjs` cruises every app and package:
+the worker never imports `apps/api`; `@hotel/contracts`, `@hotel/format` and `@hotel/i18n`
+are leaves that import no other workspace package; `@hotel/ui` imports neither
+`@hotel/api-client`, `@hotel/contracts` nor `@hotel/database`; apps use a package by its name,
+never by a relative path into its `src/` or `dist/`; packages never import an app. ESLint keeps
+`@hotel/database` out of both browser apps and `@hotel/database/testing` out of the API's and
+the worker's production code.
+
 ## Kept as it is
 
 `ROLE_TEMPLATES` (`contracts/src/role-templates.ts`) is only used by `@hotel/database`
@@ -106,8 +117,8 @@ together.
 ## Consequences
 
 - Blueprint §6.3 now shows this layout and links here.
-- A cross-context read outside the read models above still goes through the owning
-  context's exported service (ADR-0031).
+- A cross-context write goes through the owning context's exported service (ADR-0031); a
+  read in the caller's transaction does not need one.
 - Adding a shared domain package needs a new ADR.
 - Changing an API route changes `docs/api/openapi.json`, then `src/generated/operations.ts`;
   commit both, and fix the facade if its type check fails.

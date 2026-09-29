@@ -287,7 +287,9 @@ describe('guest data requests', () => {
     expect((await reception.get(`/api/v1/guests/${nora.id}/export`)).status).toBe(403);
     const res = await admin.get(`/api/v1/guests/${nora.id}/export`);
     expect(res.status).toBe(200);
-    expect(res.headers['content-disposition']).toBe(`attachment; filename="guest-${nora.id}.json"`);
+    expect(res.headers['content-disposition']).toBe(
+      `attachment; filename="guest-${nora.id}.json"; filename*=UTF-8''guest-${nora.id}.json`,
+    );
     expect(res.headers['cache-control']).toBe('no-store');
     expect(res.body).toMatchObject({
       subject: 'guest',

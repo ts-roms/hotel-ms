@@ -25,34 +25,10 @@ const PREFIX = '/api/v1';
  * apps/api, regenerate the document, then remove the entry here.
  */
 const UNDECLARED = {
-  /** Controllers read @Headers('if-match') (optimistic concurrency, ADR-0009) without @ApiHeader. */
-  ifMatch: [
-    'AccessController_updateRole',
-    'CalendarController_update',
-    'FinanceController_closeShift',
-    'FnbController_cancel',
-    'FnbController_transition',
-    'FnbController_updateOutlet',
-    'GuestIdentityController_review',
-    'GuestsController_update',
-    'HrController_updateEmployee',
-    'InventoryController_updateRoom',
-    'InventoryController_updateRoomType',
-    'LostFoundController_close',
-    'MaintenanceController_act',
-    'PricingController_updateRatePlan',
-    'PropertiesController_update',
-    'PropertyHrController_cancelShift',
-    'PropertyHrController_decideCorrection',
-    'PropertyHrController_decideLeave',
-    'PropertyHrController_updateShift',
-    'ServiceRequestsController_update',
-  ],
+  /** Operations that read an If-Match header the document does not declare (none left). */
+  ifMatch: [],
   /** Request bodies the handler reads (or tolerates) that the document omits. */
   body: {
-    // @ApiConsumes('text/csv') with an untyped @Body(): the CSV file itself.
-    ImportsController_previewGuests: { kind: 'binary', required: true },
-    ImportsController_previewRooms: { kind: 'binary', required: true },
     // The guest portal sends an empty JSON object; the handler ignores the body.
     GuestPaymentsController_hold: { kind: 'json', required: false },
   },

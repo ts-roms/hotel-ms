@@ -6,6 +6,11 @@ export function csvField(value: string | number | null): string {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
+/** A CSV document: a header row and data rows, CRLF line ends (RFC 4180). */
+export function toCsv(header: string[], rows: (string | number | null)[][]): string {
+  return [header, ...rows].map((r) => r.map((v) => csvField(v)).join(',')).join('\r\n') + '\r\n';
+}
+
 /**
  * Parses RFC 4180 CSV (ADR-0030): quoted fields with embedded commas, quotes ("") and line
  * breaks; CRLF or LF; a leading UTF-8 byte-order mark (Excel) is ignored. Returns rows of

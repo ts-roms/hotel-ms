@@ -35,6 +35,8 @@ export const createBuildingRequestSchema = z.strictObject({
     .default([]),
 });
 export type CreateBuildingRequest = z.infer<typeof createBuildingRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateBuildingRequestInput = z.input<typeof createBuildingRequestSchema>;
 
 export const roomTypeSchema = z.object({
   id: z.uuid(),
@@ -70,6 +72,8 @@ export const createRoomTypeRequestSchema = z
     path: ['maxOccupancy'],
   });
 export type CreateRoomTypeRequest = z.infer<typeof createRoomTypeRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateRoomTypeRequestInput = z.input<typeof createRoomTypeRequestSchema>;
 
 export const updateRoomTypeRequestSchema = z.strictObject(roomTypeFields).partial();
 export type UpdateRoomTypeRequest = z.infer<typeof updateRoomTypeRequestSchema>;
@@ -97,6 +101,8 @@ export const createRoomRequestSchema = z.strictObject({
   notes: z.string().trim().max(500).default(''),
 });
 export type CreateRoomRequest = z.infer<typeof createRoomRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateRoomRequestInput = z.input<typeof createRoomRequestSchema>;
 
 export const updateRoomRequestSchema = z
   .strictObject({
@@ -112,6 +118,8 @@ export const setServiceStatusRequestSchema = z.strictObject({
   reason: z.string().trim().max(500).default(''),
 });
 export type SetServiceStatusRequest = z.infer<typeof setServiceStatusRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type SetServiceStatusRequestInput = z.input<typeof setServiceStatusRequestSchema>;
 
 export const roomBlockSchema = z.object({
   id: z.uuid(),
@@ -138,32 +146,3 @@ export const createRoomBlockRequestSchema = z
     path: ['endDate'],
   });
 export type CreateRoomBlockRequest = z.infer<typeof createRoomBlockRequestSchema>;
-
-// ---- Availability ---------------------------------------------------------------------------
-
-export const availabilityQuerySchema = z
-  .object({ from: localDateSchema, to: localDateSchema })
-  .refine((v) => v.to > v.from, { message: 'to must be after from', path: ['to'] });
-export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
-
-export const availabilitySchema = z.object({
-  from: localDateSchema,
-  to: localDateSchema,
-  roomTypes: z.array(
-    z.object({
-      roomTypeId: z.uuid(),
-      code: z.string(),
-      name: z.string(),
-      nights: z.array(
-        z.object({
-          date: localDateSchema,
-          capacity: z.number().int(),
-          sold: z.number().int(),
-          blocked: z.number().int(),
-          available: z.number().int(),
-        }),
-      ),
-    }),
-  ),
-});
-export type Availability = z.infer<typeof availabilitySchema>;

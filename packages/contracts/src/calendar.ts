@@ -56,6 +56,8 @@ export const createEventRequestSchema = z
     path: ['endsAt'],
   });
 export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateEventRequestInput = z.input<typeof createEventRequestSchema>;
 export type CreateEventInput = z.input<typeof createEventRequestSchema>;
 
 export const updateEventRequestSchema = z

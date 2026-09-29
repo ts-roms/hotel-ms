@@ -113,6 +113,8 @@ export const createReservationRequestSchema = z.strictObject({
   rooms: z.array(reservationRoomRequestSchema).min(1).max(10),
 });
 export type CreateReservationRequest = z.infer<typeof createReservationRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateReservationRequestInput = z.input<typeof createReservationRequestSchema>;
 
 export const updateReservationRoomRequestSchema = z
   .strictObject({

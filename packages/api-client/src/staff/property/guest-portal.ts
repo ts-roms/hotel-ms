@@ -6,7 +6,7 @@ import { data, type PropertyTransport } from '../../http.js';
 export function guestPortalClient({ call, propertyId }: PropertyTransport) {
   return {
     sendGuestPortalLink: (reservationId: string) =>
-      op.GuestServiceController_sendLink(call, { propertyId, reservationId }).then(data),
+      op.GuestPortalLinkController_sendLink(call, { propertyId, reservationId }).then(data),
     guestPortalSettings: () =>
       op.GuestAdminController_settings<GuestPortalSettings>(call, { propertyId }).then(data),
     updateGuestPortalSettings: (body: GuestPortalSettingsInput) =>

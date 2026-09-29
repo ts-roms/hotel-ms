@@ -19,7 +19,7 @@ import { OutboxService } from '../../outbox/outbox.service.js';
 import { GuestsService, toGuestSummary } from '../guests/guests.service.js';
 import { releaseInventory, takeInventory } from '../inventory/inventory.js';
 import { priceStay } from '../pricing/pricing.js';
-import { businessDateOf } from '../inventory/rooms.service.js';
+import { businessDateOf } from '../../../common/business-date.js';
 import { GuestMessagesService } from '../../notifications/guest-messages.service.js';
 
 export const reservationInclude = {
@@ -762,7 +762,9 @@ export class ReservationsService {
         });
       }
 
-      // Guest portal access to a cancelled stay ends with it.
+      // Guest portal access to a cancelled stay ends with it, in this transaction (ADR-0033).
+      // A documented write to Guest Experience tables (ADR-0031): Reservations comes before
+      // guest-portal/ in API_CONTEXTS, and revoking after commit would leave a window.
       const now = new Date();
       await tx.guestSession.updateMany({
         where: { reservationRoomId: { in: targets.map((l) => l.id) }, revokedAt: null },

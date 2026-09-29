@@ -78,6 +78,14 @@ export const paths = {
   CalendarController_update: (path: { propertyId: string; eventId: string }): string => `/properties/${e(path.propertyId)}/events/${e(path.eventId)}`,
   /** GET /properties/{propertyId}/calendar */
   CalendarController_view: (path: { propertyId: string }, query: { from: string; to: string }): string => `/properties/${e(path.propertyId)}/calendar${qs(query)}`,
+  /** POST /properties/{propertyId}/cashier/shifts/{shiftId}/close */
+  CashierController_closeShift: (path: { propertyId: string; shiftId: string }): string => `/properties/${e(path.propertyId)}/cashier/shifts/${e(path.shiftId)}/close`,
+  /** GET /properties/{propertyId}/cashier/shift */
+  CashierController_currentShift: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shift`,
+  /** POST /properties/{propertyId}/cashier/shift */
+  CashierController_openShift: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shift`,
+  /** GET /properties/{propertyId}/cashier/shifts */
+  CashierController_shifts: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shifts`,
   /** GET /properties/{propertyId}/attendance/photos */
   ClockPhotosController_list: (path: { propertyId: string }, query: { from: string; to: string }): string => `/properties/${e(path.propertyId)}/attendance/photos${qs(query)}`,
   /** GET /properties/{propertyId}/attendance/photos/{punchId} */
@@ -116,68 +124,22 @@ export const paths = {
   EmployeeRecordsController_reviews: (path: { employeeId: string }): string => `/employees/${e(path.employeeId)}/reviews`,
   /** GET /employees/{employeeId}/training */
   EmployeeRecordsController_trainings: (path: { employeeId: string }): string => `/employees/${e(path.employeeId)}/training`,
-  /** GET /properties/{propertyId}/accounts */
-  FinanceController_accounts: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/accounts`,
-  /** POST /properties/{propertyId}/folios/{folioId}/routing-rules */
-  FinanceController_addRoutingRule: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/routing-rules`,
-  /** PUT /properties/{propertyId}/folios/{folioId}/discount */
-  FinanceController_applyDiscount: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/discount`,
-  /** POST /properties/{propertyId}/discount-profiles/{profileId}/archive */
-  FinanceController_archiveDiscountProfile: (path: { propertyId: string; profileId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles/${e(path.profileId)}/archive`,
-  /** POST /properties/{propertyId}/holds/{intentId}/capture */
-  FinanceController_captureHold: (path: { propertyId: string; intentId: string }): string => `/properties/${e(path.propertyId)}/holds/${e(path.intentId)}/capture`,
-  /** POST /properties/{propertyId}/cashier/shifts/{shiftId}/close */
-  FinanceController_closeShift: (path: { propertyId: string; shiftId: string }): string => `/properties/${e(path.propertyId)}/cashier/shifts/${e(path.shiftId)}/close`,
-  /** POST /properties/{propertyId}/accounts */
-  FinanceController_createAccount: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/accounts`,
-  /** POST /properties/{propertyId}/discount-profiles */
-  FinanceController_createDiscountProfile: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles`,
-  /** GET /properties/{propertyId}/cashier/shift */
-  FinanceController_currentShift: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shift`,
   /** GET /properties/{propertyId}/reports/daily */
-  FinanceController_daily: (path: { propertyId: string }, query?: { date?: string }): string => `/properties/${e(path.propertyId)}/reports/daily${qs(query ?? {})}`,
-  /** GET /properties/{propertyId}/discount-profiles */
-  FinanceController_discountProfiles: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles`,
-  /** GET /properties/{propertyId}/documents/{documentId} */
-  FinanceController_document: (path: { propertyId: string; documentId: string }): string => `/properties/${e(path.propertyId)}/documents/${e(path.documentId)}`,
-  /** GET /properties/{propertyId}/folios/{folioId}/documents */
-  FinanceController_documentList: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/documents`,
-  /** GET /properties/{propertyId}/exchange-rates */
-  FinanceController_exchangeRates: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/exchange-rates`,
-  /** GET /properties/{propertyId}/folios/{folioId}/payment-intents */
-  FinanceController_intents: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/payment-intents`,
-  /** POST /properties/{propertyId}/folios/{folioId}/documents */
-  FinanceController_issue: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/documents`,
-  /** POST /properties/{propertyId}/cashier/shift */
-  FinanceController_openShift: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shift`,
-  /** POST /properties/{propertyId}/folios/{folioId}/payment-links */
-  FinanceController_paymentLink: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/payment-links`,
-  /** GET /properties/{propertyId}/payment-settings */
-  FinanceController_paymentSettings: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/payment-settings`,
+  FinanceReportsController_daily: (path: { propertyId: string }, query?: { date?: string }): string => `/properties/${e(path.propertyId)}/reports/daily${qs(query ?? {})}`,
   /** GET /properties/{propertyId}/reports/reconciliation */
-  FinanceController_reconciliation: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/reports/reconciliation`,
+  FinanceReportsController_reconciliation: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/reports/reconciliation`,
   /** GET /properties/{propertyId}/reports/reconciliation-runs */
-  FinanceController_reconciliationRuns: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/reports/reconciliation-runs`,
-  /** POST /properties/{propertyId}/payments/{paymentId}/refunds */
-  FinanceController_refund: (path: { propertyId: string; paymentId: string }): string => `/properties/${e(path.propertyId)}/payments/${e(path.paymentId)}/refunds`,
-  /** GET /properties/{propertyId}/payments/{paymentId}/refunds */
-  FinanceController_refunds: (path: { propertyId: string; paymentId: string }): string => `/properties/${e(path.propertyId)}/payments/${e(path.paymentId)}/refunds`,
-  /** POST /properties/{propertyId}/holds/{intentId}/release */
-  FinanceController_releaseHold: (path: { propertyId: string; intentId: string }): string => `/properties/${e(path.propertyId)}/holds/${e(path.intentId)}/release`,
-  /** DELETE /properties/{propertyId}/folios/{folioId}/discount */
-  FinanceController_removeDiscount: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/discount`,
-  /** DELETE /properties/{propertyId}/routing-rules/{ruleId} */
-  FinanceController_removeRoutingRule: (path: { propertyId: string; ruleId: string }): string => `/properties/${e(path.propertyId)}/routing-rules/${e(path.ruleId)}`,
-  /** GET /properties/{propertyId}/folios/{folioId}/routing-rules */
-  FinanceController_routingRules: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/routing-rules`,
+  FinanceReportsController_reconciliationRuns: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/reports/reconciliation-runs`,
+  /** POST /properties/{propertyId}/discount-profiles/{profileId}/archive */
+  FinanceSettingsController_archiveDiscountProfile: (path: { propertyId: string; profileId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles/${e(path.profileId)}/archive`,
+  /** POST /properties/{propertyId}/discount-profiles */
+  FinanceSettingsController_createDiscountProfile: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles`,
+  /** GET /properties/{propertyId}/discount-profiles */
+  FinanceSettingsController_discountProfiles: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/discount-profiles`,
+  /** GET /properties/{propertyId}/exchange-rates */
+  FinanceSettingsController_exchangeRates: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/exchange-rates`,
   /** POST /properties/{propertyId}/exchange-rates */
-  FinanceController_setExchangeRate: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/exchange-rates`,
-  /** GET /properties/{propertyId}/cashier/shifts */
-  FinanceController_shifts: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/cashier/shifts`,
-  /** POST /properties/{propertyId}/folios/{folioId}/transfers */
-  FinanceController_transfer: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/transfers`,
-  /** PUT /properties/{propertyId}/payment-settings */
-  FinanceController_updatePaymentSettings: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/payment-settings`,
+  FinanceSettingsController_setExchangeRate: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/exchange-rates`,
   /** POST /properties/{propertyId}/orders/{orderId}/cancel */
   FnbController_cancel: (path: { propertyId: string; orderId: string }): string => `/properties/${e(path.propertyId)}/orders/${e(path.orderId)}/cancel`,
   /** POST /properties/{propertyId}/outlets/{outletId}/menu/categories */
@@ -206,8 +168,16 @@ export const paths = {
   FnbController_updateItem: (path: { propertyId: string; itemId: string }): string => `/properties/${e(path.propertyId)}/menu-items/${e(path.itemId)}`,
   /** PATCH /properties/{propertyId}/outlets/{outletId} */
   FnbController_updateOutlet: (path: { propertyId: string; outletId: string }): string => `/properties/${e(path.propertyId)}/outlets/${e(path.outletId)}`,
+  /** GET /properties/{propertyId}/accounts */
+  FolioController_accounts: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/accounts`,
+  /** POST /properties/{propertyId}/folios/{folioId}/routing-rules */
+  FolioController_addRoutingRule: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/routing-rules`,
   /** POST /properties/{propertyId}/folios/{folioId}/adjustments */
   FolioController_adjust: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/adjustments`,
+  /** PUT /properties/{propertyId}/folios/{folioId}/discount */
+  FolioController_applyDiscount: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/discount`,
+  /** POST /properties/{propertyId}/accounts */
+  FolioController_createAccount: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/accounts`,
   /** GET /properties/{propertyId}/folios/{folioId} */
   FolioController_folio: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}`,
   /** GET /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/folio */
@@ -216,8 +186,22 @@ export const paths = {
   FolioController_postCharge: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/charges`,
   /** POST /properties/{propertyId}/folios/{folioId}/payments */
   FolioController_recordPayment: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/payments`,
+  /** DELETE /properties/{propertyId}/folios/{folioId}/discount */
+  FolioController_removeDiscount: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/discount`,
+  /** DELETE /properties/{propertyId}/routing-rules/{ruleId} */
+  FolioController_removeRoutingRule: (path: { propertyId: string; ruleId: string }): string => `/properties/${e(path.propertyId)}/routing-rules/${e(path.ruleId)}`,
+  /** GET /properties/{propertyId}/folios/{folioId}/routing-rules */
+  FolioController_routingRules: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/routing-rules`,
+  /** POST /properties/{propertyId}/folios/{folioId}/transfers */
+  FolioController_transfer: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/transfers`,
   /** POST /properties/{propertyId}/folios/{folioId}/lines/{lineId}/void */
   FolioController_voidLine: (path: { propertyId: string; folioId: string; lineId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/lines/${e(path.lineId)}/void`,
+  /** GET /properties/{propertyId}/documents/{documentId} */
+  FolioDocumentsController_document: (path: { propertyId: string; documentId: string }): string => `/properties/${e(path.propertyId)}/documents/${e(path.documentId)}`,
+  /** GET /properties/{propertyId}/folios/{folioId}/documents */
+  FolioDocumentsController_documentList: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/documents`,
+  /** POST /properties/{propertyId}/folios/{folioId}/documents */
+  FolioDocumentsController_issue: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/documents`,
   /** GET /properties/{propertyId}/front-desk */
   FrontOfficeController_board: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/front-desk`,
   /** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/check-in */
@@ -238,12 +222,6 @@ export const paths = {
   GuestEventsController_list: (): string => `/guest/events`,
   /** GET /guest/hotel-info */
   GuestExtrasController_hotelInfo: (): string => `/guest/hotel-info`,
-  /** POST /guest/notifications/read */
-  GuestExtrasController_markRead: (): string => `/guest/notifications/read`,
-  /** GET /guest/notifications */
-  GuestExtrasController_notifications: (): string => `/guest/notifications`,
-  /** POST /guest/checkout-request */
-  GuestExtrasController_requestCheckout: (): string => `/guest/checkout-request`,
   /** POST /guest/identity */
   GuestExtrasController_uploadId: (query: { documentType: string }): string => `/guest/identity${qs(query)}`,
   /** POST /guest/orders/{orderId}/cancel */
@@ -266,6 +244,10 @@ export const paths = {
   GuestImagesController_menuImage: (path: { itemId: string }): string => `/guest/menu-items/${e(path.itemId)}/image`,
   /** POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message */
   GuestInboxController_message: (path: { propertyId: string; reservationId: string; lineId: string }): string => `/properties/${e(path.propertyId)}/reservations/${e(path.reservationId)}/rooms/${e(path.lineId)}/guest-message`,
+  /** POST /guest/notifications/read */
+  GuestNotificationsController_markRead: (): string => `/guest/notifications/read`,
+  /** GET /guest/notifications */
+  GuestNotificationsController_notifications: (): string => `/guest/notifications`,
   /** POST /guest/holds */
   GuestPaymentsController_hold: (): string => `/guest/holds`,
   /** GET /guest/payments */
@@ -274,18 +256,12 @@ export const paths = {
   GuestPaymentsController_pay: (): string => `/guest/payments`,
   /** GET /guest/bill */
   GuestPortalController_bill: (): string => `/guest/bill`,
-  /** POST /guest/service-requests */
-  GuestPortalController_createRequest: (): string => `/guest/service-requests`,
   /** POST /guest/session */
   GuestPortalController_exchange: (): string => `/guest/session`,
-  /** GET /guest/service-requests */
-  GuestPortalController_listRequests: (): string => `/guest/service-requests`,
   /** DELETE /guest/session */
   GuestPortalController_logout: (): string => `/guest/session`,
   /** PUT /guest/pre-check-in */
   GuestPortalController_preCheckIn: (): string => `/guest/pre-check-in`,
-  /** PUT /guest/service-requests/{requestId}/rating */
-  GuestPortalController_rate: (path: { requestId: string }): string => `/guest/service-requests/${e(path.requestId)}/rating`,
   /** POST /guest/verification */
   GuestPortalController_requestCode: (): string => `/guest/verification`,
   /** POST /guest/check-in */
@@ -295,7 +271,15 @@ export const paths = {
   /** POST /guest/verification/confirm */
   GuestPortalController_verifyCode: (): string => `/guest/verification/confirm`,
   /** POST /properties/{propertyId}/reservations/{reservationId}/guest-portal-link */
-  GuestServiceController_sendLink: (path: { propertyId: string; reservationId: string }): string => `/properties/${e(path.propertyId)}/reservations/${e(path.reservationId)}/guest-portal-link`,
+  GuestPortalLinkController_sendLink: (path: { propertyId: string; reservationId: string }): string => `/properties/${e(path.propertyId)}/reservations/${e(path.reservationId)}/guest-portal-link`,
+  /** POST /guest/service-requests */
+  GuestServiceRequestsController_createRequest: (): string => `/guest/service-requests`,
+  /** GET /guest/service-requests */
+  GuestServiceRequestsController_listRequests: (): string => `/guest/service-requests`,
+  /** PUT /guest/service-requests/{requestId}/rating */
+  GuestServiceRequestsController_rate: (path: { requestId: string }): string => `/guest/service-requests/${e(path.requestId)}/rating`,
+  /** POST /guest/checkout-request */
+  GuestServiceRequestsController_requestCheckout: (): string => `/guest/checkout-request`,
   /** POST /properties/{propertyId}/guests */
   GuestsController_create: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/guests`,
   /** GET /guests/{guestId} */
@@ -468,6 +452,22 @@ export const paths = {
   OrganizationController_setFeatureFlag: (path: { flagKey: string }): string => `/organization/feature-flags/${e(path.flagKey)}`,
   /** POST /webhooks/payments/{provider} */
   PaymentWebhooksController_receive: (path: { provider: string }): string => `/webhooks/payments/${e(path.provider)}`,
+  /** POST /properties/{propertyId}/holds/{intentId}/capture */
+  PaymentsController_captureHold: (path: { propertyId: string; intentId: string }): string => `/properties/${e(path.propertyId)}/holds/${e(path.intentId)}/capture`,
+  /** GET /properties/{propertyId}/folios/{folioId}/payment-intents */
+  PaymentsController_intents: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/payment-intents`,
+  /** POST /properties/{propertyId}/folios/{folioId}/payment-links */
+  PaymentsController_paymentLink: (path: { propertyId: string; folioId: string }): string => `/properties/${e(path.propertyId)}/folios/${e(path.folioId)}/payment-links`,
+  /** GET /properties/{propertyId}/payment-settings */
+  PaymentsController_paymentSettings: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/payment-settings`,
+  /** POST /properties/{propertyId}/payments/{paymentId}/refunds */
+  PaymentsController_refund: (path: { propertyId: string; paymentId: string }): string => `/properties/${e(path.propertyId)}/payments/${e(path.paymentId)}/refunds`,
+  /** GET /properties/{propertyId}/payments/{paymentId}/refunds */
+  PaymentsController_refunds: (path: { propertyId: string; paymentId: string }): string => `/properties/${e(path.propertyId)}/payments/${e(path.paymentId)}/refunds`,
+  /** POST /properties/{propertyId}/holds/{intentId}/release */
+  PaymentsController_releaseHold: (path: { propertyId: string; intentId: string }): string => `/properties/${e(path.propertyId)}/holds/${e(path.intentId)}/release`,
+  /** PUT /properties/{propertyId}/payment-settings */
+  PaymentsController_updatePaymentSettings: (path: { propertyId: string }): string => `/properties/${e(path.propertyId)}/payment-settings`,
   /** GET /attendance-photo-retention */
   PhotoRetentionController_get: (): string => `/attendance-photo-retention`,
   /** PUT /attendance-photo-retention */
@@ -636,6 +636,10 @@ export interface Routes {
   CalendarController_people: 'GET /properties/{propertyId}/events/people';
   CalendarController_update: 'PATCH /properties/{propertyId}/events/{eventId}';
   CalendarController_view: 'GET /properties/{propertyId}/calendar';
+  CashierController_closeShift: 'POST /properties/{propertyId}/cashier/shifts/{shiftId}/close';
+  CashierController_currentShift: 'GET /properties/{propertyId}/cashier/shift';
+  CashierController_openShift: 'POST /properties/{propertyId}/cashier/shift';
+  CashierController_shifts: 'GET /properties/{propertyId}/cashier/shifts';
   ClockPhotosController_list: 'GET /properties/{propertyId}/attendance/photos';
   ClockPhotosController_photo: 'GET /properties/{propertyId}/attendance/photos/{punchId}';
   DevicesController_create: 'POST /properties/{propertyId}/devices';
@@ -655,37 +659,14 @@ export interface Routes {
   EmployeeRecordsController_removeTraining: 'DELETE /employees/{employeeId}/training/{recordId}';
   EmployeeRecordsController_reviews: 'GET /employees/{employeeId}/reviews';
   EmployeeRecordsController_trainings: 'GET /employees/{employeeId}/training';
-  FinanceController_accounts: 'GET /properties/{propertyId}/accounts';
-  FinanceController_addRoutingRule: 'POST /properties/{propertyId}/folios/{folioId}/routing-rules';
-  FinanceController_applyDiscount: 'PUT /properties/{propertyId}/folios/{folioId}/discount';
-  FinanceController_archiveDiscountProfile: 'POST /properties/{propertyId}/discount-profiles/{profileId}/archive';
-  FinanceController_captureHold: 'POST /properties/{propertyId}/holds/{intentId}/capture';
-  FinanceController_closeShift: 'POST /properties/{propertyId}/cashier/shifts/{shiftId}/close';
-  FinanceController_createAccount: 'POST /properties/{propertyId}/accounts';
-  FinanceController_createDiscountProfile: 'POST /properties/{propertyId}/discount-profiles';
-  FinanceController_currentShift: 'GET /properties/{propertyId}/cashier/shift';
-  FinanceController_daily: 'GET /properties/{propertyId}/reports/daily';
-  FinanceController_discountProfiles: 'GET /properties/{propertyId}/discount-profiles';
-  FinanceController_document: 'GET /properties/{propertyId}/documents/{documentId}';
-  FinanceController_documentList: 'GET /properties/{propertyId}/folios/{folioId}/documents';
-  FinanceController_exchangeRates: 'GET /properties/{propertyId}/exchange-rates';
-  FinanceController_intents: 'GET /properties/{propertyId}/folios/{folioId}/payment-intents';
-  FinanceController_issue: 'POST /properties/{propertyId}/folios/{folioId}/documents';
-  FinanceController_openShift: 'POST /properties/{propertyId}/cashier/shift';
-  FinanceController_paymentLink: 'POST /properties/{propertyId}/folios/{folioId}/payment-links';
-  FinanceController_paymentSettings: 'GET /properties/{propertyId}/payment-settings';
-  FinanceController_reconciliation: 'GET /properties/{propertyId}/reports/reconciliation';
-  FinanceController_reconciliationRuns: 'GET /properties/{propertyId}/reports/reconciliation-runs';
-  FinanceController_refund: 'POST /properties/{propertyId}/payments/{paymentId}/refunds';
-  FinanceController_refunds: 'GET /properties/{propertyId}/payments/{paymentId}/refunds';
-  FinanceController_releaseHold: 'POST /properties/{propertyId}/holds/{intentId}/release';
-  FinanceController_removeDiscount: 'DELETE /properties/{propertyId}/folios/{folioId}/discount';
-  FinanceController_removeRoutingRule: 'DELETE /properties/{propertyId}/routing-rules/{ruleId}';
-  FinanceController_routingRules: 'GET /properties/{propertyId}/folios/{folioId}/routing-rules';
-  FinanceController_setExchangeRate: 'POST /properties/{propertyId}/exchange-rates';
-  FinanceController_shifts: 'GET /properties/{propertyId}/cashier/shifts';
-  FinanceController_transfer: 'POST /properties/{propertyId}/folios/{folioId}/transfers';
-  FinanceController_updatePaymentSettings: 'PUT /properties/{propertyId}/payment-settings';
+  FinanceReportsController_daily: 'GET /properties/{propertyId}/reports/daily';
+  FinanceReportsController_reconciliation: 'GET /properties/{propertyId}/reports/reconciliation';
+  FinanceReportsController_reconciliationRuns: 'GET /properties/{propertyId}/reports/reconciliation-runs';
+  FinanceSettingsController_archiveDiscountProfile: 'POST /properties/{propertyId}/discount-profiles/{profileId}/archive';
+  FinanceSettingsController_createDiscountProfile: 'POST /properties/{propertyId}/discount-profiles';
+  FinanceSettingsController_discountProfiles: 'GET /properties/{propertyId}/discount-profiles';
+  FinanceSettingsController_exchangeRates: 'GET /properties/{propertyId}/exchange-rates';
+  FinanceSettingsController_setExchangeRate: 'POST /properties/{propertyId}/exchange-rates';
   FnbController_cancel: 'POST /properties/{propertyId}/orders/{orderId}/cancel';
   FnbController_createCategory: 'POST /properties/{propertyId}/outlets/{outletId}/menu/categories';
   FnbController_createItem: 'POST /properties/{propertyId}/outlets/{outletId}/menu/items';
@@ -700,12 +681,23 @@ export interface Routes {
   FnbController_transition: 'POST /properties/{propertyId}/orders/{orderId}/status';
   FnbController_updateItem: 'PATCH /properties/{propertyId}/menu-items/{itemId}';
   FnbController_updateOutlet: 'PATCH /properties/{propertyId}/outlets/{outletId}';
+  FolioController_accounts: 'GET /properties/{propertyId}/accounts';
+  FolioController_addRoutingRule: 'POST /properties/{propertyId}/folios/{folioId}/routing-rules';
   FolioController_adjust: 'POST /properties/{propertyId}/folios/{folioId}/adjustments';
+  FolioController_applyDiscount: 'PUT /properties/{propertyId}/folios/{folioId}/discount';
+  FolioController_createAccount: 'POST /properties/{propertyId}/accounts';
   FolioController_folio: 'GET /properties/{propertyId}/folios/{folioId}';
   FolioController_folioForRoom: 'GET /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/folio';
   FolioController_postCharge: 'POST /properties/{propertyId}/folios/{folioId}/charges';
   FolioController_recordPayment: 'POST /properties/{propertyId}/folios/{folioId}/payments';
+  FolioController_removeDiscount: 'DELETE /properties/{propertyId}/folios/{folioId}/discount';
+  FolioController_removeRoutingRule: 'DELETE /properties/{propertyId}/routing-rules/{ruleId}';
+  FolioController_routingRules: 'GET /properties/{propertyId}/folios/{folioId}/routing-rules';
+  FolioController_transfer: 'POST /properties/{propertyId}/folios/{folioId}/transfers';
   FolioController_voidLine: 'POST /properties/{propertyId}/folios/{folioId}/lines/{lineId}/void';
+  FolioDocumentsController_document: 'GET /properties/{propertyId}/documents/{documentId}';
+  FolioDocumentsController_documentList: 'GET /properties/{propertyId}/folios/{folioId}/documents';
+  FolioDocumentsController_issue: 'POST /properties/{propertyId}/folios/{folioId}/documents';
   FrontOfficeController_board: 'GET /properties/{propertyId}/front-desk';
   FrontOfficeController_checkIn: 'POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/check-in';
   FrontOfficeController_checkOut: 'POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/check-out';
@@ -716,9 +708,6 @@ export interface Routes {
   GuestAdminController_updateSettings: 'PUT /properties/{propertyId}/guest-portal-settings';
   GuestEventsController_list: 'GET /guest/events';
   GuestExtrasController_hotelInfo: 'GET /guest/hotel-info';
-  GuestExtrasController_markRead: 'POST /guest/notifications/read';
-  GuestExtrasController_notifications: 'GET /guest/notifications';
-  GuestExtrasController_requestCheckout: 'POST /guest/checkout-request';
   GuestExtrasController_uploadId: 'POST /guest/identity';
   GuestFnbController_cancel: 'POST /guest/orders/{orderId}/cancel';
   GuestFnbController_list: 'GET /guest/orders';
@@ -730,21 +719,24 @@ export interface Routes {
   GuestImagesController_hotelImage: 'GET /guest/hotel-images/{imageId}';
   GuestImagesController_menuImage: 'GET /guest/menu-items/{itemId}/image';
   GuestInboxController_message: 'POST /properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message';
+  GuestNotificationsController_markRead: 'POST /guest/notifications/read';
+  GuestNotificationsController_notifications: 'GET /guest/notifications';
   GuestPaymentsController_hold: 'POST /guest/holds';
   GuestPaymentsController_list: 'GET /guest/payments';
   GuestPaymentsController_pay: 'POST /guest/payments';
   GuestPortalController_bill: 'GET /guest/bill';
-  GuestPortalController_createRequest: 'POST /guest/service-requests';
   GuestPortalController_exchange: 'POST /guest/session';
-  GuestPortalController_listRequests: 'GET /guest/service-requests';
   GuestPortalController_logout: 'DELETE /guest/session';
   GuestPortalController_preCheckIn: 'PUT /guest/pre-check-in';
-  GuestPortalController_rate: 'PUT /guest/service-requests/{requestId}/rating';
   GuestPortalController_requestCode: 'POST /guest/verification';
   GuestPortalController_selfCheckIn: 'POST /guest/check-in';
   GuestPortalController_stay: 'GET /guest/stay';
   GuestPortalController_verifyCode: 'POST /guest/verification/confirm';
-  GuestServiceController_sendLink: 'POST /properties/{propertyId}/reservations/{reservationId}/guest-portal-link';
+  GuestPortalLinkController_sendLink: 'POST /properties/{propertyId}/reservations/{reservationId}/guest-portal-link';
+  GuestServiceRequestsController_createRequest: 'POST /guest/service-requests';
+  GuestServiceRequestsController_listRequests: 'GET /guest/service-requests';
+  GuestServiceRequestsController_rate: 'PUT /guest/service-requests/{requestId}/rating';
+  GuestServiceRequestsController_requestCheckout: 'POST /guest/checkout-request';
   GuestsController_create: 'POST /properties/{propertyId}/guests';
   GuestsController_get: 'GET /guests/{guestId}';
   GuestsController_search: 'GET /guests';
@@ -831,6 +823,14 @@ export interface Routes {
   OrganizationController_featureFlags: 'GET /organization/feature-flags';
   OrganizationController_setFeatureFlag: 'PUT /organization/feature-flags/{flagKey}';
   PaymentWebhooksController_receive: 'POST /webhooks/payments/{provider}';
+  PaymentsController_captureHold: 'POST /properties/{propertyId}/holds/{intentId}/capture';
+  PaymentsController_intents: 'GET /properties/{propertyId}/folios/{folioId}/payment-intents';
+  PaymentsController_paymentLink: 'POST /properties/{propertyId}/folios/{folioId}/payment-links';
+  PaymentsController_paymentSettings: 'GET /properties/{propertyId}/payment-settings';
+  PaymentsController_refund: 'POST /properties/{propertyId}/payments/{paymentId}/refunds';
+  PaymentsController_refunds: 'GET /properties/{propertyId}/payments/{paymentId}/refunds';
+  PaymentsController_releaseHold: 'POST /properties/{propertyId}/holds/{intentId}/release';
+  PaymentsController_updatePaymentSettings: 'PUT /properties/{propertyId}/payment-settings';
   PhotoRetentionController_get: 'GET /attendance-photo-retention';
   PhotoRetentionController_set: 'PUT /attendance-photo-retention';
   PinController_remove: 'DELETE /me/pin';
@@ -1068,6 +1068,26 @@ export function CalendarController_view<T>(call: Call, path: { propertyId: strin
   return call<T>('GET', paths.CalendarController_view(path, query));
 }
 
+/** POST /properties/{propertyId}/cashier/shifts/{shiftId}/close */
+export function CashierController_closeShift<T>(call: Call, path: { propertyId: string; shiftId: string }, body: unknown, headers: { ifMatch: string }): Promise<Result<T>> {
+  return call<T>('POST', paths.CashierController_closeShift(path), body, { 'if-match': headers.ifMatch });
+}
+
+/** GET /properties/{propertyId}/cashier/shift */
+export function CashierController_currentShift<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.CashierController_currentShift(path));
+}
+
+/** POST /properties/{propertyId}/cashier/shift */
+export function CashierController_openShift<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.CashierController_openShift(path), body);
+}
+
+/** GET /properties/{propertyId}/cashier/shifts */
+export function CashierController_shifts<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.CashierController_shifts(path));
+}
+
 /** GET /properties/{propertyId}/attendance/photos */
 export function ClockPhotosController_list<T>(call: Call, path: { propertyId: string }, query: { from: string; to: string }): Promise<Result<T>> {
   return call<T>('GET', paths.ClockPhotosController_list(path, query));
@@ -1163,159 +1183,44 @@ export function EmployeeRecordsController_trainings<T>(call: Call, path: { emplo
   return call<T>('GET', paths.EmployeeRecordsController_trainings(path));
 }
 
-/** GET /properties/{propertyId}/accounts */
-export function FinanceController_accounts<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_accounts(path));
-}
-
-/** POST /properties/{propertyId}/folios/{folioId}/routing-rules */
-export function FinanceController_addRoutingRule<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_addRoutingRule(path), body);
-}
-
-/** PUT /properties/{propertyId}/folios/{folioId}/discount */
-export function FinanceController_applyDiscount<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('PUT', paths.FinanceController_applyDiscount(path), body);
-}
-
-/** POST /properties/{propertyId}/discount-profiles/{profileId}/archive (204 No Content) */
-export function FinanceController_archiveDiscountProfile(call: Call, path: { propertyId: string; profileId: string }): Promise<Result<void>> {
-  return call<void>('POST', paths.FinanceController_archiveDiscountProfile(path));
-}
-
-/** POST /properties/{propertyId}/holds/{intentId}/capture */
-export function FinanceController_captureHold<T>(call: Call, path: { propertyId: string; intentId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_captureHold(path), body, { 'idempotency-key': headers.idempotencyKey });
-}
-
-/** POST /properties/{propertyId}/cashier/shifts/{shiftId}/close */
-export function FinanceController_closeShift<T>(call: Call, path: { propertyId: string; shiftId: string }, body: unknown, headers: { ifMatch: string }): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_closeShift(path), body, { 'if-match': headers.ifMatch });
-}
-
-/** POST /properties/{propertyId}/accounts */
-export function FinanceController_createAccount<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_createAccount(path), body);
-}
-
-/** POST /properties/{propertyId}/discount-profiles */
-export function FinanceController_createDiscountProfile<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_createDiscountProfile(path), body);
-}
-
-/** GET /properties/{propertyId}/cashier/shift */
-export function FinanceController_currentShift<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_currentShift(path));
-}
-
 /** GET /properties/{propertyId}/reports/daily */
-export function FinanceController_daily<T>(call: Call, path: { propertyId: string }, query?: { date?: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_daily(path, query));
-}
-
-/** GET /properties/{propertyId}/discount-profiles */
-export function FinanceController_discountProfiles<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_discountProfiles(path));
-}
-
-/** GET /properties/{propertyId}/documents/{documentId} */
-export function FinanceController_document<T>(call: Call, path: { propertyId: string; documentId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_document(path));
-}
-
-/** GET /properties/{propertyId}/folios/{folioId}/documents */
-export function FinanceController_documentList<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_documentList(path));
-}
-
-/** GET /properties/{propertyId}/exchange-rates */
-export function FinanceController_exchangeRates<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_exchangeRates(path));
-}
-
-/** GET /properties/{propertyId}/folios/{folioId}/payment-intents */
-export function FinanceController_intents<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_intents(path));
-}
-
-/** POST /properties/{propertyId}/folios/{folioId}/documents */
-export function FinanceController_issue<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_issue(path), body);
-}
-
-/** POST /properties/{propertyId}/cashier/shift */
-export function FinanceController_openShift<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_openShift(path), body);
-}
-
-/** POST /properties/{propertyId}/folios/{folioId}/payment-links */
-export function FinanceController_paymentLink<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_paymentLink(path), body, { 'idempotency-key': headers.idempotencyKey });
-}
-
-/** GET /properties/{propertyId}/payment-settings */
-export function FinanceController_paymentSettings<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_paymentSettings(path));
+export function FinanceReportsController_daily<T>(call: Call, path: { propertyId: string }, query?: { date?: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FinanceReportsController_daily(path, query));
 }
 
 /** GET /properties/{propertyId}/reports/reconciliation */
-export function FinanceController_reconciliation<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_reconciliation(path));
+export function FinanceReportsController_reconciliation<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FinanceReportsController_reconciliation(path));
 }
 
 /** GET /properties/{propertyId}/reports/reconciliation-runs */
-export function FinanceController_reconciliationRuns<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_reconciliationRuns(path));
+export function FinanceReportsController_reconciliationRuns<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FinanceReportsController_reconciliationRuns(path));
 }
 
-/** POST /properties/{propertyId}/payments/{paymentId}/refunds */
-export function FinanceController_refund<T>(call: Call, path: { propertyId: string; paymentId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_refund(path), body, { 'idempotency-key': headers.idempotencyKey });
+/** POST /properties/{propertyId}/discount-profiles/{profileId}/archive (204 No Content) */
+export function FinanceSettingsController_archiveDiscountProfile(call: Call, path: { propertyId: string; profileId: string }): Promise<Result<void>> {
+  return call<void>('POST', paths.FinanceSettingsController_archiveDiscountProfile(path));
 }
 
-/** GET /properties/{propertyId}/payments/{paymentId}/refunds */
-export function FinanceController_refunds<T>(call: Call, path: { propertyId: string; paymentId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_refunds(path));
+/** POST /properties/{propertyId}/discount-profiles */
+export function FinanceSettingsController_createDiscountProfile<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FinanceSettingsController_createDiscountProfile(path), body);
 }
 
-/** POST /properties/{propertyId}/holds/{intentId}/release */
-export function FinanceController_releaseHold<T>(call: Call, path: { propertyId: string; intentId: string }): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_releaseHold(path));
+/** GET /properties/{propertyId}/discount-profiles */
+export function FinanceSettingsController_discountProfiles<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FinanceSettingsController_discountProfiles(path));
 }
 
-/** DELETE /properties/{propertyId}/folios/{folioId}/discount */
-export function FinanceController_removeDiscount<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
-  return call<T>('DELETE', paths.FinanceController_removeDiscount(path));
-}
-
-/** DELETE /properties/{propertyId}/routing-rules/{ruleId} (204 No Content) */
-export function FinanceController_removeRoutingRule(call: Call, path: { propertyId: string; ruleId: string }): Promise<Result<void>> {
-  return call<void>('DELETE', paths.FinanceController_removeRoutingRule(path));
-}
-
-/** GET /properties/{propertyId}/folios/{folioId}/routing-rules */
-export function FinanceController_routingRules<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_routingRules(path));
+/** GET /properties/{propertyId}/exchange-rates */
+export function FinanceSettingsController_exchangeRates<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FinanceSettingsController_exchangeRates(path));
 }
 
 /** POST /properties/{propertyId}/exchange-rates */
-export function FinanceController_setExchangeRate<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_setExchangeRate(path), body);
-}
-
-/** GET /properties/{propertyId}/cashier/shifts */
-export function FinanceController_shifts<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
-  return call<T>('GET', paths.FinanceController_shifts(path));
-}
-
-/** POST /properties/{propertyId}/folios/{folioId}/transfers */
-export function FinanceController_transfer<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.FinanceController_transfer(path), body);
-}
-
-/** PUT /properties/{propertyId}/payment-settings */
-export function FinanceController_updatePaymentSettings<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('PUT', paths.FinanceController_updatePaymentSettings(path), body);
+export function FinanceSettingsController_setExchangeRate<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FinanceSettingsController_setExchangeRate(path), body);
 }
 
 /** POST /properties/{propertyId}/orders/{orderId}/cancel */
@@ -1388,9 +1293,29 @@ export function FnbController_updateOutlet<T>(call: Call, path: { propertyId: st
   return call<T>('PATCH', paths.FnbController_updateOutlet(path), body, { 'if-match': headers.ifMatch });
 }
 
+/** GET /properties/{propertyId}/accounts */
+export function FolioController_accounts<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FolioController_accounts(path));
+}
+
+/** POST /properties/{propertyId}/folios/{folioId}/routing-rules */
+export function FolioController_addRoutingRule<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FolioController_addRoutingRule(path), body);
+}
+
 /** POST /properties/{propertyId}/folios/{folioId}/adjustments */
 export function FolioController_adjust<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
   return call<T>('POST', paths.FolioController_adjust(path), body, { 'idempotency-key': headers.idempotencyKey });
+}
+
+/** PUT /properties/{propertyId}/folios/{folioId}/discount */
+export function FolioController_applyDiscount<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('PUT', paths.FolioController_applyDiscount(path), body);
+}
+
+/** POST /properties/{propertyId}/accounts */
+export function FolioController_createAccount<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FolioController_createAccount(path), body);
 }
 
 /** GET /properties/{propertyId}/folios/{folioId} */
@@ -1413,9 +1338,44 @@ export function FolioController_recordPayment<T>(call: Call, path: { propertyId:
   return call<T>('POST', paths.FolioController_recordPayment(path), body, { 'idempotency-key': headers.idempotencyKey });
 }
 
+/** DELETE /properties/{propertyId}/folios/{folioId}/discount */
+export function FolioController_removeDiscount<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
+  return call<T>('DELETE', paths.FolioController_removeDiscount(path));
+}
+
+/** DELETE /properties/{propertyId}/routing-rules/{ruleId} (204 No Content) */
+export function FolioController_removeRoutingRule(call: Call, path: { propertyId: string; ruleId: string }): Promise<Result<void>> {
+  return call<void>('DELETE', paths.FolioController_removeRoutingRule(path));
+}
+
+/** GET /properties/{propertyId}/folios/{folioId}/routing-rules */
+export function FolioController_routingRules<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FolioController_routingRules(path));
+}
+
+/** POST /properties/{propertyId}/folios/{folioId}/transfers */
+export function FolioController_transfer<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FolioController_transfer(path), body);
+}
+
 /** POST /properties/{propertyId}/folios/{folioId}/lines/{lineId}/void */
 export function FolioController_voidLine<T>(call: Call, path: { propertyId: string; folioId: string; lineId: string }, body: unknown): Promise<Result<T>> {
   return call<T>('POST', paths.FolioController_voidLine(path), body);
+}
+
+/** GET /properties/{propertyId}/documents/{documentId} */
+export function FolioDocumentsController_document<T>(call: Call, path: { propertyId: string; documentId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FolioDocumentsController_document(path));
+}
+
+/** GET /properties/{propertyId}/folios/{folioId}/documents */
+export function FolioDocumentsController_documentList<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.FolioDocumentsController_documentList(path));
+}
+
+/** POST /properties/{propertyId}/folios/{folioId}/documents */
+export function FolioDocumentsController_issue<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.FolioDocumentsController_issue(path), body);
 }
 
 /** GET /properties/{propertyId}/front-desk */
@@ -1466,21 +1426,6 @@ export function GuestEventsController_list<T>(call: Call): Promise<Result<T>> {
 /** GET /guest/hotel-info */
 export function GuestExtrasController_hotelInfo<T>(call: Call): Promise<Result<T>> {
   return call<T>('GET', paths.GuestExtrasController_hotelInfo());
-}
-
-/** POST /guest/notifications/read (204 No Content) */
-export function GuestExtrasController_markRead(call: Call): Promise<Result<void>> {
-  return call<void>('POST', paths.GuestExtrasController_markRead());
-}
-
-/** GET /guest/notifications */
-export function GuestExtrasController_notifications<T>(call: Call): Promise<Result<T>> {
-  return call<T>('GET', paths.GuestExtrasController_notifications());
-}
-
-/** POST /guest/checkout-request */
-export function GuestExtrasController_requestCheckout<T>(call: Call, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.GuestExtrasController_requestCheckout(), body);
 }
 
 /** POST /guest/identity */
@@ -1538,6 +1483,16 @@ export function GuestInboxController_message(call: Call, path: { propertyId: str
   return call<void>('POST', paths.GuestInboxController_message(path), body);
 }
 
+/** POST /guest/notifications/read (204 No Content) */
+export function GuestNotificationsController_markRead(call: Call): Promise<Result<void>> {
+  return call<void>('POST', paths.GuestNotificationsController_markRead());
+}
+
+/** GET /guest/notifications */
+export function GuestNotificationsController_notifications<T>(call: Call): Promise<Result<T>> {
+  return call<T>('GET', paths.GuestNotificationsController_notifications());
+}
+
 /** POST /guest/holds */
 export function GuestPaymentsController_hold<T>(call: Call, body: unknown | undefined, headers: { idempotencyKey: string }): Promise<Result<T>> {
   return call<T>('POST', paths.GuestPaymentsController_hold(), body, { 'idempotency-key': headers.idempotencyKey });
@@ -1558,19 +1513,9 @@ export function GuestPortalController_bill<T>(call: Call): Promise<Result<T>> {
   return call<T>('GET', paths.GuestPortalController_bill());
 }
 
-/** POST /guest/service-requests */
-export function GuestPortalController_createRequest<T>(call: Call, body: unknown): Promise<Result<T>> {
-  return call<T>('POST', paths.GuestPortalController_createRequest(), body);
-}
-
 /** POST /guest/session */
 export function GuestPortalController_exchange<T>(call: Call, body: unknown): Promise<Result<T>> {
   return call<T>('POST', paths.GuestPortalController_exchange(), body);
-}
-
-/** GET /guest/service-requests */
-export function GuestPortalController_listRequests<T>(call: Call): Promise<Result<T>> {
-  return call<T>('GET', paths.GuestPortalController_listRequests());
 }
 
 /** DELETE /guest/session (204 No Content) */
@@ -1581,11 +1526,6 @@ export function GuestPortalController_logout(call: Call): Promise<Result<void>> 
 /** PUT /guest/pre-check-in */
 export function GuestPortalController_preCheckIn<T>(call: Call, body: unknown): Promise<Result<T>> {
   return call<T>('PUT', paths.GuestPortalController_preCheckIn(), body);
-}
-
-/** PUT /guest/service-requests/{requestId}/rating */
-export function GuestPortalController_rate<T>(call: Call, path: { requestId: string }, body: unknown): Promise<Result<T>> {
-  return call<T>('PUT', paths.GuestPortalController_rate(path), body);
 }
 
 /** POST /guest/verification (204 No Content) */
@@ -1609,8 +1549,28 @@ export function GuestPortalController_verifyCode<T>(call: Call, body: unknown): 
 }
 
 /** POST /properties/{propertyId}/reservations/{reservationId}/guest-portal-link (204 No Content) */
-export function GuestServiceController_sendLink(call: Call, path: { propertyId: string; reservationId: string }): Promise<Result<void>> {
-  return call<void>('POST', paths.GuestServiceController_sendLink(path));
+export function GuestPortalLinkController_sendLink(call: Call, path: { propertyId: string; reservationId: string }): Promise<Result<void>> {
+  return call<void>('POST', paths.GuestPortalLinkController_sendLink(path));
+}
+
+/** POST /guest/service-requests */
+export function GuestServiceRequestsController_createRequest<T>(call: Call, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.GuestServiceRequestsController_createRequest(), body);
+}
+
+/** GET /guest/service-requests */
+export function GuestServiceRequestsController_listRequests<T>(call: Call): Promise<Result<T>> {
+  return call<T>('GET', paths.GuestServiceRequestsController_listRequests());
+}
+
+/** PUT /guest/service-requests/{requestId}/rating */
+export function GuestServiceRequestsController_rate<T>(call: Call, path: { requestId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('PUT', paths.GuestServiceRequestsController_rate(path), body);
+}
+
+/** POST /guest/checkout-request */
+export function GuestServiceRequestsController_requestCheckout<T>(call: Call, body: unknown): Promise<Result<T>> {
+  return call<T>('POST', paths.GuestServiceRequestsController_requestCheckout(), body);
 }
 
 /** POST /properties/{propertyId}/guests */
@@ -2041,6 +2001,46 @@ export function OrganizationController_setFeatureFlag<T>(call: Call, path: { fla
 /** POST /webhooks/payments/{provider} */
 export function PaymentWebhooksController_receive<T>(call: Call, path: { provider: string }): Promise<Result<T>> {
   return call<T>('POST', paths.PaymentWebhooksController_receive(path));
+}
+
+/** POST /properties/{propertyId}/holds/{intentId}/capture */
+export function PaymentsController_captureHold<T>(call: Call, path: { propertyId: string; intentId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
+  return call<T>('POST', paths.PaymentsController_captureHold(path), body, { 'idempotency-key': headers.idempotencyKey });
+}
+
+/** GET /properties/{propertyId}/folios/{folioId}/payment-intents */
+export function PaymentsController_intents<T>(call: Call, path: { propertyId: string; folioId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.PaymentsController_intents(path));
+}
+
+/** POST /properties/{propertyId}/folios/{folioId}/payment-links */
+export function PaymentsController_paymentLink<T>(call: Call, path: { propertyId: string; folioId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
+  return call<T>('POST', paths.PaymentsController_paymentLink(path), body, { 'idempotency-key': headers.idempotencyKey });
+}
+
+/** GET /properties/{propertyId}/payment-settings */
+export function PaymentsController_paymentSettings<T>(call: Call, path: { propertyId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.PaymentsController_paymentSettings(path));
+}
+
+/** POST /properties/{propertyId}/payments/{paymentId}/refunds */
+export function PaymentsController_refund<T>(call: Call, path: { propertyId: string; paymentId: string }, body: unknown, headers: { idempotencyKey: string }): Promise<Result<T>> {
+  return call<T>('POST', paths.PaymentsController_refund(path), body, { 'idempotency-key': headers.idempotencyKey });
+}
+
+/** GET /properties/{propertyId}/payments/{paymentId}/refunds */
+export function PaymentsController_refunds<T>(call: Call, path: { propertyId: string; paymentId: string }): Promise<Result<T>> {
+  return call<T>('GET', paths.PaymentsController_refunds(path));
+}
+
+/** POST /properties/{propertyId}/holds/{intentId}/release */
+export function PaymentsController_releaseHold<T>(call: Call, path: { propertyId: string; intentId: string }): Promise<Result<T>> {
+  return call<T>('POST', paths.PaymentsController_releaseHold(path));
+}
+
+/** PUT /properties/{propertyId}/payment-settings */
+export function PaymentsController_updatePaymentSettings<T>(call: Call, path: { propertyId: string }, body: unknown): Promise<Result<T>> {
+  return call<T>('PUT', paths.PaymentsController_updatePaymentSettings(path), body);
 }
 
 /** GET /attendance-photo-retention */

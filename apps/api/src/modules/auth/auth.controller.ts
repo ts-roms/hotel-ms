@@ -17,6 +17,8 @@ import {
   mfaChallengeRequestSchema,
   type ConfirmEnrollmentRequest,
   confirmEnrollmentRequestSchema,
+  type EnrollmentConfirmed,
+  enrollmentConfirmedSchema,
   type MfaCodeRequest,
   mfaCodeRequestSchema,
   problemSchema,
@@ -42,8 +44,6 @@ import { AuthService } from './auth.service.js';
 import { MfaService } from './mfa.service.js';
 import { PasswordService } from './password.service.js';
 import { SessionService } from './session.service.js';
-
-const enrollmentConfirmedSchema = recoveryCodesSchema.extend({ session: sessionInfoSchema });
 
 @ApiTags('auth')
 @Controller('auth')
@@ -155,7 +155,7 @@ export class AuthController {
   async confirmEnrollment(
     @ZodBody(confirmEnrollmentRequestSchema) body: ConfirmEnrollmentRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<z.infer<typeof enrollmentConfirmedSchema>> {
+  ): Promise<EnrollmentConfirmed> {
     const { token, recoveryCodes } = await this.mfa.confirmEnrollment(body.code, body.password);
     this.setSessionCookie(reply, token);
     this.cls.set('mfaEnabled', true);

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { FrontDesk, FrontDeskItem, Reservation } from '@hotel/contracts';
-import type { Prisma } from '@hotel/database';
+import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, toDbDate } from '../../common/dates.js';
 import { ProblemException, Problems, invalidState } from '../../common/problem.js';
@@ -11,7 +11,8 @@ import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { toGuestSummary } from '../pms/guests/guests.service.js';
 import { ReservationsService, toReservationDto } from '../pms/reservations/reservations.service.js';
-import { businessDateOf, RoomsService } from '../pms/inventory/rooms.service.js';
+import { businessDateOf } from '../../common/business-date.js';
+import { RoomsService } from '../pms/inventory/rooms.service.js';
 import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
 import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
@@ -53,6 +54,9 @@ export function toFrontDeskItem(line: FrontDeskRow): FrontDeskItem {
 
 const roomNotReady = (detail: string) =>
   new ProblemException(409, 'ROOM_NOT_READY', 'Room not ready', detail);
+
+/** Housekeeping states in which a room can be handed to an arriving guest. */
+const READY_HOUSEKEEPING = ['INSPECTED', 'CLEAN'] as const;
 
 @Injectable()
 export class FrontOfficeService {
@@ -107,6 +111,45 @@ export class FrontOfficeService {
    * Check-in (§12.5). Rules live here, in one place, for the front desk and (later) the
    * guest self check-in flow alike.
    */
+  /**
+   * Rooms of a type that can be handed over for a stay now: in service, clean or inspected,
+   * nobody in them, and not held for any night of the stay. Inspected rooms come first
+   * (they need no further housekeeping check), then by number.
+   */
+  async readyRoomsInTx(
+    tx: Tx,
+    input: { propertyId: string; roomTypeId: string; arrival: Date; departure: Date },
+    take = 10,
+  ): Promise<{ id: string; number: string }[]> {
+    const rooms = await tx.room.findMany({
+      where: {
+        propertyId: input.propertyId,
+        roomTypeId: input.roomTypeId,
+        archivedAt: null,
+        serviceStatus: 'IN_SERVICE',
+        housekeepingStatus: { in: [...READY_HOUSEKEEPING] },
+        stays: { none: { checkedOutAt: null } },
+        assignments: {
+          none: {
+            releasedAt: null,
+            startDate: { lt: input.departure },
+            endDate: { gt: input.arrival },
+          },
+        },
+      },
+      select: { id: true, number: true, housekeepingStatus: true },
+      orderBy: { number: 'asc' },
+      take,
+    });
+    return rooms
+      .sort(
+        (a, b) =>
+          Number(b.housekeepingStatus === 'INSPECTED') -
+          Number(a.housekeepingStatus === 'INSPECTED'),
+      )
+      .map(({ id, number }) => ({ id, number }));
+  }
+
   async checkIn(reservationId: string, lineId: string): Promise<Reservation> {
     const { organizationId, propertyId, actorId } = this.ctx;
     const row = await this.db.run(async (tx) => {
@@ -129,7 +172,7 @@ export class FrontOfficeService {
       const room = await tx.room.findUniqueOrThrow({ where: { id: assignment.roomId } });
       if (room.serviceStatus === 'OUT_OF_ORDER')
         throw roomNotReady(`Room ${room.number} is out of order.`);
-      if (room.housekeepingStatus !== 'CLEAN' && room.housekeepingStatus !== 'INSPECTED') {
+      if (!(READY_HOUSEKEEPING as readonly string[]).includes(room.housekeepingStatus)) {
         throw roomNotReady(`Room ${room.number} is ${room.housekeepingStatus.toLowerCase()}.`);
       }
       const occupied = await tx.stay.count({ where: { roomId: room.id, checkedOutAt: null } });

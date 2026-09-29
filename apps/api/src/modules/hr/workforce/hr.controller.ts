@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CreateDepartmentRequest,
@@ -28,7 +28,7 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { parseIfMatch, weakEtag } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -105,7 +105,7 @@ export class HrController {
   @ZodResponse(200, employeeSchema)
   async updateEmployee(
     @Param('employeeId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateEmployeeRequestSchema) body: UpdateEmployeeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {

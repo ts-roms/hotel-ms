@@ -1,16 +1,12 @@
-/** Minor-unit digits of an ISO 4217 currency (PHP 2, JPY 0, KWD 3), from ICU. */
-export function currencyDigits(currency: string): number {
-  return (
-    new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
-      .maximumFractionDigits ?? 2
-  );
-}
+/**
+ * The API's money helpers work on bigint minor units and micro-unit exchange rates, as the
+ * database stores them. Currency digits and display formatting come from @hotel/format.
+ */
+import { currencyDigits, formatMoney } from '@hotel/format';
 
 /** 123_450n PHP → "₱1,234.50"; scales by the currency's own minor units (JPY 0, KWD 3). */
 export function formatMinor(minor: bigint, currency: string, locale = 'en-PH'): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(
-    Number(minor) / 10 ** currencyDigits(currency),
-  );
+  return formatMoney(Number(minor), currency, locale);
 }
 
 /** Minor units as a major-unit number in the currency's own decimals (JSON exports). */

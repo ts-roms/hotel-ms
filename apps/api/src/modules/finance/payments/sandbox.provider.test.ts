@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { ProblemException } from '../../../common/problem.js';
-import { SandboxProvider } from './providers.js';
+import { SandboxProvider } from './sandbox.provider.js';
 
 const SECRET = 'sandbox-test-secret';
 const env = { API_PUBLIC_ORIGIN: 'http://localhost:43000', PAYMENT_SANDBOX_SECRET: SECRET };

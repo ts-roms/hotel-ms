@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  CloseLostFoundItem,
-  CreateLostFoundItem,
-  LostFoundItem,
-  LostFoundListQuery,
+import {
+  type CloseLostFoundItem,
+  type CreateLostFoundItem,
+  LOST_FOUND_CLOSED_STATUSES,
+  type LostFoundItem,
+  type LostFoundListQuery,
 } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
@@ -77,7 +78,7 @@ export class LostFoundService {
           ...(query.status === 'HELD'
             ? { status: 'HELD' }
             : query.status === 'CLOSED'
-              ? { status: { in: ['RETURNED', 'DISPOSED'] } }
+              ? { status: { in: [...LOST_FOUND_CLOSED_STATUSES] } }
               : {}),
           ...(query.q
             ? {

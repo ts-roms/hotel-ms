@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
-import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   type ImportCommitRequest,
   importCommitRequestSchema,
@@ -11,6 +11,11 @@ import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { ImportsService } from './imports.service.js';
 
 /** CSV import with preview (ADR-0030). The body is the CSV file (text/csv). */
+const csvBody = ApiBody({
+  description: 'The CSV file: a header row, then one row per record (RFC 4180, UTF-8)',
+  schema: { type: 'string' },
+});
+
 @ApiTags('import')
 @Controller('properties/:propertyId/imports')
 export class ImportsController {
@@ -20,6 +25,7 @@ export class ImportsController {
   @RequirePermission('guest.update')
   @HttpCode(200)
   @ApiConsumes('text/csv')
+  @csvBody
   @ZodResponse(200, importPreviewSchema)
   previewGuests(@Param('propertyId') propertyId: string, @Body() body: unknown) {
     return this.imports.preview(propertyId, 'guests', body);
@@ -40,6 +46,7 @@ export class ImportsController {
   @RequirePermission('room.manage')
   @HttpCode(200)
   @ApiConsumes('text/csv')
+  @csvBody
   @ZodResponse(200, importPreviewSchema)
   previewRooms(@Param('propertyId') propertyId: string, @Body() body: unknown) {
     return this.imports.preview(propertyId, 'rooms', body);

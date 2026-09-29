@@ -44,6 +44,8 @@ export const createGuestRequestSchema = z.strictObject({
   notes: guestFields.notes.default(''),
 });
 export type CreateGuestRequest = z.infer<typeof createGuestRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateGuestRequestInput = z.input<typeof createGuestRequestSchema>;
 
 export const updateGuestRequestSchema = z.strictObject(guestFields).partial();
 export type UpdateGuestRequest = z.infer<typeof updateGuestRequestSchema>;
@@ -67,7 +69,10 @@ export const GUEST_ID_FILE_TYPES = [
 ] as const;
 /** Largest accepted ID file: 8 MiB. */
 export const GUEST_ID_MAX_BYTES = 8 * 1024 * 1024;
-export const GUEST_ID_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'SUPERSEDED'] as const;
+/** Where a guest ID's review stands. */
+export const GUEST_ID_REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+/** SUPERSEDED: a newer upload for the same stay replaced it. */
+export const GUEST_ID_STATUSES = [...GUEST_ID_REVIEW_STATUSES, 'SUPERSEDED'] as const;
 
 export const uploadGuestIdQuerySchema = z.object({ documentType: z.enum(GUEST_ID_TYPES) });
 export type UploadGuestIdQuery = z.infer<typeof uploadGuestIdQuerySchema>;
@@ -97,7 +102,7 @@ export const identityDocumentSchema = z.object({
 export type IdentityDocument = z.infer<typeof identityDocumentSchema>;
 
 export const identityDocumentListQuerySchema = z.object({
-  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'ALL']).default('PENDING'),
+  status: z.enum([...GUEST_ID_REVIEW_STATUSES, 'ALL']).default('PENDING'),
 });
 export type IdentityDocumentListQuery = z.infer<typeof identityDocumentListQuerySchema>;
 

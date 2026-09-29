@@ -67,6 +67,8 @@ export const createOutletRequestSchema = z.strictObject({
   closesAt: localTimeSchema.nullable().default(null),
 });
 export type CreateOutletRequest = z.infer<typeof createOutletRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateOutletRequestInput = z.input<typeof createOutletRequestSchema>;
 
 export const updateOutletRequestSchema = z
   .strictObject({
@@ -128,6 +130,8 @@ export const createCategoryRequestSchema = z.strictObject({
   sortOrder: z.number().int().min(0).max(1000).default(0),
 });
 export type CreateCategoryRequest = z.infer<typeof createCategoryRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateCategoryRequestInput = z.input<typeof createCategoryRequestSchema>;
 
 export const createMenuItemRequestSchema = z.strictObject({
   categoryId: z.uuid(),
@@ -154,6 +158,8 @@ export const createMenuItemRequestSchema = z.strictObject({
     .default([]),
 });
 export type CreateMenuItemRequest = z.infer<typeof createMenuItemRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateMenuItemRequestInput = z.input<typeof createMenuItemRequestSchema>;
 
 export const updateMenuItemRequestSchema = z
   .strictObject({
@@ -197,12 +203,16 @@ export const staffOrderRequestSchema = z
     path: ['roomId'],
   });
 export type StaffOrderRequest = z.infer<typeof staffOrderRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type StaffOrderRequestInput = z.input<typeof staffOrderRequestSchema>;
 
 export const guestOrderRequestSchema = z.strictObject({
   ...orderBase,
   chargeMethod: z.enum(['ROOM_CHARGE', 'PAY_ON_DELIVERY']),
 });
 export type GuestOrderRequest = z.infer<typeof guestOrderRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type GuestOrderRequestInput = z.input<typeof guestOrderRequestSchema>;
 
 export const orderSchema = z.object({
   id: z.uuid(),

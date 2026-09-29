@@ -59,10 +59,13 @@ export const paymentSchema = z.object({
 });
 export type Payment = z.infer<typeof paymentSchema>;
 
+export const FOLIO_STATUSES = ['OPEN', 'CLOSED'] as const;
+export type FolioStatus = (typeof FOLIO_STATUSES)[number];
+
 export const folioSchema = z.object({
   id: z.uuid(),
   folioNo: z.string(),
-  status: z.enum(['OPEN', 'CLOSED']),
+  status: z.enum(FOLIO_STATUSES),
   currency: z.string(),
   balanceMinor: signedMinorSchema,
   reservationRoomId: z.uuid().nullable(),
@@ -122,6 +125,8 @@ export const recordPaymentRequestSchema = z
     path: ['tendered'],
   });
 export type RecordPaymentRequest = z.infer<typeof recordPaymentRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type RecordPaymentRequestInput = z.input<typeof recordPaymentRequestSchema>;
 
 export const voidLineRequestSchema = z.strictObject({ reason: z.string().trim().min(1).max(200) });
 export type VoidLineRequest = z.infer<typeof voidLineRequestSchema>;
@@ -184,12 +189,16 @@ export type GuestPaymentRequest = z.infer<typeof guestPaymentRequestSchema>;
 
 // ---- Refunds -------------------------------------------------------------------------------
 
+/** PENDING: sent, outcome not yet known (it still counts against the refundable amount). */
+export const REFUND_STATUSES = ['PENDING', 'SUCCEEDED', 'FAILED'] as const;
+export type RefundStatus = (typeof REFUND_STATUSES)[number];
+
 export const refundSchema = z.object({
   id: z.uuid(),
   paymentId: z.uuid(),
   amountMinor: z.number().int(),
   method: z.enum(PAYMENT_METHODS),
-  status: z.enum(['PENDING', 'SUCCEEDED', 'FAILED']),
+  status: z.enum(REFUND_STATUSES),
   reason: z.string(),
   createdAt: z.iso.datetime(),
 });
@@ -203,10 +212,12 @@ export type RefundRequest = z.infer<typeof refundRequestSchema>;
 
 // ---- Cashier shifts -----------------------------------------------------------------------
 
+export const CASHIER_SHIFT_STATUSES = ['OPEN', 'CLOSED'] as const;
+
 export const cashierShiftSchema = z.object({
   id: z.uuid(),
   cashierName: z.string(),
-  status: z.enum(['OPEN', 'CLOSED']),
+  status: z.enum(CASHIER_SHIFT_STATUSES),
   openedAt: z.iso.datetime(),
   closedAt: z.iso.datetime().nullable(),
   openingFloatMinor: z.number().int(),
@@ -223,6 +234,10 @@ export const cashierShiftSchema = z.object({
 });
 export type CashierShift = z.infer<typeof cashierShiftSchema>;
 
+/** The caller's open cashier shift at a property, if any. */
+export const currentCashierShiftSchema = z.object({ shift: cashierShiftSchema.nullable() });
+export type CurrentCashierShift = z.infer<typeof currentCashierShiftSchema>;
+
 export const openShiftRequestSchema = z.strictObject({
   openingFloatMinor: z.number().int().min(0).max(1_000_000_000),
 });
@@ -233,6 +248,8 @@ export const closeShiftRequestSchema = z.strictObject({
   notes: z.string().trim().max(500).default(''),
 });
 export type CloseShiftRequest = z.infer<typeof closeShiftRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CloseShiftRequestInput = z.input<typeof closeShiftRequestSchema>;
 
 // ---- Documents -----------------------------------------------------------------------------
 
@@ -295,7 +312,7 @@ export const accountFolioSchema = z.object({
   id: z.uuid(),
   folioNo: z.string(),
   label: z.string(),
-  status: z.enum(['OPEN', 'CLOSED']),
+  status: z.enum(FOLIO_STATUSES),
   balanceMinor: z.number().int(),
 });
 export type AccountFolio = z.infer<typeof accountFolioSchema>;
@@ -434,6 +451,8 @@ export const createDiscountProfileRequestSchema = z.strictObject({
   departments: z.array(z.enum(DEPARTMENTS)).min(1),
 });
 export type CreateDiscountProfileRequest = z.infer<typeof createDiscountProfileRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateDiscountProfileRequestInput = z.input<typeof createDiscountProfileRequestSchema>;
 
 export const applyDiscountRequestSchema = z.strictObject({
   profileId: z.uuid(),
@@ -450,6 +469,8 @@ export const paymentSettingsSchema = z.object({
   selfCheckInHoldMinor: z.number().int().min(0).max(1_000_000_000),
 });
 export type PaymentSettings = z.infer<typeof paymentSettingsSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type PaymentSettingsInput = z.input<typeof paymentSettingsSchema>;
 
 export const captureHoldRequestSchema = z.strictObject({
   /** Up to the authorized amount; the rest is released. */

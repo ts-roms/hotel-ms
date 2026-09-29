@@ -2,18 +2,28 @@ import { Module } from '@nestjs/common';
 import { ENV, type Env } from '../../config/env.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { PmsModule } from '../pms/pms.module.js';
+import { CashierController } from './cashier/cashier.controller.js';
 import { CashierService } from './cashier/cashier.service.js';
+import { FolioDocumentsController } from './documents/folio-documents.controller.js';
 import { FolioDocumentsService } from './documents/folio-documents.service.js';
-import { FinanceController } from './finance.controller.js';
+import { FolioDiscountsService } from './folio/folio-discounts.service.js';
+import { FolioRoutingService } from './folio/folio-routing.service.js';
 import { FolioController } from './folio/folio.controller.js';
 import { FolioService } from './folio/folio.service.js';
+import { CardHoldsService } from './payments/card-holds.service.js';
 import { GuestPaymentsController } from './payments/guest-payments.controller.js';
 import { PaymentWebhooksController } from './payments/payment-webhooks.controller.js';
+import { PaymentWebhooksService } from './payments/payment-webhooks.service.js';
+import { PaymentsController } from './payments/payments.controller.js';
 import { PaymentsService } from './payments/payments.service.js';
 import { PaymongoProvider } from './payments/paymongo.provider.js';
-import { PAYMENT_PROVIDERS, type PaymentProvider, SandboxProvider } from './payments/providers.js';
+import { PAYMENT_PROVIDERS, type PaymentProvider } from './payments/providers.js';
+import { RefundsService } from './payments/refunds.service.js';
 import { SandboxGatewayController } from './payments/sandbox-gateway.controller.js';
+import { SandboxProvider } from './payments/sandbox.provider.js';
+import { FinanceReportsController } from './reports/finance-reports.controller.js';
 import { FinanceReportsService } from './reports/finance-reports.service.js';
+import { FinanceSettingsController } from './settings/finance-settings.controller.js';
 import { FinanceSettingsService } from './settings/finance-settings.service.js';
 
 /**
@@ -24,14 +34,23 @@ import { FinanceSettingsService } from './settings/finance-settings.service.js';
   imports: [PmsModule, NotificationsModule],
   controllers: [
     FolioController,
-    FinanceController,
+    PaymentsController,
+    FinanceSettingsController,
+    FolioDocumentsController,
+    CashierController,
+    FinanceReportsController,
     GuestPaymentsController,
     PaymentWebhooksController,
     SandboxGatewayController,
   ],
   providers: [
     FolioService,
+    FolioDiscountsService,
+    FolioRoutingService,
     PaymentsService,
+    PaymentWebhooksService,
+    CardHoldsService,
+    RefundsService,
     CashierService,
     FinanceSettingsService,
     FolioDocumentsService,
@@ -59,6 +78,6 @@ import { FinanceSettingsService } from './settings/finance-settings.service.js';
       inject: [ENV],
     },
   ],
-  exports: [FolioService, FinanceReportsService],
+  exports: [FolioService, CardHoldsService, FinanceReportsService],
 })
 export class FinanceModule {}

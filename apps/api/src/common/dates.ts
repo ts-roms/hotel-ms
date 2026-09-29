@@ -4,7 +4,11 @@
  * helpers keep all arithmetic in that UTC-midnight space so time zones never shift a day.
  */
 import { MAX_STAY_NIGHTS } from '@hotel/contracts';
+import { addDays } from '@hotel/format';
 import { Problems } from './problem.js';
+
+/** Calendar arithmetic on "YYYY-MM-DD" strings (shared with the apps in @hotel/format). */
+export { addDays };
 
 const DAY_MS = 86_400_000;
 
@@ -16,13 +20,12 @@ export function fromDbDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function addDays(isoDate: string, days: number): string {
-  return fromDbDate(new Date(toDbDate(isoDate).getTime() + days * DAY_MS));
-}
-
 export function daysBetween(from: string, to: string): number {
   return Math.round((toDbDate(to).getTime() - toDbDate(from).getTime()) / DAY_MS);
 }
+
+/** 0 = Sunday … 6 = Saturday, of a calendar date. */
+export const weekdayOf = (date: string) => toDbDate(date).getUTCDay();
 
 /**
  * Each night of a stay: arrival inclusive, departure exclusive. Refuses ranges longer than

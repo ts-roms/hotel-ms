@@ -11,7 +11,7 @@
     "dev": "turbo run dev --parallel",
     "typecheck": "turbo run typecheck",
     "lint": "eslint . && pnpm lint:deps",
-    "lint:deps": "depcruise apps/api/src --config .dependency-cruiser.cjs",
+    "lint:deps": "depcruise apps/api/src apps/worker/src apps/web/src apps/guest/src packages/api-client/src packages/contracts/src packages/database/src packages/format/src packages/i18n/src packages/ui/src --config .dependency-cruiser.cjs",
     "test": "turbo run test",
     "test:integration": "turbo run test:integration --concurrency=1",
     "db:up": "docker compose up -d --wait",

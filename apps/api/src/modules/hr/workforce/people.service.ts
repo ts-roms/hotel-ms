@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import type {
-  Birthday,
   CreateDepartmentRequest,
   CreateEmployeeRequest,
   CreatePositionRequest,
@@ -19,14 +18,7 @@ import { Problems } from '../../../common/problem.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
-import {
-  activeOn,
-  assignmentInclude,
-  employeeName,
-  HrAccess,
-  toAssignmentDto,
-  toEmployeeSummary,
-} from '../hr-access.js';
+import { assignmentInclude, HrAccess, toAssignmentDto, toEmployeeSummary } from '../hr-access.js';
 
 const employeeInclude = {
   assignments: { include: assignmentInclude, orderBy: { startDate: 'asc' } },
@@ -494,41 +486,6 @@ export class PeopleService {
         return this.toDto(tx, await this.load(tx, id));
       }),
     );
-  }
-
-  // ---- Birthdays ---------------------------------------------------------------------------
-
-  /**
-   * Colleagues at a property who share their birthday, soonest first. Day and month only:
-   * the year never leaves HR records (blueprint §13.5).
-   */
-  async birthdays(propertyId: string): Promise<Birthday[]> {
-    return this.db.run(async (tx) => {
-      const property = await this.access.property(tx, propertyId);
-      const rows = await tx.employee.findMany({
-        where: {
-          status: 'ACTIVE',
-          birthdayVisibility: 'DAY_MONTH',
-          birthDate: { not: null },
-          assignments: { some: { propertyId, ...activeOn(property.today) } },
-        },
-        select: { id: true, firstName: true, lastName: true, preferredName: true, birthDate: true },
-      });
-      const todayKey = property.today.slice(5);
-      return rows
-        .map((e) => {
-          const md = fromDbDate(e.birthDate!).slice(5);
-          return {
-            employeeId: e.id,
-            name: employeeName(e),
-            month: Number(md.slice(0, 2)),
-            day: Number(md.slice(3)),
-            sortKey: `${md >= todayKey ? 0 : 1}${md}`,
-          };
-        })
-        .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-        .map(({ sortKey: _, ...b }) => b);
-    });
   }
 
   private async unique<T>(message: string, fn: () => Promise<T>): Promise<T> {

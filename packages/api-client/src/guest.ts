@@ -37,9 +37,9 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
     selfCheckIn: () => op.GuestPortalController_selfCheckIn<SelfCheckInResult>(call).then(data),
     bill: () => op.GuestPortalController_bill<GuestBill>(call).then(data),
     serviceRequests: () =>
-      op.GuestPortalController_listRequests<{ items: ServiceRequest[] }>(call).then(items),
+      op.GuestServiceRequestsController_listRequests<{ items: ServiceRequest[] }>(call).then(items),
     createServiceRequest: (body: GuestServiceRequestCreate) =>
-      op.GuestPortalController_createRequest<ServiceRequest>(call, body).then(data),
+      op.GuestServiceRequestsController_createRequest<ServiceRequest>(call, body).then(data),
     pay: (amountMinor: number | undefined, idempotencyKey: string) =>
       op
         .GuestPaymentsController_pay<PaymentIntent>(
@@ -62,10 +62,12 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
     menuItemImageUrl: (itemId: string, version: string) =>
       `${baseUrl}${op.paths.GuestImagesController_menuImage({ itemId })}?v=${encodeURIComponent(version)}`,
     notifications: () =>
-      op.GuestExtrasController_notifications<{ items: GuestNotification[] }>(call).then(items),
-    markNotificationsRead: () => op.GuestExtrasController_markRead(call).then(data),
+      op
+        .GuestNotificationsController_notifications<{ items: GuestNotification[] }>(call)
+        .then(items),
+    markNotificationsRead: () => op.GuestNotificationsController_markRead(call).then(data),
     requestCheckout: (body: GuestCheckoutRequestInput) =>
-      op.GuestExtrasController_requestCheckout<ServiceRequest>(call, body).then(data),
+      op.GuestServiceRequestsController_requestCheckout<ServiceRequest>(call, body).then(data),
     menus: () => op.GuestFnbController_menus<{ items: Menu[] }>(call).then(items),
     orders: () => op.GuestFnbController_list<{ items: Order[] }>(call).then(items),
     placeOrder: (body: GuestOrderRequest, idempotencyKey: string) =>
@@ -74,7 +76,11 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
       op.GuestFnbController_cancel<Order>(call, { orderId }).then(data),
     rate: (requestId: string, rating: number, feedback = '') =>
       op
-        .GuestPortalController_rate<ServiceRequest>(call, { requestId }, { rating, feedback })
+        .GuestServiceRequestsController_rate<ServiceRequest>(
+          call,
+          { requestId },
+          { rating, feedback },
+        )
         .then(data),
   };
 }

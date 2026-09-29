@@ -55,6 +55,8 @@ export const setHousekeepingStatusRequestSchema = z.strictObject({
   reason: z.string().trim().max(200).default(''),
 });
 export type SetHousekeepingStatusRequest = z.infer<typeof setHousekeepingStatusRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type SetHousekeepingStatusRequestInput = z.input<typeof setHousekeepingStatusRequestSchema>;
 
 export const createHousekeepingTaskRequestSchema = z.strictObject({
   roomId: z.uuid(),
@@ -63,6 +65,10 @@ export const createHousekeepingTaskRequestSchema = z.strictObject({
   assignedMembershipId: z.uuid().nullable().default(null),
 });
 export type CreateHousekeepingTaskRequest = z.infer<typeof createHousekeepingTaskRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateHousekeepingTaskRequestInput = z.input<
+  typeof createHousekeepingTaskRequestSchema
+>;
 
 export const assignHousekeepingTaskRequestSchema = z.strictObject({
   assignedMembershipId: z.uuid().nullable(),
@@ -184,6 +190,8 @@ export const createMaintenanceRequestSchema = z
     path: ['outOfOrder'],
   });
 export type CreateMaintenanceRequest = z.infer<typeof createMaintenanceRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateMaintenanceRequestInput = z.input<typeof createMaintenanceRequestSchema>;
 /** What a client sends (defaults may be left out). */
 export type CreateMaintenanceInput = z.input<typeof createMaintenanceRequestSchema>;
 
@@ -215,12 +223,22 @@ export type MaintenanceAction = z.infer<typeof maintenanceActionSchema>;
 // ---- Lost & found (spec §31) -------------------------------------------------------------
 
 export const LOST_FOUND_STATUSES = ['HELD', 'RETURNED', 'DISPOSED'] as const;
+/** How a held item leaves the store. */
+export const LOST_FOUND_CLOSED_STATUSES = ['RETURNED', 'DISPOSED'] as const;
+export const LOST_FOUND_CATEGORIES = [
+  'VALUABLES',
+  'DOCUMENTS',
+  'ELECTRONICS',
+  'CLOTHING',
+  'OTHER',
+] as const;
+export type LostFoundCategory = (typeof LOST_FOUND_CATEGORIES)[number];
 
 export const lostFoundItemSchema = z.object({
   id: z.uuid(),
   itemNo: z.string(),
   description: z.string(),
-  category: z.enum(['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER']),
+  category: z.enum(LOST_FOUND_CATEGORIES),
   foundAt: z.iso.datetime(),
   foundLocation: z.string(),
   roomNumber: z.string().nullable(),
@@ -244,10 +262,12 @@ export const createLostFoundItemSchema = z.strictObject({
   foundAt: z.iso.datetime().optional(),
 });
 export type CreateLostFoundItem = z.infer<typeof createLostFoundItemSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateLostFoundItemInput = z.input<typeof createLostFoundItemSchema>;
 export type CreateLostFoundInput = z.input<typeof createLostFoundItemSchema>;
 
 export const closeLostFoundItemSchema = z.strictObject({
-  status: z.enum(['RETURNED', 'DISPOSED']),
+  status: z.enum(LOST_FOUND_CLOSED_STATUSES),
   /** Returned: owner's name and how ownership was checked. Disposed: donated, discarded… */
   note: z.string().trim().min(3).max(500),
 });
@@ -333,12 +353,16 @@ export const guestServiceRequestCreateSchema = z.strictObject({
   description: z.string().trim().max(1000).default(''),
 });
 export type GuestServiceRequestCreate = z.infer<typeof guestServiceRequestCreateSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type GuestServiceRequestCreateInput = z.input<typeof guestServiceRequestCreateSchema>;
 
 export const guestServiceRatingSchema = z.strictObject({
   rating: z.number().int().min(1).max(5),
   feedback: z.string().trim().max(1000).default(''),
 });
 export type GuestServiceRating = z.infer<typeof guestServiceRatingSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type GuestServiceRatingInput = z.input<typeof guestServiceRatingSchema>;
 
 export const staffServiceRequestCreateSchema = z.strictObject({
   category: z.enum(SERVICE_CATEGORIES),
@@ -347,6 +371,8 @@ export const staffServiceRequestCreateSchema = z.strictObject({
   roomId: z.uuid().nullable().default(null),
 });
 export type StaffServiceRequestCreate = z.infer<typeof staffServiceRequestCreateSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type StaffServiceRequestCreateInput = z.input<typeof staffServiceRequestCreateSchema>;
 
 export const serviceRequestUpdateSchema = z
   .strictObject({

@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CalendarQuery,
@@ -12,7 +12,7 @@ import {
   staffRefSchema,
   listOf,
 } from '@hotel/contracts';
-import { parseIfMatch } from '../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
@@ -62,7 +62,7 @@ export class CalendarController {
   @ZodResponse(200, hotelEventSchema)
   update(
     @Param('eventId') eventId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateEventRequestSchema) body: UpdateEventRequest,
   ) {
     return this.calendar.update(uuidParam(eventId), parseIfMatch(ifMatch), body);

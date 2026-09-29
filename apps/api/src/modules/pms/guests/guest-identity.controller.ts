@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Post, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   identityDocumentListQuerySchema,
@@ -9,7 +9,7 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { parseIfMatch } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -56,7 +56,7 @@ export class GuestIdentityController {
   review(
     @Param('propertyId') propertyId: string,
     @Param('documentId') documentId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(identityReviewSchema) body: IdentityReview,
   ) {
     return this.identity.review(propertyId, uuidParam(documentId), parseIfMatch(ifMatch), body);

@@ -28,8 +28,10 @@ describe('property request schemas', () => {
       checkOutTime: '12:00',
     });
     expect(
-      createPropertyRequestSchema.safeParse({ ...base, organizationId: crypto.randomUUID() })
-        .success,
+      createPropertyRequestSchema.safeParse({
+        ...base,
+        organizationId: '5b0c1f7e-2d4a-4c1b-9a8e-3f6d2e1c0b9a',
+      }).success,
     ).toBe(false);
     expect(
       createPropertyRequestSchema.safeParse({ ...base, timezone: 'Mars/Olympus' }).success,

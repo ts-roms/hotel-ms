@@ -8,18 +8,22 @@ import { GuestEventsController } from './modules/calendar/guest-events.controlle
 import { DevicesController } from './modules/devices/devices.controller.js';
 import { KioskController } from './modules/devices/kiosk.controller.js';
 import { PinController } from './modules/devices/pin.controller.js';
-import { FinanceController } from './modules/finance/finance.controller.js';
+import { CashierController } from './modules/finance/cashier/cashier.controller.js';
+import { FolioDocumentsController } from './modules/finance/documents/folio-documents.controller.js';
 import { FolioController } from './modules/finance/folio/folio.controller.js';
 import { GuestPaymentsController } from './modules/finance/payments/guest-payments.controller.js';
 import { PaymentWebhooksController } from './modules/finance/payments/payment-webhooks.controller.js';
+import { PaymentsController } from './modules/finance/payments/payments.controller.js';
 import { SandboxGatewayController } from './modules/finance/payments/sandbox-gateway.controller.js';
+import { FinanceReportsController } from './modules/finance/reports/finance-reports.controller.js';
+import { FinanceSettingsController } from './modules/finance/settings/finance-settings.controller.js';
 import { FnbController } from './modules/fnb/fnb.controller.js';
 import { GuestFnbController } from './modules/fnb/guest-fnb.controller.js';
 import { FrontOfficeController } from './modules/front-office/front-office.controller.js';
 import { GuestAdminController } from './modules/guest-portal/guest-admin.controller.js';
 import { GuestExtrasController } from './modules/guest-portal/guest-extras.controller.js';
+import { GuestPortalLinkController } from './modules/guest-portal/guest-portal-link.controller.js';
 import { GuestPortalController } from './modules/guest-portal/guest-portal.controller.js';
-import { GuestServiceController } from './modules/guest-portal/guest-service.controller.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { ClockPhotosController } from './modules/hr/time/clock-photos.controller.js';
 import { LeaveController } from './modules/hr/time/leave.controller.js';
@@ -35,10 +39,12 @@ import { HrController } from './modules/hr/workforce/hr.controller.js';
 import { ManagementController } from './modules/management/management.controller.js';
 import { PropertyReportsController } from './modules/management/property-reports.controller.js';
 import { GuestInboxController } from './modules/notifications/guest-inbox.controller.js';
+import { GuestNotificationsController } from './modules/notifications/guest-notifications.controller.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { HousekeepingController } from './modules/operations/housekeeping/housekeeping.controller.js';
 import { LostFoundController } from './modules/operations/lost-found/lost-found.controller.js';
 import { MaintenanceController } from './modules/operations/maintenance/maintenance.controller.js';
+import { GuestServiceRequestsController } from './modules/operations/service-requests/guest-service-requests.controller.js';
 import { ServiceRequestsController } from './modules/operations/service-requests/service-requests.controller.js';
 import { OpsController } from './modules/ops/ops.controller.js';
 import { GuestIdentityController } from './modules/pms/guests/guest-identity.controller.js';
@@ -78,9 +84,11 @@ export const CONTROLLERS: readonly Type[] = [
   FolioController,
   TaxRulesController,
   HousekeepingController,
-  GuestServiceController,
+  GuestPortalLinkController,
   ServiceRequestsController,
   GuestExtrasController,
+  GuestNotificationsController,
+  GuestServiceRequestsController,
   GuestIdentityController,
   GuestAdminController,
   GuestInboxController,
@@ -113,7 +121,11 @@ export const CONTROLLERS: readonly Type[] = [
   BirthdaysController,
   FnbController,
   GuestFnbController,
-  FinanceController,
+  PaymentsController,
+  FinanceSettingsController,
+  FolioDocumentsController,
+  CashierController,
+  FinanceReportsController,
   GuestPaymentsController,
   PaymentWebhooksController,
   SandboxGatewayController,
@@ -150,6 +162,37 @@ export function orderOperations(document: OpenAPIObject): OpenAPIObject {
   const paths: OpenAPIObject['paths'] = {};
   for (const { path, verb, operation } of operations) {
     paths[path] = { ...paths[path], [verb]: operation };
+  }
+  return { ...document, paths };
+}
+
+interface PathParameter {
+  name: string;
+  in: string;
+}
+
+/**
+ * Declares every `{name}` of an operation's path as a path parameter. Nest documents only
+ * the parameters a handler reads with `@Param()`; many property routes leave `:propertyId`
+ * to TenantGuard, so their operations would not declare it. Missing ones are added first,
+ * in path order, in the shape Nest uses for the others.
+ */
+export function declarePathParameters(document: OpenAPIObject): OpenAPIObject {
+  const paths: OpenAPIObject['paths'] = {};
+  for (const [path, item] of Object.entries(document.paths)) {
+    const names = [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!);
+    paths[path] = Object.fromEntries(
+      Object.entries(item).map(([verb, operation]: [string, { parameters?: PathParameter[] }]) => {
+        const declared = new Set(
+          (operation.parameters ?? []).filter((p) => p.in === 'path').map((p) => p.name),
+        );
+        const missing = names
+          .filter((name) => !declared.has(name))
+          .map((name) => ({ name, required: true, in: 'path', schema: { type: 'string' } }));
+        if (missing.length === 0) return [verb, operation];
+        return [verb, { ...operation, parameters: [...missing, ...(operation.parameters ?? [])] }];
+      }),
+    );
   }
   return { ...document, paths };
 }

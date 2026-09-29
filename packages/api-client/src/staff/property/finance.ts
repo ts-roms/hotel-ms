@@ -47,7 +47,7 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
         .then(data),
     paymentLink: (folioId: string, amountMinor: number, idempotencyKey: string) =>
       op
-        .FinanceController_paymentLink<PaymentIntent>(
+        .PaymentsController_paymentLink<PaymentIntent>(
           call,
           { propertyId, folioId },
           { amountMinor },
@@ -56,11 +56,11 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
         .then(data),
     paymentIntents: (folioId: string) =>
       op
-        .FinanceController_intents<{ items: PaymentIntent[] }>(call, { propertyId, folioId })
+        .PaymentsController_intents<{ items: PaymentIntent[] }>(call, { propertyId, folioId })
         .then(items),
     refund: (paymentId: string, amountMinor: number, reason: string, idempotencyKey: string) =>
       op
-        .FinanceController_refund<Refund>(
+        .PaymentsController_refund<Refund>(
           call,
           { propertyId, paymentId },
           { amountMinor, reason },
@@ -68,14 +68,14 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
         )
         .then(data),
     paymentSettings: () =>
-      op.FinanceController_paymentSettings<PaymentSettings>(call, { propertyId }).then(data),
+      op.PaymentsController_paymentSettings<PaymentSettings>(call, { propertyId }).then(data),
     updatePaymentSettings: (body: PaymentSettings) =>
       op
-        .FinanceController_updatePaymentSettings<PaymentSettings>(call, { propertyId }, body)
+        .PaymentsController_updatePaymentSettings<PaymentSettings>(call, { propertyId }, body)
         .then(data),
     captureHold: (intentId: string, amountMinor: number, idempotencyKey: string) =>
       op
-        .FinanceController_captureHold<PaymentIntent>(
+        .PaymentsController_captureHold<PaymentIntent>(
           call,
           { propertyId, intentId },
           { amountMinor },
@@ -83,70 +83,89 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
         )
         .then(data),
     releaseHold: (intentId: string) =>
-      op.FinanceController_releaseHold<PaymentIntent>(call, { propertyId, intentId }).then(data),
+      op.PaymentsController_releaseHold<PaymentIntent>(call, { propertyId, intentId }).then(data),
     exchangeRates: () =>
       op
-        .FinanceController_exchangeRates<{ items: ExchangeRate[] }>(call, { propertyId })
+        .FinanceSettingsController_exchangeRates<{ items: ExchangeRate[] }>(call, { propertyId })
         .then(items),
     setExchangeRate: (currency: string, rate: string) =>
       op
-        .FinanceController_setExchangeRate<ExchangeRate>(call, { propertyId }, { currency, rate })
+        .FinanceSettingsController_setExchangeRate<ExchangeRate>(
+          call,
+          { propertyId },
+          { currency, rate },
+        )
         .then(data),
     discountProfiles: () =>
       op
-        .FinanceController_discountProfiles<{ items: DiscountProfile[] }>(call, { propertyId })
+        .FinanceSettingsController_discountProfiles<{ items: DiscountProfile[] }>(call, {
+          propertyId,
+        })
         .then(items),
     createDiscountProfile: (body: CreateDiscountProfileRequest) =>
       op
-        .FinanceController_createDiscountProfile<DiscountProfile>(call, { propertyId }, body)
+        .FinanceSettingsController_createDiscountProfile<DiscountProfile>(
+          call,
+          { propertyId },
+          body,
+        )
         .then(data),
     archiveDiscountProfile: (profileId: string) =>
-      op.FinanceController_archiveDiscountProfile(call, { propertyId, profileId }).then(data),
+      op
+        .FinanceSettingsController_archiveDiscountProfile(call, { propertyId, profileId })
+        .then(data),
     applyDiscount: (folioId: string, body: ApplyDiscountRequest) =>
-      op.FinanceController_applyDiscount<Folio>(call, { propertyId, folioId }, body).then(data),
+      op.FolioController_applyDiscount<Folio>(call, { propertyId, folioId }, body).then(data),
     removeDiscount: (folioId: string) =>
-      op.FinanceController_removeDiscount<Folio>(call, { propertyId, folioId }).then(data),
+      op.FolioController_removeDiscount<Folio>(call, { propertyId, folioId }).then(data),
     accounts: () =>
-      op.FinanceController_accounts<{ items: AccountFolio[] }>(call, { propertyId }).then(items),
+      op.FolioController_accounts<{ items: AccountFolio[] }>(call, { propertyId }).then(items),
     createAccount: (label: string) =>
-      op.FinanceController_createAccount<Folio>(call, { propertyId }, { label }).then(data),
+      op.FolioController_createAccount<Folio>(call, { propertyId }, { label }).then(data),
     routingRules: (folioId: string) =>
       op
-        .FinanceController_routingRules<{ items: RoutingRule[] }>(call, { propertyId, folioId })
+        .FolioController_routingRules<{ items: RoutingRule[] }>(call, { propertyId, folioId })
         .then(items),
     addRoutingRule: (folioId: string, targetFolioId: string, departments: string[]) =>
       op
-        .FinanceController_addRoutingRule<{ items: RoutingRule[] }>(
+        .FolioController_addRoutingRule<{ items: RoutingRule[] }>(
           call,
           { propertyId, folioId },
           { targetFolioId, departments },
         )
         .then(items),
     removeRoutingRule: (ruleId: string) =>
-      op.FinanceController_removeRoutingRule(call, { propertyId, ruleId }).then(data),
+      op.FolioController_removeRoutingRule(call, { propertyId, ruleId }).then(data),
     transfer: (folioId: string, targetFolioId: string, lineIds: string[], reason: string) =>
       op
-        .FinanceController_transfer<Folio>(
+        .FolioController_transfer<Folio>(
           call,
           { propertyId, folioId },
           { targetFolioId, lineIds, reason },
         )
         .then(data),
     issueDocument: (folioId: string, body: IssueDocumentRequest) =>
-      op.FinanceController_issue<FolioDocument>(call, { propertyId, folioId }, body).then(data),
+      op
+        .FolioDocumentsController_issue<FolioDocument>(call, { propertyId, folioId }, body)
+        .then(data),
     documents: (folioId: string) =>
       op
-        .FinanceController_documentList<{ items: FolioDocument[] }>(call, { propertyId, folioId })
+        .FolioDocumentsController_documentList<{ items: FolioDocument[] }>(call, {
+          propertyId,
+          folioId,
+        })
         .then(items),
     document: (documentId: string) =>
-      op.FinanceController_document<FolioDocument>(call, { propertyId, documentId }).then(data),
+      op
+        .FolioDocumentsController_document<FolioDocument>(call, { propertyId, documentId })
+        .then(data),
     cashierShift: () =>
       op
-        .FinanceController_currentShift<{ shift: CashierShift | null }>(call, { propertyId })
+        .CashierController_currentShift<{ shift: CashierShift | null }>(call, { propertyId })
         .then((r) => r.data.shift),
     openCashierShift: (openingFloatMinor: number) =>
       op
-        .FinanceController_openShift<CashierShift>(call, { propertyId }, { openingFloatMinor })
+        .CashierController_openShift<CashierShift>(call, { propertyId }, { openingFloatMinor })
         .then(data),
     closeCashierShift: (
       shiftId: string,
@@ -155,7 +174,7 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
       notes: string,
     ) =>
       op
-        .FinanceController_closeShift<CashierShift>(
+        .CashierController_closeShift<CashierShift>(
           call,
           { propertyId, shiftId },
           { countedCashMinor, notes },
@@ -163,14 +182,16 @@ export function financeClient({ call, propertyId }: PropertyTransport) {
         )
         .then(data),
     cashierShifts: () =>
-      op.FinanceController_shifts<{ items: CashierShift[] }>(call, { propertyId }).then(items),
+      op.CashierController_shifts<{ items: CashierShift[] }>(call, { propertyId }).then(items),
     dailyReport: (date?: string) =>
-      op.FinanceController_daily<DailyReport>(call, { propertyId }, { date }).then(data),
+      op.FinanceReportsController_daily<DailyReport>(call, { propertyId }, { date }).then(data),
     reconciliation: () =>
-      op.FinanceController_reconciliation<Reconciliation>(call, { propertyId }).then(data),
+      op.FinanceReportsController_reconciliation<Reconciliation>(call, { propertyId }).then(data),
     reconciliationRuns: () =>
       op
-        .FinanceController_reconciliationRuns<{ items: ReconciliationRun[] }>(call, { propertyId })
+        .FinanceReportsController_reconciliationRuns<{ items: ReconciliationRun[] }>(call, {
+          propertyId,
+        })
         .then(items),
   };
 }

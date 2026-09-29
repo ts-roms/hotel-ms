@@ -5,45 +5,13 @@ import type {
   StaffingRequirement,
 } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
-import { addDays, fromDbDate, toDbDate } from '../../../common/dates.js';
+import { addDays, fromDbDate, toDbDate, weekdayOf } from '../../../common/dates.js';
 import { Problems } from '../../../common/problem.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { HrAccess } from '../hr-access.js';
+import { minimumOnShift } from './coverage.js';
 import { shiftInstants } from './schedule.service.js';
-
-/** 0 = Sunday … 6 = Saturday, of a calendar date. */
-export const weekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
-
-/**
- * The fewest people on shift at any moment of [start, end): shifts are clipped to the
- * window, and the count is taken on every segment between their starts and ends. So a
- * morning and an afternoon shift handing over at 14:00 cover a 06:00–22:00 window.
- */
-export function minimumOnShift(
-  shifts: { employeeId: string; startsAt: Date; endsAt: Date }[],
-  start: Date,
-  end: Date,
-): number {
-  const clipped = shifts
-    .map((s) => ({
-      employeeId: s.employeeId,
-      from: Math.max(s.startsAt.getTime(), start.getTime()),
-      to: Math.min(s.endsAt.getTime(), end.getTime()),
-    }))
-    .filter((s) => s.from < s.to);
-  const points = [...new Set([start.getTime(), ...clipped.flatMap((s) => [s.from, s.to])])]
-    .filter((p) => p >= start.getTime() && p < end.getTime())
-    .sort((a, b) => a - b);
-  let fewest = Infinity;
-  for (const at of points) {
-    const people = new Set(
-      clipped.filter((s) => s.from <= at && s.to > at).map((s) => s.employeeId),
-    );
-    fewest = Math.min(fewest, people.size);
-  }
-  return fewest === Infinity ? 0 : fewest;
-}
 
 /**
  * Minimum staffing and understaffing detection (spec §35, ADR-0028). A requirement says a

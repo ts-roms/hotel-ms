@@ -21,38 +21,45 @@ any controller may make a write idempotent. Context modules never re-provide the
 
 **Module map.**
 
-| Folder           | Context (blueprint §6.1)                 | Contents                                                                                                                                                               |
-| ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `audit/`         | Shared kernel (global)                   | audit log service and `/audit-logs`                                                                                                                                    |
-| `outbox/`        | Shared kernel (global)                   | outbox writer                                                                                                                                                          |
-| `idempotency/`   | Shared kernel (global)                   | idempotency service (ADR-0009) and the `Idempotency-Key` header decorator                                                                                              |
-| `health/`        | Platform                                 | liveness and readiness probes                                                                                                                                          |
-| `ops/`           | Platform operators (ADR-0029)            | queue and outbox overview and retries                                                                                                                                  |
-| `access/`        | Access                                   | memberships, roles, role assignments, grants, invitations                                                                                                              |
-| `auth/`          | Platform                                 | sessions, login, MFA, passwords, kiosk device sign-in, the global guards                                                                                               |
-| `tenancy/`       | Tenancy                                  | organization settings and feature flags, properties                                                                                                                    |
-| `notifications/` | Messaging                                | staff notification center, guest messages, guest inbox and staff messages to it                                                                                        |
-| `pms/`           | Inventory, Pricing, Reservations, Guests | `inventory/` (rooms, buildings, blocks), `pricing/` (rate plans, quotes, tax engine, tax rules), `reservations/`, `guests/` (profiles and guest ID documents)          |
-| `operations/`    | Operations                               | `housekeeping/` (incl. room status history), `maintenance/`, `lost-found/`, `service-requests/`                                                                        |
-| `finance/`       | Finance                                  | `folio/` (ledger), `payments/` (intents, holds, providers, refunds, webhooks, sandbox gateway), `cashier/`, `documents/` (invoices, receipts), `settings/`, `reports/` |
-| `front-office/`  | Front Office                             | front desk, check-in/out, night audit and business days                                                                                                                |
-| `hr/`            | Workforce and Time                       | `workforce/` (employees, departments, documents, records), `time/` (attendance, time clock, scheduling, staffing, leave, payroll export), `hr-access.ts` (shared)      |
-| `guest-portal/`  | Guest Experience                         | guest session and guard, stay, pre-check-in, self check-in, room access, hotel info, guest portal settings                                                             |
-| `fnb/`           | F&B                                      | outlets, menus, orders, room-service delivery                                                                                                                          |
-| `privacy/`       | Shared kernel (import-export, files)     | data export and anonymization, CSV imports, hotel and menu images                                                                                                      |
-| `devices/`       | Platform (ADR-0020)                      | device pairing, staff PINs, kiosk sign-in and clock                                                                                                                    |
-| `calendar/`      | Engagement                               | events and the unified calendar                                                                                                                                        |
-| `management/`    | Insights                                 | dashboards, property reports, global search                                                                                                                            |
-| `jobs/`          | —                                        | scheduled per-tenant jobs (ADR-0017)                                                                                                                                   |
+| Folder           | Context (blueprint §6.1)                 | Contents                                                                                                                                                                                                                                                                                                               |
+| ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audit/`         | Shared kernel (global)                   | audit log service and `/audit-logs`                                                                                                                                                                                                                                                                                    |
+| `outbox/`        | Shared kernel (global)                   | outbox writer                                                                                                                                                                                                                                                                                                          |
+| `idempotency/`   | Shared kernel (global)                   | idempotency service (ADR-0009) and the `Idempotency-Key` header decorator                                                                                                                                                                                                                                              |
+| `health/`        | Platform                                 | liveness and readiness probes                                                                                                                                                                                                                                                                                          |
+| `ops/`           | Platform operators (ADR-0029)            | queue and outbox overview and retries                                                                                                                                                                                                                                                                                  |
+| `access/`        | Access                                   | memberships, roles, role assignments, grants, invitations                                                                                                                                                                                                                                                              |
+| `auth/`          | Platform                                 | sessions, login, MFA, passwords, kiosk device sign-in, the global guards                                                                                                                                                                                                                                               |
+| `tenancy/`       | Tenancy                                  | organization settings, feature flags (`FeatureFlagsService`, exported), properties                                                                                                                                                                                                                                     |
+| `notifications/` | Messaging                                | staff notification center, guest messages (incl. check-out reminders), the guest's inbox and its routes, staff messages to it                                                                                                                                                                                          |
+| `pms/`           | Inventory, Pricing, Reservations, Guests | `inventory/` (rooms, buildings and room types, blocks), `pricing/` (rate plans, quotes, tax engine, tax rules), `reservations/`, `guests/` (profiles and guest ID documents)                                                                                                                                           |
+| `operations/`    | Operations                               | `housekeeping/` (incl. room status history), `maintenance/`, `lost-found/`, `service-requests/` (staff and guest routes)                                                                                                                                                                                               |
+| `finance/`       | Finance                                  | one controller per sub-folder: `folio/` (ledger, statutory discounts, accounts, routing, transfers), `payments/` (intents, webhooks, card holds and payment settings, refunds, providers, sandbox gateway), `cashier/`, `documents/` (invoices, receipts), `settings/` (exchange rates, discount profiles), `reports/` |
+| `front-office/`  | Front Office                             | front desk, check-in/out, night audit and business days                                                                                                                                                                                                                                                                |
+| `hr/`            | Workforce and Time                       | `workforce/` (employees, departments, documents, records, birthdays), `time/` (attendance, time clock, scheduling, staffing, leave and leave types, payroll export), `hr-access.ts` (shared)                                                                                                                           |
+| `guest-portal/`  | Guest Experience                         | guest access (portal link, session, verification code), guard, stay, pre-check-in, self check-in, room access, hotel info, guest portal settings                                                                                                                                                                       |
+| `fnb/`           | F&B                                      | outlets, menus, orders, room-service delivery                                                                                                                                                                                                                                                                          |
+| `privacy/`       | Shared kernel (import-export, files)     | data export and anonymization, CSV imports, hotel and menu images                                                                                                                                                                                                                                                      |
+| `devices/`       | Platform (ADR-0020)                      | device pairing, staff PINs, kiosk sign-in and clock                                                                                                                                                                                                                                                                    |
+| `calendar/`      | Engagement                               | events, the unified calendar and the events-today reminder                                                                                                                                                                                                                                                             |
+| `management/`    | Insights                                 | dashboards, property reports, global search                                                                                                                                                                                                                                                                            |
+| `jobs/`          | —                                        | scheduled per-tenant jobs (ADR-0017); they call the owning contexts' services                                                                                                                                                                                                                                          |
 
 **Dependency rules** (`.dependency-cruiser.cjs`, run by `pnpm lint`):
 
 - `API_CONTEXTS` lists the contexts in dependency order; a context may import only contexts
   listed before it. The context graph, and the Nest module imports that follow it, therefore
   cannot have a cycle, and no module needs `forwardRef`. Every context folder must be listed.
+- Another context is imported only through its **public surface**: its `*.service.ts` and
+  `*.module.ts` files, plus the files in `API_PUBLIC_FILES` (`auth/kiosk-auth.ts`,
+  `hr/hr-access.ts`, `pms/pricing/tax-engine.ts`). A free function in any other file would
+  bypass the module's exports; it becomes a method of an exported service, or a shared helper
+  in `common/` (e.g. `businessDateOf`, formerly in `pms/inventory/rooms.service.ts`).
 - Sub-folders of a context may not depend on each other in a cycle.
-- Unchanged: no file cycles, and `common/`, `infrastructure/` and `config/` never import a
-  context.
+- No file cycles; `common/`, `infrastructure/` and `config/` never import a context. Inside
+  the kernel `infrastructure/` (adapters) may use `common/` (pure helpers), not the other
+  way round (`problem.filter.ts` lives in `infrastructure/`), and `config/` imports nothing.
+- `AppModule`'s `CONTEXT_MODULES` follow `API_CONTEXTS`; a unit test keeps them aligned.
 
 **OpenAPI stays stable.** Nest scans controllers module by module, which would reorder
 `docs/api/openapi.json` whenever a controller moves. `apps/api/src/api-surface.ts` keeps the
@@ -113,9 +120,52 @@ summary, which comes from `HrAccess` and `toEmployeeSummary` in the shared `hr-a
 Serving it from `hr/workforce/` would make workforce import time; keeping it in time needs
 no import between the two sub-folders at all, so it stays there.
 
+### Second pass (2026-09-29)
+
+A follow-up audit moved the routes a context still served for another one:
+
+| Routes                                                                    | From                                             | To                                                                |
+| ------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| guest notifications (`/guest/notifications`, `/guest/notifications/read`) | `GuestExtrasController`                          | `GuestNotificationsController` (`notifications/`)                 |
+| guest checkout request, guest service requests and ratings                | `GuestExtrasController`, `GuestPortalController` | `GuestServiceRequestsController` (`operations/service-requests/`) |
+| payment links and intents, refunds, payment settings, card holds          | `FinanceController`                              | `PaymentsController` (`finance/payments/`)                        |
+| exchange rates, discount profiles                                         | `FinanceController`                              | `FinanceSettingsController` (`finance/settings/`)                 |
+| folio discount, company accounts, routing rules, transfers                | `FinanceController`                              | `FolioController` (`finance/folio/`)                              |
+| invoices and receipts                                                     | `FinanceController`                              | `FolioDocumentsController` (`finance/documents/`)                 |
+| cashier shifts                                                            | `FinanceController`                              | `CashierController` (`finance/cashier/`)                          |
+| daily report, reconciliation                                              | `FinanceController`                              | `FinanceReportsController` (`finance/reports/`)                   |
+| the portal link (renamed)                                                 | `GuestServiceController`                         | `GuestPortalLinkController` (`guest-portal/`)                     |
+
+`FinanceController` is gone. The guest routes keep their `GuestRoute` metadata unchanged
+(verified sessions only where ADR-0033 requires it) and their `guest portal` tag.
+`/guest/identity` stays in `GuestExtrasController`: Guests stores the file, but the response
+is the guest's stay view, which only the portal composes, and `pms/` cannot import
+`guest-portal/`.
+
+The services were split along the same lines: `FolioService` (ledger) with
+`FolioDiscountsService` and `FolioRoutingService`; `PaymentsService` (intents) with
+`PaymentWebhooksService`, `CardHoldsService` and `RefundsService`; `GuestAccessService` off
+`GuestPortalService`; `RoomTypesService` off `RoomsService`; `LeaveTypesService` off
+`LeaveService`; `BirthdaysService` off `PeopleService`. Tenancy's `FeatureFlagsService`
+answers `isEnabledInTx` for guest self check-in and guest food ordering, and Front Office's
+`readyRoomsInTx` is the one room-readiness query. The daily reminders job only calls
+`GuestMessagesService.departureReminders`, `BirthdaysService.remindToday` and
+`EventRemindersService.remindToday`.
+
+**Contract change.** Paths, methods, schemas and status codes did not change. The operation
+ids of the moved routes changed with their class (`FinanceController_x` →
+`PaymentsController_x`, `FinanceSettingsController_x`, `FolioController_x`,
+`FolioDocumentsController_x`, `CashierController_x` or `FinanceReportsController_x`;
+`GuestExtrasController_notifications`/`_markRead` → `GuestNotificationsController_…`;
+`GuestExtrasController_requestCheckout` and `GuestPortalController_listRequests`/
+`_createRequest`/`_rate` → `GuestServiceRequestsController_…`;
+`GuestServiceController_sendLink` → `GuestPortalLinkController_sendLink`). No tag changed.
+The folio routes now follow the other folio routes in the document.
+
 ## Writes to another context's tables
 
-A context writes only its own tables (blueprint §6.2). When a use case changes another
+A context writes only its own tables (blueprint §6.2). It may read another context's rows in
+the caller's transaction (ADR-0034); writes go through the owner. When a use case changes another
 context's rows, it calls a method of that context's exported service that takes the
 caller's transaction (`...InTx(tx, ...)`), so the whole use case still commits or rolls
 back together. The caller keeps the rules of its use case and records its audit entry and
@@ -150,6 +200,11 @@ Known exceptions:
   `API_CONTEXTS`.
 - `hr/workforce` cancels future shifts in `hr/time` when an assignment ends: both are
   sub-folders of the one `hr/` context.
+- **Cancelling a stay revokes its guest access** (`pms/reservations`): the cancel transaction
+  revokes the stay's guest sessions and, when the whole booking is cancelled, its portal
+  links (Guest Experience tables). It is a security fix (ADR-0033) and must commit with the
+  cancellation; Reservations comes before `guest-portal/` in `API_CONTEXTS`, so it cannot
+  call a Guest Experience service.
 
 ## Consequences
 

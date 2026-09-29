@@ -1,20 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import type {
   CreateLeaveRequest,
-  CreateLeaveTypeRequest,
   DecisionRequest,
   EmployeeLeave,
   LeaveDecisionResult,
   LeaveLedgerPostRequest,
   LeaveRequest,
   LeaveRequestListQuery,
-  LeaveType,
   Shift,
-  UpdateLeaveTypeRequest,
 } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { addDays, daysBetween, fromDbDate, toDbDate } from '../../../common/dates.js';
-import { isUniqueViolation } from '../../../common/db-errors.js';
 import { ProblemException, Problems, invalidState } from '../../../common/problem.js';
 import { localToday } from '../../../common/zoned-time.js';
 import { TenantDb } from '../../../infrastructure/database.js';
@@ -71,30 +67,6 @@ function toRequestDto(r: RequestRow, names: Names = new Map()): LeaveRequest {
   };
 }
 
-function toTypeDto(t: {
-  id: string;
-  code: string;
-  name: string;
-  paid: boolean;
-  allowNegative: boolean;
-  minNoticeDays: number;
-  accrualHalfDaysPerMonth: number;
-  hrApprovalRequired: boolean;
-  archivedAt: Date | null;
-}): LeaveType {
-  return {
-    id: t.id,
-    code: t.code,
-    name: t.name,
-    paid: t.paid,
-    allowNegative: t.allowNegative,
-    minNoticeDays: t.minNoticeDays,
-    accrualDaysPerMonth: days(t.accrualHalfDaysPerMonth),
-    hrApprovalRequired: t.hrApprovalRequired,
-    archived: t.archivedAt !== null,
-  };
-}
-
 @Injectable()
 export class LeaveService {
   constructor(
@@ -105,68 +77,6 @@ export class LeaveService {
     private readonly notifications: NotificationsQueue,
     private readonly inbox: NotificationsService,
   ) {}
-
-  // ---- Leave types -------------------------------------------------------------------------
-
-  async types(): Promise<LeaveType[]> {
-    const rows = await this.db.run((tx) =>
-      tx.leaveType.findMany({ orderBy: [{ archivedAt: 'desc' }, { name: 'asc' }] }),
-    );
-    return rows.map(toTypeDto);
-  }
-
-  async createType(input: CreateLeaveTypeRequest): Promise<LeaveType> {
-    try {
-      return await this.db.run(async (tx) => {
-        const { accrualDaysPerMonth, ...fields } = input;
-        const row = await tx.leaveType.create({
-          data: {
-            organizationId: this.access.organizationId,
-            ...fields,
-            accrualHalfDaysPerMonth: Math.round(accrualDaysPerMonth * 2),
-          },
-        });
-        await this.audit.record(tx, {
-          action: 'leave_type.created',
-          entityType: 'leave_type',
-          entityId: row.id,
-          after: input,
-        });
-        return toTypeDto(row);
-      });
-    } catch (error) {
-      if (isUniqueViolation(error)) throw Problems.conflict(`Leave type ${input.code} exists.`);
-      throw error;
-    }
-  }
-
-  async updateType(id: string, input: UpdateLeaveTypeRequest): Promise<LeaveType> {
-    return this.db.run(async (tx) => {
-      const current = await tx.leaveType.findUnique({ where: { id } });
-      if (!current) throw Problems.notFound('Leave type');
-      const { archived, accrualDaysPerMonth, ...fields } = input;
-      const row = await tx.leaveType.update({
-        where: { id },
-        data: {
-          ...fields,
-          ...(accrualDaysPerMonth !== undefined
-            ? { accrualHalfDaysPerMonth: Math.round(accrualDaysPerMonth * 2) }
-            : {}),
-          ...(archived !== undefined
-            ? { archivedAt: archived ? (current.archivedAt ?? new Date()) : null }
-            : {}),
-        },
-      });
-      await this.audit.record(tx, {
-        action: 'leave_type.updated',
-        entityType: 'leave_type',
-        entityId: id,
-        before: toTypeDto(current),
-        after: toTypeDto(row),
-      });
-      return toTypeDto(row);
-    });
-  }
 
   // ---- Balances and ledger -----------------------------------------------------------------
 

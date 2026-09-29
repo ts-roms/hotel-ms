@@ -4,55 +4,16 @@
  * order appears on the guest folio exactly once (and a cancellation reverses it).
  */
 import { randomUUID } from 'node:crypto';
-import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  type ApiResponse,
-  Mailbox,
+  GuestClient,
+  guestSession,
   startTestApp,
   type TestContext,
   TestClient,
 } from './harness.js';
-
-const GUEST_ORIGIN = 'http://localhost:43200';
-let guestIp = 0;
-
-class GuestClient {
-  private cookie: string | undefined;
-  csrfToken: string | undefined;
-  private readonly ip = `10.8.0.${++guestIp}`;
-  constructor(private readonly app: NestFastifyApplication) {}
-  async request(
-    method: 'GET' | 'POST' | 'PUT',
-    url: string,
-    body?: unknown,
-    headers: Record<string, string> = {},
-  ): Promise<ApiResponse> {
-    const res = await this.app.inject({
-      method,
-      url: `/api/v1${url}`,
-      ...(body === undefined ? {} : { payload: body as Record<string, unknown> }),
-      headers: {
-        origin: GUEST_ORIGIN,
-        'x-forwarded-for': this.ip,
-        ...(this.cookie ? { cookie: this.cookie } : {}),
-        ...(this.csrfToken && method !== 'GET' ? { 'x-csrf-token': this.csrfToken } : {}),
-        ...headers,
-      },
-    });
-    const cookie = res.cookies.find((c) => c.name === 'hotel_guest');
-    if (cookie) this.cookie = `hotel_guest=${cookie.value}`;
-    const parsed =
-      String(res.headers['content-type'] ?? '').includes('json') && res.body
-        ? JSON.parse(res.body)
-        : res.body;
-    if (parsed && typeof parsed === 'object' && typeof parsed.csrfToken === 'string')
-      this.csrfToken = parsed.csrfToken;
-    return { status: res.statusCode, body: parsed, headers: res.headers };
-  }
-}
 
 let ctx: TestContext;
 let admin: TestClient;
@@ -93,24 +54,11 @@ async function inHouseGuest(roomNumber: string) {
   expect(booking.status, JSON.stringify(booking.body)).toBe(201);
   const line = `${base()}/reservations/${booking.body.id}/rooms/${booking.body.rooms[0].id}`;
   expect((await reception.request('POST', `${line}/check-in`)).status).toBe(200);
-  expect(
-    (await reception.request('POST', `${base()}/reservations/${booking.body.id}/guest-portal-link`))
-      .status,
-  ).toBe(204);
-  const mail = await ctx.mailbox.latestFor(email, 'guest-portal-link');
-  const guest = new GuestClient(ctx.app);
-  expect(
-    (
-      await guest.request('POST', '/guest/session', {
-        token: Mailbox.tokenFrom((mail!.data as { portalUrl: string }).portalUrl),
-      })
-    ).status,
-  ).toBe(200);
-  expect((await guest.request('POST', '/guest/verification')).status).toBe(204);
-  const code = (
-    (await ctx.mailbox.latestFor(email, 'guest-verification-code'))!.data as { code: string }
-  ).code;
-  expect((await guest.request('POST', '/guest/verification/confirm', { code })).status).toBe(200);
+  const guest = await guestSession(ctx, reception, {
+    propertyId: MNL(),
+    reservationId: booking.body.id,
+    email,
+  });
   const folio = await reception.get(`${line}/folio`);
   return { guest, folioId: folio.body.id as string, line };
 }

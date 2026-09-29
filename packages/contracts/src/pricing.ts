@@ -51,6 +51,8 @@ export const createRatePlanRequestSchema = z.strictObject({
   prices: pricesSchema.default([]),
 });
 export type CreateRatePlanRequest = z.infer<typeof createRatePlanRequestSchema>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateRatePlanRequestInput = z.input<typeof createRatePlanRequestSchema>;
 
 export const updateRatePlanRequestSchema = z
   .strictObject({
@@ -100,6 +102,35 @@ export const quoteSchema = z.object({
   totalMinor: amountMinorSchema,
 });
 export type Quote = z.infer<typeof quoteSchema>;
+
+// ---- Availability ---------------------------------------------------------------------------
+
+export const availabilityQuerySchema = z
+  .object({ from: localDateSchema, to: localDateSchema })
+  .refine((v) => v.to > v.from, { message: 'to must be after from', path: ['to'] });
+export type AvailabilityQuery = z.infer<typeof availabilityQuerySchema>;
+
+export const availabilitySchema = z.object({
+  from: localDateSchema,
+  to: localDateSchema,
+  roomTypes: z.array(
+    z.object({
+      roomTypeId: z.uuid(),
+      code: z.string(),
+      name: z.string(),
+      nights: z.array(
+        z.object({
+          date: localDateSchema,
+          capacity: z.number().int(),
+          sold: z.number().int(),
+          blocked: z.number().int(),
+          available: z.number().int(),
+        }),
+      ),
+    }),
+  ),
+});
+export type Availability = z.infer<typeof availabilitySchema>;
 
 // ---- Taxes -----------------------------------------------------------------------------
 

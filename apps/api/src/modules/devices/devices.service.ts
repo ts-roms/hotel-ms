@@ -15,7 +15,7 @@ import type { RequestContext } from '../../common/request-context.js';
 import { PrismaService, TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
-import { photoRetentionDaysInTx } from '../hr/time/photo-retention.js';
+import { TimeClockService } from '../hr/time/time-clock.service.js';
 import {
   KioskAuth,
   OPERATOR_MAX_MS,
@@ -65,6 +65,7 @@ export class DevicesService {
     private readonly audit: AuditService,
     private readonly rateLimiter: RateLimiter,
     private readonly cls: ClsService<RequestContext>,
+    private readonly timeClock: TimeClockService,
   ) {}
 
   // ---- Management (staff) ------------------------------------------------------------------
@@ -357,7 +358,10 @@ export class DevicesService {
                 }
               : null,
           operators,
-          photoRetentionDays: await photoRetentionDaysInTx(tx, device.organizationId),
+          photoRetentionDays: await this.timeClock.photoRetentionDaysInTx(
+            tx,
+            device.organizationId,
+          ),
           csrfToken: this.kiosk.csrfTokenFor(device.tokenHash),
         };
       },

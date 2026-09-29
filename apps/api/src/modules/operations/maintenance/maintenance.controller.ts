@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiProduces, ApiTags } from '@nestjs/swagger';
 import {
   type CreateMaintenanceRequest,
@@ -14,7 +14,7 @@ import {
   staffRefSchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { parseIfMatch } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -61,7 +61,7 @@ export class MaintenanceController {
   @ZodResponse(200, maintenanceRequestSchema)
   act(
     @Param('requestId') requestId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(maintenanceActionSchema) body: MaintenanceAction,
   ) {
     return this.maintenance.act(uuidParam(requestId), parseIfMatch(ifMatch), body);

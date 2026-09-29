@@ -194,14 +194,16 @@ Principles:
 
 ### 6.1 Bounded contexts
 
-The spec's module list has ~40 entries. Many of them are sub-modules of one domain. Grouping them into **bounded contexts** keeps ownership clear. Each context owns its tables. Other contexts call it only through its exported application service, never through its Prisma models.
+The spec's module list has ~40 entries. Many of them are sub-modules of one domain. Grouping them into **bounded contexts** keeps ownership clear. Each context owns its tables. Other contexts change them only through its exported services; reading its rows inside the caller's transaction is allowed (§6.2).
+
+⚠ As built ([ADR-0031](../adr/0031-api-module-structure.md)): buildings and floors belong to Inventory (`pms/inventory/`), feature flags to Tenancy (`tenancy/`), and birthdays to Workforce (`hr/workforce/`). The table below shows them there.
 
 | Context              | Modules                                                                           | Owns                               |
 | -------------------- | --------------------------------------------------------------------------------- | ---------------------------------- |
-| **Platform**         | auth, identity, sessions, mfa, platform-admin, feature-flags                      | identities, sessions, credentials  |
-| **Tenancy**          | organizations, brands, properties, buildings/floors, settings                     | org and property configuration     |
+| **Platform**         | auth, identity, sessions, mfa, platform-admin                                     | identities, sessions, credentials  |
+| **Tenancy**          | organizations, brands, properties, settings, feature-flags                        | org and property configuration     |
 | **Access**           | users (memberships), roles, permissions, role-assignments                         | RBAC                               |
-| **Inventory**        | room-types, rooms, room-status, inventory, out-of-order                           | physical and sellable inventory    |
+| **Inventory**        | buildings/floors, room-types, rooms, room-status, inventory, out-of-order         | physical and sellable inventory    |
 | **Pricing**          | rate-plans, rates, restrictions, taxes-and-fees                                   | prices and tax rules               |
 | **Reservations**     | reservations, reservation-rooms, availability, groups, allocations                | bookings                           |
 | **Front Office**     | stays, check-in, check-out, room-assignment, night-audit, business-date           | occupancy                          |
@@ -210,17 +212,17 @@ The spec's module list has ~40 entries. Many of them are sub-modules of one doma
 | **Operations**       | housekeeping, maintenance, lost-and-found, guest-service-requests                 | tasks and work orders              |
 | **F&B**              | outlets, menus, orders, kitchen, room-service delivery                            | menus and orders                   |
 | **Finance**          | folios, folio-lines (ledger), payments, refunds, invoices, cashiering, AR (later) | money                              |
-| **Workforce (HR)**   | employees, employment-assignments, departments, positions, documents              | people records                     |
+| **Workforce (HR)**   | employees, employment-assignments, departments, positions, documents, birthdays   | people records                     |
 | **Time**             | attendance, shifts, scheduling, leave, holidays                                   | time and labour                    |
-| **Engagement**       | events, calendar (read-model), birthdays                                          | events and the aggregated calendar |
+| **Engagement**       | events, calendar (read-model)                                                     | events and the aggregated calendar |
 | **Messaging**        | notifications, templates, channels, preferences                                   | outbound comms                     |
 | **Insights**         | reports, dashboards, analytics aggregates, exports                                | read models                        |
 | **Shared kernel**    | audit, files, outbox, idempotency, search, import-export, integrations registry   | cross-cutting infrastructure       |
 
 ### 6.2 Module rules
 
-- Inside a module: `api/` (controllers and DTOs), `application/` (use cases), `domain/` (entities, policies, rules, events), `infrastructure/` (Prisma repositories and adapters).
-- **Cross-context calls** go through exported application services, or asynchronously through domain events (§17). They are never direct table access. This is enforced with `eslint-plugin-boundaries` or dependency-cruiser in CI.
+- ⚠ As built ([ADR-0031](../adr/0031-api-module-structure.md)): one folder and one Nest module per context under `apps/api/src/modules/`, with flat files by role (`*.controller.ts`, `*.service.ts`, pure helpers such as `tax-engine.ts`) and sub-folders per sub-domain (e.g. `finance/folio/`, `finance/payments/`). There are no `api/`, `application/`, `domain/` and `infrastructure/` layers inside a module; shared helpers live in `apps/api/src/common/` and adapters in `apps/api/src/infrastructure/`.
+- **Cross-context writes** go through the owning context's exported services (`...InTx(tx, …)` methods that join the caller's transaction), or asynchronously through domain events (§17). **Reads** of another context's rows inside the caller's tenant transaction are allowed ([ADR-0034](../adr/0034-monorepo-package-layout.md)). A context imports another only through its services, module and a short list of public files; dependency-cruiser enforces this and the context order in CI (`pnpm lint`).
 - **Guest Experience is an orchestrator.** It owns almost no tables. It calls Reservations, Front Office, Finance, Operations and F&B through their public services with a **guest principal** (§11).
 - **Calendar is a read model.** It never owns shifts, leave or reservations. It projects them (§13.5).
 
@@ -389,7 +391,7 @@ Legend: **P** = platform (global, no tenant), **O** = organization-owned, **Pr**
 HTTP request
   → RequestIdMiddleware (assign/propagate X-Request-Id)
   → AuthGuard: resolve session cookie / bearer token → identity_id
-  → TenantContextGuard:
+  → TenantGuard:
        org_id = session.active_organization_id   (set at login / org switch; NEVER from body/query)
        verify active membership (identity_id, org_id)
        if route has :propertyId → load property WHERE id = :propertyId AND organization_id = org_id
@@ -435,7 +437,7 @@ identity ──< organization_membership ──< role_assignment >── role �
                                               └── scope: { type: ORG | PROPERTY | DEPARTMENT, id }
 ```
 
-- **Permissions** are a code-defined catalog (`packages/contracts/permissions.ts`), seeded to the DB. Format `<resource>.<action>`, e.g. `reservation.cancel`, `folio.adjust`, `employee.compensation.read`.
+- **Permissions** are a code-defined catalog (`packages/contracts/src/permissions.ts`), seeded to the DB. Format `<resource>.<action>`, e.g. `reservation.cancel`, `folio.adjust`, `employee.compensation.read`.
 - **Roles** are org-owned bundles of permissions. The platform ships **templates** (General Manager, Front Desk Agent, Night Auditor, Housekeeping Supervisor, Housekeeper, Kitchen, Room Service Runner, HR Manager, Group Finance, Org Admin) that orgs clone and adjust.
 - **Role assignments** attach a role to a membership **at a scope**:
   - John → General Manager @ PROPERTY(A)
@@ -672,8 +674,10 @@ folio (per stay | group master | non-guest account; currency fixed at creation =
 
 ### 15.2 Payments
 
+⚠ As built: `PaymentsService` (intents), `PaymentWebhooksService`, `CardHoldsService` and `RefundsService` in `finance/payments/`; the API applies webhooks itself (ADR-0016, ADR-0018, ADR-0032).
+
 ```
-PaymentService (domain: intent, capture, refund, reconciliation, idempotency)
+PaymentsService (intents, capture, refund, reconciliation, idempotency)
    └── PaymentProvider interface
          ├── CashProvider           (records only; cashier shift reconciliation)
          ├── ManualCardTerminalProvider (records terminal ref; for card-present at desk)
