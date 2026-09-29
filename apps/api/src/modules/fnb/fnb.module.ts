@@ -12,5 +12,6 @@ import { OrdersService } from './orders.service.js';
   imports: [PmsModule, FinanceModule, NotificationsModule],
   controllers: [FnbController, GuestFnbController],
   providers: [MenuService, OrdersService],
+  exports: [MenuService],
 })
 export class FnbModule {}

@@ -17,6 +17,7 @@ import { matchesType } from '../../common/uploads.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
+import { MenuService } from '../fnb/menu.service.js';
 
 /** Longest side of a stored image, in pixels. */
 const MAX_SIDE = 1600;
@@ -81,6 +82,7 @@ export class ImagesService {
     private readonly audit: AuditService,
     private readonly cls: ClsService<RequestContext>,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly menus: MenuService,
   ) {}
 
   private get ctx() {
@@ -227,10 +229,7 @@ export class ImagesService {
     const storageKey = `${this.ctx.organizationId}/menu-images/${uuidv7()}`;
     await this.storage.put(storageKey, image.body, 'image/webp', image.sha256);
     await this.db.run(async (tx) => {
-      await tx.menuItem.update({
-        where: { id: itemId },
-        data: { imageKey: storageKey, imageSha256: image.sha256, version: { increment: 1 } },
-      });
+      await this.menus.setItemImageInTx(tx, itemId, { key: storageKey, sha256: image.sha256 });
       await this.audit.record(tx, {
         action: 'menu_item.image_set',
         entityType: 'menu_item',
@@ -248,10 +247,7 @@ export class ImagesService {
     const item = await this.requireItem(propertyId, itemId);
     if (!item.imageKey) return;
     await this.db.run(async (tx) => {
-      await tx.menuItem.update({
-        where: { id: itemId },
-        data: { imageKey: null, imageSha256: null, version: { increment: 1 } },
-      });
+      await this.menus.setItemImageInTx(tx, itemId, null);
       await this.audit.record(tx, {
         action: 'menu_item.image_removed',
         entityType: 'menu_item',

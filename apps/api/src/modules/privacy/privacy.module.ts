@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FnbModule } from '../fnb/fnb.module.js';
 import { PmsModule } from '../pms/pms.module.js';
 import { GuestImagesController } from './guest-images.controller.js';
 import { ImagesController } from './images.controller.js';
@@ -10,7 +11,7 @@ import { PrivacyService } from './privacy.service.js';
 
 /** Data export/anonymization, CSV imports and hotel images (ADR-0030). */
 @Module({
-  imports: [PmsModule],
+  imports: [PmsModule, FnbModule],
   controllers: [PrivacyController, ImportsController, ImagesController, GuestImagesController],
   providers: [PrivacyService, ImportsService, ImagesService],
 })

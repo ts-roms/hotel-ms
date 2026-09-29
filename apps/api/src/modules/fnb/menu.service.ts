@@ -279,6 +279,26 @@ export class MenuService {
     });
   }
 
+  /**
+   * Sets (or with null clears) a menu item's photo reference, inside the caller's
+   * transaction. The photo file itself is stored by privacy/ImagesService, which checks
+   * the item and records the audit entry.
+   */
+  async setItemImageInTx(
+    tx: Tx,
+    itemId: string,
+    image: { key: string; sha256: string } | null,
+  ): Promise<void> {
+    await tx.menuItem.update({
+      where: { id: itemId },
+      data: {
+        imageKey: image?.key ?? null,
+        imageSha256: image?.sha256 ?? null,
+        version: { increment: 1 },
+      },
+    });
+  }
+
   private async requireItem(tx: Tx, propertyId: string, itemId: string) {
     const item = await tx.menuItem.findFirst({ where: { id: itemId, outlet: { propertyId } } });
     if (!item) throw Problems.notFound('Menu item');
