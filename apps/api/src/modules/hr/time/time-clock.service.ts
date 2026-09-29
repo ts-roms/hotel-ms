@@ -265,6 +265,11 @@ export class TimeClockService {
     }
   }
 
+  /** Days punch selfies are kept in an organization (ADR-0022), e.g. for a time clock's notice. */
+  photoRetentionDaysInTx(tx: Tx, organizationId: string): Promise<number> {
+    return photoRetentionDaysInTx(tx, organizationId);
+  }
+
   /** Days selfies are kept in the current organization. */
   private retentionDaysInTx(tx: Tx): Promise<number> {
     return photoRetentionDaysInTx(tx, this.cls.get('organizationId')!);

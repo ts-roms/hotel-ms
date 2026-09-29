@@ -10,6 +10,7 @@ import type { FastifyReply } from 'fastify';
 import { IdempotencyService, idempotencyKeyHeader } from '../../idempotency/idempotency.service.js';
 import { GuestRoute } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { CardHoldsService } from './card-holds.service.js';
 import { PaymentsService } from './payments.service.js';
 
 /** Guest portal: pay the stay folio online (hosted checkout). */
@@ -19,6 +20,7 @@ import { PaymentsService } from './payments.service.js';
 export class GuestPaymentsController {
   constructor(
     private readonly payments: PaymentsService,
+    private readonly holds: CardHoldsService,
     private readonly idempotency: IdempotencyService,
   ) {}
 
@@ -54,7 +56,7 @@ export class GuestPaymentsController {
   ) {
     const result = await this.idempotency.run('guest.hold', key, {}, async () => ({
       status: 201,
-      body: await this.payments.guestHold(),
+      body: await this.holds.guestHold(),
     }));
     if (result.replayed) reply.header('idempotent-replayed', 'true');
     return result.body;

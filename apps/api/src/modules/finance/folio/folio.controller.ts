@@ -1,13 +1,24 @@
-import { Controller, Get, Headers, HttpCode, Param, Post, Res } from '@nestjs/common';
+import { Controller, Delete, Get, Headers, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
+  accountFolioSchema,
   type AdjustmentRequest,
   adjustmentRequestSchema,
+  type ApplyDiscountRequest,
+  applyDiscountRequestSchema,
+  type CreateAccountFolioRequest,
+  createAccountFolioRequestSchema,
+  type CreateRoutingRuleRequest,
+  createRoutingRuleRequestSchema,
   folioSchema,
+  listOf,
   type PostChargeRequest,
   postChargeRequestSchema,
   type RecordPaymentRequest,
   recordPaymentRequestSchema,
+  routingRuleSchema,
+  type TransferRequest,
+  transferRequestSchema,
   type VoidLineRequest,
   voidLineRequestSchema,
 } from '@hotel/contracts';
@@ -16,31 +27,23 @@ import { IdempotencyService, idempotencyKeyHeader } from '../../idempotency/idem
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { FolioDiscountsService } from './folio-discounts.service.js';
+import { FolioRoutingService } from './folio-routing.service.js';
 import { FolioService } from './folio.service.js';
 
-/** The folio ledger at the desk: a stay's folio, charges, payments, adjustments, voids. */
+/**
+ * The folio ledger at the desk: a stay's folio, charges, payments, adjustments, voids;
+ * statutory discounts; company accounts, routing rules and transfers.
+ */
 @ApiTags('finance')
 @Controller('properties/:propertyId')
 export class FolioController {
   constructor(
     private readonly folios: FolioService,
+    private readonly discounts: FolioDiscountsService,
+    private readonly routing: FolioRoutingService,
     private readonly idempotency: IdempotencyService,
   ) {}
-
-  private async idempotent<T>(
-    operation: string,
-    key: string | undefined,
-    body: unknown,
-    reply: FastifyReply,
-    fn: () => Promise<T>,
-  ): Promise<T> {
-    const result = await this.idempotency.run(operation, key, body, async () => ({
-      status: 200,
-      body: await fn(),
-    }));
-    if (result.replayed) reply.header('idempotent-replayed', 'true');
-    return result.body;
-  }
 
   @Get('reservations/:reservationId/rooms/:lineId/folio')
   @RequirePermission('folio.read')
@@ -67,7 +70,7 @@ export class FolioController {
     @ZodBody(postChargeRequestSchema) body: PostChargeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    return this.idempotent('folio.charge', key, { folioId, ...body }, reply, () =>
+    return this.idempotency.respond(reply, 'folio.charge', key, { folioId, ...body }, 200, () =>
       this.folios.postCharge(uuidParam(folioId), body),
     );
   }
@@ -83,7 +86,7 @@ export class FolioController {
     @ZodBody(recordPaymentRequestSchema) body: RecordPaymentRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    return this.idempotent('folio.payment', key, { folioId, ...body }, reply, () =>
+    return this.idempotency.respond(reply, 'folio.payment', key, { folioId, ...body }, 200, () =>
       this.folios.recordPayment(uuidParam(folioId), body),
     );
   }
@@ -99,7 +102,7 @@ export class FolioController {
     @ZodBody(adjustmentRequestSchema) body: AdjustmentRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    return this.idempotent('folio.adjust', key, { folioId, ...body }, reply, () =>
+    return this.idempotency.respond(reply, 'folio.adjust', key, { folioId, ...body }, 200, () =>
       this.folios.adjust(uuidParam(folioId), body),
     );
   }
@@ -114,5 +117,81 @@ export class FolioController {
     @ZodBody(voidLineRequestSchema) body: VoidLineRequest,
   ) {
     return this.folios.voidLine(uuidParam(folioId), uuidParam(lineId), body.reason);
+  }
+
+  // ---- Statutory discounts ----------------------------------------------------------------
+
+  @Put('folios/:folioId/discount')
+  @RequirePermission('folio.discount')
+  @ZodResponse(200, folioSchema)
+  applyDiscount(
+    @Param('folioId') folioId: string,
+    @ZodBody(applyDiscountRequestSchema) body: ApplyDiscountRequest,
+  ) {
+    return this.discounts.applyDiscount(uuidParam(folioId), body);
+  }
+
+  @Delete('folios/:folioId/discount')
+  @RequirePermission('folio.discount')
+  @ZodResponse(200, folioSchema)
+  removeDiscount(@Param('folioId') folioId: string) {
+    return this.discounts.removeDiscount(uuidParam(folioId));
+  }
+
+  // ---- Accounts, routing, transfers ------------------------------------------------------
+
+  @Get('accounts')
+  @RequirePermission('folio.read')
+  @ZodResponse(200, listOf(accountFolioSchema))
+  async accounts() {
+    return { items: await this.routing.accounts() };
+  }
+
+  @Post('accounts')
+  @RequirePermission('folio.transfer')
+  @ZodResponse(201, folioSchema)
+  createAccount(@ZodBody(createAccountFolioRequestSchema) body: CreateAccountFolioRequest) {
+    return this.routing.createAccount(body.label);
+  }
+
+  @Get('folios/:folioId/routing-rules')
+  @RequirePermission('folio.read')
+  @ZodResponse(200, listOf(routingRuleSchema))
+  async routingRules(@Param('folioId') folioId: string) {
+    return { items: await this.routing.routingRules(uuidParam(folioId)) };
+  }
+
+  @Post('folios/:folioId/routing-rules')
+  @RequirePermission('folio.transfer')
+  @ZodResponse(201, listOf(routingRuleSchema))
+  async addRoutingRule(
+    @Param('folioId') folioId: string,
+    @ZodBody(createRoutingRuleRequestSchema) body: CreateRoutingRuleRequest,
+  ) {
+    return {
+      items: await this.routing.addRoutingRule(
+        uuidParam(folioId),
+        body.targetFolioId,
+        body.departments,
+      ),
+    };
+  }
+
+  @Delete('routing-rules/:ruleId')
+  @RequirePermission('folio.transfer')
+  @HttpCode(204)
+  async removeRoutingRule(@Param('ruleId') ruleId: string): Promise<void> {
+    await this.routing.removeRoutingRule(uuidParam(ruleId));
+  }
+
+  @Post('folios/:folioId/transfers')
+  @RequirePermission('folio.transfer')
+  @HttpCode(200)
+  @ZodResponse(200, folioSchema)
+  transfer(
+    @Param('folioId') folioId: string,
+    @ZodBody(transferRequestSchema) body: TransferRequest,
+  ) {
+    return this.routing.transfer(uuidParam(folioId), body);
   }
 }

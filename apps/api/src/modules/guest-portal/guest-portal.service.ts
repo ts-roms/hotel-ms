@@ -16,7 +16,7 @@ import { CacheRedis, RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FrontOfficeService } from '../front-office/front-office.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { cardHoldStateInTx } from '../finance/payments/holds.js';
+import { CardHoldsService } from '../finance/payments/card-holds.service.js';
 import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { guestPortalSettingsInTx } from './guest-info.service.js';
 import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
@@ -60,6 +60,7 @@ export class GuestPortalService {
     private readonly guestInbox: GuestInboxService,
     private readonly requests: ServiceRequestsService,
     private readonly guests: GuestsService,
+    private readonly cardHolds: CardHoldsService,
   ) {}
 
   private get guest() {
@@ -316,7 +317,7 @@ export class GuestPortalService {
     tx: Tx,
     line: { id: string; propertyId: string; reservation: { currency: string } },
   ): Promise<GuestStay['cardHold']> {
-    const state = await cardHoldStateInTx(tx, line.propertyId, line.id);
+    const state = await this.cardHolds.cardHoldStateInTx(tx, line.propertyId, line.id);
     if (state.requiredMinor === 0n) return null;
     return {
       requiredMinor: toMinor(state.requiredMinor),
@@ -424,7 +425,7 @@ export class GuestPortalService {
           'Please check in at the front desk.',
         );
       }
-      const hold = await cardHoldStateInTx(tx, line.propertyId, line.id);
+      const hold = await this.cardHolds.cardHoldStateInTx(tx, line.propertyId, line.id);
       const settings = await guestPortalSettingsInTx(tx, line.propertyId);
       const identity = settings.requireIdForSelfCheckIn
         ? await this.identity.summaryInTx(tx, line.id)

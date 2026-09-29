@@ -12571,6 +12571,1506 @@
         ]
       }
     },
+    "/api/v1/properties/{propertyId}/folios/{folioId}/discount": {
+      "put": {
+        "operationId": "FolioController_applyDiscount",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profileId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "idNumber": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 40
+                  }
+                },
+                "required": [
+                  "profileId",
+                  "holderName",
+                  "idNumber"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "delete": {
+        "operationId": "FolioController_removeDiscount",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/accounts": {
+      "get": {
+        "operationId": "FolioController_accounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "folioNo": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "CLOSED"
+                            ]
+                          },
+                          "balanceMinor": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "folioNo",
+                          "label",
+                          "status",
+                          "balanceMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "post": {
+        "operationId": "FolioController_createAccount",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "label"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/folios/{folioId}/routing-rules": {
+      "get": {
+        "operationId": "FolioController_routingRules",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "sourceFolioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetFolioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetFolioNo": {
+                            "type": "string"
+                          },
+                          "targetLabel": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "departments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "ROOM",
+                                "FNB",
+                                "MINIBAR",
+                                "LAUNDRY",
+                                "TRANSPORT",
+                                "SPA",
+                                "MISC"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sourceFolioId",
+                          "targetFolioId",
+                          "targetFolioNo",
+                          "targetLabel",
+                          "departments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      },
+      "post": {
+        "operationId": "FolioController_addRoutingRule",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetFolioId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "departments": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "ROOM",
+                        "FNB",
+                        "MINIBAR",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "SPA",
+                        "MISC"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "targetFolioId",
+                  "departments"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "sourceFolioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetFolioId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetFolioNo": {
+                            "type": "string"
+                          },
+                          "targetLabel": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "departments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "ROOM",
+                                "FNB",
+                                "MINIBAR",
+                                "LAUNDRY",
+                                "TRANSPORT",
+                                "SPA",
+                                "MISC"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sourceFolioId",
+                          "targetFolioId",
+                          "targetFolioNo",
+                          "targetLabel",
+                          "departments"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/routing-rules/{ruleId}": {
+      "delete": {
+        "operationId": "FolioController_removeRoutingRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
+    "/api/v1/properties/{propertyId}/folios/{folioId}/transfers": {
+      "post": {
+        "operationId": "FolioController_transfer",
+        "parameters": [
+          {
+            "name": "folioId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetFolioId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "lineIds": {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "targetFolioId",
+                  "lineIds",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "folioNo": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "CLOSED"
+                      ]
+                    },
+                    "currency": {
+                      "type": "string"
+                    },
+                    "balanceMinor": {
+                      "type": "integer",
+                      "minimum": -1000000000000,
+                      "maximum": 1000000000000
+                    },
+                    "reservationRoomId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "label": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "discount": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "profileId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "holderName": {
+                          "type": "string"
+                        },
+                        "idLast4": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "profileId",
+                        "code",
+                        "name",
+                        "holderName",
+                        "idLast4"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CHARGE",
+                              "TAX",
+                              "PAYMENT",
+                              "ADJUSTMENT",
+                              "REVERSAL",
+                              "REFUND",
+                              "TRANSFER"
+                            ]
+                          },
+                          "department": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": -1000000000000,
+                            "maximum": 1000000000000
+                          },
+                          "taxCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "parentLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversesLineId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "reversed": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "postedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "businessDate",
+                          "type",
+                          "department",
+                          "description",
+                          "amountMinor",
+                          "taxCode",
+                          "parentLineId",
+                          "reversesLineId",
+                          "reversed",
+                          "reason",
+                          "postedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "CASH",
+                              "CARD",
+                              "BANK_TRANSFER",
+                              "EWALLET",
+                              "OTHER"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "refundedMinor": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000000000
+                          },
+                          "provider": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "tendered": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "currency": {
+                                "type": "string"
+                              },
+                              "amountMinor": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "rate": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "currency",
+                              "amountMinor",
+                              "rate"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "businessDate": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "method",
+                          "amountMinor",
+                          "refundedMinor",
+                          "provider",
+                          "tendered",
+                          "reference",
+                          "businessDate",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "folioNo",
+                    "status",
+                    "currency",
+                    "balanceMinor",
+                    "reservationRoomId",
+                    "label",
+                    "discount",
+                    "lines",
+                    "payments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "finance"
+        ]
+      }
+    },
     "/api/v1/properties/{propertyId}/tax-rules": {
       "get": {
         "operationId": "TaxRulesController_taxRules",
@@ -13466,7 +14966,7 @@
     },
     "/api/v1/properties/{propertyId}/reservations/{reservationId}/guest-portal-link": {
       "post": {
-        "operationId": "GuestServiceController_sendLink",
+        "operationId": "GuestPortalLinkController_sendLink",
         "parameters": [
           {
             "name": "reservationId",
@@ -14745,7 +16245,7 @@
     },
     "/api/v1/guest/notifications": {
       "get": {
-        "operationId": "GuestExtrasController_notifications",
+        "operationId": "GuestNotificationsController_notifications",
         "parameters": [],
         "responses": {
           "200": {
@@ -14818,7 +16318,7 @@
     },
     "/api/v1/guest/notifications/read": {
       "post": {
-        "operationId": "GuestExtrasController_markRead",
+        "operationId": "GuestNotificationsController_markRead",
         "parameters": [],
         "responses": {
           "204": {
@@ -14832,7 +16332,7 @@
     },
     "/api/v1/guest/checkout-request": {
       "post": {
-        "operationId": "GuestExtrasController_requestCheckout",
+        "operationId": "GuestServiceRequestsController_requestCheckout",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -14860,6 +16360,555 @@
         },
         "responses": {
           "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER",
+                        "CHECKOUT"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/service-requests": {
+      "get": {
+        "operationId": "GuestServiceRequestsController_listRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "requestNo": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "TOWELS",
+                              "TOILETRIES",
+                              "PILLOWS_BLANKETS",
+                              "CLEANING",
+                              "MAINTENANCE",
+                              "LAUNDRY",
+                              "TRANSPORT",
+                              "LUGGAGE",
+                              "WAKE_UP_CALL",
+                              "OTHER",
+                              "CHECKOUT"
+                            ]
+                          },
+                          "department": {
+                            "type": "string",
+                            "enum": [
+                              "HOUSEKEEPING",
+                              "MAINTENANCE",
+                              "FRONT_DESK",
+                              "CONCIERGE"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "LOW",
+                              "NORMAL",
+                              "HIGH",
+                              "URGENT"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "ACKNOWLEDGED",
+                              "IN_PROGRESS",
+                              "DONE",
+                              "CANCELLED"
+                            ]
+                          },
+                          "roomNumber": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "guestName": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "assignee": {
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "membershipId": {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                              },
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "membershipId",
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "acknowledgedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "completedAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "rating": {
+                            "nullable": true,
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "feedback": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "requestNo",
+                          "category",
+                          "department",
+                          "priority",
+                          "description",
+                          "status",
+                          "roomNumber",
+                          "guestName",
+                          "assignee",
+                          "createdAt",
+                          "acknowledgedAt",
+                          "completedAt",
+                          "rating",
+                          "feedback",
+                          "version"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      },
+      "post": {
+        "operationId": "GuestServiceRequestsController_createRequest",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "TOWELS",
+                      "TOILETRIES",
+                      "PILLOWS_BLANKETS",
+                      "CLEANING",
+                      "MAINTENANCE",
+                      "LAUNDRY",
+                      "TRANSPORT",
+                      "LUGGAGE",
+                      "WAKE_UP_CALL",
+                      "OTHER"
+                    ]
+                  },
+                  "description": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "category"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "requestNo": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "TOWELS",
+                        "TOILETRIES",
+                        "PILLOWS_BLANKETS",
+                        "CLEANING",
+                        "MAINTENANCE",
+                        "LAUNDRY",
+                        "TRANSPORT",
+                        "LUGGAGE",
+                        "WAKE_UP_CALL",
+                        "OTHER",
+                        "CHECKOUT"
+                      ]
+                    },
+                    "department": {
+                      "type": "string",
+                      "enum": [
+                        "HOUSEKEEPING",
+                        "MAINTENANCE",
+                        "FRONT_DESK",
+                        "CONCIERGE"
+                      ]
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "NORMAL",
+                        "HIGH",
+                        "URGENT"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "ACKNOWLEDGED",
+                        "IN_PROGRESS",
+                        "DONE",
+                        "CANCELLED"
+                      ]
+                    },
+                    "roomNumber": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "guestName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "assignee": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "membershipId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "membershipId",
+                        "displayName"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "acknowledgedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "completedAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "feedback": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "requestNo",
+                    "category",
+                    "department",
+                    "priority",
+                    "description",
+                    "status",
+                    "roomNumber",
+                    "guestName",
+                    "assignee",
+                    "createdAt",
+                    "acknowledgedAt",
+                    "completedAt",
+                    "rating",
+                    "feedback",
+                    "version"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guest portal"
+        ]
+      }
+    },
+    "/api/v1/guest/service-requests/{requestId}/rating": {
+      "put": {
+        "operationId": "GuestServiceRequestsController_rate",
+        "parameters": [
+          {
+            "name": "requestId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "feedback": {
+                    "default": "",
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "rating"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "",
             "content": {
               "application/json": {
@@ -16906,555 +18955,6 @@
                     "currency",
                     "balanceMinor",
                     "lines"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guest portal"
-        ]
-      }
-    },
-    "/api/v1/guest/service-requests": {
-      "get": {
-        "operationId": "GuestPortalController_listRequests",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "requestNo": {
-                            "type": "string"
-                          },
-                          "category": {
-                            "type": "string",
-                            "enum": [
-                              "TOWELS",
-                              "TOILETRIES",
-                              "PILLOWS_BLANKETS",
-                              "CLEANING",
-                              "MAINTENANCE",
-                              "LAUNDRY",
-                              "TRANSPORT",
-                              "LUGGAGE",
-                              "WAKE_UP_CALL",
-                              "OTHER",
-                              "CHECKOUT"
-                            ]
-                          },
-                          "department": {
-                            "type": "string",
-                            "enum": [
-                              "HOUSEKEEPING",
-                              "MAINTENANCE",
-                              "FRONT_DESK",
-                              "CONCIERGE"
-                            ]
-                          },
-                          "priority": {
-                            "type": "string",
-                            "enum": [
-                              "LOW",
-                              "NORMAL",
-                              "HIGH",
-                              "URGENT"
-                            ]
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "OPEN",
-                              "ACKNOWLEDGED",
-                              "IN_PROGRESS",
-                              "DONE",
-                              "CANCELLED"
-                            ]
-                          },
-                          "roomNumber": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "guestName": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "assignee": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "membershipId": {
-                                "type": "string",
-                                "format": "uuid",
-                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                              },
-                              "displayName": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "membershipId",
-                              "displayName"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          },
-                          "acknowledgedAt": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          },
-                          "completedAt": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          },
-                          "rating": {
-                            "nullable": true,
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
-                          },
-                          "feedback": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "version": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "requestNo",
-                          "category",
-                          "department",
-                          "priority",
-                          "description",
-                          "status",
-                          "roomNumber",
-                          "guestName",
-                          "assignee",
-                          "createdAt",
-                          "acknowledgedAt",
-                          "completedAt",
-                          "rating",
-                          "feedback",
-                          "version"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guest portal"
-        ]
-      },
-      "post": {
-        "operationId": "GuestPortalController_createRequest",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "category": {
-                    "type": "string",
-                    "enum": [
-                      "TOWELS",
-                      "TOILETRIES",
-                      "PILLOWS_BLANKETS",
-                      "CLEANING",
-                      "MAINTENANCE",
-                      "LAUNDRY",
-                      "TRANSPORT",
-                      "LUGGAGE",
-                      "WAKE_UP_CALL",
-                      "OTHER"
-                    ]
-                  },
-                  "description": {
-                    "default": "",
-                    "type": "string",
-                    "maxLength": 1000
-                  }
-                },
-                "required": [
-                  "category"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "requestNo": {
-                      "type": "string"
-                    },
-                    "category": {
-                      "type": "string",
-                      "enum": [
-                        "TOWELS",
-                        "TOILETRIES",
-                        "PILLOWS_BLANKETS",
-                        "CLEANING",
-                        "MAINTENANCE",
-                        "LAUNDRY",
-                        "TRANSPORT",
-                        "LUGGAGE",
-                        "WAKE_UP_CALL",
-                        "OTHER",
-                        "CHECKOUT"
-                      ]
-                    },
-                    "department": {
-                      "type": "string",
-                      "enum": [
-                        "HOUSEKEEPING",
-                        "MAINTENANCE",
-                        "FRONT_DESK",
-                        "CONCIERGE"
-                      ]
-                    },
-                    "priority": {
-                      "type": "string",
-                      "enum": [
-                        "LOW",
-                        "NORMAL",
-                        "HIGH",
-                        "URGENT"
-                      ]
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "ACKNOWLEDGED",
-                        "IN_PROGRESS",
-                        "DONE",
-                        "CANCELLED"
-                      ]
-                    },
-                    "roomNumber": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "guestName": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "assignee": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "membershipId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "membershipId",
-                        "displayName"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "acknowledgedAt": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "completedAt": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "rating": {
-                      "nullable": true,
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
-                    },
-                    "feedback": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "requestNo",
-                    "category",
-                    "department",
-                    "priority",
-                    "description",
-                    "status",
-                    "roomNumber",
-                    "guestName",
-                    "assignee",
-                    "createdAt",
-                    "acknowledgedAt",
-                    "completedAt",
-                    "rating",
-                    "feedback",
-                    "version"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "guest portal"
-        ]
-      }
-    },
-    "/api/v1/guest/service-requests/{requestId}/rating": {
-      "put": {
-        "operationId": "GuestPortalController_rate",
-        "parameters": [
-          {
-            "name": "requestId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "rating": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 5
-                  },
-                  "feedback": {
-                    "default": "",
-                    "type": "string",
-                    "maxLength": 1000
-                  }
-                },
-                "required": [
-                  "rating"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "requestNo": {
-                      "type": "string"
-                    },
-                    "category": {
-                      "type": "string",
-                      "enum": [
-                        "TOWELS",
-                        "TOILETRIES",
-                        "PILLOWS_BLANKETS",
-                        "CLEANING",
-                        "MAINTENANCE",
-                        "LAUNDRY",
-                        "TRANSPORT",
-                        "LUGGAGE",
-                        "WAKE_UP_CALL",
-                        "OTHER",
-                        "CHECKOUT"
-                      ]
-                    },
-                    "department": {
-                      "type": "string",
-                      "enum": [
-                        "HOUSEKEEPING",
-                        "MAINTENANCE",
-                        "FRONT_DESK",
-                        "CONCIERGE"
-                      ]
-                    },
-                    "priority": {
-                      "type": "string",
-                      "enum": [
-                        "LOW",
-                        "NORMAL",
-                        "HIGH",
-                        "URGENT"
-                      ]
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "ACKNOWLEDGED",
-                        "IN_PROGRESS",
-                        "DONE",
-                        "CANCELLED"
-                      ]
-                    },
-                    "roomNumber": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "guestName": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "assignee": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "membershipId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "displayName": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "membershipId",
-                        "displayName"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "acknowledgedAt": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "completedAt": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "date-time",
-                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                    },
-                    "rating": {
-                      "nullable": true,
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
-                    },
-                    "feedback": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "integer",
-                      "minimum": -9007199254740991,
-                      "maximum": 9007199254740991
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "requestNo",
-                    "category",
-                    "department",
-                    "priority",
-                    "description",
-                    "status",
-                    "roomNumber",
-                    "guestName",
-                    "assignee",
-                    "createdAt",
-                    "acknowledgedAt",
-                    "completedAt",
-                    "rating",
-                    "feedback",
-                    "version"
                   ],
                   "additionalProperties": false
                 }
@@ -38746,7 +40246,7 @@
     },
     "/api/v1/properties/{propertyId}/folios/{folioId}/payment-links": {
       "post": {
-        "operationId": "FinanceController_paymentLink",
+        "operationId": "PaymentsController_paymentLink",
         "parameters": [
           {
             "name": "propertyId",
@@ -38912,7 +40412,7 @@
     },
     "/api/v1/properties/{propertyId}/folios/{folioId}/payment-intents": {
       "get": {
-        "operationId": "FinanceController_intents",
+        "operationId": "PaymentsController_intents",
         "parameters": [
           {
             "name": "folioId",
@@ -39052,7 +40552,7 @@
     },
     "/api/v1/properties/{propertyId}/payments/{paymentId}/refunds": {
       "post": {
-        "operationId": "FinanceController_refund",
+        "operationId": "PaymentsController_refund",
         "parameters": [
           {
             "name": "propertyId",
@@ -39177,7 +40677,7 @@
         ]
       },
       "get": {
-        "operationId": "FinanceController_refunds",
+        "operationId": "PaymentsController_refunds",
         "parameters": [
           {
             "name": "propertyId",
@@ -39280,7 +40780,7 @@
     },
     "/api/v1/properties/{propertyId}/payment-settings": {
       "get": {
-        "operationId": "FinanceController_paymentSettings",
+        "operationId": "PaymentsController_paymentSettings",
         "parameters": [
           {
             "name": "propertyId",
@@ -39319,7 +40819,7 @@
         ]
       },
       "put": {
-        "operationId": "FinanceController_updatePaymentSettings",
+        "operationId": "PaymentsController_updatePaymentSettings",
         "parameters": [
           {
             "name": "propertyId",
@@ -39381,7 +40881,7 @@
     },
     "/api/v1/properties/{propertyId}/holds/{intentId}/capture": {
       "post": {
-        "operationId": "FinanceController_captureHold",
+        "operationId": "PaymentsController_captureHold",
         "parameters": [
           {
             "name": "propertyId",
@@ -39547,7 +41047,7 @@
     },
     "/api/v1/properties/{propertyId}/holds/{intentId}/release": {
       "post": {
-        "operationId": "FinanceController_releaseHold",
+        "operationId": "PaymentsController_releaseHold",
         "parameters": [
           {
             "name": "propertyId",
@@ -39683,7 +41183,7 @@
     },
     "/api/v1/properties/{propertyId}/exchange-rates": {
       "get": {
-        "operationId": "FinanceController_exchangeRates",
+        "operationId": "FinanceSettingsController_exchangeRates",
         "parameters": [
           {
             "name": "propertyId",
@@ -39748,7 +41248,7 @@
         ]
       },
       "post": {
-        "operationId": "FinanceController_setExchangeRate",
+        "operationId": "FinanceSettingsController_setExchangeRate",
         "parameters": [
           {
             "name": "propertyId",
@@ -39828,7 +41328,7 @@
     },
     "/api/v1/properties/{propertyId}/discount-profiles": {
       "get": {
-        "operationId": "FinanceController_discountProfiles",
+        "operationId": "FinanceSettingsController_discountProfiles",
         "parameters": [
           {
             "name": "propertyId",
@@ -39909,7 +41409,7 @@
         ]
       },
       "post": {
-        "operationId": "FinanceController_createDiscountProfile",
+        "operationId": "FinanceSettingsController_createDiscountProfile",
         "parameters": [
           {
             "name": "propertyId",
@@ -40039,7 +41539,7 @@
     },
     "/api/v1/properties/{propertyId}/discount-profiles/{profileId}/archive": {
       "post": {
-        "operationId": "FinanceController_archiveDiscountProfile",
+        "operationId": "FinanceSettingsController_archiveDiscountProfile",
         "parameters": [
           {
             "name": "propertyId",
@@ -40068,1509 +41568,9 @@
         ]
       }
     },
-    "/api/v1/properties/{propertyId}/folios/{folioId}/discount": {
-      "put": {
-        "operationId": "FinanceController_applyDiscount",
-        "parameters": [
-          {
-            "name": "folioId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "profileId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  },
-                  "holderName": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  },
-                  "idNumber": {
-                    "type": "string",
-                    "minLength": 4,
-                    "maxLength": 40
-                  }
-                },
-                "required": [
-                  "profileId",
-                  "holderName",
-                  "idNumber"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "folioNo": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "CLOSED"
-                      ]
-                    },
-                    "currency": {
-                      "type": "string"
-                    },
-                    "balanceMinor": {
-                      "type": "integer",
-                      "minimum": -1000000000000,
-                      "maximum": 1000000000000
-                    },
-                    "reservationRoomId": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "label": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "discount": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "profileId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "code": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "holderName": {
-                          "type": "string"
-                        },
-                        "idLast4": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "profileId",
-                        "code",
-                        "name",
-                        "holderName",
-                        "idLast4"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "lines": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "CHARGE",
-                              "TAX",
-                              "PAYMENT",
-                              "ADJUSTMENT",
-                              "REVERSAL",
-                              "REFUND",
-                              "TRANSFER"
-                            ]
-                          },
-                          "department": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": -1000000000000,
-                            "maximum": 1000000000000
-                          },
-                          "taxCode": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "parentLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversesLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversed": {
-                            "type": "boolean"
-                          },
-                          "reason": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "postedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "businessDate",
-                          "type",
-                          "department",
-                          "description",
-                          "amountMinor",
-                          "taxCode",
-                          "parentLineId",
-                          "reversesLineId",
-                          "reversed",
-                          "reason",
-                          "postedAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "payments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "method": {
-                            "type": "string",
-                            "enum": [
-                              "CASH",
-                              "CARD",
-                              "BANK_TRANSFER",
-                              "EWALLET",
-                              "OTHER"
-                            ]
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "refundedMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "provider": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "tendered": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "currency": {
-                                "type": "string"
-                              },
-                              "amountMinor": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
-                              },
-                              "rate": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "currency",
-                              "amountMinor",
-                              "rate"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "reference": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "method",
-                          "amountMinor",
-                          "refundedMinor",
-                          "provider",
-                          "tendered",
-                          "reference",
-                          "businessDate",
-                          "createdAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "folioNo",
-                    "status",
-                    "currency",
-                    "balanceMinor",
-                    "reservationRoomId",
-                    "label",
-                    "discount",
-                    "lines",
-                    "payments"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      },
-      "delete": {
-        "operationId": "FinanceController_removeDiscount",
-        "parameters": [
-          {
-            "name": "folioId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "folioNo": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "CLOSED"
-                      ]
-                    },
-                    "currency": {
-                      "type": "string"
-                    },
-                    "balanceMinor": {
-                      "type": "integer",
-                      "minimum": -1000000000000,
-                      "maximum": 1000000000000
-                    },
-                    "reservationRoomId": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "label": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "discount": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "profileId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "code": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "holderName": {
-                          "type": "string"
-                        },
-                        "idLast4": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "profileId",
-                        "code",
-                        "name",
-                        "holderName",
-                        "idLast4"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "lines": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "CHARGE",
-                              "TAX",
-                              "PAYMENT",
-                              "ADJUSTMENT",
-                              "REVERSAL",
-                              "REFUND",
-                              "TRANSFER"
-                            ]
-                          },
-                          "department": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": -1000000000000,
-                            "maximum": 1000000000000
-                          },
-                          "taxCode": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "parentLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversesLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversed": {
-                            "type": "boolean"
-                          },
-                          "reason": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "postedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "businessDate",
-                          "type",
-                          "department",
-                          "description",
-                          "amountMinor",
-                          "taxCode",
-                          "parentLineId",
-                          "reversesLineId",
-                          "reversed",
-                          "reason",
-                          "postedAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "payments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "method": {
-                            "type": "string",
-                            "enum": [
-                              "CASH",
-                              "CARD",
-                              "BANK_TRANSFER",
-                              "EWALLET",
-                              "OTHER"
-                            ]
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "refundedMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "provider": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "tendered": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "currency": {
-                                "type": "string"
-                              },
-                              "amountMinor": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
-                              },
-                              "rate": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "currency",
-                              "amountMinor",
-                              "rate"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "reference": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "method",
-                          "amountMinor",
-                          "refundedMinor",
-                          "provider",
-                          "tendered",
-                          "reference",
-                          "businessDate",
-                          "createdAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "folioNo",
-                    "status",
-                    "currency",
-                    "balanceMinor",
-                    "reservationRoomId",
-                    "label",
-                    "discount",
-                    "lines",
-                    "payments"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      }
-    },
-    "/api/v1/properties/{propertyId}/accounts": {
-      "get": {
-        "operationId": "FinanceController_accounts",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "folioNo": {
-                            "type": "string"
-                          },
-                          "label": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "OPEN",
-                              "CLOSED"
-                            ]
-                          },
-                          "balanceMinor": {
-                            "type": "integer",
-                            "minimum": -9007199254740991,
-                            "maximum": 9007199254740991
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "folioNo",
-                          "label",
-                          "status",
-                          "balanceMinor"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      },
-      "post": {
-        "operationId": "FinanceController_createAccount",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "label": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  }
-                },
-                "required": [
-                  "label"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "folioNo": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "CLOSED"
-                      ]
-                    },
-                    "currency": {
-                      "type": "string"
-                    },
-                    "balanceMinor": {
-                      "type": "integer",
-                      "minimum": -1000000000000,
-                      "maximum": 1000000000000
-                    },
-                    "reservationRoomId": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "label": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "discount": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "profileId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "code": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "holderName": {
-                          "type": "string"
-                        },
-                        "idLast4": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "profileId",
-                        "code",
-                        "name",
-                        "holderName",
-                        "idLast4"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "lines": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "CHARGE",
-                              "TAX",
-                              "PAYMENT",
-                              "ADJUSTMENT",
-                              "REVERSAL",
-                              "REFUND",
-                              "TRANSFER"
-                            ]
-                          },
-                          "department": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": -1000000000000,
-                            "maximum": 1000000000000
-                          },
-                          "taxCode": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "parentLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversesLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversed": {
-                            "type": "boolean"
-                          },
-                          "reason": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "postedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "businessDate",
-                          "type",
-                          "department",
-                          "description",
-                          "amountMinor",
-                          "taxCode",
-                          "parentLineId",
-                          "reversesLineId",
-                          "reversed",
-                          "reason",
-                          "postedAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "payments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "method": {
-                            "type": "string",
-                            "enum": [
-                              "CASH",
-                              "CARD",
-                              "BANK_TRANSFER",
-                              "EWALLET",
-                              "OTHER"
-                            ]
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "refundedMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "provider": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "tendered": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "currency": {
-                                "type": "string"
-                              },
-                              "amountMinor": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
-                              },
-                              "rate": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "currency",
-                              "amountMinor",
-                              "rate"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "reference": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "method",
-                          "amountMinor",
-                          "refundedMinor",
-                          "provider",
-                          "tendered",
-                          "reference",
-                          "businessDate",
-                          "createdAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "folioNo",
-                    "status",
-                    "currency",
-                    "balanceMinor",
-                    "reservationRoomId",
-                    "label",
-                    "discount",
-                    "lines",
-                    "payments"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      }
-    },
-    "/api/v1/properties/{propertyId}/folios/{folioId}/routing-rules": {
-      "get": {
-        "operationId": "FinanceController_routingRules",
-        "parameters": [
-          {
-            "name": "folioId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "sourceFolioId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "targetFolioId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "targetFolioNo": {
-                            "type": "string"
-                          },
-                          "targetLabel": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "departments": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "ROOM",
-                                "FNB",
-                                "MINIBAR",
-                                "LAUNDRY",
-                                "TRANSPORT",
-                                "SPA",
-                                "MISC"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "sourceFolioId",
-                          "targetFolioId",
-                          "targetFolioNo",
-                          "targetLabel",
-                          "departments"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      },
-      "post": {
-        "operationId": "FinanceController_addRoutingRule",
-        "parameters": [
-          {
-            "name": "folioId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "targetFolioId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  },
-                  "departments": {
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "enum": [
-                        "ROOM",
-                        "FNB",
-                        "MINIBAR",
-                        "LAUNDRY",
-                        "TRANSPORT",
-                        "SPA",
-                        "MISC"
-                      ]
-                    }
-                  }
-                },
-                "required": [
-                  "targetFolioId",
-                  "departments"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "sourceFolioId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "targetFolioId": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "targetFolioNo": {
-                            "type": "string"
-                          },
-                          "targetLabel": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "departments": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "enum": [
-                                "ROOM",
-                                "FNB",
-                                "MINIBAR",
-                                "LAUNDRY",
-                                "TRANSPORT",
-                                "SPA",
-                                "MISC"
-                              ]
-                            }
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "sourceFolioId",
-                          "targetFolioId",
-                          "targetFolioNo",
-                          "targetLabel",
-                          "departments"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      }
-    },
-    "/api/v1/properties/{propertyId}/routing-rules/{ruleId}": {
-      "delete": {
-        "operationId": "FinanceController_removeRoutingRule",
-        "parameters": [
-          {
-            "name": "ruleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      }
-    },
-    "/api/v1/properties/{propertyId}/folios/{folioId}/transfers": {
-      "post": {
-        "operationId": "FinanceController_transfer",
-        "parameters": [
-          {
-            "name": "folioId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "targetFolioId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  },
-                  "lineIds": {
-                    "minItems": 1,
-                    "maxItems": 100,
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    }
-                  },
-                  "reason": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 200
-                  }
-                },
-                "required": [
-                  "targetFolioId",
-                  "lineIds",
-                  "reason"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "folioNo": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "OPEN",
-                        "CLOSED"
-                      ]
-                    },
-                    "currency": {
-                      "type": "string"
-                    },
-                    "balanceMinor": {
-                      "type": "integer",
-                      "minimum": -1000000000000,
-                      "maximum": 1000000000000
-                    },
-                    "reservationRoomId": {
-                      "nullable": true,
-                      "type": "string",
-                      "format": "uuid",
-                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                    },
-                    "label": {
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "discount": {
-                      "nullable": true,
-                      "type": "object",
-                      "properties": {
-                        "profileId": {
-                          "type": "string",
-                          "format": "uuid",
-                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                        },
-                        "code": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "holderName": {
-                          "type": "string"
-                        },
-                        "idLast4": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "profileId",
-                        "code",
-                        "name",
-                        "holderName",
-                        "idLast4"
-                      ],
-                      "additionalProperties": false
-                    },
-                    "lines": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "type": {
-                            "type": "string",
-                            "enum": [
-                              "CHARGE",
-                              "TAX",
-                              "PAYMENT",
-                              "ADJUSTMENT",
-                              "REVERSAL",
-                              "REFUND",
-                              "TRANSFER"
-                            ]
-                          },
-                          "department": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": -1000000000000,
-                            "maximum": 1000000000000
-                          },
-                          "taxCode": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "parentLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversesLineId": {
-                            "nullable": true,
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "reversed": {
-                            "type": "boolean"
-                          },
-                          "reason": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "postedAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "businessDate",
-                          "type",
-                          "department",
-                          "description",
-                          "amountMinor",
-                          "taxCode",
-                          "parentLineId",
-                          "reversesLineId",
-                          "reversed",
-                          "reason",
-                          "postedAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "payments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                          },
-                          "method": {
-                            "type": "string",
-                            "enum": [
-                              "CASH",
-                              "CARD",
-                              "BANK_TRANSFER",
-                              "EWALLET",
-                              "OTHER"
-                            ]
-                          },
-                          "amountMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "refundedMinor": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "maximum": 1000000000000
-                          },
-                          "provider": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "tendered": {
-                            "nullable": true,
-                            "type": "object",
-                            "properties": {
-                              "currency": {
-                                "type": "string"
-                              },
-                              "amountMinor": {
-                                "type": "integer",
-                                "minimum": -9007199254740991,
-                                "maximum": 9007199254740991
-                              },
-                              "rate": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "currency",
-                              "amountMinor",
-                              "rate"
-                            ],
-                            "additionalProperties": false
-                          },
-                          "reference": {
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "businessDate": {
-                            "type": "string",
-                            "format": "date",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "method",
-                          "amountMinor",
-                          "refundedMinor",
-                          "provider",
-                          "tendered",
-                          "reference",
-                          "businessDate",
-                          "createdAt"
-                        ],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "folioNo",
-                    "status",
-                    "currency",
-                    "balanceMinor",
-                    "reservationRoomId",
-                    "label",
-                    "discount",
-                    "lines",
-                    "payments"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "finance"
-        ]
-      }
-    },
     "/api/v1/properties/{propertyId}/folios/{folioId}/documents": {
       "post": {
-        "operationId": "FinanceController_issue",
+        "operationId": "FolioDocumentsController_issue",
         "parameters": [
           {
             "name": "propertyId",
@@ -41850,7 +41850,7 @@
         ]
       },
       "get": {
-        "operationId": "FinanceController_documentList",
+        "operationId": "FolioDocumentsController_documentList",
         "parameters": [
           {
             "name": "propertyId",
@@ -42097,7 +42097,7 @@
     },
     "/api/v1/properties/{propertyId}/documents/{documentId}": {
       "get": {
-        "operationId": "FinanceController_document",
+        "operationId": "FolioDocumentsController_document",
         "parameters": [
           {
             "name": "propertyId",
@@ -42332,7 +42332,7 @@
     },
     "/api/v1/properties/{propertyId}/cashier/shift": {
       "get": {
-        "operationId": "FinanceController_currentShift",
+        "operationId": "CashierController_currentShift",
         "parameters": [
           {
             "name": "propertyId",
@@ -42476,7 +42476,7 @@
         ]
       },
       "post": {
-        "operationId": "FinanceController_openShift",
+        "operationId": "CashierController_openShift",
         "parameters": [
           {
             "name": "propertyId",
@@ -42633,7 +42633,7 @@
     },
     "/api/v1/properties/{propertyId}/cashier/shifts/{shiftId}/close": {
       "post": {
-        "operationId": "FinanceController_closeShift",
+        "operationId": "CashierController_closeShift",
         "parameters": [
           {
             "name": "propertyId",
@@ -42803,7 +42803,7 @@
     },
     "/api/v1/properties/{propertyId}/cashier/shifts": {
       "get": {
-        "operationId": "FinanceController_shifts",
+        "operationId": "CashierController_shifts",
         "parameters": [
           {
             "name": "propertyId",
@@ -42951,7 +42951,7 @@
     },
     "/api/v1/properties/{propertyId}/reports/daily": {
       "get": {
-        "operationId": "FinanceController_daily",
+        "operationId": "FinanceReportsController_daily",
         "parameters": [
           {
             "name": "propertyId",
@@ -43145,7 +43145,7 @@
     },
     "/api/v1/properties/{propertyId}/reports/reconciliation-runs": {
       "get": {
-        "operationId": "FinanceController_reconciliationRuns",
+        "operationId": "FinanceReportsController_reconciliationRuns",
         "parameters": [
           {
             "name": "propertyId",
@@ -43247,7 +43247,7 @@
     },
     "/api/v1/properties/{propertyId}/reports/reconciliation": {
       "get": {
-        "operationId": "FinanceController_reconciliation",
+        "operationId": "FinanceReportsController_reconciliation",
         "parameters": [
           {
             "name": "propertyId",

@@ -7,7 +7,7 @@ import { GuestPortalService } from './guest-portal.service.js';
 /** Sends a reservation's guest the link to the guest portal. */
 @ApiTags('guest service')
 @Controller('properties/:propertyId')
-export class GuestServiceController {
+export class GuestPortalLinkController {
   constructor(private readonly portal: GuestPortalService) {}
 
   @Post('reservations/:reservationId/guest-portal-link')

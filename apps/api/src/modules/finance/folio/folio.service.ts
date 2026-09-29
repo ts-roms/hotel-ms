@@ -1,32 +1,29 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type {
   AdjustmentRequest,
   Folio,
   PostChargeRequest,
-  AccountFolio,
   RecordPaymentRequest,
-  RoutingRule,
 } from '@hotel/contracts';
-import { Prisma, type Tx, uuidv7 } from '@hotel/database';
+import type { Tx } from '@hotel/database';
+import { currencyDigits } from '@hotel/format';
 import { ClsService } from 'nestjs-cls';
+import { businessDateOf } from '../../../common/business-date.js';
 import { fromDbDate, toDbDate } from '../../../common/dates.js';
+import { convertMinor, formatRate, toMinor } from '../../../common/money.js';
 import { nextNumber } from '../../../common/numbering.js';
 import { ProblemException, Problems, invalidState } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
 import { TenantDb } from '../../../infrastructure/database.js';
-import { SECRET_BOX } from '../../../infrastructure/secret-box.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
-import { businessDateOf } from '../../pms/inventory/rooms.service.js';
-import { currencyDigits } from '@hotel/format';
-import { convertMinor, formatRate, toMinor } from '../../../common/money.js';
-import type { SecretBox } from '../../../infrastructure/secret-box.js';
 import {
   applyStatutoryDiscount,
   computeTaxes,
   type TaxRuleInput,
 } from '../../pms/pricing/tax-engine.js';
 import { TaxRulesService } from '../../pms/pricing/tax-rules.service.js';
+import { folioInclude, toFolioDto } from './folio-dto.js';
 
 /** Foreign cash amount in major units, for line descriptions ("100", "1.5"). */
 const formatForeign = (t: { currency: string; amountMinor: bigint }) =>
@@ -48,82 +45,11 @@ export interface PostingInput {
   taxRules?: readonly TaxRuleInput[];
 }
 
-const folioInclude = {
-  lines: { orderBy: [{ postedAt: 'asc' }, { id: 'asc' }] },
-  payments: {
-    orderBy: { createdAt: 'asc' },
-    include: { refunds: { select: { amountMinor: true, status: true } } },
-  },
-  discountProfile: { select: { id: true, code: true, name: true } },
-} satisfies Prisma.FolioInclude;
-
-type FolioRow = Prisma.FolioGetPayload<{ include: typeof folioInclude }>;
-
-function toFolioDto(folio: FolioRow): Folio {
-  const reversed = new Set(folio.lines.map((l) => l.reversesLineId).filter(Boolean));
-  return {
-    id: folio.id,
-    folioNo: folio.folioNo,
-    status: folio.status,
-    currency: folio.currency,
-    balanceMinor: toSignedMinor(folio.balanceMinor),
-    reservationRoomId: folio.reservationRoomId,
-    label: folio.label,
-    discount:
-      folio.discountProfile && folio.discountHolderName && folio.discountIdLast4
-        ? {
-            profileId: folio.discountProfile.id,
-            code: folio.discountProfile.code,
-            name: folio.discountProfile.name,
-            holderName: folio.discountHolderName,
-            idLast4: folio.discountIdLast4,
-          }
-        : null,
-    lines: folio.lines.map((l) => ({
-      id: l.id,
-      businessDate: fromDbDate(l.businessDate),
-      type: l.type,
-      department: l.department,
-      description: l.description,
-      amountMinor: toSignedMinor(l.amountMinor),
-      taxCode: l.taxCode,
-      parentLineId: l.parentLineId,
-      reversesLineId: l.reversesLineId,
-      reversed: reversed.has(l.id),
-      reason: l.reason,
-      postedAt: l.postedAt.toISOString(),
-    })),
-    payments: folio.payments.map((p) => ({
-      id: p.id,
-      method: p.method,
-      amountMinor: toMinor(p.amountMinor),
-      refundedMinor: toMinor(
-        p.refunds.filter((r) => r.status !== 'FAILED').reduce((sum, r) => sum + r.amountMinor, 0n),
-      ),
-      provider: p.provider,
-      tendered:
-        p.tenderedCurrency && p.tenderedAmountMinor !== null && p.exchangeRateMicros !== null
-          ? {
-              currency: p.tenderedCurrency,
-              amountMinor: toMinor(p.tenderedAmountMinor),
-              rate: formatRate(p.exchangeRateMicros),
-            }
-          : null,
-      reference: p.reference,
-      businessDate: fromDbDate(p.businessDate),
-      createdAt: p.createdAt.toISOString(),
-    })),
-  };
-}
-
-function toSignedMinor(value: bigint): number {
-  return value < 0n ? -toMinor(-value) : toMinor(value);
-}
-
 /**
  * The guest folio is an append-only ledger (§15.1). Every mutation here is an INSERT;
  * the database keeps the balance (trigger), refuses edits and deletes, and refuses
- * postings to closed folios.
+ * postings to closed folios. Discounts (FolioDiscountsService) and accounts, routing and
+ * transfers (FolioRoutingService) build on the helpers here.
  */
 @Injectable()
 export class FolioService {
@@ -132,7 +58,6 @@ export class FolioService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
-    @Inject(SECRET_BOX) private readonly secretBox: SecretBox,
     private readonly taxRules: TaxRulesService,
   ) {}
 
@@ -171,7 +96,8 @@ export class FolioService {
     });
   }
 
-  private async requireFolio(tx: Tx, folioId: string) {
+  /** The folio at the current property; 404 otherwise. */
+  async requireInTx(tx: Tx, folioId: string) {
     const folio = await tx.folio.findFirst({
       where: { id: folioId, propertyId: this.ctx.propertyId },
     });
@@ -179,7 +105,8 @@ export class FolioService {
     return folio;
   }
 
-  private async load(tx: Tx, folioId: string): Promise<Folio> {
+  /** The folio as the API returns it. */
+  async loadInTx(tx: Tx, folioId: string): Promise<Folio> {
     const folio = await tx.folio.findFirst({
       where: { id: folioId, propertyId: this.ctx.propertyId },
       include: folioInclude,
@@ -189,7 +116,7 @@ export class FolioService {
   }
 
   get(folioId: string): Promise<Folio> {
-    return this.db.run((tx) => this.load(tx, folioId));
+    return this.db.run((tx) => this.loadInTx(tx, folioId));
   }
 
   async findForReservationRoom(reservationRoomId: string): Promise<Folio> {
@@ -198,7 +125,7 @@ export class FolioService {
         where: { reservationRoomId, propertyId: this.ctx.propertyId },
       });
       if (!folio) throw Problems.notFound('Folio');
-      return this.load(tx, folio.id);
+      return this.loadInTx(tx, folio.id);
     });
   }
 
@@ -208,7 +135,7 @@ export class FolioService {
    */
   async postInTx(tx: Tx, folioId: string, input: PostingInput): Promise<string> {
     const { organizationId, propertyId, actorId } = this.ctx;
-    const folio = await this.requireFolio(tx, folioId);
+    const folio = await this.requireInTx(tx, folioId);
     if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
     if (!input.noRouting && (input.type ?? 'CHARGE') === 'CHARGE') {
       // Routing (§15.1): e.g. the company account pays the room, the guest the extras.
@@ -378,7 +305,7 @@ export class FolioService {
       taxRules?: readonly TaxRuleInput[];
     },
   ): Promise<void> {
-    const folio = await this.requireFolio(tx, folioId);
+    const folio = await this.requireInTx(tx, folioId);
     if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
     const line = await tx.folioLine.findFirst({ where: { folioId, sourceKey: input.sourceKey } });
     if (!line) return;
@@ -418,7 +345,7 @@ export class FolioService {
         propertyId: this.ctx.propertyId,
         after: { lineId, ...input },
       });
-      return this.load(tx, folioId);
+      return this.loadInTx(tx, folioId);
     });
   }
 
@@ -438,7 +365,7 @@ export class FolioService {
         propertyId: this.ctx.propertyId,
         after: { lineId, ...input },
       });
-      return this.load(tx, folioId);
+      return this.loadInTx(tx, folioId);
     });
   }
 
@@ -462,7 +389,7 @@ export class FolioService {
     input: RecordPaymentRequest & { provider?: string; intentId?: string },
   ): Promise<string> {
     const { organizationId, propertyId, actorId } = this.ctx;
-    const folio = await this.requireFolio(tx, folioId);
+    const folio = await this.requireInTx(tx, folioId);
     if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
     let cashierShiftId: string | null = null;
     if (input.method === 'CASH' && !input.provider) {
@@ -588,7 +515,7 @@ export class FolioService {
   async recordPayment(folioId: string, input: RecordPaymentRequest): Promise<Folio> {
     return this.db.run(async (tx) => {
       await this.recordPaymentInTx(tx, folioId, input);
-      return this.load(tx, folioId);
+      return this.loadInTx(tx, folioId);
     });
   }
 
@@ -599,7 +526,7 @@ export class FolioService {
     input: { amountMinor: bigint; description: string; reason: string },
   ): Promise<string> {
     const { organizationId, propertyId, actorId } = this.ctx;
-    const folio = await this.requireFolio(tx, folioId);
+    const folio = await this.requireInTx(tx, folioId);
     if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
     const line = await tx.folioLine.create({
       data: {
@@ -619,279 +546,6 @@ export class FolioService {
     return line.id;
   }
 
-  // ---- Statutory discounts -------------------------------------------------------------
-
-  /** Applies a discount profile to a folio; its later charges are discounted (§15.1). */
-  async applyDiscount(
-    folioId: string,
-    input: { profileId: string; holderName: string; idNumber: string },
-  ): Promise<Folio> {
-    const { propertyId } = this.ctx;
-    return this.db.run(async (tx) => {
-      const folio = await this.requireFolio(tx, folioId);
-      if (folio.status !== 'OPEN') throw invalidState('The folio is closed.');
-      const profile = await tx.discountProfile.findFirst({
-        where: { id: input.profileId, propertyId, archivedAt: null },
-      });
-      if (!profile) throw Problems.validation([{ path: 'profileId', message: 'Unknown discount' }]);
-      const id = input.idNumber.replace(/\s+/g, '');
-      await tx.folio.update({
-        where: { id: folioId },
-        data: {
-          discountProfileId: profile.id,
-          discountHolderName: input.holderName,
-          discountIdLast4: id.slice(-4),
-          // Bound to this folio, so a copied ciphertext cannot be read elsewhere.
-          discountIdEncrypted: new Uint8Array(
-            this.secretBox.encrypt(id, `folio-discount:${folioId}`),
-          ),
-        },
-      });
-      await this.audit.record(tx, {
-        action: 'folio.discount_applied',
-        entityType: 'folio',
-        entityId: folioId,
-        propertyId,
-        after: { profile: profile.code, holderName: input.holderName, idLast4: id.slice(-4) },
-      });
-      await this.outbox.enqueue(
-        tx,
-        'FolioDiscountApplied',
-        { folioId, profileCode: profile.code },
-        { propertyId },
-      );
-      return this.load(tx, folioId);
-    });
-  }
-
-  async removeDiscount(folioId: string): Promise<Folio> {
-    const { propertyId } = this.ctx;
-    return this.db.run(async (tx) => {
-      const folio = await this.requireFolio(tx, folioId);
-      if (!folio.discountProfileId) return this.load(tx, folioId);
-      await tx.folio.update({
-        where: { id: folioId },
-        data: {
-          discountProfileId: null,
-          discountHolderName: null,
-          discountIdLast4: null,
-          discountIdEncrypted: null,
-        },
-      });
-      await this.audit.record(tx, {
-        action: 'folio.discount_removed',
-        entityType: 'folio',
-        entityId: folioId,
-        propertyId,
-      });
-      return this.load(tx, folioId);
-    });
-  }
-
-  // ---- Accounts, routing and transfers -----------------------------------------------------
-
-  /** Company / group master account: a folio without a stay (city ledger). */
-  async createAccount(label: string): Promise<Folio> {
-    const { organizationId, propertyId } = this.ctx;
-    return this.db.run(async (tx) => {
-      const property = await tx.property.findUniqueOrThrow({
-        where: { id: propertyId },
-        select: { code: true, currency: true },
-      });
-      const n = await nextNumber(tx, organizationId, propertyId, 'folio');
-      const folio = await tx.folio.create({
-        data: {
-          organizationId,
-          propertyId,
-          folioNo: `${property.code}-F${String(n).padStart(6, '0')}`,
-          label,
-          currency: property.currency,
-        },
-      });
-      await this.audit.record(tx, {
-        action: 'folio.account_created',
-        entityType: 'folio',
-        entityId: folio.id,
-        propertyId,
-        after: { label },
-      });
-      return this.load(tx, folio.id);
-    });
-  }
-
-  async accounts(): Promise<AccountFolio[]> {
-    const rows = await this.db.run((tx) =>
-      tx.folio.findMany({
-        where: { propertyId: this.ctx.propertyId, reservationRoomId: null, label: { not: null } },
-        orderBy: { label: 'asc' },
-      }),
-    );
-    return rows.map((f) => ({
-      id: f.id,
-      folioNo: f.folioNo,
-      label: f.label!,
-      status: f.status,
-      balanceMinor: toSignedMinor(f.balanceMinor),
-    }));
-  }
-
-  async routingRules(folioId: string): Promise<RoutingRule[]> {
-    return this.db.run(async (tx) => {
-      await this.requireFolio(tx, folioId);
-      const rows = await tx.folioRoutingRule.findMany({
-        where: { sourceFolioId: folioId, removedAt: null },
-        include: { target: { select: { folioNo: true, label: true } } },
-        orderBy: { createdAt: 'asc' },
-      });
-      return rows.map((r) => ({
-        id: r.id,
-        sourceFolioId: r.sourceFolioId,
-        targetFolioId: r.targetFolioId,
-        targetFolioNo: r.target.folioNo,
-        targetLabel: r.target.label,
-        departments: r.departments as RoutingRule['departments'],
-      }));
-    });
-  }
-
-  async addRoutingRule(
-    folioId: string,
-    targetFolioId: string,
-    departments: string[],
-  ): Promise<RoutingRule[]> {
-    const { organizationId, propertyId, actorId } = this.ctx;
-    await this.db.run(async (tx) => {
-      const source = await this.requireFolio(tx, folioId);
-      const target = await tx.folio.findFirst({ where: { id: targetFolioId, propertyId } });
-      if (!target || target.id === source.id) {
-        throw Problems.validation([{ path: 'targetFolioId', message: 'Unknown or same folio' }]);
-      }
-      if (source.status !== 'OPEN' || target.status !== 'OPEN') {
-        throw invalidState('Both folios must be open.');
-      }
-      const overlapping = await tx.folioRoutingRule.count({
-        where: { sourceFolioId: folioId, removedAt: null, departments: { hasSome: departments } },
-      });
-      if (overlapping) throw Problems.conflict('A department is already routed from this folio.');
-      const rule = await tx.folioRoutingRule.create({
-        data: {
-          organizationId,
-          propertyId,
-          sourceFolioId: folioId,
-          targetFolioId,
-          departments,
-          createdBy: actorId,
-        },
-      });
-      await this.audit.record(tx, {
-        action: 'folio.routing_added',
-        entityType: 'folio',
-        entityId: folioId,
-        propertyId,
-        after: { ruleId: rule.id, targetFolioId, departments },
-      });
-    });
-    return this.routingRules(folioId);
-  }
-
-  async removeRoutingRule(ruleId: string): Promise<void> {
-    await this.db.run(async (tx) => {
-      const { count } = await tx.folioRoutingRule.updateMany({
-        where: { id: ruleId, propertyId: this.ctx.propertyId, removedAt: null },
-        data: { removedAt: new Date() },
-      });
-      if (count !== 1) throw Problems.notFound('Routing rule');
-      await this.audit.record(tx, {
-        action: 'folio.routing_removed',
-        entityType: 'folio_routing_rule',
-        entityId: ruleId,
-        propertyId: this.ctx.propertyId,
-      });
-    });
-  }
-
-  /**
-   * Moves charges (with their taxes) to another folio as a TRANSFER pair. The source side
-   * references the charge, so a charge moves once and a moved charge cannot be voided.
-   */
-  async transfer(
-    folioId: string,
-    input: { targetFolioId: string; lineIds: string[]; reason: string },
-  ): Promise<Folio> {
-    const { organizationId, propertyId, actorId } = this.ctx;
-    return this.db.run(async (tx) => {
-      const source = await this.requireFolio(tx, folioId);
-      const target = await tx.folio.findFirst({ where: { id: input.targetFolioId, propertyId } });
-      if (!target || target.id === source.id) {
-        throw Problems.validation([{ path: 'targetFolioId', message: 'Unknown or same folio' }]);
-      }
-      if (source.currency !== target.currency) {
-        throw invalidState('The folios use different currencies.');
-      }
-      const businessDate = toDbDate(await businessDateOf(tx, propertyId));
-      for (const lineId of [...new Set(input.lineIds)]) {
-        const charge = await tx.folioLine.findFirst({
-          where: { id: lineId, folioId, type: 'CHARGE' },
-        });
-        if (!charge) {
-          throw Problems.validation([
-            { path: 'lineIds', message: 'Only charges of this folio can move' },
-          ]);
-        }
-        if (await tx.folioLine.count({ where: { reversesLineId: lineId } })) {
-          throw invalidState(`"${charge.description}" was already voided or moved.`);
-        }
-        const taxes = await tx.folioLine.aggregate({
-          where: { parentLineId: lineId },
-          _sum: { amountMinor: true },
-        });
-        const gross = charge.amountMinor + (taxes._sum.amountMinor ?? 0n);
-        const transferId = uuidv7();
-        await tx.folioLine.create({
-          data: {
-            organizationId,
-            propertyId,
-            folioId,
-            businessDate,
-            type: 'TRANSFER',
-            department: charge.department,
-            description: `Moved to ${target.folioNo}: ${charge.description}`,
-            amountMinor: -gross,
-            currency: charge.currency,
-            reversesLineId: charge.id,
-            transferId,
-            reason: input.reason,
-            postedBy: actorId,
-          },
-        });
-        await tx.folioLine.create({
-          data: {
-            organizationId,
-            propertyId,
-            folioId: target.id,
-            businessDate,
-            type: 'TRANSFER',
-            department: charge.department,
-            description: `From ${source.folioNo}: ${charge.description}`,
-            amountMinor: gross,
-            currency: charge.currency,
-            transferId,
-            reason: input.reason,
-            postedBy: actorId,
-          },
-        });
-      }
-      await this.audit.record(tx, {
-        action: 'folio.transferred',
-        entityType: 'folio',
-        entityId: folioId,
-        propertyId,
-        after: { targetFolioId: target.id, lineIds: input.lineIds, reason: input.reason },
-      });
-      return this.load(tx, folioId);
-    });
-  }
-
   /**
    * Voids a charge posted today: posts exact negations of the charge and its tax lines.
    * After the business day has closed, corrections are adjustments instead.
@@ -899,7 +553,7 @@ export class FolioService {
   async voidLine(folioId: string, lineId: string, reason: string): Promise<Folio> {
     const { propertyId } = this.ctx;
     return this.db.run(async (tx) => {
-      const folio = await this.requireFolio(tx, folioId);
+      const folio = await this.requireInTx(tx, folioId);
       const line = await tx.folioLine.findFirst({ where: { id: lineId, folioId } });
       if (!line) throw Problems.notFound('Folio line');
       if (line.type !== 'CHARGE')
@@ -925,7 +579,7 @@ export class FolioService {
         propertyId,
         after: { lineId, reason },
       });
-      return this.load(tx, folioId);
+      return this.loadInTx(tx, folioId);
     });
   }
 }

@@ -19,7 +19,7 @@ import { OutboxService } from '../../outbox/outbox.service.js';
 import { GuestsService, toGuestSummary } from '../guests/guests.service.js';
 import { releaseInventory, takeInventory } from '../inventory/inventory.js';
 import { priceStay } from '../pricing/pricing.js';
-import { businessDateOf } from '../inventory/rooms.service.js';
+import { businessDateOf } from '../../../common/business-date.js';
 import { GuestMessagesService } from '../../notifications/guest-messages.service.js';
 
 export const reservationInclude = {

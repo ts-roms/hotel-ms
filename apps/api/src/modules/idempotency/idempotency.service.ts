@@ -145,4 +145,24 @@ export class IdempotencyService {
       throw error;
     }
   }
+
+  /**
+   * run() for a controller: responds with `status` and marks a replayed response with
+   * `Idempotent-Replayed: true`.
+   */
+  async respond<T>(
+    reply: { header(name: string, value: string): unknown },
+    operation: string,
+    key: string | undefined,
+    requestBody: unknown,
+    status: number,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const result = await this.run(operation, key, requestBody, async () => ({
+      status,
+      body: await fn(),
+    }));
+    if (result.replayed) reply.header('idempotent-replayed', 'true');
+    return result.body;
+  }
 }

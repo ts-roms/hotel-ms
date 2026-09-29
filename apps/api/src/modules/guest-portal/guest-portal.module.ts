@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FinanceModule } from '../finance/finance.module.js';
 import { FrontOfficeModule } from '../front-office/front-office.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { OperationsModule } from '../operations/operations.module.js';
@@ -6,9 +7,9 @@ import { PmsModule } from '../pms/pms.module.js';
 import { GuestAdminController } from './guest-admin.controller.js';
 import { GuestExtrasController } from './guest-extras.controller.js';
 import { GuestInfoService } from './guest-info.service.js';
+import { GuestPortalLinkController } from './guest-portal-link.controller.js';
 import { GuestPortalController } from './guest-portal.controller.js';
 import { GuestPortalService } from './guest-portal.service.js';
-import { GuestServiceController } from './guest-service.controller.js';
 import { GuestSessions } from './guest-session.js';
 import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './room-access.js';
 
@@ -19,9 +20,9 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './room-access.js';
  * registered globally by AppModule.
  */
 @Module({
-  imports: [PmsModule, FrontOfficeModule, OperationsModule, NotificationsModule],
+  imports: [PmsModule, FinanceModule, FrontOfficeModule, OperationsModule, NotificationsModule],
   controllers: [
-    GuestServiceController,
+    GuestPortalLinkController,
     GuestExtrasController,
     GuestAdminController,
     GuestPortalController,

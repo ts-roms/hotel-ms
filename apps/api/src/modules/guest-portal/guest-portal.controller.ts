@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type GuestExchangeRequest,
@@ -6,26 +6,16 @@ import {
   guestExchangeRequestSchema,
   type GuestOtpVerifyRequest,
   guestOtpVerifyRequestSchema,
-  type GuestServiceRating,
-  guestServiceRatingSchema,
-  type GuestServiceRequestCreate,
-  guestServiceRequestCreateSchema,
   guestStaySchema,
   type PreCheckInRequest,
   preCheckInRequestSchema,
   selfCheckInResultSchema,
-  serviceRequestSchema,
-  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { uuidParam } from '../../common/params.js';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { GuestSessions } from './guest-session.js';
-import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
-
-const serviceRequestList = listOf(serviceRequestSchema);
 
 /**
  * Guest realm (blueprint §11): authenticated by GuestGuard with the guest cookie. No route
@@ -37,7 +27,6 @@ const serviceRequestList = listOf(serviceRequestSchema);
 export class GuestPortalController {
   constructor(
     private readonly portal: GuestPortalService,
-    private readonly requests: ServiceRequestsService,
     private readonly sessions: GuestSessions,
   ) {}
 
@@ -100,30 +89,5 @@ export class GuestPortalController {
   @ZodResponse(200, guestBillSchema)
   bill() {
     return this.portal.bill();
-  }
-
-  @Get('service-requests')
-  @GuestRoute({ verified: true })
-  @ZodResponse(200, serviceRequestList)
-  async listRequests() {
-    return { items: await this.requests.guestList() };
-  }
-
-  @Post('service-requests')
-  @GuestRoute({ verified: true })
-  @HttpCode(201)
-  @ZodResponse(201, serviceRequestSchema)
-  createRequest(@ZodBody(guestServiceRequestCreateSchema) body: GuestServiceRequestCreate) {
-    return this.requests.guestCreate(body);
-  }
-
-  @Put('service-requests/:requestId/rating')
-  @GuestRoute({ verified: true })
-  @ZodResponse(200, serviceRequestSchema)
-  rate(
-    @Param('requestId') requestId: string,
-    @ZodBody(guestServiceRatingSchema) body: GuestServiceRating,
-  ) {
-    return this.requests.guestRate(uuidParam(requestId), body);
   }
 }

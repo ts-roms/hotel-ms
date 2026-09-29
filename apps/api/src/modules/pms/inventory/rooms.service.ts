@@ -15,6 +15,7 @@ import type {
 } from '@hotel/contracts';
 import { Prisma, type Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { businessDateOf } from '../../../common/business-date.js';
 import { fromDbDate, nightsOf, toDbDate } from '../../../common/dates.js';
 import { withConstraintMapping } from '../../../common/db-errors.js';
 import { Problems } from '../../../common/problem.js';
@@ -25,15 +26,6 @@ import { OutboxService } from '../../outbox/outbox.service.js';
 import { refreshCapacity, releaseInventory, takeInventory } from './inventory.js';
 
 type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
-
-/** Current business date of the route's property (the only "today" PMS code may use). */
-export async function businessDateOf(tx: Tx, propertyId: string): Promise<string> {
-  const property = await tx.property.findUniqueOrThrow({
-    where: { id: propertyId },
-    select: { currentBusinessDate: true },
-  });
-  return fromDbDate(property.currentBusinessDate);
-}
 
 const conflictOnDuplicate = async <T>(fn: () => Promise<T>, what: string): Promise<T> => {
   try {
