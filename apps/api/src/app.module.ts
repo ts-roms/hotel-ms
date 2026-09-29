@@ -8,7 +8,7 @@ import { PrismaService, TenantDb } from './infrastructure/database.js';
 import { RealtimeService } from './infrastructure/realtime.js';
 import { CacheRedis, RateLimiter } from './infrastructure/redis.js';
 import { NotificationsQueue } from './infrastructure/queue.js';
-import { SecretBox } from './infrastructure/secret-box.js';
+import { SecretBox, SECRET_BOX } from './infrastructure/secret-box.js';
 import { createObjectStorage, OBJECT_STORAGE } from './infrastructure/storage.js';
 import { AccessController } from './modules/access/access.controller.js';
 import { GrantsService } from './modules/access/grants.service.js';
@@ -20,7 +20,7 @@ import { AuditService } from './modules/audit/audit.service.js';
 import { AuthController } from './modules/auth/auth.controller.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { AuthGuard, PermissionGuard, TenantGuard } from './modules/auth/guards.js';
-import { MfaService, SECRET_BOX } from './modules/auth/mfa.service.js';
+import { MfaService } from './modules/auth/mfa.service.js';
 import { PasswordService } from './modules/auth/password.service.js';
 import { SessionService } from './modules/auth/session.service.js';
 import { HealthController } from './modules/health/health.controller.js';
@@ -38,7 +38,7 @@ import {
   GuestExtrasController,
 } from './modules/guest-portal/guest-extras.controller.js';
 import { GuestIdentityService } from './modules/guest-portal/guest-identity.service.js';
-import { GuestInboxService } from './modules/guest-portal/guest-inbox.service.js';
+import { GuestInboxService } from './modules/notifications/guest-inbox.service.js';
 import { GuestInfoService } from './modules/guest-portal/guest-info.service.js';
 import { GuestPortalService } from './modules/guest-portal/guest-portal.service.js';
 import { GuestGuard, GuestSessions } from './modules/guest-portal/guest-session.js';
@@ -52,7 +52,7 @@ import {
   PinController,
 } from './modules/devices/devices.controller.js';
 import { DevicesService } from './modules/devices/devices.service.js';
-import { KioskAuth } from './modules/devices/kiosk-auth.js';
+import { KioskAuth } from './modules/auth/kiosk-auth.js';
 import {
   DocumentRetentionController,
   EmployeeDocumentsController,
@@ -110,7 +110,7 @@ import { MaintenanceService } from './modules/maintenance/maintenance.service.js
 import { GuestMessagesService } from './modules/notifications/guest-messages.service.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
-import { RemindersService } from './modules/notifications/reminders.service.js';
+import { RemindersService } from './modules/jobs/reminders.service.js';
 import {
   ManagementController,
   PropertyReportsController,

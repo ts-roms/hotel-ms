@@ -11,11 +11,11 @@ import type {
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
+import { toMinor } from '../../common/money.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { fromLocal, localToday } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AttendanceService } from '../hr/attendance.service.js';
-import { toMinor } from '../pms/pricing.js';
 
 const signed = (v: bigint | null | undefined) => {
   const n = v ?? 0n;

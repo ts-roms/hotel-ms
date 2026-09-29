@@ -14,15 +14,15 @@ import {
   searchResultSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
+import { csvField } from '../../common/csv.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../common/zod.js';
-import { field } from '../hr/payroll.service.js';
 import { ManagementService } from './management.service.js';
 import { SearchService } from './search.service.js';
 
 const money = (minor: number) => (minor / 100).toFixed(2);
 const toCsv = (header: string[], rows: (string | number | null)[][]) =>
-  [header, ...rows].map((r) => r.map((v) => field(v)).join(',')).join('\r\n') + '\r\n';
+  [header, ...rows].map((r) => r.map((v) => csvField(v)).join(',')).join('\r\n') + '\r\n';
 
 function sendCsv(reply: FastifyReply, name: string, query: ReportRangeQuery, csv: string) {
   reply.header('content-type', 'text/csv; charset=utf-8');

@@ -12,12 +12,13 @@ import type {
 import { Prisma } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { daysBetween, nightsOf, toDbDate } from '../../common/dates.js';
+import { toMinor } from '../../common/money.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { readInventory } from './inventory.js';
-import { priceStay, toMinor } from './pricing.js';
+import { priceStay } from './pricing.js';
 
 const MAX_AVAILABILITY_DAYS = 62;
 const MAX_OVERRIDE_DAYS = 366;

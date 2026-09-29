@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   AssignmentRequest,
@@ -9,13 +8,13 @@ import type {
 } from '@hotel/contracts';
 import { Prisma, type Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { newToken, sha256 } from '../../common/crypto.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { ENV, type Env } from '../../config/env.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { AuditService } from '../audit/audit.service.js';
-import { sha256 } from '../auth/password.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import {
   assertAdministratorRemains,
@@ -167,7 +166,7 @@ export class MembersService {
     this.requireMfa();
     const organizationId = this.cls.get('organizationId')!;
     const actorId = this.cls.get('identityId')!;
-    const token = randomBytes(32).toString('base64url');
+    const token = newToken();
 
     const { member, organizationName, inviterName } = await this.db.run(async (tx) => {
       await lockOrganization(tx, organizationId);
@@ -258,7 +257,7 @@ export class MembersService {
     this.requireMfa();
     const organizationId = this.cls.get('organizationId')!;
     const actorId = this.cls.get('identityId')!;
-    const token = randomBytes(32).toString('base64url');
+    const token = newToken();
 
     const { member, organizationName, inviterName } = await this.db.run(async (tx) => {
       const row = await this.findVisible(tx, membershipId, 'member.invite');

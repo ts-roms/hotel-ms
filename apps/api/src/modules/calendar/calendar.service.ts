@@ -12,7 +12,7 @@ import type {
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
-import { Problems } from '../../common/problem.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { fromLocal, toLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
@@ -20,7 +20,6 @@ import { AuditService } from '../audit/audit.service.js';
 import { employeeName, HrAccess } from '../hr/hr-access.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
 
 const include = {
   participants: {

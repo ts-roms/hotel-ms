@@ -14,14 +14,13 @@ import type {
 import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
 import { withConstraintMapping } from '../../common/db-errors.js';
-import { Problems } from '../../common/problem.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import { fromLocal, toLocal } from '../../common/zoned-time.js';
 import { ENV, type Env } from '../../config/env.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 

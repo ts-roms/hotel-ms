@@ -8,12 +8,11 @@ import type {
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, toDbDate } from '../../common/dates.js';
-import { Problems } from '../../common/problem.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
 import { businessDateOf } from '../pms/rooms.service.js';
 import { recordRoomStatus } from './room-status.js';
 

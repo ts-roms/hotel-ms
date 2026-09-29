@@ -1,7 +1,7 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { hashPassword, verifyPassword } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { newToken, sha256 } from '../../common/crypto.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { ENV, type Env } from '../../config/env.js';
@@ -11,8 +11,6 @@ import { RateLimiter } from '../../infrastructure/redis.js';
 import { SessionService } from './session.service.js';
 
 const RESET_TOKEN_MINUTES = 30;
-
-export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 
 /** The password may not contain the email's local part (a common, guessable choice). */
 function assertAcceptablePassword(password: string, email: string): void {
@@ -59,7 +57,7 @@ export class PasswordService {
       return;
     }
 
-    const token = randomBytes(32).toString('base64url');
+    const token = newToken();
     const now = new Date();
     await this.prisma.platform.$transaction([
       this.prisma.platform.passwordResetToken.updateMany({

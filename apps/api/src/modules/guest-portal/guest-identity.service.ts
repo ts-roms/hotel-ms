@@ -14,17 +14,16 @@ import {
 import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../common/dates.js';
-import { ProblemException, Problems } from '../../common/problem.js';
+import { ProblemException, Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { matchesType } from '../../common/uploads.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
-import { matchesType } from '../hr/documents.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
-import { GuestInboxService } from './guest-inbox.service.js';
+import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 
 /** ID files are deleted this many days after the stay's departure date (ADR-0027). */
 export const GUEST_ID_RETENTION_DAYS = 30;

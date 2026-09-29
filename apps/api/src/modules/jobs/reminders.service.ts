@@ -4,7 +4,7 @@ import { fromLocal, toLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { GuestPortalService } from '../guest-portal/guest-portal.service.js';
-import { NotificationsService } from './notifications.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 /**
  * Daily reminders for one property (scheduled job after 09:00 local time, ADR-0024):

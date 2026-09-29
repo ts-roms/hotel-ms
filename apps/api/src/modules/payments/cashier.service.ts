@@ -3,13 +3,12 @@ import type { CashierShift } from '@hotel/contracts';
 import type { Prisma, Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { isUniqueViolation } from '../../common/db-errors.js';
-import { Problems } from '../../common/problem.js';
+import { toMinor } from '../../common/money.js';
+import { Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { toMinor } from '../pms/pricing.js';
-import { invalidState } from '../pms/reservations.service.js';
 
 const shiftInclude = {
   membership: { select: { identity: { select: { displayName: true } } } },

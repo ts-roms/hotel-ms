@@ -15,8 +15,10 @@ import {
 import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../common/dates.js';
-import { ProblemException, Problems } from '../../common/problem.js';
+import { nextNumber } from '../../common/numbering.js';
+import { ProblemException, Problems, invalidState } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { matchesType } from '../../common/uploads.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import {
   OBJECT_STORAGE,
@@ -24,10 +26,8 @@ import {
   type ObjectStorage,
 } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
-import { matchesType } from '../hr/documents.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { RoomsService } from '../pms/rooms.service.js';
-import { invalidState, nextNumber } from '../pms/reservations.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 
 const include = {

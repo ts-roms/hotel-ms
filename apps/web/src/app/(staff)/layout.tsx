@@ -192,11 +192,13 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
   if (!info?.activeOrganizationId || info.mfaPending) return <ShellSkeleton />;
   const org = info.memberships.find((m) => m.organizationId === info.activeOrganizationId);
 
-  // Keep the same page when switching property (/p/A/rooms → /p/B/rooms).
+  // Keep the same section when switching property (/p/A/rooms → /p/B/rooms). Record pages
+  // with no list of their own (/p/A/folios/X, /p/A/documents/Y) fall back to reservations.
   const switchProperty = (id: string) => {
     rememberProperty(id);
-    const section = routePropertyId ? pathname.split('/')[3] : 'reservations';
-    router.push(`/p/${id}/${section ?? 'reservations'}`);
+    const current = routePropertyId ? pathname.split('/')[3] : undefined;
+    const section = PROPERTY_NAV.some((i) => i.href === current) ? current : 'reservations';
+    router.push(`/p/${id}/${section}`);
   };
 
   const allowed = (i: NavItem) => !i.permission || hasPermission(info, i.permission);

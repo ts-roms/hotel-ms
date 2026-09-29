@@ -2,12 +2,12 @@ import { Injectable } from '@nestjs/common';
 import type { InvitationPreview } from '@hotel/contracts';
 import { hashPassword } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
+import { sha256 } from '../../common/crypto.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
-import { sha256 } from '../auth/password.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 
 interface OpenInvitation {

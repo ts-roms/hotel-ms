@@ -62,12 +62,12 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
 import { IdempotencyService } from '../../common/idempotency.js';
+import { formatMinor, toMinor } from '../../common/money.js';
 import { uuidParam } from '../../common/params.js';
 import { GuestRoute, Public, RequirePermission, Webhook } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { ENV, type Env } from '../../config/env.js';
 import { FolioService } from '../folio/folio.service.js';
-import { toMinor } from '../pms/pricing.js';
 import { CashierService } from './cashier.service.js';
 import { DocumentsService } from './documents.service.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
@@ -527,10 +527,7 @@ export class SandboxGatewayController {
     this.sandbox();
     const intent = await this.payments.findByReference('sandbox', reference);
     if (!intent) throw new NotFoundException();
-    const amount = new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: intent.currency,
-    }).format(toMinor(intent.amountMinor) / 100);
+    const amount = formatMinor(intent.amountMinor, intent.currency);
     const base = `/api/v1/sandbox-gateway/checkout/${encodeURIComponent(reference)}`;
     const verb = intent.kind === 'HOLD' ? 'Authorize a hold of' : 'Pay';
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sandbox checkout</title></head>

@@ -15,13 +15,12 @@ import type {
 import type { Prisma, Tx } from '@hotel/database';
 import { addDays, daysBetween, fromDbDate, toDbDate } from '../../common/dates.js';
 import { isUniqueViolation } from '../../common/db-errors.js';
-import { ProblemException, Problems } from '../../common/problem.js';
+import { ProblemException, Problems, invalidState } from '../../common/problem.js';
 import { localToday } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { invalidState } from '../pms/reservations.service.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 import { toShiftDto } from './schedule.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
