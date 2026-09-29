@@ -36,7 +36,7 @@ import { LostFoundController } from './modules/operations/lost-found/lost-found.
 import { MaintenanceController } from './modules/operations/maintenance/maintenance.controller.js';
 import { OpsController } from './modules/ops/ops.controller.js';
 import { GuestsController } from './modules/pms/guests/guests.controller.js';
-import { InventoryController } from './modules/pms/inventory/inventory.controller.js';
+import { InventoryController } from './modules/pms/inventory.controller.js';
 import { ReservationsController } from './modules/pms/reservations/reservations.controller.js';
 import { GuestImagesController } from './modules/privacy/guest-images.controller.js';
 import { ImagesController } from './modules/privacy/images.controller.js';

@@ -46,12 +46,12 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../../common/etag.js';
-import { uuidParam } from '../../../common/params.js';
-import { RequirePermission } from '../../../common/route-metadata.js';
-import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
-import { RatesService } from '../pricing/rates.service.js';
-import { RoomsService } from './rooms.service.js';
+import { parseIfMatch, weakEtag } from '../../common/etag.js';
+import { uuidParam } from '../../common/params.js';
+import { RequirePermission } from '../../common/route-metadata.js';
+import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
+import { RatesService } from './pricing/rates.service.js';
+import { RoomsService } from './inventory/rooms.service.js';
 
 /** Property configuration and inventory. Every route is scoped to :propertyId. */
 @ApiTags('inventory')

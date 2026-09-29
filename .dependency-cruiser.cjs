@@ -4,17 +4,79 @@
  *
  * @type {import('dependency-cruiser').IConfiguration}
  */
+
+/**
+ * The API's bounded contexts (apps/api/src/modules/<context>/, ADR-0031), in dependency
+ * order: a context may import only contexts listed before it. That keeps the context
+ * graph, and the Nest module imports that follow it, free of cycles. A new dependency
+ * that points forward means either moving the context in this list (if nothing on the
+ * way depends back on it) or moving the feature to the context that owns it.
+ */
+const API_CONTEXTS = [
+  // Shared kernel and platform tooling
+  'audit',
+  'outbox',
+  'health',
+  'ops',
+  // Platform, access and tenancy
+  'access',
+  'auth',
+  'tenancy',
+  // Messaging
+  'notifications',
+  // Core domains
+  'pms',
+  'operations',
+  'finance',
+  'front-office',
+  'hr',
+  // Guest experience, add-ons and read models
+  'guest-portal',
+  'fnb',
+  'privacy',
+  'devices',
+  'calendar',
+  'management',
+  // Scheduled jobs call into everything
+  'jobs',
+];
+
+const contextPath = (names) => `^apps/api/src/modules/(${names.join('|')})/`;
+
 module.exports = {
   forbidden: [
-    {
+    ...API_CONTEXTS.slice(0, -1).map((context, index) => ({
       name: 'no-api-module-cycles',
       comment:
-        'API modules may not depend on each other in a cycle (a → b → … → a). Put shared ' +
-        'helpers in common/ or infrastructure/, and move a feature to the module that owns it.',
+        `The ${context} context may only import contexts listed before it in API_CONTEXTS ` +
+        '(.dependency-cruiser.cjs), so contexts never depend on each other in a cycle. ' +
+        "Call the other context's exported service, put shared helpers in common/ or " +
+        'infrastructure/, or move the feature to the context that owns it.',
+      severity: 'error',
+      from: { path: contextPath([context]) },
+      to: { path: contextPath(API_CONTEXTS.slice(index + 1)) },
+    })),
+    {
+      name: 'api-context-listed',
+      comment: 'Every folder under apps/api/src/modules/ is a context listed in API_CONTEXTS.',
+      severity: 'error',
+      from: { path: '^apps/api/src/modules/', pathNot: contextPath(API_CONTEXTS) },
+      to: {},
+    },
+    {
+      name: 'no-api-subcontext-cycles',
+      comment:
+        'Folders inside a context (e.g. finance/folio, operations/housekeeping) may not ' +
+        'depend on each other in a cycle. Exception: hr/workforce and hr/time, which ' +
+        'HrController (leave configuration) and PropertyHrController (birthdays) couple ' +
+        'both ways (ADR-0031).',
       severity: 'error',
       scope: 'folder',
-      from: { path: '^apps/api/src/modules/[^/]+$' },
-      to: { path: '^apps/api/src/modules/[^/]+$', circular: true },
+      from: {
+        path: '^apps/api/src/modules/[^/]+/[^/]+',
+        pathNot: '^apps/api/src/modules/hr/(workforce|time)$',
+      },
+      to: { path: '^apps/api/src/modules/[^/]+/[^/]+', circular: true },
     },
     {
       name: 'no-shared-kernel-to-modules',
