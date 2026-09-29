@@ -64,7 +64,9 @@ module "platform" {
   certificate_arn       = var.certificate_arn
   guest_domain_name     = var.guest_domain_name
   guest_certificate_arn = var.guest_certificate_arn
-  # Staging takes test payments through the sandbox gateway (ADR-0016).
+  # Staging takes test payments through the sandbox gateway (ADR-0016). With PayMongo
+  # test keys in the hotel-staging/paymongo secret, set payment_provider = "paymongo".
+  payment_provider            = "sandbox"
   payment_sandbox_enabled     = true
   email_domain                = var.email_domain
   email_from                  = "Hotel Platform (staging) <no-reply@${var.email_domain}>"

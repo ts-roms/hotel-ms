@@ -10,7 +10,7 @@ export async function credentials(): Promise<{ email: string; password: string }
   if (process.env.E2E_EMAIL && process.env.E2E_PASSWORD)
     return { email: process.env.E2E_EMAIL, password: process.env.E2E_PASSWORD };
   if (process.env.E2E_DEMO === 'false') return null;
-  const { DEMO_PASSWORD } = await import('@hotel/database');
+  const { DEMO_PASSWORD } = await import('@hotel/database/testing');
   return { email: 'reception@abc.test', password: DEMO_PASSWORD };
 }
 

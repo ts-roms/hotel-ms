@@ -28,6 +28,16 @@ variable "guest_certificate_arn" {
   default     = null
 }
 
+variable "payment_provider" {
+  description = "Gateway for new online payments: \"sandbox\", \"paymongo\" (ADR-0032), or null for none."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.payment_provider == null || contains(["sandbox", "paymongo"], coalesce(var.payment_provider, "none"))
+    error_message = "payment_provider must be \"sandbox\", \"paymongo\" or null."
+  }
+}
+
 variable "payment_sandbox_enabled" {
   description = "Serve the built-in sandbox payment gateway (ADR-0016). Never in production."
   type        = bool

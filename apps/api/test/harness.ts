@@ -40,7 +40,7 @@ let ipCounter = 0;
  * Fresh test database (migrations + demo world), a dedicated Redis logical DB, and an
  * in-process app driven through Fastify inject (no network).
  */
-export async function startTestApp(): Promise<TestContext> {
+export async function startTestApp(overrides: NodeJS.ProcessEnv = {}): Promise<TestContext> {
   const world = await prepareTestDatabase();
   const urls = testDatabaseUrls();
 
@@ -70,6 +70,7 @@ export async function startTestApp(): Promise<TestContext> {
     TENANT_JOBS_ENABLED: 'false',
     STORAGE_DRIVER: 'local',
     STORAGE_LOCAL_DIR: join(tmpdir(), 'hotel-test-storage', randomUUID()),
+    ...overrides,
   });
   const app = await createApp(env);
   await app.init();

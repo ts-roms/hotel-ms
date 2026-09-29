@@ -31,7 +31,8 @@
   `PAYMENT_SANDBOX_ENABLED=true` and a real `PAYMENT_SANDBOX_SECRET`, or the API refuses
   to start.
 - A real adapter (PayMongo, Xendit, Adyen or Stripe, per D6) is a new class plus its
-  signature scheme. It needs the provider choice and merchant credentials.
+  signature scheme. It needs the provider choice and merchant credentials. PayMongo was
+  added in ADR-0032.
 
 **Intents and webhooks.**
 
@@ -143,7 +144,7 @@
   - the daily report;
   - reconciliation.
 - Not built yet:
-  - a real gateway adapter (needs D6 credentials);
+  - a real gateway adapter (PayMongo since ADR-0032);
   - asynchronous refund completion;
   - foreign-currency cash (tendered currency and rate);
   - pre-authorizations and deposits for self check-in;
