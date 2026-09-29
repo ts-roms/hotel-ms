@@ -1,10 +1,9 @@
 'use client';
 
 import { formatDate, formatTime, localDate } from '@hotel/format';
-import { CardContent } from '@hotel/ui';
+import { CardContent, SectionCard } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, PartyPopper } from 'lucide-react';
-import { Section } from '@/components/section';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -15,7 +14,7 @@ export function HotelEvents({ timeZone }: { timeZone: string }) {
   const day = (iso: string) => formatDate(localDate(iso, timeZone));
   const time = (iso: string) => formatTime(iso, { timeZone });
   return (
-    <Section icon={<PartyPopper />} title={t('events.title')}>
+    <SectionCard variant="badge" icon={PartyPopper} title={t('events.title')}>
       <CardContent className="flex flex-col gap-3">
         {events.data.map((e) => (
           <div key={e.id} className="flex flex-col gap-0.5 rounded-xl border p-3">
@@ -34,6 +33,6 @@ export function HotelEvents({ timeZone }: { timeZone: string }) {
           </div>
         ))}
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

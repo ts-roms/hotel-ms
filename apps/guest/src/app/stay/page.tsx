@@ -6,7 +6,7 @@ import { Alert, buttonVariants, DocumentTitle } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-import { BrandMark } from '@/components/guest-shell';
+import { GuestBrandMark } from '@/components/guest-shell';
 import { api, errorMessage, rememberStay } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { CheckoutRequest } from './_components/checkout-request';
@@ -51,7 +51,7 @@ export default function StayPage() {
     return (
       <StayShell>
         <div className="flex flex-col items-center gap-6 pt-16">
-          <BrandMark />
+          <GuestBrandMark />
           <Alert className="w-full">
             {signedOut ? t('stay.signedOut') : errorMessage(stay.error)}
           </Alert>

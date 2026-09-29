@@ -1,11 +1,10 @@
 'use client';
 
 import { type GuestStay } from '@hotel/contracts';
-import { Alert, Button, CardContent, Input, Label } from '@hotel/ui';
+import { Alert, Button, CardContent, Input, Label, SectionCard } from '@hotel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LogOut } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -24,8 +23,9 @@ export function CheckoutRequest({ stay: s }: { stay: GuestStay }) {
   });
   if (s.checkoutRequested) {
     return (
-      <Section
-        icon={<LogOut />}
+      <SectionCard
+        variant="badge"
+        icon={LogOut}
         title={t('checkout.requestedTitle')}
         description={t('checkout.requestedDescription')}
       />
@@ -36,8 +36,9 @@ export function CheckoutRequest({ stay: s }: { stay: GuestStay }) {
     request.mutate();
   };
   return (
-    <Section
-      icon={<LogOut />}
+    <SectionCard
+      variant="badge"
+      icon={LogOut}
       title={t('checkout.title')}
       description={t('checkout.description', { time: s.property.checkOutTime })}
     >
@@ -69,6 +70,6 @@ export function CheckoutRequest({ stay: s }: { stay: GuestStay }) {
           </Button>
         </form>
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

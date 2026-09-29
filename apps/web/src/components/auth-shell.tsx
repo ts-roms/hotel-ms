@@ -1,7 +1,7 @@
-import { cn, ShellCard } from '@hotel/ui';
+import { BrandMark, cn, ShellCard } from '@hotel/ui';
 import type { ReactNode } from 'react';
 import { t } from '@/lib/i18n';
-import { BrandMark } from './brand';
+import { Hotel } from 'lucide-react';
 
 /**
  * Soft gradient backdrop with the brand above a centered column. The `(auth)` route group's
@@ -13,7 +13,7 @@ export function AuthBackdrop({ children }: { children: ReactNode }) {
       <div aria-hidden="true" className="grid-pattern pointer-events-none absolute inset-0" />
       <div className="relative flex w-full flex-col items-center">
         <div className="mb-6 flex animate-fade-in items-center justify-center gap-2.5">
-          <BrandMark />
+          <BrandMark icon={Hotel} />
           <span className="text-lg font-semibold tracking-tight">{t('app.name')}</span>
         </div>
         {children}

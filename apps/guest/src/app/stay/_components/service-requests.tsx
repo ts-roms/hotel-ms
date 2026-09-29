@@ -11,13 +11,13 @@ import {
   Label,
   LoadingRegion,
   NativeSelect,
+  SectionCard,
   Skeleton,
   StarRating,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Send, Star } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -58,7 +58,7 @@ export function ServiceRequests() {
     create.mutate();
   };
   return (
-    <Section icon={<BellRing />} title={t('requests.title')}>
+    <SectionCard variant="badge" icon={BellRing} title={t('requests.title')}>
       <CardContent className="flex flex-col gap-4">
         <form onSubmit={onSubmit} className="flex flex-col gap-3" noValidate>
           {create.error && <Alert>{errorMessage(create.error)}</Alert>}
@@ -128,6 +128,6 @@ export function ServiceRequests() {
           })}
         </ul>
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

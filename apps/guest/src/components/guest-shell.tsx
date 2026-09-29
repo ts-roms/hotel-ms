@@ -1,16 +1,10 @@
-import { ShellCard } from '@hotel/ui';
+import { BrandMark, ShellCard } from '@hotel/ui';
 import { House } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export function BrandMark() {
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex size-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-info text-primary-foreground shadow-lg shadow-primary/30"
-    >
-      <House className="size-6" />
-    </span>
-  );
+/** The guest portal's logo tile. */
+export function GuestBrandMark() {
+  return <BrandMark icon={House} size="lg" />;
 }
 
 /** Centered card for the screens a guest sees before their stay loads. */
@@ -27,7 +21,7 @@ export function GuestShell({
     <main className="flex min-h-dvh items-center justify-center p-4">
       <div className="flex w-full max-w-sm flex-col items-center gap-6">
         <div className="animate-fade-in">
-          <BrandMark />
+          <GuestBrandMark />
         </div>
         <ShellCard title={title} description={description}>
           {children}

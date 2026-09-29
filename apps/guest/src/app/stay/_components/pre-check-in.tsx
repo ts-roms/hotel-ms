@@ -1,11 +1,10 @@
 'use client';
 
 import { type GuestStay } from '@hotel/contracts';
-import { Alert, Button, Card, CardContent, Input, Label, Textarea } from '@hotel/ui';
+import { Alert, Button, Card, CardContent, Input, Label, SectionCard, Textarea } from '@hotel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, Clock } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage, rememberStay } from '@/lib/api';
 import { rich, t } from '@/lib/i18n';
 
@@ -47,8 +46,9 @@ export function PreCheckIn({ stay: s }: { stay: GuestStay }) {
     save.mutate();
   };
   return (
-    <Section
-      icon={<Clock />}
+    <SectionCard
+      variant="badge"
+      icon={Clock}
       title={t('preCheckIn.title')}
       description={t('preCheckIn.description')}
     >
@@ -88,6 +88,6 @@ export function PreCheckIn({ stay: s }: { stay: GuestStay }) {
           </Button>
         </form>
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

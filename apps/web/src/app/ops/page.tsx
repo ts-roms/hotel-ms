@@ -9,9 +9,11 @@ import {
   CardContent,
   cn,
   EmptyState,
+  Notice,
   PageHeader,
   SectionCard,
   SkeletonCard,
+  StatCard,
   Table,
   TableBody,
   TableCell,
@@ -23,7 +25,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, ArrowLeft, Inbox, ListRestart, Webhook } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
@@ -82,17 +84,6 @@ export default function OpsPage() {
   );
 }
 
-function Stat({ label, value, alert }: { label: string; value: ReactNode; alert?: boolean }) {
-  return (
-    <div className={cn('rounded-lg border p-3', alert && 'border-destructive/50 bg-destructive/5')}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn('text-xl font-semibold tabular-nums', alert && 'text-destructive')}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
   const queryClient = useQueryClient();
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['ops-overview'] });
@@ -115,9 +106,7 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
       {(retryJob.error || retryOutbox.error) && (
         <Alert>{errorMessage(retryJob.error ?? retryOutbox.error)}</Alert>
       )}
-      {(retryJob.isSuccess || retryOutbox.isSuccess) && (
-        <Alert className="border-primary/30 bg-primary/5 text-foreground">{t('ops.retried')}</Alert>
-      )}
+      {(retryJob.isSuccess || retryOutbox.isSuccess) && <Notice>{t('ops.retried')}</Notice>}
 
       <SectionCard icon={ListRestart} title={t('ops.queues')}>
         <CardContent className="flex flex-col gap-3 text-sm">
@@ -189,14 +178,20 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
       <SectionCard icon={Inbox} title={t('ops.outbox')}>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="grid gap-2 sm:grid-cols-4">
-            <Stat label={t('ops.pending')} value={s.outbox.pending} />
-            <Stat
+            <StatCard compact label={t('ops.pending')} value={s.outbox.pending} />
+            <StatCard
+              compact
               label={t('ops.oldestPending')}
               value={s.outbox.oldestPendingAt ? timeSince(s.outbox.oldestPendingAt) : '—'}
               alert={backlogMinutes > 5}
             />
-            <Stat label={t('ops.retrying')} value={s.outbox.retrying} />
-            <Stat label={t('ops.stuck')} value={s.outbox.stuck} alert={s.outbox.stuck > 0} />
+            <StatCard compact label={t('ops.retrying')} value={s.outbox.retrying} />
+            <StatCard
+              compact
+              label={t('ops.stuck')}
+              value={s.outbox.stuck}
+              alert={s.outbox.stuck > 0}
+            />
           </div>
           {s.outbox.failures.map((f) => (
             <div
@@ -234,13 +229,15 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
       <SectionCard icon={Webhook} title={t('ops.webhooks')}>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="grid gap-2 sm:grid-cols-3">
-            <Stat label={t('ops.received24h')} value={s.webhooks.received24h} />
-            <Stat
+            <StatCard compact label={t('ops.received24h')} value={s.webhooks.received24h} />
+            <StatCard
+              compact
               label={t('ops.failed24h')}
               value={s.webhooks.failed24h}
               alert={s.webhooks.failed24h > 0}
             />
-            <Stat
+            <StatCard
+              compact
               label={t('ops.unprocessed')}
               value={s.webhooks.unprocessed}
               alert={s.webhooks.unprocessed > 0}

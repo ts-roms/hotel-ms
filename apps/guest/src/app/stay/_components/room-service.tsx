@@ -13,12 +13,10 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  Notice,
   NativeSelect,
+  Notice,
+  SectionCard,
   SkeletonCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -84,18 +82,16 @@ export function RoomService() {
     setCart(cart.map((l, i) => (i === index ? { ...l, ...change } : l)));
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-3 text-base">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <UtensilsCrossed className="size-4" />
-          </span>
-          {menu.outlet.name}
-          <Badge variant={menu.open ? 'success' : 'neutral'} dot className="ml-auto">
-            {menu.open ? t('roomService.open') : t('roomService.closed')}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
+    <SectionCard
+      variant="badge"
+      icon={UtensilsCrossed}
+      title={menu.outlet.name}
+      actions={
+        <Badge variant={menu.open ? 'success' : 'neutral'} dot>
+          {menu.open ? t('roomService.open') : t('roomService.closed')}
+        </Badge>
+      }
+    >
       <CardContent className="flex flex-col gap-5 text-sm">
         {!menu.open && <Notice>{t('roomService.closedNotice')}</Notice>}
         {menu.categories.map((c) => (
@@ -178,6 +174,6 @@ export function RoomService() {
 
         <RoomServiceOrders orders={orders.data} />
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

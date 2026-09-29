@@ -3,13 +3,14 @@
 import type { Property, SessionInfo } from '@hotel/contracts';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BrandMark } from '@/components/brand';
 import { t } from '@/lib/i18n';
 import { canOpen, canOpenAt, HOME_NAV, ME_NAV, OPS_NAV, ORG_NAV, PROPERTY_NAV } from '@/lib/nav';
 import { NavGroup } from './nav-group';
 import { PropertySwitcher } from './property-switcher';
 import { SidebarSearch } from './sidebar-search';
 import { UserFooter } from './user-footer';
+import { BrandMark } from '@hotel/ui';
+import { Hotel } from 'lucide-react';
 
 /** Sidebar content, shared by the desktop rail and the mobile drawer. */
 export function Sidebar({
@@ -45,7 +46,7 @@ export function Sidebar({
   return (
     <div className="flex h-full flex-col gap-4 p-4">
       <Link href="/dashboard" className="flex items-center gap-3 rounded-lg px-1 py-1">
-        <BrandMark />
+        <BrandMark icon={Hotel} />
         <div className="flex min-w-0 flex-col leading-tight">
           <span className="text-xs text-muted-foreground">{t('app.name')}</span>
           <span className="truncate font-semibold">{organizationName}</span>
