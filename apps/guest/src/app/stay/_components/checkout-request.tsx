@@ -9,7 +9,7 @@ import { Section } from '@/components/section';
 import { api, errorMessage } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
-/** "Ready to leave?": asks the front desk to prepare the checkout. */
+/** "Ready to leave?": asks the front desk to prepare the checkout (ADR-0027). */
 export function CheckoutRequest({ stay: s }: { stay: GuestStay }) {
   const queryClient = useQueryClient();
   const [time, setTime] = useState('');

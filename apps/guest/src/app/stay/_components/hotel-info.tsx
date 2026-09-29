@@ -8,7 +8,10 @@ import { Section } from '@/components/section';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
-/** About the hotel: what it offers, its services, the Wi-Fi once checked in, house rules. */
+/**
+ * About the hotel (ADR-0027): what it offers, its services, the Wi-Fi once checked in, house
+ * rules.
+ */
 export function HotelInfo({ stay: s }: { stay: GuestStay }) {
   // The Wi-Fi appears once the guest is verified and in house: refetch when either changes.
   const info = useQuery({

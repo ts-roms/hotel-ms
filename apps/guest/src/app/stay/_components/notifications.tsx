@@ -17,7 +17,10 @@ const timeAgo = (iso: string) => {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 };
 
-/** Updates from the hotel: requests, orders, the ID review, checkout, front desk messages. */
+/**
+ * Updates from the hotel (ADR-0027): requests, orders, the ID review, checkout, front desk
+ * messages.
+ */
 export function Notifications({ unread }: { unread: number }) {
   const queryClient = useQueryClient();
   const [all, setAll] = useState(false);
