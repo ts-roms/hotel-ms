@@ -14,6 +14,7 @@ import { fromDbDate, toDbDate } from '../../../common/dates.js';
 import { Problems } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
 import { acceptUpload } from '../../../common/uploads.js';
+import { purgeOn } from './document-retention.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import {
   OBJECT_STORAGE,
@@ -36,16 +37,6 @@ const VISIBLE = {
   deletedAt: null,
 } satisfies Prisma.EmployeeDocumentWhereInput;
 
-/** Termination date + N months (clamped to the month's last day), as YYYY-MM-DD. */
-export function purgeOn(terminatedOn: Date | null, months: number | null): string | null {
-  if (!terminatedOn || months === null) return null;
-  const y = terminatedOn.getUTCFullYear();
-  const m = terminatedOn.getUTCMonth() + months;
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(y, m, Math.min(terminatedOn.getUTCDate(), lastDay)))
-    .toISOString()
-    .slice(0, 10);
-}
 type DocumentRow = Prisma.EmployeeDocumentGetPayload<object>;
 
 const PERMISSION = 'employee.documents';

@@ -270,3 +270,36 @@ export class GuestClient {
     return this.cookie;
   }
 }
+
+/**
+ * A guest on the portal for a booking: the front desk (`staff`) sends the portal link, the
+ * guest opens a session from the emailed link and, unless `verified: false`, confirms the
+ * emailed code (needed for the bill, payments, requests and self check-in).
+ */
+export async function guestSession(
+  ctx: TestContext,
+  staff: TestClient,
+  input: { propertyId: string; reservationId: string; email: string; verified?: boolean },
+): Promise<GuestClient> {
+  const link = await staff.request(
+    'POST',
+    `/api/v1/properties/${input.propertyId}/reservations/${input.reservationId}/guest-portal-link`,
+  );
+  if (link.status !== 204)
+    throw new Error(`Portal link: ${link.status} ${JSON.stringify(link.body)}`);
+  const mail = await ctx.mailbox.latestFor(input.email, 'guest-portal-link');
+  if (!mail) throw new Error(`No portal link was mailed to ${input.email}`);
+  const guest = new GuestClient(ctx.app);
+  const token = Mailbox.tokenFrom((mail.data as { portalUrl: string }).portalUrl);
+  const session = await guest.request('POST', '/guest/session', { token });
+  if (session.status !== 200) throw new Error(`Guest session: ${session.status}`);
+  if (input.verified === false) return guest;
+  const sent = await guest.request('POST', '/guest/verification');
+  if (sent.status !== 204) throw new Error(`Verification code: ${sent.status}`);
+  const code = await ctx.mailbox.latestFor(input.email, 'guest-verification-code');
+  const confirmed = await guest.request('POST', '/guest/verification/confirm', {
+    code: (code!.data as { code: string }).code,
+  });
+  if (confirmed.status !== 200) throw new Error(`Verification: ${confirmed.status}`);
+  return guest;
+}

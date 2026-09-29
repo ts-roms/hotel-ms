@@ -9,7 +9,7 @@ import { createPrismaClient, withDbContext } from '@hotel/database';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SandboxProvider } from '../src/modules/finance/payments/sandbox.provider.js';
-import { Mailbox, startTestApp, type TestContext, TestClient } from './harness.js';
+import { guestSession, startTestApp, type TestContext, TestClient } from './harness.js';
 
 let ctx: TestContext;
 let admin: TestClient;
@@ -227,44 +227,17 @@ describe('online payments', () => {
       'portal-payer@example.test',
     );
     await charge(guestFolio, 'ROOM', 350_000);
-    expect(
-      (await reception.request('POST', `${base()}/reservations/${bookingId}/guest-portal-link`))
-        .status,
-    ).toBe(204);
-    const mail = await ctx.mailbox.latestFor('portal-payer@example.test', 'guest-portal-link');
-    const cookieJar: { cookie?: string; csrf?: string } = {};
-    const guest = async (
+    const session = await guestSession(ctx, reception, {
+      propertyId: MNL(),
+      reservationId: bookingId,
+      email: 'portal-payer@example.test',
+    });
+    const guest = (
       method: 'GET' | 'POST',
       url: string,
       payload?: unknown,
       headers: Record<string, string> = {},
-    ) => {
-      const res = await ctx.app.inject({
-        method,
-        url: `/api/v1${url}`,
-        ...(payload === undefined ? {} : { payload: payload as object }),
-        headers: {
-          origin: 'http://localhost:43200',
-          ...(cookieJar.cookie ? { cookie: cookieJar.cookie } : {}),
-          ...(cookieJar.csrf && method !== 'GET' ? { 'x-csrf-token': cookieJar.csrf } : {}),
-          ...headers,
-        },
-      });
-      const c = res.cookies.find((x) => x.name === 'hotel_guest');
-      if (c) cookieJar.cookie = `hotel_guest=${c.value}`;
-      const body = res.body ? JSON.parse(res.body) : null;
-      if (body?.csrfToken) cookieJar.csrf = body.csrfToken;
-      return { status: res.statusCode, body };
-    };
-    await guest('POST', '/guest/session', {
-      token: Mailbox.tokenFrom((mail!.data as { portalUrl: string }).portalUrl),
-    });
-    await guest('POST', '/guest/verification');
-    const code = (
-      (await ctx.mailbox.latestFor('portal-payer@example.test', 'guest-verification-code'))!
-        .data as { code: string }
-    ).code;
-    expect((await guest('POST', '/guest/verification/confirm', { code })).status).toBe(200);
+    ) => session.request(method, url, payload, headers);
 
     expect((await guest('POST', '/guest/payments', { amountMinor: 999_999 }, idem())).status).toBe(
       400,
