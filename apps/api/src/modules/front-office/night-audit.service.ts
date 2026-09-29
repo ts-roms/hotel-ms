@@ -10,8 +10,8 @@ import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { releaseInventory } from '../pms/inventory/inventory.js';
 import { businessDateOf, RoomsService } from '../pms/inventory/rooms.service.js';
+import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { frontDeskInclude, toFrontDeskItem } from './front-office.service.js';
 import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
 
@@ -41,6 +41,7 @@ export class NightAuditService {
     private readonly cls: ClsService<RequestContext>,
     private readonly rooms: RoomsService,
     private readonly housekeeping: HousekeepingService,
+    private readonly reservations: ReservationsService,
   ) {}
 
   private get ctx() {
@@ -103,23 +104,7 @@ export class NightAuditService {
         }
 
         // 2. No-shows.
-        for (const line of noShows) {
-          const nights = await tx.reservationNight.findMany({
-            where: { reservationRoomId: line.id },
-            select: { stayDate: true },
-          });
-          await releaseInventory(tx, [
-            { roomTypeId: line.roomTypeId, dates: nights.map((n) => fromDbDate(n.stayDate)) },
-          ]);
-          await tx.roomAssignment.updateMany({
-            where: { reservationRoomId: line.id, releasedAt: null },
-            data: { releasedAt: new Date() },
-          });
-          await tx.reservationRoom.update({
-            where: { id: line.id },
-            data: { status: 'NO_SHOW', version: { increment: 1 } },
-          });
-        }
+        for (const line of noShows) await this.reservations.markNoShowInTx(tx, line);
 
         // 3. Room charges for tonight. 4. Stayover housekeeping for tomorrow.
         const tomorrow = addDays(businessDate, 1);

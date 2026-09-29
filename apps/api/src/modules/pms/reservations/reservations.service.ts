@@ -502,6 +502,78 @@ export class ReservationsService {
     return toReservationDto(row);
   }
 
+  // ---- Stay lifecycle (called by Front Office: check-in/out, night audit) ---------------
+  // All run inside the caller's transaction; the caller checks the rules and records the
+  // audit entry and event of the whole check-in, check-out or audit.
+
+  /** The line's status on check-in (IN_HOUSE) or check-out (CHECKED_OUT). */
+  async setStayStatusInTx(
+    tx: Tx,
+    reservationRoomId: string,
+    status: 'IN_HOUSE' | 'CHECKED_OUT',
+  ): Promise<void> {
+    await tx.reservationRoom.update({
+      where: { id: reservationRoomId },
+      data: { status, version: { increment: 1 } },
+    });
+  }
+
+  /** Early departure: release unused nights (from today) and free the room from today. */
+  async shortenLineInTx(
+    tx: Tx,
+    line: ReservationRow['rooms'][number],
+    businessDate: string,
+  ): Promise<void> {
+    const departure = fromDbDate(line.departureDate);
+    if (businessDate >= departure) return;
+    const unused = nightsOf(businessDate, departure);
+    await releaseInventory(tx, [{ roomTypeId: line.roomTypeId, dates: unused }]);
+    await tx.reservationNight.deleteMany({
+      where: { reservationRoomId: line.id, stayDate: { gte: toDbDate(businessDate) } },
+    });
+    const arrival = fromDbDate(line.arrivalDate);
+    const assignment = line.assignments[0];
+    if (assignment) {
+      if (businessDate > arrival) {
+        await tx.roomAssignment.update({
+          where: { id: assignment.id },
+          data: { endDate: toDbDate(businessDate) },
+        });
+      } else {
+        // Leaving on the arrival day: no night was stayed.
+        await tx.roomAssignment.update({
+          where: { id: assignment.id },
+          data: { releasedAt: new Date() },
+        });
+      }
+    }
+    if (businessDate > arrival) {
+      await tx.reservationRoom.update({
+        where: { id: line.id },
+        data: { departureDate: toDbDate(businessDate) },
+      });
+    }
+  }
+
+  /** No-show: gives the line's nights back to sale, frees its room and marks it NO_SHOW. */
+  async markNoShowInTx(tx: Tx, line: { id: string; roomTypeId: string }): Promise<void> {
+    const nights = await tx.reservationNight.findMany({
+      where: { reservationRoomId: line.id },
+      select: { stayDate: true },
+    });
+    await releaseInventory(tx, [
+      { roomTypeId: line.roomTypeId, dates: nights.map((n) => fromDbDate(n.stayDate)) },
+    ]);
+    await tx.roomAssignment.updateMany({
+      where: { reservationRoomId: line.id, releasedAt: null },
+      data: { releasedAt: new Date() },
+    });
+    await tx.reservationRoom.update({
+      where: { id: line.id },
+      data: { status: 'NO_SHOW', version: { increment: 1 } },
+    });
+  }
+
   // ---- Modify ---------------------------------------------------------------------------
 
   /**
