@@ -5,9 +5,9 @@
  * - `blocks/`     — app-level compositions built from the primitives (page header, stat card, ...).
  *
  * Components use semantic color tokens (bg-primary, text-muted-foreground, ...) and animation
- * tokens (animate-shimmer, animate-fade-in, ...) defined by each app's Tailwind theme, so the
- * guest portal can brand them differently from the staff app. Import from the package root or
- * from a single component path, e.g. `@hotel/ui/components/button`.
+ * tokens (animate-shimmer, animate-fade-in, ...). `@hotel/ui/theme.css` maps them and defines
+ * the motion; each app sets only the color values, so the guest portal can brand them
+ * differently from the staff app. Import components from the package root.
  */
 export { cn } from './lib/utils.js';
 
