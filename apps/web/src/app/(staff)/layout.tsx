@@ -16,6 +16,8 @@ import {
 } from '@hotel/ui';
 import {
   Activity,
+  FileUp,
+  UserX,
   ArrowLeftRight,
   BedDouble,
   BellRing,
@@ -134,6 +136,7 @@ const PROPERTY_NAV: NavItem[] = [
     icon: Landmark,
     permission: 'exchange_rate.manage',
   },
+  { href: 'import', label: 'nav.import', icon: FileUp, permission: 'guest.update' },
   {
     href: 'guest-portal',
     label: 'nav.guestPortal',
@@ -155,6 +158,7 @@ const ORG_NAV: NavItem[] = [
   },
   { href: '/members', label: 'nav.members', icon: Users, permission: 'member.read' },
   { href: '/roles', label: 'nav.roles', icon: ShieldCheck, permission: 'role.read' },
+  { href: '/privacy', label: 'nav.privacy', icon: UserX, permission: 'privacy.manage' },
   { href: '/settings/security', label: 'nav.security', icon: KeyRound },
 ];
 

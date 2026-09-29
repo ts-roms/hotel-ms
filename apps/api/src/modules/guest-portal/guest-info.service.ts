@@ -88,6 +88,11 @@ export class GuestInfoService {
       });
       const p = await tx.property.findUniqueOrThrow({ where: { id: line.propertyId } });
       const s = await guestPortalSettingsInTx(tx, line.propertyId);
+      const images = await tx.propertyImage.findMany({
+        where: { propertyId: line.propertyId },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        select: { id: true, caption: true, sha256: true },
+      });
       const showWifi = guest.verified && line.status === 'IN_HOUSE' && s.wifiName !== '';
       return {
         name: p.name,
@@ -103,6 +108,11 @@ export class GuestInfoService {
         amenities: s.amenities,
         services: s.services,
         houseRules: s.houseRules,
+        images: images.map((i) => ({
+          id: i.id,
+          caption: i.caption,
+          version: i.sha256.slice(0, 16),
+        })),
       };
     });
   }

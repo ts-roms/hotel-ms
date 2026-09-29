@@ -136,6 +136,11 @@ with `OPERATOR_EMAIL=... OPERATOR_ACTION=grant pnpm --filter @hotel/database ops
 `docs/operations/restore.md` is the restore runbook; `scripts/ops/restore-drill.sh` rehearses it.
 Browser tests live in `tests/e2e`: start the stack, then `pnpm --filter @hotel/e2e e2e`.
 
+**Data requests** (organization administrators, two-step verification) download everything held
+about a guest or employee, or anonymize them where the law allows. **Import** loads guests or rooms
+from CSV after a preview. Hotel photos (Guest portal settings) and menu item photos appear in the
+guest portal, re-encoded without location data (ADR-0030).
+
 Staff see in-app notifications under the bell (urgent maintenance, assignments, leave, schedules,
 birthdays). Guests get booking, check-in, payment and reminder emails, and SMS where a phone is
 on file (ADR-0024). Locally, emails are files in `.mail/` and texts go to `.mail/sms.log`.

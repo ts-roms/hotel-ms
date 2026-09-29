@@ -19,6 +19,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Check, FolderPlus, Pencil, Plus } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { MenuItemPhoto } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { formatMoney, minorToInput, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
@@ -205,6 +206,12 @@ export default function MenusPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     {!i.available && <Badge variant="danger">{t('fnb.soldOutBadge')}</Badge>}
+                    <MenuItemPhoto
+                      propertyId={propertyId}
+                      itemId={i.id}
+                      version={i.imageVersion}
+                      onChanged={() => queryClient.invalidateQueries({ queryKey: key })}
+                    />
                     <PriceEditor
                       value={i.priceMinor}
                       currency={currency}

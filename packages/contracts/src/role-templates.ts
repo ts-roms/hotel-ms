@@ -171,6 +171,7 @@ export const ROLE_TEMPLATES = [
         'role.assign',
         'audit.read',
         'feature_flag.manage',
+        'privacy.manage',
       ],
       PMS_OPERATE,
       PMS_MANAGE,

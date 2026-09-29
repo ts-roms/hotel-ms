@@ -18,6 +18,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { PropertyPhotos } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
@@ -27,6 +28,7 @@ import { hasPermission, useSession } from '@/lib/session';
 export default function GuestPortalSettingsPage() {
   const propertyId = useRoutePropertyId()!;
   const pms = usePms(propertyId);
+  const session = useSession();
   const settings = useQuery({
     queryKey: ['guest-portal-settings', propertyId],
     queryFn: pms.guestPortalSettings,
@@ -35,6 +37,10 @@ export default function GuestPortalSettingsPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <PageHeader title={t('gps.title')} description={t('gps.hint')} />
       {settings.error && <Alert>{errorMessage(settings.error)}</Alert>}
+      <PropertyPhotos
+        propertyId={propertyId}
+        canManage={hasPermission(session.data, 'property.settings.manage')}
+      />
       {settings.data && <SettingsForm propertyId={propertyId} initial={settings.data} />}
     </div>
   );

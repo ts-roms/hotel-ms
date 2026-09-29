@@ -1,4 +1,10 @@
 import type {
+  AnonymizeResult,
+  ImportKind,
+  ImportPreview,
+  ImportResult,
+  PropertyImage,
+  UpdatePropertyImageRequest,
   OpsOverview,
   CompensationHistory,
   CoverageGap,
@@ -705,6 +711,37 @@ export function createApiClient(options: ApiClientOptions = {}) {
           call<{ items: IdentityDocument[] }>('GET', `${p}/guest-ids${qs({ status })}`).then(
             (r) => r.data.items,
           ),
+        /** CSV import (ADR-0030): the file's text, previewed, then committed by token. */
+        importPreview: (kind: ImportKind, csvText: string) =>
+          call<ImportPreview>(
+            'POST',
+            `${p}/imports/${kind}/preview`,
+            new Blob([csvText], { type: 'text/csv' }),
+          ).then((r) => r.data),
+        importCommit: (kind: ImportKind, token: string) =>
+          call<ImportResult>('POST', `${p}/imports/${kind}/commit`, { token }).then((r) => r.data),
+        images: () =>
+          call<{ items: PropertyImage[] }>('GET', `${p}/images`).then((r) => r.data.items),
+        uploadImage: (file: Blob, caption: string) =>
+          call<{ items: PropertyImage[] }>('POST', `${p}/images${qs({ caption })}`, file).then(
+            (r) => r.data.items,
+          ),
+        updateImage: (imageId: string, body: UpdatePropertyImageRequest) =>
+          call<{ items: PropertyImage[] }>('PATCH', `${p}/images/${id(imageId)}`, body).then(
+            (r) => r.data.items,
+          ),
+        removeImage: (imageId: string) =>
+          call<void>('DELETE', `${p}/images/${id(imageId)}`).then((r) => r.data),
+        imageUrl: (imageId: string, version: string) =>
+          `${baseUrl}${p}/images/${id(imageId)}/content?v=${encodeURIComponent(version)}`,
+        setMenuItemImage: (itemId: string, file: Blob) =>
+          call<{ imageVersion: string }>('PUT', `${p}/menu-items/${id(itemId)}/image`, file).then(
+            (r) => r.data,
+          ),
+        removeMenuItemImage: (itemId: string) =>
+          call<void>('DELETE', `${p}/menu-items/${id(itemId)}/image`).then((r) => r.data),
+        menuItemImageUrl: (itemId: string, version: string) =>
+          `${baseUrl}${p}/menu-items/${id(itemId)}/image?v=${encodeURIComponent(version)}`,
         /** Same-origin (the session cookie authenticates); every view is audited. */
         guestIdContentUrl: (documentId: string) =>
           `${baseUrl}${p}/guest-ids/${id(documentId)}/content`,
@@ -866,6 +903,21 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ).then((r) => r.data),
       retryOutbox: (eventId: string) =>
         call<void>('POST', `/ops/outbox/${encodeURIComponent(eventId)}/retry`).then((r) => r.data),
+    },
+    /** Data requests (ADR-0030): privacy.manage with two-step verification. */
+    privacy: {
+      guestExportUrl: (guestId: string) =>
+        `${baseUrl}/guests/${encodeURIComponent(guestId)}/export`,
+      anonymizeGuest: (guestId: string, reason: string) =>
+        call<AnonymizeResult>('POST', `/guests/${encodeURIComponent(guestId)}/anonymize`, {
+          reason,
+        }).then((r) => r.data),
+      employeeExportUrl: (employeeId: string) =>
+        `${baseUrl}/employees/${encodeURIComponent(employeeId)}/export`,
+      anonymizeEmployee: (employeeId: string, reason: string) =>
+        call<AnonymizeResult>('POST', `/employees/${encodeURIComponent(employeeId)}/anonymize`, {
+          reason,
+        }).then((r) => r.data),
     },
     hr: {
       departments: () =>
@@ -1075,6 +1127,7 @@ export function createKioskApiClient(options: ApiClientOptions = {}) {
 
 export function createGuestApiClient(options: ApiClientOptions = {}) {
   const { call } = createCaller(options);
+  const baseUrl = options.baseUrl ?? '/api/v1';
   const data = <T>(r: { data: T }) => r.data;
   return {
     exchange: (token: string) => call<GuestStay>('POST', '/guest/session', { token }).then(data),
@@ -1110,6 +1163,10 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
     uploadId: (file: Blob, documentType: GuestIdType) =>
       call<GuestStay>('POST', `/guest/identity?documentType=${documentType}`, file).then(data),
     hotelInfo: () => call<GuestHotelInfo>('GET', '/guest/hotel-info').then(data),
+    hotelImageUrl: (imageId: string, version: string) =>
+      `${baseUrl}/guest/hotel-images/${encodeURIComponent(imageId)}?v=${encodeURIComponent(version)}`,
+    menuItemImageUrl: (itemId: string, version: string) =>
+      `${baseUrl}/guest/menu-items/${encodeURIComponent(itemId)}/image?v=${encodeURIComponent(version)}`,
     notifications: () =>
       call<{ items: GuestNotification[] }>('GET', '/guest/notifications').then((r) => r.data.items),
     markNotificationsRead: () => call<void>('POST', '/guest/notifications/read').then(data),

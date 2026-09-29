@@ -221,11 +221,35 @@ export function HotelInfo({ stay: s }: { stay: GuestStay }) {
   const h = info.data;
   if (!h) return null;
   const empty =
-    !h.about && h.amenities.length === 0 && h.services.length === 0 && !h.houseRules && !h.wifi;
+    !h.about &&
+    h.amenities.length === 0 &&
+    h.services.length === 0 &&
+    !h.houseRules &&
+    !h.wifi &&
+    h.images.length === 0;
   if (empty) return null;
   return (
     <Section icon={<Building2 />} title={`About ${h.name}`} description={h.address || undefined}>
       <CardContent className="flex flex-col gap-4 text-sm">
+        {h.images.length > 0 && (
+          <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
+            {h.images.map((img) => (
+              <figure key={img.id} className="w-64 shrink-0 snap-start">
+                <img
+                  src={api.hotelImageUrl(img.id, img.version)}
+                  alt={img.caption || h.name}
+                  loading="lazy"
+                  className="aspect-video w-full rounded-xl bg-muted object-cover"
+                />
+                {img.caption && (
+                  <figcaption className="mt-1 text-xs text-muted-foreground">
+                    {img.caption}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        )}
         {h.about && <p className="whitespace-pre-wrap">{h.about}</p>}
         {h.wifi && (
           <div className="flex items-start gap-3 rounded-xl border p-3">

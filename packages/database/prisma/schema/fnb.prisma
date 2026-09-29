@@ -88,6 +88,9 @@ model MenuItem {
   archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   version        Int       @default(1)
+  /// The item's photo (ADR-0030): WebP in object storage; the hash is its version.
+  imageKey       String?   @map("image_key")
+  imageSha256    String?   @map("image_sha256") @db.Char(64)
 
   outlet         Outlet          @relation(fields: [organizationId, outletId], references: [organizationId, id], onDelete: Restrict)
   category       MenuCategory    @relation(fields: [organizationId, categoryId], references: [organizationId, id], onDelete: Restrict)
