@@ -298,7 +298,7 @@ function PriceEditor({
         size="icon"
         className="size-8"
         type="submit"
-        aria-label={t('fnb.price')}
+        aria-label={t('fnb.savePrice')}
         disabled={parsed === null}
       >
         <Check />

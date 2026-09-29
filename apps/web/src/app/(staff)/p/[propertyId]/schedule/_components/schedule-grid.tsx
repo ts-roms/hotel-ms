@@ -128,6 +128,8 @@ export function ScheduleGrid({
                             <span className="text-muted-foreground">{t('hr.draft')}</span>
                           )}
                         </div>
+                        {/* Icons stay 16px; ::after widens each hit area to 24px (WCAG 2.5.8) and
+                            mx-0.5 keeps the two areas from overlapping. */}
                         {canManage && s.seriesId && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -138,7 +140,7 @@ export function ScheduleGrid({
                                 aria-label={t('sched.cancelSeries')}
                                 title={t('sched.cancelSeries')}
                                 disabled={cancelSeriesPending}
-                                className="size-4 rounded p-0.5 opacity-60 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
+                                className="relative mx-0.5 size-4 rounded p-0.5 opacity-60 after:absolute after:-inset-1 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
                               >
                                 <Repeat />
                               </Button>
@@ -175,7 +177,7 @@ export function ScheduleGrid({
                             aria-label={t('hr.cancel')}
                             title={t('hr.cancel')}
                             disabled={cancelPending}
-                            className="size-4 rounded p-0.5 opacity-60 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
+                            className="relative mx-0.5 size-4 rounded p-0.5 opacity-60 after:absolute after:-inset-1 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 [&_svg]:size-3"
                             onClick={() => onCancel(s)}
                           >
                             <X />

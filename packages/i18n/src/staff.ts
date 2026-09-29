@@ -330,6 +330,7 @@ export const en = {
   'fnb.polling': 'Refreshing every 10 s',
   'fnb.preparing': 'Preparing',
   'fnb.price': 'Price',
+  'fnb.savePrice': 'Save price',
   'fnb.quantity': 'Quantity',
   'fnb.ready': 'Ready',
   'fnb.remove': 'Remove',
