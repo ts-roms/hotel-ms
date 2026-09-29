@@ -13,7 +13,7 @@ import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createApp } from '../src/app.factory.js';
 import { type Env, loadEnv } from '../src/config/env.js';
-import { base32Decode, hotp } from '../src/infrastructure/totp.js';
+import { base32Decode, hotp } from '../src/modules/auth/totp.js';
 
 export const WEB_ORIGIN = 'http://localhost:43100';
 

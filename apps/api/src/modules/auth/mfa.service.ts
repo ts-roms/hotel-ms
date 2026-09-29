@@ -10,7 +10,7 @@ import { PrismaService } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { SECRET_BOX, SecretBox } from '../../infrastructure/secret-box.js';
-import { generateTotpSecret, totpUri, verifyTotp } from '../../infrastructure/totp.js';
+import { generateTotpSecret, totpUri, verifyTotp } from './totp.js';
 import { SessionService } from './session.service.js';
 
 const RECOVERY_CODE_COUNT = 10;
