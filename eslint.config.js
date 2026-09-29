@@ -30,6 +30,18 @@ export default tseslint.config(
     },
   },
 
+  // Plain Node scripts (load tests): Node's globals, no TypeScript.
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: Object.fromEntries(
+        ['process', 'console', 'fetch', 'performance', 'crypto', 'URL', 'setTimeout'].map(
+          (name) => [name, 'readonly'],
+        ),
+      ),
+    },
+  },
+
   // --- Tenant safety -------------------------------------------------------------------
   {
     files: ['apps/**/*.ts', 'apps/**/*.tsx'],

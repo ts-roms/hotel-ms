@@ -45,6 +45,8 @@ const envSchema = z.object({
   /** Number of proxy hops to trust for X-Forwarded-For. */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  /** Log SQL statements slower than this many milliseconds (text only, no values). Off when unset. */
+  DB_SLOW_QUERY_MS: z.coerce.number().int().min(1).optional(),
   /** Error tracking (ADR-0029). Unset: errors are only logged. */
   SENTRY_DSN: z.url().optional(),
   SENTRY_ENVIRONMENT: z.string().optional(),

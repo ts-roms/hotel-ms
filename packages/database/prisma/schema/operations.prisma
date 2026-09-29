@@ -57,6 +57,7 @@ model HousekeepingTask {
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, businessDate])
   @@index([organizationId, assignedMembershipId, status])
+  @@index([organizationId, roomId])
   @@map("housekeeping_tasks")
 }
 

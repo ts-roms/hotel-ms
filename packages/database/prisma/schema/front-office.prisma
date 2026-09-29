@@ -17,6 +17,7 @@ model Stay {
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, checkedOutAt])
+  @@index([organizationId, roomId])
   @@map("stays")
 }
 

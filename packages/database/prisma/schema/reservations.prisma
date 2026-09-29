@@ -59,6 +59,7 @@ model Reservation {
   @@unique([organizationId, id])
   @@unique([propertyId, confirmationNo])
   @@index([organizationId, propertyId, createdAt])
+  @@index([organizationId, bookerGuestId])
   @@map("reservations")
 }
 
@@ -97,6 +98,8 @@ model ReservationRoom {
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, arrivalDate])
   @@index([organizationId, propertyId, departureDate])
+  @@index([organizationId, reservationId])
+  @@index([organizationId, guestId])
   @@map("reservation_rooms")
 }
 
@@ -137,5 +140,6 @@ model RoomAssignment {
 
   @@index([organizationId, roomId, startDate])
   @@index([organizationId, reservationRoomId])
+  @@index([organizationId, propertyId, endDate])
   @@map("room_assignments")
 }
