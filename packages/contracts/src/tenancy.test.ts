@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPropertyRequestSchema, updatePropertyRequestSchema } from './properties.js';
+import { createPropertyRequestSchema, updatePropertyRequestSchema } from './tenancy.js';
 
 describe('property request schemas', () => {
   it('a partial update never fills in defaults for omitted fields', () => {

@@ -8,6 +8,8 @@ import {
   timeZoneSchema,
 } from './common.js';
 
+/** Tenancy contracts: properties and organization feature flags. */
+
 export const PROPERTY_STATUSES = ['ONBOARDING', 'ACTIVE', 'INACTIVE'] as const;
 
 export const propertySchema = z.object({
@@ -86,3 +88,15 @@ export const updatePropertyRequestSchema = z
   .strictObject({ ...propertyProfileFields, status: z.enum(PROPERTY_STATUSES) })
   .partial();
 export type UpdatePropertyRequest = z.infer<typeof updatePropertyRequestSchema>;
+
+// ---- Feature flags ---------------------------------------------------------------------------
+
+export const featureFlagSchema = z.object({
+  key: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+});
+export type FeatureFlag = z.infer<typeof featureFlagSchema>;
+
+export const setFeatureFlagRequestSchema = z.strictObject({ enabled: z.boolean() });
+export type SetFeatureFlagRequest = z.infer<typeof setFeatureFlagRequestSchema>;

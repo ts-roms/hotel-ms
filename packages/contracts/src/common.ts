@@ -53,3 +53,6 @@ export function listOf<T extends z.ZodType>(item: T) {
 /** A staff member as shown in pickers and assignee fields. */
 export const staffRefSchema = z.object({ membershipId: z.uuid(), displayName: z.string() });
 export type StaffRef = z.infer<typeof staffRefSchema>;
+
+/** Money: a non-negative integer number of minor units (e.g. centavos), never a float. */
+export const amountMinorSchema = z.number().int().min(0).max(1_000_000_000_000);

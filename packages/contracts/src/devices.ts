@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PUNCH_TYPES } from './hr.js';
+import { PUNCH_TYPES } from './time.js';
 
 /**
  * Shared devices (ADR-0020): a kitchen tablet paired to one property, used by staff who
