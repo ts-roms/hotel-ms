@@ -31,29 +31,30 @@ import { TenancyModule } from './modules/tenancy/tenancy.module.js';
 /**
  * One Nest module per bounded context (blueprint §6.1, ADR-0031). Each declares its
  * controllers and providers and exports only what other contexts call; the shared kernel
- * (CoreModule, AuditModule, OutboxModule, IdempotencyModule) is global.
+ * (CoreModule, AuditModule, OutboxModule, IdempotencyModule) is global. Listed in the order of
+ * API_CONTEXTS (.dependency-cruiser.cjs): a module only imports modules listed before it.
  */
 export const CONTEXT_MODULES = [
   AuditModule,
   OutboxModule,
   IdempotencyModule,
   HealthModule,
-  AuthModule,
+  OpsModule,
   AccessModule,
+  AuthModule,
   TenancyModule,
   NotificationsModule,
   PmsModule,
   OperationsModule,
   FinanceModule,
   FrontOfficeModule,
-  GuestPortalModule,
   HrModule,
+  GuestPortalModule,
+  FnbModule,
+  PrivacyModule,
   DevicesModule,
   CalendarModule,
   ManagementModule,
-  FnbModule,
-  PrivacyModule,
-  OpsModule,
   JobsModule,
 ];
 

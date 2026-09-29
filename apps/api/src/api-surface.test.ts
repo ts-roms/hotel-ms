@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
+import { createRequire } from 'node:module';
 import { RequestMethod, type Type } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { CONTROLLERS } from './api-surface.js';
@@ -21,7 +22,20 @@ function registeredControllers(): Type[] {
   return controllers;
 }
 
+const { API_CONTEXTS } = createRequire(import.meta.url)('../../../.dependency-cruiser.cjs') as {
+  API_CONTEXTS: string[];
+};
+
 describe('API surface', () => {
+  it('lists the context modules in the dependency order of API_CONTEXTS', () => {
+    const folder = (module: Type) =>
+      module.name
+        .replace(/Module$/, '')
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .toLowerCase();
+    expect(CONTEXT_MODULES.map(folder)).toEqual(API_CONTEXTS);
+  });
+
   it('lists every controller the context modules register, once', () => {
     const registered = registeredControllers();
     expect(new Set(registered).size).toBe(registered.length);
