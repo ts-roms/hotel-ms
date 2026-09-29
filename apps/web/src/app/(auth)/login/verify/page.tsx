@@ -3,7 +3,7 @@
 import { Alert, Button, CardContent, Input, Label } from '@hotel/ui';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useState } from 'react';
-import { AuthShell } from '@/components/auth-shell';
+import { AuthCard } from '@/components/auth-shell';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { nextRoute, useMfaChallenge, useSession } from '@/lib/session';
@@ -28,7 +28,7 @@ export default function VerifyPage() {
   };
 
   return (
-    <AuthShell title={t('mfa.title')} description={t('mfa.subtitle')}>
+    <AuthCard title={t('mfa.title')} description={t('mfa.subtitle')}>
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           {challenge.error && <Alert>{errorMessage(challenge.error)}</Alert>}
@@ -63,6 +63,6 @@ export default function VerifyPage() {
           </Button>
         </form>
       </CardContent>
-    </AuthShell>
+    </AuthCard>
   );
 }
