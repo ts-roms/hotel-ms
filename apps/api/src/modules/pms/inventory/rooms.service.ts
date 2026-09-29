@@ -279,6 +279,48 @@ export class RoomsService {
   }
 
   /**
+   * Creates imported rooms (CSV import, ADR-0030) inside the caller's transaction,
+   * skipping numbers that exist by now, then refreshes the sellable capacity of their
+   * room types. The caller validated the rows and records the import's audit entry.
+   */
+  async importInTx(
+    tx: Tx,
+    propertyId: string,
+    rooms: { number: string; roomTypeId: string; notes: string }[],
+  ): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const taken = new Set(
+      (await tx.room.findMany({ where: { propertyId }, select: { number: true } })).map((r) =>
+        r.number.toUpperCase(),
+      ),
+    );
+    const { organizationId, actorId } = this.ctx;
+    for (const room of rooms) {
+      if (taken.has(room.number.toUpperCase())) {
+        skipped++;
+        continue;
+      }
+      await tx.room.create({
+        data: {
+          organizationId,
+          propertyId,
+          number: room.number,
+          roomTypeId: room.roomTypeId,
+          notes: room.notes,
+          createdBy: actorId,
+          updatedBy: actorId,
+        },
+      });
+      created++;
+    }
+    const today = await businessDateOf(tx, propertyId);
+    for (const roomTypeId of new Set(rooms.map((r) => r.roomTypeId)))
+      await refreshCapacity(tx, roomTypeId, today);
+    return { created, skipped };
+  }
+
+  /**
    * Moving a room to another type changes sellable capacity of both types from today on;
    * refused if either would be oversold or the room holds future bookings of its old type.
    */
