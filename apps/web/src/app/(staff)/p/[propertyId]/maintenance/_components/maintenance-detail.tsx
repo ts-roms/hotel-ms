@@ -17,7 +17,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { useCan, usePms } from '@/lib/property';
+import { useCan, usePms, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 const UPDATE_KIND_LABEL: Record<MaintenanceUpdate['kind'], MessageKey> = {
@@ -37,6 +37,7 @@ export function MaintenanceDetail({
   requestId: string;
   onClose: () => void;
 }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
   const can = useCan();
   const queryClient = useQueryClient();
@@ -216,7 +217,7 @@ export function MaintenanceDetail({
         <ol className="flex flex-col gap-1 border-t pt-2 text-xs text-muted-foreground">
           {r.updates.map((u) => (
             <li key={u.id}>
-              {formatDateTime(u.at)} · {u.byName ?? '—'} ·{' '}
+              {formatDateTime(u.at, { timeZone })} · {u.byName ?? '—'} ·{' '}
               {u.toStatus ? statusLabel(u.toStatus) : t(UPDATE_KIND_LABEL[u.kind])}
               {u.note && `: ${u.note}`}
             </li>

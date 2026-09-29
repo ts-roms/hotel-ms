@@ -22,13 +22,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { useCan, usePms, useProperty, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { statusLabel } from '@/lib/status';
 
 /** The cashier's drawer (blueprint §15.2): open with a float, close with a count. */
 export default function CashierPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const can = useCan();
   const property = useProperty(propertyId);
   const currency = property.data?.currency ?? 'PHP';
@@ -143,7 +144,7 @@ export default function CashierPage() {
             {history.data.map((h) => (
               <TableRow key={h.id}>
                 <TableCell>{h.cashierName}</TableCell>
-                <TableCell>{formatDateTime(h.openedAt)}</TableCell>
+                <TableCell>{formatDateTime(h.openedAt, { timeZone })}</TableCell>
                 <TableCell>
                   <Badge>{statusLabel(h.status)}</Badge>
                 </TableCell>

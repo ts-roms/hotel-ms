@@ -28,7 +28,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { clock, duration, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { ClockPhotos } from './_components/clock-photos';
 
@@ -37,8 +37,11 @@ export default function AttendancePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const can = useCan();
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
-  const [to, setTo] = useState(() => localToday());
+  // Until a date is picked: today at the property.
+  const [picked, setTo] = useState<string | null>(null);
+  const to = picked ?? localToday(timeZone);
   const from = addDays(to, -6);
   const days = useQuery({
     queryKey: ['attendance', propertyId, to],
@@ -107,7 +110,7 @@ export default function AttendancePage() {
               >
                 <span>
                   <strong>{c.employeeName}</strong> · {t(PUNCH_LABEL[c.type])} ·{' '}
-                  {formatDate(localDate(c.at))} {clock(c.at)} ·{' '}
+                  {formatDate(localDate(c.at, timeZone))} {clock(c.at, timeZone)} ·{' '}
                   <span className="text-muted-foreground">{c.reason}</span>
                 </span>
                 {canDecide && (
@@ -187,10 +190,12 @@ export default function AttendancePage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {d.shift ? `${clock(d.shift.startsAt)}–${clock(d.shift.endsAt)}` : '—'}
+                    {d.shift
+                      ? `${clock(d.shift.startsAt, timeZone)}–${clock(d.shift.endsAt, timeZone)}`
+                      : '—'}
                   </TableCell>
-                  <TableCell>{clock(d.firstIn)}</TableCell>
-                  <TableCell>{clock(d.lastOut)}</TableCell>
+                  <TableCell>{clock(d.firstIn, timeZone)}</TableCell>
+                  <TableCell>{clock(d.lastOut, timeZone)}</TableCell>
                   <TableCell className="font-medium">{duration(d.workedMinutes)}</TableCell>
                   <TableCell className={d.lateMinutes ? 'text-warning' : undefined}>
                     {duration(d.lateMinutes)}

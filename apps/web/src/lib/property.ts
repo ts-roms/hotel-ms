@@ -49,6 +49,14 @@ export function useProperty(propertyId: string | undefined) {
   });
 }
 
+/**
+ * The current property's IANA time zone, for showing instants and "today" in hotel time rather
+ * than the device's. Undefined while the property loads (formatters then use the device zone).
+ */
+export function usePropertyTimeZone(): string | undefined {
+  return useProperty(usePropertyId()).data?.timezone;
+}
+
 /** PMS client bound to a property. */
 export function usePms(propertyId: string) {
   return api.pms(propertyId);

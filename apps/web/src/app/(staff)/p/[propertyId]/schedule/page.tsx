@@ -16,7 +16,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { Birthdays } from './_components/birthdays';
 import { CoverageGaps } from './_components/coverage-gaps';
 import { NewShift } from './_components/new-shift-form';
@@ -29,8 +29,11 @@ export default function SchedulePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const can = useCan();
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
-  const [monday, setMonday] = useState(() => startOfWeek(localToday()));
+  // Until another week is chosen: this week at the property.
+  const [picked, setMonday] = useState<string | null>(null);
+  const monday = picked ?? startOfWeek(localToday(timeZone));
   const days = weekDates(monday);
   const sunday = days[6]!;
   const canManage = can('schedule.manage');
@@ -70,7 +73,7 @@ export default function SchedulePage() {
   const data = schedule.data;
   const paging = schedule.isPlaceholderData;
   const drafts = data?.shifts.filter((s) => s.status === 'DRAFT').length ?? 0;
-  const todayDate = localToday();
+  const todayDate = localToday(timeZone);
 
   return (
     <div className="flex flex-col gap-6">

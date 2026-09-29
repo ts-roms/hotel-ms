@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
@@ -40,6 +40,7 @@ const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
 
 /** Guest service queue (spec §26): guest and staff requests routed by department. */
 export default function ServiceRequestsPage() {
+  const timeZone = usePropertyTimeZone();
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const can = useCan();
@@ -174,7 +175,9 @@ export default function ServiceRequestsPage() {
                 <Badge variant={statusVariant(r.priority)}>
                   {enumLabel('priority', r.priority)}
                 </Badge>
-                <span className="ml-auto tabular-nums">{formatTime(r.createdAt)}</span>
+                <span className="ml-auto tabular-nums">
+                  {formatTime(r.createdAt, { timeZone })}
+                </span>
               </div>
               {r.guestName && <span className="font-medium">{r.guestName}</span>}
               {r.description && (

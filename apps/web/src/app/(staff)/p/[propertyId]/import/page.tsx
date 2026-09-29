@@ -26,7 +26,7 @@ import { Download, FileUp, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 
 const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: string }[] = [
   { kind: 'guests', label: 'imp.guests', permission: 'guest.update' },
@@ -43,6 +43,7 @@ function templateHref(kind: ImportKind): string {
 
 /** CSV import with a preview before anything is written (spec §74, ADR-0030). */
 export default function ImportPage() {
+  const timeZone = usePropertyTimeZone();
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const can = useCan();
@@ -173,7 +174,9 @@ export default function ImportPage() {
                   {t('imp.commit')} ({p.newRows})
                 </Button>
                 <span className="text-muted-foreground">
-                  {t('imp.validUntilTime', { time: formatTime(p.expiresAt, { seconds: true }) })}
+                  {t('imp.validUntilTime', {
+                    time: formatTime(p.expiresAt, { seconds: true, timeZone }),
+                  })}
                 </span>
               </div>
             )}

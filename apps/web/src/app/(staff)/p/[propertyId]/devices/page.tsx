@@ -30,7 +30,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
+import { usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], MessageKey> = {
@@ -43,6 +43,7 @@ const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], MessageKey>
 export default function DevicesPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
   const devices = useQuery({ queryKey: ['devices', propertyId], queryFn: pms.devices });
   const [kind, setKind] = useState<DeviceKind>('KITCHEN');
@@ -77,7 +78,9 @@ export default function DevicesPage() {
       {pairing && (
         <Notice>
           <strong>{pairing.device.name}</strong> ·{' '}
-          {t('dev.pairingOpen', { time: formatTime(pairing.expiresAt, { seconds: true }) })}
+          {t('dev.pairingOpen', {
+            time: formatTime(pairing.expiresAt, { seconds: true, timeZone }),
+          })}
           <div className="mt-2 font-mono text-2xl tracking-widest">
             {pairing.pairingCode.slice(0, 4)}-{pairing.pairingCode.slice(4)}
           </div>
@@ -105,7 +108,7 @@ export default function DevicesPage() {
                     ? t('dev.timeClock')
                     : d.permissions.map((p) => t(PERMISSION_LABELS[p])).join(' · ')}
                   {d.lastSeenAt &&
-                    ` · ${t('dev.lastSeen', { time: formatDateTime(d.lastSeenAt) })}`}
+                    ` · ${t('dev.lastSeen', { time: formatDateTime(d.lastSeenAt, { timeZone }) })}`}
                 </span>
               </span>
               {d.status !== 'REVOKED' && (

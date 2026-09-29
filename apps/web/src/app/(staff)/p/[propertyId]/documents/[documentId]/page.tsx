@@ -6,13 +6,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
+import { usePms, usePropertyTimeZone } from '@/lib/property';
 import { enumLabelOr } from '@/lib/status';
 
 /** Printable invoice or receipt, rendered from its frozen snapshot. */
 export default function DocumentPage() {
   const { propertyId, documentId } = useParams<{ propertyId: string; documentId: string }>();
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const document = useQuery({
     queryKey: ['document', documentId],
     queryFn: () => pms.document(documentId),
@@ -34,7 +35,7 @@ export default function DocumentPage() {
             {d.type === 'INVOICE' ? t('fin.invoice') : t('fin.receipt')}
           </div>
           <div className="font-mono">{d.documentNo}</div>
-          <div className="text-muted-foreground">{formatDateTime(d.issuedAt)}</div>
+          <div className="text-muted-foreground">{formatDateTime(d.issuedAt, { timeZone })}</div>
         </div>
       </header>
       <div>

@@ -20,7 +20,7 @@ import { type ReactNode, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { duration } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { useCan, usePms } from '@/lib/property';
+import { useCan, usePms, usePropertyTimeZone } from '@/lib/property';
 import { enumLabelOr } from '@/lib/status';
 
 const TABS = [
@@ -44,10 +44,14 @@ function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
 export function OperationalReports({ propertyId }: { propertyId: string }) {
   const pms = usePms(propertyId);
   const can = useCan();
+  const timeZone = usePropertyTimeZone();
   const tabs = TABS.filter((tab) => can(tab.permission));
   const [tab, setTab] = useState<Tab | null>(null);
-  const [to, setTo] = useState(localToday());
-  const [from, setFrom] = useState(addDays(localToday(), -29));
+  // Until dates are picked: the 30 days up to today at the property.
+  const [pickedTo, setTo] = useState<string | null>(null);
+  const [pickedFrom, setFrom] = useState<string | null>(null);
+  const to = pickedTo ?? localToday(timeZone);
+  const from = pickedFrom ?? addDays(localToday(timeZone), -29);
   const active = tab ?? tabs[0]?.key ?? null;
   const valid = from <= to;
   const report = useQuery({

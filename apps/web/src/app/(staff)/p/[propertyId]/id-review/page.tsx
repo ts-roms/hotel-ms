@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
+import { usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, enumLabelOr, statusLabel, statusVariant } from '@/lib/status';
 
 const FILTERS = [
@@ -98,6 +98,7 @@ export default function IdReviewPage() {
 }
 
 function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocument }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const [reason, setReason] = useState('');
@@ -124,7 +125,7 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
           {enumLabel('idType', d.documentType)} ·{' '}
-          {t('idr.uploadedAt', { time: formatDateTime(d.uploadedAt) })} ·{' '}
+          {t('idr.uploadedAt', { time: formatDateTime(d.uploadedAt, { timeZone }) })} ·{' '}
           {enumLabelOr('status', d.stayStatus)}
         </p>
         {d.purged ? (
@@ -153,7 +154,7 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
             {t('idr.reviewedBy', {
               status: statusLabel(d.status),
               name: d.reviewerName,
-              time: formatDateTime(d.reviewedAt),
+              time: formatDateTime(d.reviewedAt, { timeZone }),
             })}
           </p>
         )}

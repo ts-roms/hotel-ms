@@ -19,7 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { useCan, usePms, useProperty, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, enumLabelOr } from '@/lib/status';
 
 /** Exchange rates, statutory discount profiles and the self check-in card hold (ADR-0018). */
@@ -37,6 +37,7 @@ export default function FinanceSettingsPage() {
 }
 
 function ExchangeRates({ propertyId, canManage }: { propertyId: string; canManage: boolean }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
@@ -70,7 +71,7 @@ function ExchangeRates({ propertyId, canManage }: { propertyId: string; canManag
               <span>
                 1 {r.currency} = {r.rate} {property.data?.currency ?? ''}
               </span>
-              <span>{formatDateTime(r.effectiveFrom)}</span>
+              <span>{formatDateTime(r.effectiveFrom, { timeZone })}</span>
             </div>
           );
         })}

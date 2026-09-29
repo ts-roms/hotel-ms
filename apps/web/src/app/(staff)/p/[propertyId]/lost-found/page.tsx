@@ -20,7 +20,7 @@ import { PackageSearch } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
-import { useCan, usePms, usePropertyId } from '@/lib/property';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, statusLabel } from '@/lib/status';
 
 const CATEGORIES = ['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER'] as const;
@@ -183,6 +183,7 @@ function Item({
   item: LostFoundItem;
   canClose: boolean;
 }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const [closing, setClosing] = useState<'RETURNED' | 'DISPOSED' | null>(null);
@@ -214,7 +215,7 @@ function Item({
           {enumLabel('category', item.category)} ·{' '}
           {t('lf.foundAt', { location: item.foundLocation })}
           {item.roomNumber && ` (${t('roomNo', { number: item.roomNumber })})`} ·{' '}
-          {formatDateTime(item.foundAt)}
+          {formatDateTime(item.foundAt, { timeZone })}
           {item.foundByName && ` · ${item.foundByName}`} · {t('lf.storedAt')}:{' '}
           {item.storageLocation}
         </span>

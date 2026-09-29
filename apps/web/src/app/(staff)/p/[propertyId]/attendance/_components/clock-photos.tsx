@@ -7,7 +7,7 @@ import { Camera } from 'lucide-react';
 import { useState } from 'react';
 import { clock, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
+import { usePms, usePropertyTimeZone } from '@/lib/property';
 
 /**
  * Punches with their selfies, from the web and time clocks (ADR-0022). A photo loads only when asked for:
@@ -23,6 +23,7 @@ export function ClockPhotos({
   to: string;
 }) {
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const photos = useQuery({
     queryKey: ['clock-photos', propertyId, from, to],
     queryFn: () => pms.clockPhotos(from, to),
@@ -38,8 +39,8 @@ export function ClockPhotos({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 <span className="font-mono text-xs text-muted-foreground">{p.employeeNo}</span>{' '}
-                {p.employeeName} · {t(PUNCH_LABEL[p.type])} · {formatDate(localDate(p.at))}{' '}
-                {clock(p.at)}
+                {p.employeeName} · {t(PUNCH_LABEL[p.type])} ·{' '}
+                {formatDate(localDate(p.at, timeZone))} {clock(p.at, timeZone)}
                 <span className="text-muted-foreground">
                   {' '}
                   · {p.source === 'WEB' ? t('clock.web') : (p.deviceName ?? t('dev.timeClock'))}
