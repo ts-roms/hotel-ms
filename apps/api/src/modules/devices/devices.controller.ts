@@ -5,8 +5,8 @@ import {
   createDeviceRequestSchema,
   deviceSchema,
   devicePairingSchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
@@ -20,7 +20,7 @@ export class DevicesController {
 
   @Get()
   @RequirePermission('device.manage')
-  @ZodResponse(200, z.object({ items: z.array(deviceSchema) }))
+  @ZodResponse(200, listOf(deviceSchema))
   async list(@Param('propertyId') propertyId: string) {
     return { items: await this.devices.list(propertyId) };
   }

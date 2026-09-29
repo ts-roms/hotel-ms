@@ -27,6 +27,7 @@ import {
   taxRuleSchema,
   type VoidLineRequest,
   voidLineRequestSchema,
+  staffRefSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -217,7 +218,7 @@ export class FrontOfficeController {
 
   @Get('housekeeping/staff')
   @RequirePermission('housekeeping.assign')
-  @ZodResponse(200, z.array(z.object({ membershipId: z.uuid(), displayName: z.string() })))
+  @ZodResponse(200, z.array(staffRefSchema))
   housekeepingStaff() {
     return this.housekeeping.staff();
   }

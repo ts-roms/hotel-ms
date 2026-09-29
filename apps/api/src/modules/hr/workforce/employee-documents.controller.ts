@@ -5,9 +5,9 @@ import {
   employeeDocumentSchema,
   type UploadEmployeeDocumentQuery,
   uploadEmployeeDocumentQuerySchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -27,7 +27,7 @@ export class EmployeeDocumentsController {
 
   @Get()
   @RequirePermission('employee.documents', 'any')
-  @ZodResponse(200, z.object({ items: z.array(employeeDocumentSchema) }))
+  @ZodResponse(200, listOf(employeeDocumentSchema))
   async list(@Param('employeeId') employeeId: string) {
     return { items: await this.documents.list(uuidParam(employeeId)) };
   }

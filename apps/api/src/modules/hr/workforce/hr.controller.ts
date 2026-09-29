@@ -33,17 +33,15 @@ import {
   updateEmployeeRequestSchema,
   type UpdateLeaveTypeRequest,
   updateLeaveTypeRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch, weakEtag } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { LeaveService } from '../time/leave.service.js';
 import { PeopleService } from './people.service.js';
-
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
 /** Organization-level HR: departments, employees, leave configuration (blueprint §13). */
 @ApiTags('hr')
@@ -56,21 +54,21 @@ export class HrController {
 
   @Get('departments')
   @RequirePermission('employee.read', 'any')
-  @ZodResponse(200, items(departmentSchema))
+  @ZodResponse(200, listOf(departmentSchema))
   async departments() {
     return { items: await this.people.departments() };
   }
 
   @Post('departments')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(201, items(departmentSchema))
+  @ZodResponse(201, listOf(departmentSchema))
   async createDepartment(@ZodBody(createDepartmentRequestSchema) body: CreateDepartmentRequest) {
     return { items: await this.people.createDepartment(body) };
   }
 
   @Patch('departments/:departmentId')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(200, items(departmentSchema))
+  @ZodResponse(200, listOf(departmentSchema))
   async updateDepartment(
     @Param('departmentId') id: string,
     @ZodBody(updateDepartmentRequestSchema) body: UpdateDepartmentRequest,
@@ -80,14 +78,14 @@ export class HrController {
 
   @Post('positions')
   @RequirePermission('department.manage', 'organization')
-  @ZodResponse(201, items(departmentSchema))
+  @ZodResponse(201, listOf(departmentSchema))
   async createPosition(@ZodBody(createPositionRequestSchema) body: CreatePositionRequest) {
     return { items: await this.people.createPosition(body) };
   }
 
   @Get('employees')
   @RequirePermission('employee.read', 'any')
-  @ZodResponse(200, items(employeeSummarySchema))
+  @ZodResponse(200, listOf(employeeSummarySchema))
   async employees(@ZodQuery(employeeListQuerySchema) query: EmployeeListQuery) {
     return { items: await this.people.list(query) };
   }
@@ -191,7 +189,7 @@ export class HrController {
 
   @Get('leave-types')
   @RequirePermission('leave.request.own', 'any')
-  @ZodResponse(200, items(leaveTypeSchema))
+  @ZodResponse(200, listOf(leaveTypeSchema))
   async leaveTypes() {
     return { items: await this.leave.types() };
   }

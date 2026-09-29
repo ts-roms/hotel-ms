@@ -9,9 +9,10 @@ import {
   serviceRequestUpdateSchema,
   type StaffServiceRequestCreate,
   staffServiceRequestCreateSchema,
+  staffRefSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch, weakEtag } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
@@ -19,7 +20,7 @@ import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 
-const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
+const serviceRequestList = listOf(serviceRequestSchema);
 const etag = (r: ServiceRequest) => weakEtag(r.version);
 
 @ApiTags('guest service')
@@ -59,10 +60,7 @@ export class GuestServiceController {
 
   @Get('service-requests/assignees')
   @RequirePermission('guest_service.update')
-  @ZodResponse(
-    200,
-    z.object({ items: z.array(z.object({ membershipId: z.uuid(), displayName: z.string() })) }),
-  )
+  @ZodResponse(200, listOf(staffRefSchema))
   async assignees() {
     return { items: await this.requests.staff() };
   }

@@ -10,9 +10,9 @@ import {
   identityReviewSchema,
   type StaffGuestMessage,
   staffGuestMessageSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
@@ -33,7 +33,7 @@ export class GuestAdminController {
 
   @Get('guest-ids')
   @RequirePermission('guest.identity.review')
-  @ZodResponse(200, z.object({ items: z.array(identityDocumentSchema) }))
+  @ZodResponse(200, listOf(identityDocumentSchema))
   async listIds(
     @Param('propertyId') propertyId: string,
     @ZodQuery(identityDocumentListQuerySchema) query: IdentityDocumentListQuery,

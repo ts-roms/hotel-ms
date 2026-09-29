@@ -15,6 +15,7 @@ import type {
   ServiceRequestListQuery,
   ServiceRequestUpdate,
   SetHousekeepingStatusRequest,
+  StaffRef,
   StaffServiceRequestCreate,
 } from '@hotel/contracts';
 import type { PropertyTransport } from '../../http.js';
@@ -23,10 +24,7 @@ import type { PropertyTransport } from '../../http.js';
 export function operationsClient({ call, qs, baseUrl, p, id }: PropertyTransport) {
   return {
     housekeeping: () => call<HousekeepingBoard>('GET', `${p}/housekeeping`).then((r) => r.data),
-    housekeepingStaff: () =>
-      call<{ membershipId: string; displayName: string }[]>('GET', `${p}/housekeeping/staff`).then(
-        (r) => r.data,
-      ),
+    housekeepingStaff: () => call<StaffRef[]>('GET', `${p}/housekeeping/staff`).then((r) => r.data),
     setHousekeepingStatus: (roomId: string, body: SetHousekeepingStatusRequest) =>
       call<HousekeepingBoard['rooms'][number]>(
         'PUT',
@@ -44,10 +42,9 @@ export function operationsClient({ call, qs, baseUrl, p, id }: PropertyTransport
         (r) => r.data.items,
       ),
     serviceRequestAssignees: () =>
-      call<{ items: { membershipId: string; displayName: string }[] }>(
-        'GET',
-        `${p}/service-requests/assignees`,
-      ).then((r) => r.data.items),
+      call<{ items: StaffRef[] }>('GET', `${p}/service-requests/assignees`).then(
+        (r) => r.data.items,
+      ),
     createServiceRequest: (body: StaffServiceRequestCreate) =>
       call<ServiceRequest>('POST', `${p}/service-requests`, body).then((r) => r.data),
     updateServiceRequest: (requestId: string, version: number, body: ServiceRequestUpdate) =>
@@ -66,10 +63,7 @@ export function operationsClient({ call, qs, baseUrl, p, id }: PropertyTransport
     maintenanceRequest: (requestId: string) =>
       call<MaintenanceDetail>('GET', `${p}/maintenance/${id(requestId)}`).then((r) => r.data),
     maintenanceTechnicians: () =>
-      call<{ items: { membershipId: string; displayName: string }[] }>(
-        'GET',
-        `${p}/maintenance/technicians`,
-      ).then((r) => r.data.items),
+      call<{ items: StaffRef[] }>('GET', `${p}/maintenance/technicians`).then((r) => r.data.items),
     reportMaintenance: (body: CreateMaintenanceInput) =>
       call<MaintenanceRequest>('POST', `${p}/maintenance`, body).then((r) => r.data),
     maintenanceAction: (requestId: string, version: number, body: MaintenanceAction) =>

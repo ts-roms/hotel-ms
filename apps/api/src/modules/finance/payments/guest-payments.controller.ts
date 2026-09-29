@@ -4,15 +4,14 @@ import {
   type GuestPaymentRequest,
   guestPaymentRequestSchema,
   paymentIntentSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { IdempotencyService, idempotencyKeyHeader } from '../../../common/idempotency.js';
 import { GuestRoute } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
 import { PaymentsService } from './payments.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 /** Guest portal: pay the stay folio online (hosted checkout). */
 @ApiTags('guest portal')
 @Controller('guest')
@@ -40,7 +39,7 @@ export class GuestPaymentsController {
   }
 
   @Get('payments')
-  @ZodResponse(200, items(paymentIntentSchema))
+  @ZodResponse(200, listOf(paymentIntentSchema))
   async list() {
     return { items: await this.payments.guestIntents() };
   }

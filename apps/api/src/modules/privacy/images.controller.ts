@@ -18,6 +18,7 @@ import {
   updatePropertyImageRequestSchema,
   type UploadImageQuery,
   uploadImageQuerySchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -27,8 +28,6 @@ import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { sendImage } from './image-response.js';
 import { ImagesService } from './images.service.js';
 
-const items = <T extends z.ZodType>(schema: T) => z.object({ items: z.array(schema) });
-
 /** Hotel photos and menu item photos (ADR-0030). Upload bodies are the image. */
 @ApiTags('images')
 @Controller('properties/:propertyId')
@@ -37,7 +36,7 @@ export class ImagesController {
 
   @Get('images')
   @RequirePermission('property.read')
-  @ZodResponse(200, items(propertyImageSchema))
+  @ZodResponse(200, listOf(propertyImageSchema))
   async list(@Param('propertyId') propertyId: string) {
     return { items: await this.images.list(propertyId) };
   }
@@ -46,7 +45,7 @@ export class ImagesController {
   @RequirePermission('property.settings.manage')
   @ApiConsumes(...IMAGE_UPLOAD_TYPES)
   @ApiBody({ schema: { type: 'string', format: 'binary' } })
-  @ZodResponse(201, items(propertyImageSchema))
+  @ZodResponse(201, listOf(propertyImageSchema))
   async upload(
     @Param('propertyId') propertyId: string,
     @ZodQuery(uploadImageQuerySchema) query: UploadImageQuery,
@@ -64,7 +63,7 @@ export class ImagesController {
 
   @Patch('images/:imageId')
   @RequirePermission('property.settings.manage')
-  @ZodResponse(200, items(propertyImageSchema))
+  @ZodResponse(200, listOf(propertyImageSchema))
   async update(
     @Param('propertyId') propertyId: string,
     @Param('imageId') imageId: string,

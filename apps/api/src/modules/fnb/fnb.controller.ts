@@ -36,10 +36,10 @@ import {
   updateMenuItemRequestSchema,
   type UpdateOutletRequest,
   updateOutletRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
-import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
 import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
 import { uuidParam } from '../../common/params.js';
@@ -51,7 +51,6 @@ import { RealtimeService } from '../../infrastructure/realtime.js';
 import { MenuService } from './menu.service.js';
 import { OrdersService } from './orders.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 const HEARTBEAT_MS = 25_000;
 
 @ApiTags('f&b')
@@ -70,7 +69,7 @@ export class FnbController {
 
   @Get('outlets')
   @RequirePermission('fnb.order.read')
-  @ZodResponse(200, items(outletSchema))
+  @ZodResponse(200, listOf(outletSchema))
   async outlets(@Param('propertyId') propertyId: string) {
     return { items: await this.menus.outlets(propertyId) };
   }
@@ -152,7 +151,7 @@ export class FnbController {
 
   @Get('orders')
   @RequirePermission('fnb.order.read')
-  @ZodResponse(200, items(orderSchema))
+  @ZodResponse(200, listOf(orderSchema))
   async list(
     @Param('propertyId') propertyId: string,
     @ZodQuery(orderListQuerySchema) query: OrderListQuery,

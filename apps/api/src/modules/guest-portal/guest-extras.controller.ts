@@ -10,9 +10,9 @@ import {
   serviceRequestSchema,
   type UploadGuestIdQuery,
   uploadGuestIdQuerySchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
@@ -56,7 +56,7 @@ export class GuestExtrasController {
   }
 
   @Get('notifications')
-  @ZodResponse(200, z.object({ items: z.array(guestNotificationSchema) }))
+  @ZodResponse(200, listOf(guestNotificationSchema))
   async notifications() {
     return { items: await this.guestInbox.list() };
   }

@@ -13,16 +13,14 @@ import {
   leaveRequestSchema,
   myEmployeeSchema,
   shiftSchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { AttendanceService } from './attendance.service.js';
 import { LeaveService } from './leave.service.js';
 import { ScheduleService } from './schedule.service.js';
-
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
 /** Self service: the caller's own employee record, time and leave. */
 @ApiTags('hr: self service')
@@ -44,21 +42,21 @@ export class MeController {
 
   @Get('shifts')
   @RequirePermission('schedule.read.own', 'any')
-  @ZodResponse(200, items(shiftSchema))
+  @ZodResponse(200, listOf(shiftSchema))
   async shifts(@ZodQuery(dateRangeQuerySchema) query: DateRangeQuery) {
     return { items: await this.schedule.myShifts(query.from, query.to) };
   }
 
   @Get('attendance')
   @RequirePermission('attendance.punch.own', 'any')
-  @ZodResponse(200, items(attendanceDaySchema))
+  @ZodResponse(200, listOf(attendanceDaySchema))
   async myAttendance(@ZodQuery(dateRangeQuerySchema) query: DateRangeQuery) {
     return { items: await this.attendance.myAttendance(query.from, query.to) };
   }
 
   @Get('attendance-corrections')
   @RequirePermission('attendance.punch.own', 'any')
-  @ZodResponse(200, items(attendanceCorrectionSchema))
+  @ZodResponse(200, listOf(attendanceCorrectionSchema))
   async corrections() {
     return { items: await this.attendance.myCorrections() };
   }

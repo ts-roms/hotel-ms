@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { localDateSchema } from './common.js';
+import { localDateSchema, staffRefSchema } from './common.js';
 import {
   amountMinorSchema,
   guestSummarySchema,
@@ -217,7 +217,7 @@ export const housekeepingTaskSchema = z.object({
   type: z.enum(HOUSEKEEPING_TASK_TYPES),
   status: z.enum(HOUSEKEEPING_TASK_STATUSES),
   businessDate: localDateSchema,
-  assignee: z.object({ membershipId: z.uuid(), displayName: z.string() }).nullable(),
+  assignee: staffRefSchema.nullable(),
   notes: z.string(),
   version: z.number().int(),
 });

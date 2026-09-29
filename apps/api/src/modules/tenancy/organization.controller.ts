@@ -5,8 +5,8 @@ import {
   featureFlagSchema,
   type SetFeatureFlagRequest,
   setFeatureFlagRequestSchema,
+  listOf,
 } from '@hotel/contracts';
-import { z } from 'zod';
 import { ClsService } from 'nestjs-cls';
 import type { RequestContext } from '../../common/request-context.js';
 import { RequirePermission } from '../../common/route-metadata.js';
@@ -46,7 +46,7 @@ export class OrganizationController {
   /** Every platform flag with its effective value for this organization. */
   @Get('feature-flags')
   @RequirePermission('feature_flag.manage', 'organization')
-  @ZodResponse(200, z.object({ items: z.array(featureFlagSchema) }))
+  @ZodResponse(200, listOf(featureFlagSchema))
   async featureFlags(): Promise<{ items: FeatureFlag[] }> {
     const items = await this.db.run(async (tx) => {
       // Sequential: one transaction is one connection.

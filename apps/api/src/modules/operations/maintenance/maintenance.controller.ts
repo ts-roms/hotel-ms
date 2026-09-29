@@ -10,16 +10,15 @@ import {
   type MaintenanceListQuery,
   maintenanceListQuerySchema,
   maintenanceRequestSchema,
+  listOf,
+  staffRefSchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 import { parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { MaintenanceService } from './maintenance.service.js';
-
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 
 /** Maintenance requests of a property (spec §32, ADR-0023). */
 @ApiTags('maintenance')
@@ -29,14 +28,14 @@ export class MaintenanceController {
 
   @Get()
   @RequirePermission('maintenance.read')
-  @ZodResponse(200, items(maintenanceRequestSchema))
+  @ZodResponse(200, listOf(maintenanceRequestSchema))
   async list(@ZodQuery(maintenanceListQuerySchema) query: MaintenanceListQuery) {
     return { items: await this.maintenance.list(query) };
   }
 
   @Get('technicians')
   @RequirePermission('maintenance.manage')
-  @ZodResponse(200, items(z.object({ membershipId: z.uuid(), displayName: z.string() })))
+  @ZodResponse(200, listOf(staffRefSchema))
   async technicians() {
     return { items: await this.maintenance.technicians() };
   }

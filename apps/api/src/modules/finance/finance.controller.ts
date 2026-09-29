@@ -41,6 +41,7 @@ import {
   setExchangeRateRequestSchema,
   type TransferRequest,
   transferRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -56,7 +57,6 @@ import { FinanceSettingsService } from './settings/finance-settings.service.js';
 import { PaymentsService } from './payments/payments.service.js';
 import { FinanceReportsService } from './reports/finance-reports.service.js';
 
-const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
 @ApiTags('finance')
 @Controller('properties/:propertyId')
 export class FinanceController {
@@ -105,7 +105,7 @@ export class FinanceController {
 
   @Get('folios/:folioId/payment-intents')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(paymentIntentSchema))
+  @ZodResponse(200, listOf(paymentIntentSchema))
   async intents(@Param('folioId') folioId: string) {
     return { items: await this.payments.intentsForFolio(uuidParam(folioId)) };
   }
@@ -128,7 +128,7 @@ export class FinanceController {
 
   @Get('payments/:paymentId/refunds')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(refundSchema))
+  @ZodResponse(200, listOf(refundSchema))
   async refunds(@Param('propertyId') propertyId: string, @Param('paymentId') paymentId: string) {
     return { items: await this.payments.refunds(propertyId, uuidParam(paymentId)) };
   }
@@ -189,7 +189,7 @@ export class FinanceController {
 
   @Get('exchange-rates')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(exchangeRateSchema))
+  @ZodResponse(200, listOf(exchangeRateSchema))
   async exchangeRates(@Param('propertyId') propertyId: string) {
     return { items: await this.settings.exchangeRates(propertyId) };
   }
@@ -206,7 +206,7 @@ export class FinanceController {
 
   @Get('discount-profiles')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(discountProfileSchema))
+  @ZodResponse(200, listOf(discountProfileSchema))
   async discountProfiles(@Param('propertyId') propertyId: string) {
     return { items: await this.settings.discountProfiles(propertyId) };
   }
@@ -252,7 +252,7 @@ export class FinanceController {
 
   @Get('accounts')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(accountFolioSchema))
+  @ZodResponse(200, listOf(accountFolioSchema))
   async accounts() {
     return { items: await this.folios.accounts() };
   }
@@ -266,14 +266,14 @@ export class FinanceController {
 
   @Get('folios/:folioId/routing-rules')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(routingRuleSchema))
+  @ZodResponse(200, listOf(routingRuleSchema))
   async routingRules(@Param('folioId') folioId: string) {
     return { items: await this.folios.routingRules(uuidParam(folioId)) };
   }
 
   @Post('folios/:folioId/routing-rules')
   @RequirePermission('folio.transfer')
-  @ZodResponse(201, items(routingRuleSchema))
+  @ZodResponse(201, listOf(routingRuleSchema))
   async addRoutingRule(
     @Param('folioId') folioId: string,
     @ZodBody(createRoutingRuleRequestSchema) body: CreateRoutingRuleRequest,
@@ -320,7 +320,7 @@ export class FinanceController {
 
   @Get('folios/:folioId/documents')
   @RequirePermission('folio.read')
-  @ZodResponse(200, items(folioDocumentSchema))
+  @ZodResponse(200, listOf(folioDocumentSchema))
   async documentList(@Param('propertyId') propertyId: string, @Param('folioId') folioId: string) {
     return { items: await this.documents.list(propertyId, uuidParam(folioId)) };
   }
@@ -372,7 +372,7 @@ export class FinanceController {
 
   @Get('cashier/shifts')
   @RequirePermission('finance.report.read')
-  @ZodResponse(200, items(cashierShiftSchema))
+  @ZodResponse(200, listOf(cashierShiftSchema))
   async shifts(@Param('propertyId') propertyId: string) {
     return { items: await this.cashier.list(propertyId) };
   }
@@ -391,7 +391,7 @@ export class FinanceController {
 
   @Get('reports/reconciliation-runs')
   @RequirePermission('finance.report.read')
-  @ZodResponse(200, items(reconciliationRunSchema))
+  @ZodResponse(200, listOf(reconciliationRunSchema))
   async reconciliationRuns(@Param('propertyId') propertyId: string) {
     return { items: await this.reports.runs(propertyId) };
   }

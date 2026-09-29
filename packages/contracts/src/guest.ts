@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { localDateSchema, localTimeSchema } from './common.js';
+import { localDateSchema, localTimeSchema, staffRefSchema } from './common.js';
 import { totpCodeSchema } from './auth.js';
 
 /**
@@ -157,7 +157,7 @@ export const serviceRequestSchema = z.object({
   status: z.enum(SERVICE_REQUEST_STATUSES),
   roomNumber: z.string().nullable(),
   guestName: z.string().nullable(),
-  assignee: z.object({ membershipId: z.uuid(), displayName: z.string() }).nullable(),
+  assignee: staffRefSchema.nullable(),
   createdAt: z.iso.datetime(),
   acknowledgedAt: z.iso.datetime().nullable(),
   completedAt: z.iso.datetime().nullable(),

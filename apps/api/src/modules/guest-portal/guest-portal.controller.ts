@@ -15,9 +15,9 @@ import {
   preCheckInRequestSchema,
   selfCheckInResultSchema,
   serviceRequestSchema,
+  listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
@@ -25,7 +25,7 @@ import { GuestPortalService } from './guest-portal.service.js';
 import { GuestSessions } from './guest-session.js';
 import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 
-const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
+const serviceRequestList = listOf(serviceRequestSchema);
 
 /**
  * Guest realm (blueprint §11): authenticated by GuestGuard with the guest cookie. No route
