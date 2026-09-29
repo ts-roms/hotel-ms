@@ -6,6 +6,13 @@ export function currencyDigits(currency: string): number {
   );
 }
 
+/** 123_450n PHP → "₱1,234.50"; scales by the currency's own minor units (JPY 0, KWD 3). */
+export function formatMinor(minor: bigint, currency: string, locale = 'en-PH'): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(
+    Number(minor) / 10 ** currencyDigits(currency),
+  );
+}
+
 const MICROS = 1_000_000n;
 
 /** "56.25" → 56_250_000n (exact; up to 6 decimals). */
