@@ -1,6 +1,17 @@
 'use client';
 
-import type { MenuItem, Order, OrderItemInput, StaffOrderRequest } from '@hotel/contracts';
+import {
+  type CartLine,
+  cartCount,
+  cartTotal,
+  linePrice,
+  type MenuItem,
+  newCartLine,
+  type Order,
+  type OrderItemInput,
+  type StaffOrderRequest,
+  toggleModifier,
+} from '@hotel/contracts';
 import { formatMoney } from '@hotel/format';
 import {
   Alert,
@@ -10,12 +21,12 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  cn,
   EmptyState,
   Input,
   LoadingRegion,
-  PageHeader,
+  ModifierPicker,
   NativeSelect,
+  PageHeader,
   SectionCard,
   Skeleton,
   SkeletonTable,
@@ -33,12 +44,6 @@ import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
-
-interface CartLine {
-  item: MenuItem;
-  quantity: number;
-  modifierIds: string[];
-}
 
 /** Order taking for outlets and phone room service (blueprint §14). */
 export default function OrdersPage() {
@@ -99,26 +104,9 @@ export default function OrdersPage() {
   });
 
   const currency = menu.data?.currency ?? 'PHP';
-  const lineTotal = (l: CartLine) =>
-    (l.item.priceMinor +
-      l.item.modifierGroups
-        .flatMap((g) => g.modifiers)
-        .filter((m) => l.modifierIds.includes(m.id))
-        .reduce((s, m) => s + m.priceMinor, 0)) *
-    l.quantity;
-  const total = cart.reduce((s, l) => s + lineTotal(l), 0);
-  const add = (item: MenuItem) =>
-    setCart([
-      ...cart,
-      {
-        item,
-        quantity: 1,
-        // Pre-select the first option of each required group.
-        modifierIds: item.modifierGroups
-          .filter((g) => g.minSelect > 0)
-          .flatMap((g) => g.modifiers.slice(0, g.minSelect).map((m) => m.id)),
-      },
-    ]);
+  const total = cartTotal(cart);
+  // New lines start with the first option of each required group.
+  const add = (item: MenuItem) => setCart([...cart, newCartLine(item)]);
   const update = (index: number, change: Partial<CartLine>) =>
     setCart(cart.map((l, i) => (i === index ? { ...l, ...change } : l)));
   const menuLoading = outlets.isPending || (!!outlet && menu.isPending);
@@ -212,7 +200,7 @@ export default function OrdersPage() {
                 {t('fnb.newOrder')}
                 {cart.length > 0 && (
                   <Badge variant="primary" className="tabular-nums">
-                    {cart.reduce((n, l) => n + l.quantity, 0)}
+                    {cartCount(cart)}
                   </Badge>
                 )}
               </>
@@ -244,7 +232,7 @@ export default function OrdersPage() {
                         }
                       />
                       <span className="w-24 text-right font-medium tabular-nums">
-                        {formatMoney(lineTotal(l), currency)}
+                        {formatMoney(linePrice(l), currency)}
                       </span>
                       <Button
                         size="icon"
@@ -257,49 +245,14 @@ export default function OrdersPage() {
                       </Button>
                     </span>
                   </div>
-                  {l.item.modifierGroups.map((g) => (
-                    <div key={g.id} className="flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="text-muted-foreground">{g.name}</span>
-                      {g.modifiers.map((m) => {
-                        const on = l.modifierIds.includes(m.id);
-                        return (
-                          <label
-                            key={m.id}
-                            className={cn(
-                              'flex cursor-pointer items-center gap-1 rounded-full border px-2.5 py-1 transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring/40',
-                              on
-                                ? 'border-primary/40 bg-primary/10 text-primary'
-                                : 'hover:border-ring/40',
-                            )}
-                          >
-                            <input
-                              type={g.maxSelect === 1 ? 'radio' : 'checkbox'}
-                              className="sr-only"
-                              name={`${index}-${g.id}`}
-                              checked={on}
-                              onChange={() => {
-                                const others = l.modifierIds.filter(
-                                  (id) => !g.modifiers.some((x) => x.id === id),
-                                );
-                                const inGroup = l.modifierIds.filter((id) =>
-                                  g.modifiers.some((x) => x.id === id),
-                                );
-                                const next =
-                                  g.maxSelect === 1
-                                    ? [m.id]
-                                    : on
-                                      ? inGroup.filter((id) => id !== m.id)
-                                      : [...inGroup, m.id];
-                                update(index, { modifierIds: [...others, ...next] });
-                              }}
-                            />
-                            {m.name}
-                            {m.priceMinor > 0 && ` +${formatMoney(m.priceMinor, currency)}`}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  ))}
+                  <ModifierPicker
+                    groups={l.item.modifierGroups}
+                    selected={l.modifierIds}
+                    onToggle={(group, id) =>
+                      update(index, { modifierIds: toggleModifier(l.modifierIds, group, id) })
+                    }
+                    formatPrice={(minor) => formatMoney(minor, currency)}
+                  />
                 </div>
               ))}
               <div className="flex flex-wrap gap-2">

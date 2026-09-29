@@ -37,6 +37,7 @@ export * from './blocks/empty-state.js';
 export * from './blocks/filter-chips.js';
 export * from './blocks/form-field.js';
 export * from './blocks/loading.js';
+export * from './blocks/modifier-picker.js';
 export * from './blocks/page-header.js';
 export * from './blocks/section-card.js';
 export * from './blocks/shell-card.js';

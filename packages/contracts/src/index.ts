@@ -20,6 +20,7 @@ export * from './guest-portal.js';
 export * from './workforce.js';
 export * from './time.js';
 export * from './fnb.js';
+export * from './fnb-cart.js';
 export * from './finance.js';
 export * from './devices.js';
 export * from './notifications.js';

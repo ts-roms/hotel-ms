@@ -1,7 +1,13 @@
 'use client';
 
 import { ApiError } from '@hotel/api-client';
-import type { MenuItem } from '@hotel/contracts';
+import {
+  type CartLine as Line,
+  cartCount,
+  cartTotal,
+  type MenuItem,
+  newCartLine,
+} from '@hotel/contracts';
 import { formatMoney } from '@hotel/format';
 import {
   Alert,
@@ -20,7 +26,7 @@ import { Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, errorMessage } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { CartLine, type Line, unitPrice } from './room-service-cart-line';
+import { CartLine } from './room-service-cart-line';
 import { RoomServiceOrders } from './room-service-orders';
 
 /** In-room dining for checked-in guests (blueprint §14). Hidden when the hotel has it off. */
@@ -71,14 +77,9 @@ export function RoomService() {
   if (menus.isPending) return <SkeletonCard lines={4} />;
   if (menus.error instanceof ApiError && menus.error.code === 'FEATURE_DISABLED') return null;
   if (!menu) return null;
-  const total = cart.reduce((s, l) => s + unitPrice(l) * l.quantity, 0);
-  const count = cart.reduce((n, l) => n + l.quantity, 0);
-  const add = (item: MenuItem) => {
-    const modifierIds = item.modifierGroups
-      .filter((g) => g.minSelect > 0)
-      .flatMap((g) => g.modifiers.slice(0, g.minSelect).map((m) => m.id));
-    setCart([...cart, { item, quantity: 1, modifierIds }]);
-  };
+  const total = cartTotal(cart);
+  const count = cartCount(cart);
+  const add = (item: MenuItem) => setCart([...cart, newCartLine(item)]);
   const update = (index: number, change: Partial<Line>) =>
     setCart(cart.map((l, i) => (i === index ? { ...l, ...change } : l)));
 
