@@ -162,6 +162,14 @@ export class FolioService {
     });
   }
 
+  /** Closes a settled folio on check-out, inside Front Office's transaction. */
+  async closeInTx(tx: Tx, folioId: string): Promise<void> {
+    await tx.folio.update({
+      where: { id: folioId },
+      data: { status: 'CLOSED', closedAt: new Date(), version: { increment: 1 } },
+    });
+  }
+
   private async requireFolio(tx: Tx, folioId: string) {
     const folio = await tx.folio.findFirst({
       where: { id: folioId, propertyId: this.ctx.propertyId },

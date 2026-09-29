@@ -1,17 +1,12 @@
 import { Controller, Get, Inject, NotFoundException, Param, Post, Req, Res } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { escapeHtml } from '@hotel/format';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { formatMinor, toMinor } from '../../../common/money.js';
 import { Public, Webhook } from '../../../common/route-metadata.js';
 import { ENV, type Env } from '../../../config/env.js';
 import { PaymentsService } from './payments.service.js';
 import { PAYMENT_PROVIDERS, type PaymentProviders, SandboxProvider } from './providers.js';
-
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  );
 
 /**
  * The sandbox gateway's hosted checkout (development, tests, staging only). A payer

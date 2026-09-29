@@ -10,13 +10,10 @@ import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { releaseInventory } from '../pms/inventory/inventory.js';
-import { businessDateOf } from '../pms/inventory/rooms.service.js';
+import { businessDateOf, RoomsService } from '../pms/inventory/rooms.service.js';
+import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { frontDeskInclude, toFrontDeskItem } from './front-office.service.js';
-import {
-  ensureHousekeepingTask,
-  recordRoomStatus,
-} from '../operations/housekeeping/room-status.js';
+import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
 
 const cannotClose = (detail: string) =>
   new ProblemException(409, 'INVALID_STATE', 'Business day cannot close', detail);
@@ -42,6 +39,9 @@ export class NightAuditService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly rooms: RoomsService,
+    private readonly housekeeping: HousekeepingService,
+    private readonly reservations: ReservationsService,
   ) {}
 
   private get ctx() {
@@ -104,23 +104,7 @@ export class NightAuditService {
         }
 
         // 2. No-shows.
-        for (const line of noShows) {
-          const nights = await tx.reservationNight.findMany({
-            where: { reservationRoomId: line.id },
-            select: { stayDate: true },
-          });
-          await releaseInventory(tx, [
-            { roomTypeId: line.roomTypeId, dates: nights.map((n) => fromDbDate(n.stayDate)) },
-          ]);
-          await tx.roomAssignment.updateMany({
-            where: { reservationRoomId: line.id, releasedAt: null },
-            data: { releasedAt: new Date() },
-          });
-          await tx.reservationRoom.update({
-            where: { id: line.id },
-            data: { status: 'NO_SHOW', version: { increment: 1 } },
-          });
-        }
+        for (const line of noShows) await this.reservations.markNoShowInTx(tx, line);
 
         // 3. Room charges for tonight. 4. Stayover housekeeping for tomorrow.
         const tomorrow = addDays(businessDate, 1);
@@ -140,19 +124,15 @@ export class NightAuditService {
             });
           }
           if (room && fromDbDate(line.departureDate) > tomorrow) {
-            await recordRoomStatus(
-              tx,
-              {
-                organizationId,
-                propertyId,
-                roomId: room.id,
-                to: 'DIRTY',
-                reason: 'Stayover',
-                actorId,
-              },
-              this.outbox,
-            );
-            await ensureHousekeepingTask(tx, {
+            await this.rooms.setHousekeepingStatusInTx(tx, {
+              organizationId,
+              propertyId,
+              roomId: room.id,
+              to: 'DIRTY',
+              reason: 'Stayover',
+              actorId,
+            });
+            await this.housekeeping.ensureTaskInTx(tx, {
               organizationId,
               propertyId,
               roomId: room.id,

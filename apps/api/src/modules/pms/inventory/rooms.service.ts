@@ -5,6 +5,7 @@ import type {
   CreateRoomBlockRequest,
   CreateRoomRequest,
   CreateRoomTypeRequest,
+  HOUSEKEEPING_STATUSES,
   Room,
   RoomBlock,
   RoomType,
@@ -22,6 +23,8 @@ import { TenantDb } from '../../../infrastructure/database.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
 import { refreshCapacity, releaseInventory, takeInventory } from './inventory.js';
+
+type HousekeepingStatus = (typeof HOUSEKEEPING_STATUSES)[number];
 
 /** Current business date of the route's property (the only "today" PMS code may use). */
 export async function businessDateOf(tx: Tx, propertyId: string): Promise<string> {
@@ -277,6 +280,48 @@ export class RoomsService {
   }
 
   /**
+   * Creates imported rooms (CSV import, ADR-0030) inside the caller's transaction,
+   * skipping numbers that exist by now, then refreshes the sellable capacity of their
+   * room types. The caller validated the rows and records the import's audit entry.
+   */
+  async importInTx(
+    tx: Tx,
+    propertyId: string,
+    rooms: { number: string; roomTypeId: string; notes: string }[],
+  ): Promise<{ created: number; skipped: number }> {
+    let created = 0;
+    let skipped = 0;
+    const taken = new Set(
+      (await tx.room.findMany({ where: { propertyId }, select: { number: true } })).map((r) =>
+        r.number.toUpperCase(),
+      ),
+    );
+    const { organizationId, actorId } = this.ctx;
+    for (const room of rooms) {
+      if (taken.has(room.number.toUpperCase())) {
+        skipped++;
+        continue;
+      }
+      await tx.room.create({
+        data: {
+          organizationId,
+          propertyId,
+          number: room.number,
+          roomTypeId: room.roomTypeId,
+          notes: room.notes,
+          createdBy: actorId,
+          updatedBy: actorId,
+        },
+      });
+      created++;
+    }
+    const today = await businessDateOf(tx, propertyId);
+    for (const roomTypeId of new Set(rooms.map((r) => r.roomTypeId)))
+      await refreshCapacity(tx, roomTypeId, today);
+    return { created, skipped };
+  }
+
+  /**
    * Moving a room to another type changes sellable capacity of both types from today on;
    * refused if either would be oversold or the room holds future bookings of its old type.
    */
@@ -374,6 +419,53 @@ export class RoomsService {
       );
     });
     return this.getRoom(roomId);
+  }
+
+  /**
+   * Changes a room's housekeeping status with its history row and event, inside the
+   * caller's transaction (housekeeping, check-out, night audit). No-op when the status is
+   * unchanged. The caller checks the transition is allowed.
+   */
+  async setHousekeepingStatusInTx(
+    tx: Tx,
+    input: {
+      organizationId: string;
+      propertyId: string;
+      roomId: string;
+      to: HousekeepingStatus;
+      reason: string | null;
+      actorId: string | null;
+    },
+  ): Promise<void> {
+    const room = await tx.room.findUniqueOrThrow({ where: { id: input.roomId } });
+    if (room.housekeepingStatus === input.to) return;
+    await tx.room.update({
+      where: { id: input.roomId },
+      data: { housekeepingStatus: input.to, version: { increment: 1 } },
+    });
+    await tx.roomStatusEvent.create({
+      data: {
+        organizationId: input.organizationId,
+        propertyId: input.propertyId,
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        fromValue: room.housekeepingStatus,
+        toValue: input.to,
+        reason: input.reason,
+        actorId: input.actorId,
+      },
+    });
+    await this.outbox.enqueue(
+      tx,
+      'RoomStatusChanged',
+      {
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        from: room.housekeepingStatus,
+        to: input.to,
+      },
+      { propertyId: input.propertyId },
+    );
   }
 
   // ---- Out-of-order blocks --------------------------------------------------------------

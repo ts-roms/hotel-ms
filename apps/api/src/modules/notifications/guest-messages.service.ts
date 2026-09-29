@@ -8,6 +8,7 @@ import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
 import { NotificationsService } from './notifications.service.js';
+import { toSmsMessage } from './sms.js';
 
 interface Outgoing {
   email: (EmailTemplate & { to: string }) | null;
@@ -45,7 +46,8 @@ export class GuestMessagesService {
       });
       if (!out) return;
       if (out.email) await this.queue.sendEmail(out.email);
-      if (out.sms) await this.queue.sendSms(out.sms.to, out.sms.text);
+      const sms = out.sms && toSmsMessage(out.sms.to, out.sms.text);
+      if (sms) await this.queue.sendSms(sms);
     } catch (error) {
       this.logger.error(`Guest message ${dedupeKey} failed: ${String(error)}`);
     }
