@@ -33,6 +33,7 @@ import {
   correctionListQuerySchema,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { sendCsv } from '../../../common/download.js';
 import { parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
@@ -66,13 +67,7 @@ export class PropertyHrController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<string> {
     const csv = await this.payroll.exportCsv(propertyId, query.from, query.to);
-    reply.header('content-type', 'text/csv; charset=utf-8');
-    reply.header(
-      'content-disposition',
-      `attachment; filename="payroll-${query.from}-${query.to}.csv"`,
-    );
-    reply.header('cache-control', 'no-store');
-    return csv;
+    return sendCsv(reply, `payroll-${query.from}-${query.to}.csv`, csv);
   }
 
   /** Punch type in the query; the body is the selfie taken now (ADR-0022). */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { matchesType } from '../../../common/uploads.js';
-import { attachmentHeader } from './employee-documents.controller.js';
+import { attachmentHeader } from '../../../common/download.js';
 import { purgeOn } from './employee-documents.service.js';
 
 describe('employee document files', () => {

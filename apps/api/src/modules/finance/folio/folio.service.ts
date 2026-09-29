@@ -18,7 +18,8 @@ import { SECRET_BOX } from '../../../infrastructure/secret-box.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
 import { businessDateOf } from '../../pms/inventory/rooms.service.js';
-import { convertMinor, currencyDigits, formatRate, toMinor } from '../../../common/money.js';
+import { currencyDigits } from '@hotel/format';
+import { convertMinor, formatRate, toMinor } from '../../../common/money.js';
 import type { SecretBox } from '../../../infrastructure/secret-box.js';
 import {
   applyStatutoryDiscount,

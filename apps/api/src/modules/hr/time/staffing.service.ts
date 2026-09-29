@@ -5,15 +5,12 @@ import type {
   StaffingRequirement,
 } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
-import { addDays, fromDbDate, toDbDate } from '../../../common/dates.js';
+import { addDays, fromDbDate, toDbDate, weekdayOf } from '../../../common/dates.js';
 import { Problems } from '../../../common/problem.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { HrAccess } from '../hr-access.js';
 import { shiftInstants } from './schedule.service.js';
-
-/** 0 = Sunday … 6 = Saturday, of a calendar date. */
-export const weekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
 
 /**
  * The fewest people on shift at any moment of [start, end): shifts are clipped to the

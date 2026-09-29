@@ -2,8 +2,8 @@ import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException } from '
 import type { Problem } from '@hotel/contracts';
 import { Prisma } from '@hotel/database';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { reportError } from '../infrastructure/error-reporting.js';
-import { ProblemException } from './problem.js';
+import { ProblemException } from '../common/problem.js';
+import { reportError } from './error-reporting.js';
 
 const PROBLEM_BASE = 'https://docs.hotel-platform.dev/problems/';
 

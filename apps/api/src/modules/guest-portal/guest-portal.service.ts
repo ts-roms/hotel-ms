@@ -8,6 +8,7 @@ import { addDays, fromDbDate } from '../../common/dates.js';
 import { toMinor } from '../../common/money.js';
 import { ProblemException, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { toLocal } from '../../common/zoned-time.js';
 import { ENV, type Env } from '../../config/env.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { NotificationsQueue } from '../../infrastructure/queue.js';
@@ -34,16 +35,6 @@ const seeFrontDesk = (detail: string) =>
 function maskEmail(email: string): string {
   const [local = '', domain = ''] = email.split('@');
   return `${local.slice(0, 1)}•••@${domain}`;
-}
-
-/** "HH:mm" now in an IANA time zone. */
-function localTimeNow(timeZone: string, now = new Date()): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).format(now);
 }
 
 /**
@@ -446,7 +437,7 @@ export class GuestPortalService {
         `Online check-in opens on your arrival day, ${fromDbDate(line.arrivalDate)}.`,
       );
     }
-    if (localTimeNow(property.timezone) < property.checkInTime) {
+    if (toLocal(new Date(), property.timezone).time < property.checkInTime) {
       throw seeFrontDesk(
         `Check-in starts at ${property.checkInTime}. Early arrival? The front desk will help.`,
       );

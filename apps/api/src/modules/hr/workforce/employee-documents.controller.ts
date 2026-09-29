@@ -8,16 +8,11 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { attachmentHeader } from '../../../common/download.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { EmployeeDocumentsService } from './employee-documents.service.js';
-
-/** RFC 6266 Content-Disposition: an ASCII fallback plus the exact UTF-8 name. */
-export function attachmentHeader(fileName: string): string {
-  const ascii = fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
-}
 
 /** Employee documents (ADR-0019). The upload body is the file itself. */
 @ApiTags('hr')

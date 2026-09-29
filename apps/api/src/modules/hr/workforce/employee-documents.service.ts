@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
@@ -12,9 +11,9 @@ import {
 import { type Prisma, type Tx, uuidv7 } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate, toDbDate } from '../../../common/dates.js';
-import { ProblemException, Problems } from '../../../common/problem.js';
+import { Problems } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
-import { matchesType } from '../../../common/uploads.js';
+import { acceptUpload } from '../../../common/uploads.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import {
   OBJECT_STORAGE,
@@ -51,8 +50,12 @@ type DocumentRow = Prisma.EmployeeDocumentGetPayload<object>;
 
 const PERMISSION = 'employee.documents';
 
-const unsupported = (detail: string) =>
-  new ProblemException(415, 'UNSUPPORTED_FILE_TYPE', 'Unsupported file', detail);
+const DOCUMENT_RULES = {
+  types: EMPLOYEE_DOCUMENT_TYPES,
+  maxBytes: EMPLOYEE_DOCUMENT_MAX_BYTES,
+  label: 'file',
+  typeHint: 'Upload a PDF, JPEG, PNG or WebP file.',
+};
 
 /**
  * Employee documents (ADR-0019): contracts, government IDs, medical certificates. The
@@ -135,23 +138,10 @@ export class EmployeeDocumentsService {
     body: unknown,
     meta: UploadEmployeeDocumentQuery,
   ): Promise<EmployeeDocument> {
-    const type = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
-    if (!(EMPLOYEE_DOCUMENT_TYPES as readonly string[]).includes(type)) {
-      throw unsupported('Upload a PDF, JPEG, PNG or WebP file.');
-    }
-    if (!Buffer.isBuffer(body) || body.length === 0) {
-      throw Problems.validation([{ path: 'body', message: 'The file is empty' }]);
-    }
-    if (body.length > EMPLOYEE_DOCUMENT_MAX_BYTES) {
-      throw new ProblemException(413, 'VALIDATION_FAILED', 'File too large', 'At most 8 MiB.');
-    }
-    if (!matchesType(body, type as DocumentType)) {
-      throw unsupported(`The file's content is not a ${type} file.`);
-    }
+    const { type, body: file, sha256 } = acceptUpload(contentType, body, DOCUMENT_RULES);
     const organizationId = this.access.organizationId;
     const id = uuidv7();
     const storageKey = `${organizationId}/employee-documents/${id}`;
-    const sha256 = createHash('sha256').update(body).digest('hex');
 
     // 1. The row, marked pending, so a crash at any later point leaves a trace the daily
     //    sweep can clean up (ADR-0021). Scope is checked here, before anything is stored.
@@ -166,7 +156,7 @@ export class EmployeeDocumentsService {
           title: meta.title,
           fileName: meta.fileName,
           contentType: type,
-          sizeBytes: body.length,
+          sizeBytes: file.length,
           sha256,
           storageKey,
           expiresOn: meta.expiresOn ? toDbDate(meta.expiresOn) : null,
@@ -176,7 +166,7 @@ export class EmployeeDocumentsService {
     });
     // 2. The file.
     try {
-      await this.storage.put(storageKey, body, type, sha256);
+      await this.storage.put(storageKey, file, type, sha256);
     } catch (error) {
       await this.discardPending(id, storageKey);
       throw error;
@@ -197,7 +187,7 @@ export class EmployeeDocumentsService {
             documentId: id,
             category: meta.category,
             title: meta.title,
-            sizeBytes: body.length,
+            sizeBytes: file.length,
             sha256,
           },
         });

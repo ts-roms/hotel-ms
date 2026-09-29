@@ -1,7 +1,7 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ClsModule } from 'nestjs-cls';
-import { ProblemFilter } from './common/problem.filter.js';
+import { ProblemFilter } from './infrastructure/problem.filter.js';
 import type { Env } from './config/env.js';
 import { CoreModule } from './core.module.js';
 import { AccessModule } from './modules/access/access.module.js';

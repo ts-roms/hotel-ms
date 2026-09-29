@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { minimumOnShift, weekdayOf } from './staffing.service.js';
+import { weekdayOf } from '../../../common/dates.js';
+import { minimumOnShift } from './staffing.service.js';
 
 const at = (hhmm: string, day = 2) => new Date(`2026-11-0${day}T${hhmm}:00Z`);
 const shift = (employeeId: string, from: string, to: string, toDay = 2) => ({
