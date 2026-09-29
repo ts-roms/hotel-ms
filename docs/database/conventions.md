@@ -39,4 +39,7 @@ It does **not** ignore `NULLS NOT DISTINCT` indexes. Use two partial unique inde
 - `$queryRawUnsafe` / `$executeRawUnsafe` in application code (ESLint enforces this).
 - Creating a Prisma client outside `apps/api/src/infrastructure/database.ts`, the worker
   entry point or `packages/database`.
-- `prisma migrate reset` against anything but a local throwaway database.
+- `prisma migrate reset` at all. It drops only `public`, not the `app` schema the first
+  migration creates, so it fails halfway. Use `pnpm db:reset`
+  (`packages/database/src/ops/reset-dev.ts`), which drops both, re-migrates and seeds,
+  and refuses anything but a local database.
