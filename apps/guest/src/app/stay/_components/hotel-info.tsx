@@ -1,10 +1,15 @@
 'use client';
 
 import { type GuestStay } from '@hotel/contracts';
-import { CardContent, Collapsible, CollapsibleContent, CollapsibleTrigger } from '@hotel/ui';
+import {
+  CardContent,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  SectionCard,
+} from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Building2, ChevronDown, Sparkles, Wifi } from 'lucide-react';
-import { Section } from '@/components/section';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -30,8 +35,9 @@ export function HotelInfo({ stay: s }: { stay: GuestStay }) {
     h.images.length === 0;
   if (empty) return null;
   return (
-    <Section
-      icon={<Building2 />}
+    <SectionCard
+      variant="badge"
+      icon={Building2}
       title={t('info.title', { name: h.name })}
       description={h.address || undefined}
     >
@@ -110,6 +116,6 @@ export function HotelInfo({ stay: s }: { stay: GuestStay }) {
           </Collapsible>
         )}
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

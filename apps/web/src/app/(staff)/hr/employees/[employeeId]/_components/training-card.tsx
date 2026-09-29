@@ -8,8 +8,8 @@ import { Award, ClipboardCheck, Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
-import { statusLabel } from '@/lib/status';
+import { type MessageKey, t } from '@/lib/i18n';
+import { enumLabel } from '@/lib/status';
 import { RecordSection } from './record-section';
 
 const EXPIRY_BADGE: Record<
@@ -19,6 +19,12 @@ const EXPIRY_BADGE: Record<
   VALID: 'success',
   EXPIRING: 'warning',
   EXPIRED: 'danger',
+};
+
+const EXPIRY_LABEL: Record<NonNullable<TrainingRecord['expiry']>, MessageKey> = {
+  VALID: 'hrx.expiry.VALID',
+  EXPIRING: 'hrx.expiry.EXPIRING',
+  EXPIRED: 'hrx.expiry.EXPIRED',
 };
 
 /** Trainings and certifications (employee.read; employee.manage records them). */
@@ -76,11 +82,14 @@ export function TrainingCard({
             <span className="font-medium">
               {r.title}
               <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {statusLabel(r.kind)}
+                {enumLabel('trainingKind', r.kind)}
               </span>
             </span>
             <span className="text-muted-foreground">
-              {[r.provider, r.completedOn && `${t('hrx.completed')} ${formatDate(r.completedOn)}`]
+              {[
+                r.provider,
+                r.completedOn && t('hrx.completedOn', { date: formatDate(r.completedOn) }),
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </span>
@@ -88,7 +97,7 @@ export function TrainingCard({
           <span className="flex items-center gap-2">
             {r.expiresOn && r.expiry && (
               <Badge variant={EXPIRY_BADGE[r.expiry]} dot>
-                {t(`hrx.expiry.${r.expiry}` as 'hrx.expiry.VALID')} {formatDate(r.expiresOn)}
+                {t(EXPIRY_LABEL[r.expiry], { date: formatDate(r.expiresOn) })}
               </Badge>
             )}
             {canManage && (
@@ -118,8 +127,8 @@ export function TrainingCard({
             value={form.kind}
             onChange={(ev) => setForm({ ...form, kind: ev.target.value as TrainingRecord['kind'] })}
           >
-            <option value="CERTIFICATION">{statusLabel('CERTIFICATION')}</option>
-            <option value="TRAINING">{statusLabel('TRAINING')}</option>
+            <option value="CERTIFICATION">{enumLabel('trainingKind', 'CERTIFICATION')}</option>
+            <option value="TRAINING">{enumLabel('trainingKind', 'TRAINING')}</option>
           </NativeSelect>
           <Input
             required

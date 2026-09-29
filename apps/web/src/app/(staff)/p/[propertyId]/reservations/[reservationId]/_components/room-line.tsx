@@ -62,9 +62,12 @@ export function RoomLine({
           </Badge>
         </div>
         <CardDescription>
-          {formatDate(line.arrivalDate)} → {formatDate(line.departureDate)} · {line.nights.length}{' '}
-          {t('res.nights')} · {line.adults} {t('res.adults').toLowerCase()}
-          {line.children ? `, ${line.children} ${t('res.children').toLowerCase()}` : ''}
+          {formatDate(line.arrivalDate)} → {formatDate(line.departureDate)} ·{' '}
+          {t(line.children ? 'res.guestsSummaryChildren' : 'res.guestsSummary', {
+            nights: line.nights.length,
+            adults: line.adults,
+            children: line.children,
+          })}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">

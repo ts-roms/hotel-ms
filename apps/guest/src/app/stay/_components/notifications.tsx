@@ -1,11 +1,10 @@
 'use client';
 
 import { elapsed, formatDate, localDate } from '@hotel/format';
-import { Badge, Button, CardContent } from '@hotel/ui';
+import { Badge, Button, CardContent, SectionCard } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check } from 'lucide-react';
 import { useState } from 'react';
-import { Section } from '@/components/section';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -40,8 +39,9 @@ export function Notifications({ unread }: { unread: number }) {
   const items = feed.data ?? [];
   if (items.length === 0) return null;
   return (
-    <Section
-      icon={<Bell />}
+    <SectionCard
+      variant="badge"
+      icon={Bell}
       title={
         <span className="flex items-center gap-2">
           {t('notifications.title')}
@@ -86,6 +86,6 @@ export function Notifications({ unread }: { unread: number }) {
           </Button>
         )}
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

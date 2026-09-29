@@ -1,11 +1,10 @@
 'use client';
 
 import { type GuestStay } from '@hotel/contracts';
-import { Alert, Button, CardContent, Input, Label, Notice } from '@hotel/ui';
+import { Alert, Button, CardContent, Input, Label, Notice, SectionCard } from '@hotel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Mail, ShieldCheck } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage, rememberStay } from '@/lib/api';
 import { rich, t } from '@/lib/i18n';
 
@@ -25,8 +24,9 @@ export function Verification({ stay: s }: { stay: GuestStay }) {
     verify.mutate(code.trim());
   };
   return (
-    <Section
-      icon={<ShieldCheck />}
+    <SectionCard
+      variant="badge"
+      icon={ShieldCheck}
       title={t('verify.title')}
       description={rich('verify.description', {
         destination: <strong className="text-foreground">{s.verificationDestination}</strong>,
@@ -72,6 +72,6 @@ export function Verification({ stay: s }: { stay: GuestStay }) {
           </form>
         )}
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

@@ -61,7 +61,7 @@ export default function DocumentRetentionPage() {
           >
             {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
               <Label key={c} className="flex items-center justify-between gap-3 font-normal">
-                <span>{DOCUMENT_CATEGORY_LABELS[c]}</span>
+                <span>{t(DOCUMENT_CATEGORY_LABELS[c])}</span>
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <Input
                     className="w-24 text-right"

@@ -3,11 +3,13 @@
 import type { Folio } from '@hotel/contracts';
 import { formatMoney, minorToInput, parseMoney } from '@hotel/format';
 import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from '@hotel/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 /** Card holds on the stay: capture onto this folio at check-out, or release. */
 export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Folio }) {
@@ -19,8 +21,7 @@ export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Fo
   });
   const holds = (intents.data ?? []).filter((i) => i.kind === 'HOLD');
   const [amounts, setAmounts] = useState<Record<string, string>>({});
-  const act = useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
+  const act = useAction({
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['intents', propertyId, folio.id] }),
@@ -46,10 +47,10 @@ export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Fo
             >
               <span className="flex items-center gap-2">
                 <span className="tabular-nums">{formatMoney(h.amountMinor, h.currency)}</span>
-                <Badge>{h.status.toLowerCase()}</Badge>
+                <Badge>{statusLabel(h.status)}</Badge>
                 {h.capturedMinor > 0 && (
                   <span className="text-muted-foreground">
-                    {formatMoney(h.capturedMinor, h.currency)} {t('fin.captured')}
+                    {t('fin.capturedAmount', { amount: formatMoney(h.capturedMinor, h.currency) })}
                   </span>
                 )}
               </span>

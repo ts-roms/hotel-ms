@@ -3,6 +3,9 @@ import {
   addDays,
   currencyDigits,
   elapsed,
+  formatBytes,
+  formatDuration,
+  formatMonth,
   formatDate,
   formatMoney,
   formatTime,
@@ -10,7 +13,9 @@ import {
   localDate,
   minorToInput,
   parseMoney,
+  startOfWeek,
   toZoned,
+  weekDates,
 } from './index.js';
 
 const digitsOnly = (s: string) => s.replace(/[^\d.,]/g, '');
@@ -80,5 +85,47 @@ describe('elapsed', () => {
     expect(elapsed('2026-10-05T11:55:00Z', now)).toEqual({ unit: 'minutes', value: 5 });
     expect(elapsed('2026-10-05T09:00:00Z', now)).toEqual({ unit: 'hours', value: 3 });
     expect(elapsed('2026-10-04T09:00:00Z', now)).toEqual({ unit: 'days' });
+  });
+});
+
+describe('weeks', () => {
+  it('finds the Monday of a week', () => {
+    expect(startOfWeek('2026-10-05')).toBe('2026-10-05'); // Monday
+    expect(startOfWeek('2026-10-08')).toBe('2026-10-05'); // Thursday
+    expect(startOfWeek('2026-10-11')).toBe('2026-10-05'); // Sunday ends the week
+    expect(startOfWeek('2027-01-01')).toBe('2026-12-28'); // across a year
+  });
+
+  it('lists the dates of a week', () => {
+    expect(weekDates('2026-12-28')).toEqual([
+      '2026-12-28',
+      '2026-12-29',
+      '2026-12-30',
+      '2026-12-31',
+      '2027-01-01',
+      '2027-01-02',
+      '2027-01-03',
+    ]);
+    expect(weekDates('2026-10-05', 2)).toEqual(['2026-10-05', '2026-10-06']);
+  });
+
+  it('names months', () => {
+    expect(formatMonth(3)).toBe('Mar');
+    expect(formatMonth(12, { style: 'long' })).toBe('December');
+  });
+});
+
+describe('units', () => {
+  it("formats durations with padded minutes and the caller's unit words", () => {
+    expect(formatDuration(125)).toBe('2h 05m');
+    expect(formatDuration(45)).toBe('0h 45m');
+    expect(formatDuration(-90)).toBe('-1h 30m');
+    expect(formatDuration(125, '{hours} Std. {minutes} Min.')).toBe('2 Std. 05 Min.');
+  });
+
+  it('formats file sizes in kB below 1 MB, else MB', () => {
+    expect(formatBytes(500)).toBe('1 kB');
+    expect(formatBytes(200 * 1024)).toBe('200 kB');
+    expect(formatBytes(1.5 * 1024 * 1024)).toBe('1.5 MB');
   });
 });

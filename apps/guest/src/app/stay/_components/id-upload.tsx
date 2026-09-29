@@ -1,11 +1,10 @@
 'use client';
 
 import { GUEST_ID_TYPES, type GuestIdType, type GuestStay } from '@hotel/contracts';
-import { Alert, Button, CardContent, Label, Notice, NativeSelect } from '@hotel/ui';
+import { Alert, Button, CardContent, Label, NativeSelect, Notice, SectionCard } from '@hotel/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, IdCard, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage, rememberStay } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -27,8 +26,9 @@ export function IdUpload({ stay: s }: { stay: GuestStay }) {
 
   if (id?.status === 'APPROVED') {
     return (
-      <Section
-        icon={<IdCard />}
+      <SectionCard
+        variant="badge"
+        icon={IdCard}
         title={t('id.approvedTitle')}
         description={t('id.approvedDescription', {
           type: idLabel(id.documentType).toLowerCase(),
@@ -37,8 +37,9 @@ export function IdUpload({ stay: s }: { stay: GuestStay }) {
     );
   }
   return (
-    <Section
-      icon={<IdCard />}
+    <SectionCard
+      variant="badge"
+      icon={IdCard}
       title={t('id.title')}
       description={s.identityRequired ? t('id.required') : t('id.optional')}
     >
@@ -93,6 +94,6 @@ export function IdUpload({ stay: s }: { stay: GuestStay }) {
         </Button>
         <p className="text-xs text-muted-foreground">{t('id.hint')}</p>
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

@@ -21,6 +21,8 @@ import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { useRefreshFolio } from './folio-cache';
+import { enumLabel } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 export function FolioTransfers({ propertyId, folio }: { propertyId: string; folio: Folio }) {
   const pms = usePms(propertyId);
@@ -44,8 +46,7 @@ export function FolioTransfers({ propertyId, folio }: { propertyId: string; foli
       return refresh();
     },
   });
-  const routing = useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
+  const routing = useAction({
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['routing', propertyId, folio.id] }),
   });
   if (targets.length === 0) {
@@ -127,7 +128,7 @@ export function FolioTransfers({ propertyId, folio }: { propertyId: string; foli
             >
               {DEPARTMENTS.map((d) => (
                 <option key={d} value={d}>
-                  {d.toLowerCase()}
+                  {enumLabel('department', d)}
                 </option>
               ))}
             </NativeSelect>

@@ -8,7 +8,7 @@ import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { statusLabel } from '@/lib/status';
+import { enumLabel } from '@/lib/status';
 import { RecordSection } from './record-section';
 
 /** Employment type (employee.manage) and emergency contact (personal details). */
@@ -55,7 +55,8 @@ export function EmploymentDetails({
       {!editing ? (
         <>
           <p>
-            {t('hrx.employmentType')}: <strong>{statusLabel(e.employmentType)}</strong>
+            {t('hrx.employmentType')}:{' '}
+            <strong>{enumLabel('employmentType', e.employmentType)}</strong>
           </p>
           {e.personal ? (
             <p>
@@ -90,7 +91,7 @@ export function EmploymentDetails({
             <NativeSelect value={type} onChange={(ev) => setType(ev.target.value as typeof type)}>
               {EMPLOYMENT_TYPES.map((x) => (
                 <option key={x} value={x}>
-                  {statusLabel(x)}
+                  {enumLabel('employmentType', x)}
                 </option>
               ))}
             </NativeSelect>

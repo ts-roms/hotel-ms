@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
-import { useAction } from './use-action';
+import { useAction } from '@/lib/use-action';
 
 export function AddRoomForm({
   propertyId,
@@ -18,7 +18,7 @@ export function AddRoomForm({
   onDone: () => unknown;
 }) {
   const pms = usePms(propertyId);
-  const action = useAction(onDone);
+  const action = useAction({ onSuccess: () => onDone() });
   const [number, setNumber] = useState('');
   const [roomTypeId, setRoomTypeId] = useState(roomTypes[0]?.id ?? '');
   return (

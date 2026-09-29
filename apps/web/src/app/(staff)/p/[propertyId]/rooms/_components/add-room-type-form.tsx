@@ -5,7 +5,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
-import { useAction } from './use-action';
+import { useAction } from '@/lib/use-action';
 
 export function AddRoomTypeForm({
   propertyId,
@@ -15,7 +15,7 @@ export function AddRoomTypeForm({
   onDone: () => unknown;
 }) {
   const pms = usePms(propertyId);
-  const action = useAction(onDone);
+  const action = useAction({ onSuccess: () => onDone() });
   const [form, setForm] = useState({ code: '', name: '', baseOccupancy: 2, maxOccupancy: 2 });
   const submit = (e: FormEvent) => {
     e.preventDefault();

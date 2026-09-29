@@ -2,11 +2,11 @@
 
 import { ApiError } from '@hotel/api-client';
 import { type SelfCheckInResult } from '@hotel/contracts';
-import { Alert, buttonVariants } from '@hotel/ui';
+import { Alert, buttonVariants, DocumentTitle } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
-import { BrandMark } from '@/components/guest-shell';
+import { GuestBrandMark } from '@/components/guest-shell';
 import { api, errorMessage, rememberStay } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { CheckoutRequest } from './_components/checkout-request';
@@ -51,7 +51,7 @@ export default function StayPage() {
     return (
       <StayShell>
         <div className="flex flex-col items-center gap-6 pt-16">
-          <BrandMark />
+          <GuestBrandMark />
           <Alert className="w-full">
             {signedOut ? t('stay.signedOut') : errorMessage(stay.error)}
           </Alert>
@@ -65,6 +65,7 @@ export default function StayPage() {
   const s = stay.data;
   return (
     <StayShell>
+      <DocumentTitle title={s.property.name} />
       <div className="stagger flex flex-col gap-4">
         <StayOverview stay={s} />
         {s.verified && <Notifications unread={s.unreadNotifications} />}

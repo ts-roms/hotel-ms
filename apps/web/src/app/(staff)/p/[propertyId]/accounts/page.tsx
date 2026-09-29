@@ -1,20 +1,20 @@
 'use client';
 
 import { formatMoney } from '@hotel/format';
-import { Alert, Badge, Button, Card, CardContent, Input } from '@hotel/ui';
+import { Alert, Badge, Button, Card, CardContent, DocumentTitle, Input } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useProperty, usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
 
 /** Company and group accounts (city ledger): folios without a stay. */
 export default function AccountsPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
   const accounts = useQuery({ queryKey: ['accounts', propertyId], queryFn: pms.accounts });
@@ -29,11 +29,12 @@ export default function AccountsPage() {
   const currency = property.data?.currency ?? 'PHP';
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DocumentTitle title={t('fin.accounts')} />
       <h1 className="text-xl font-semibold">{t('fin.accounts')}</h1>
       {(accounts.error || create.error) && (
         <Alert>{errorMessage(accounts.error ?? create.error)}</Alert>
       )}
-      {hasPermission(session.data, 'folio.transfer') && (
+      {can('folio.transfer') && (
         <Card>
           <CardContent className="flex flex-wrap gap-2 pt-4">
             <Input
@@ -62,7 +63,7 @@ export default function AccountsPage() {
             {a.label} <span className="font-mono text-xs text-muted-foreground">{a.folioNo}</span>
           </span>
           <span className="flex items-center gap-2">
-            {a.status === 'CLOSED' && <Badge>{a.status.toLowerCase()}</Badge>}
+            {a.status === 'CLOSED' && <Badge>{statusLabel(a.status)}</Badge>}
             <span className="tabular-nums">{formatMoney(a.balanceMinor, currency)}</span>
           </span>
         </Link>

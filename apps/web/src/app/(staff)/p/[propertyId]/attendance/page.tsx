@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, formatDate, localDate } from '@hotel/format';
+import { addDays, formatDate, localDate, localToday } from '@hotel/format';
 import {
   buttonVariants,
   Alert,
@@ -26,10 +26,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Check, Clock, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { clock, duration, today } from '@/lib/hr';
+import { clock, duration, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { ClockPhotos } from './_components/clock-photos';
 
@@ -37,9 +36,12 @@ import { ClockPhotos } from './_components/clock-photos';
 export default function AttendancePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
-  const [to, setTo] = useState(today);
+  // Until a date is picked: today at the property.
+  const [picked, setTo] = useState<string | null>(null);
+  const to = picked ?? localToday(timeZone);
   const from = addDays(to, -6);
   const days = useQuery({
     queryKey: ['attendance', propertyId, to],
@@ -58,7 +60,7 @@ export default function AttendancePage() {
   });
   const running = (id: string, decision: 'APPROVE' | 'REJECT') =>
     decide.isPending && decide.variables?.id === id && decide.variables.decision === decision;
-  const canDecide = hasPermission(session.data, 'attendance.manage');
+  const canDecide = can('attendance.manage');
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +80,7 @@ export default function AttendancePage() {
               value={to}
               onChange={(e) => e.target.value && setTo(e.target.value)}
             />
-            {hasPermission(session.data, 'payroll.export') && (
+            {can('payroll.export') && (
               <a
                 className={buttonVariants({ variant: 'outline', size: 'sm' })}
                 href={pms.payrollExportUrl(from, to)}
@@ -107,8 +109,8 @@ export default function AttendancePage() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
               >
                 <span>
-                  <strong>{c.employeeName}</strong> · {statusLabel(c.type).toLowerCase()} ·{' '}
-                  {formatDate(localDate(c.at))} {clock(c.at)} ·{' '}
+                  <strong>{c.employeeName}</strong> · {t(PUNCH_LABEL[c.type])} ·{' '}
+                  {formatDate(localDate(c.at, timeZone))} {clock(c.at, timeZone)} ·{' '}
                   <span className="text-muted-foreground">{c.reason}</span>
                 </span>
                 {canDecide && (
@@ -188,10 +190,12 @@ export default function AttendancePage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {d.shift ? `${clock(d.shift.startsAt)}–${clock(d.shift.endsAt)}` : '—'}
+                    {d.shift
+                      ? `${clock(d.shift.startsAt, timeZone)}–${clock(d.shift.endsAt, timeZone)}`
+                      : '—'}
                   </TableCell>
-                  <TableCell>{clock(d.firstIn)}</TableCell>
-                  <TableCell>{clock(d.lastOut)}</TableCell>
+                  <TableCell>{clock(d.firstIn, timeZone)}</TableCell>
+                  <TableCell>{clock(d.lastOut, timeZone)}</TableCell>
                   <TableCell className="font-medium">{duration(d.workedMinutes)}</TableCell>
                   <TableCell className={d.lateMinutes ? 'text-warning' : undefined}>
                     {duration(d.lateMinutes)}

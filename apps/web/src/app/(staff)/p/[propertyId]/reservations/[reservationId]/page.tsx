@@ -4,6 +4,7 @@ import type { Reservation } from '@hotel/contracts';
 import { formatMoney } from '@hotel/format';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -11,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Avatar,
+  DocumentTitle,
   Input,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,17 +22,17 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { useCan, usePms } from '@/lib/property';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 import { GuestMessage } from './_components/guest-message';
 import { DetailSkeleton } from './_components/reservation-skeleton';
 import { RoomLine } from './_components/room-line';
+import { useAction } from '@/lib/use-action';
 
 export default function ReservationPage() {
   const { propertyId, reservationId } = useParams<{ propertyId: string; reservationId: string }>();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const reservation = useQuery({
     queryKey: ['reservation', propertyId, reservationId],
@@ -43,8 +44,7 @@ export default function ReservationPage() {
     queryClient.setQueryData(['reservation', propertyId, reservationId], data);
     void queryClient.invalidateQueries({ queryKey: ['reservations', propertyId] });
   };
-  const action = useMutation({
-    mutationFn: (fn: () => Promise<Reservation>) => fn(),
+  const action = useAction<Reservation>({
     onSuccess: update,
   });
   const [reason, setReason] = useState('');
@@ -54,8 +54,8 @@ export default function ReservationPage() {
   if (reservation.error) return <Alert>{errorMessage(reservation.error)}</Alert>;
   if (!r) return <DetailSkeleton />;
 
-  const canUpdate = hasPermission(session.data, 'reservation.update');
-  const canCancel = hasPermission(session.data, 'reservation.cancel');
+  const canUpdate = can('reservation.update');
+  const canCancel = can('reservation.cancel');
   const hasUpcoming = r.rooms.some((l) => l.status === 'RESERVED');
 
   return (
@@ -67,6 +67,7 @@ export default function ReservationPage() {
         <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
+      <DocumentTitle title={`${r.confirmationNo} · ${r.booker.firstName} ${r.booker.lastName}`} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -92,7 +93,7 @@ export default function ReservationPage() {
         <CardContent className="flex flex-col gap-2 text-sm">
           <span>
             <span className="text-muted-foreground">{t('res.source')}:</span>{' '}
-            {r.source.replace('_', ' ').toLowerCase()}
+            {enumLabel('bookingSource', r.source)}
           </span>
           {r.specialRequests && (
             <span>
@@ -104,7 +105,7 @@ export default function ReservationPage() {
               {t('res.cancelled')}: {r.cancelReason}
             </span>
           )}
-          {r.status === 'CONFIRMED' && hasPermission(session.data, 'guest_portal.invite') && (
+          {r.status === 'CONFIRMED' && can('guest_portal.invite') && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
               <Button
                 size="sm"
@@ -120,7 +121,7 @@ export default function ReservationPage() {
               {portalLink.isSuccess && (
                 <span className="flex animate-fade-in items-center gap-1 text-success">
                   <Check className="size-4" />
-                  {t('res.portalLinkSent')} {r.booker.email}
+                  {t('res.portalLinkSentTo', { email: r.booker.email ?? '' })}
                 </span>
               )}
               {portalLink.error && (
@@ -150,24 +151,18 @@ export default function ReservationPage() {
             reason && action.mutate(() => pms.cancelReservationRoom(r.id, line.id, reason))
           }
           folioHref={
-            line.folioId && hasPermission(session.data, 'folio.read')
-              ? `/p/${propertyId}/folios/${line.folioId}`
-              : null
+            line.folioId && can('folio.read') ? `/p/${propertyId}/folios/${line.folioId}` : null
           }
           onCheckIn={
-            hasPermission(session.data, 'stay.check_in')
-              ? () => action.mutate(() => pms.checkIn(r.id, line.id))
-              : null
+            can('stay.check_in') ? () => action.mutate(() => pms.checkIn(r.id, line.id)) : null
           }
           onCheckOut={
-            hasPermission(session.data, 'stay.check_out')
-              ? () => action.mutate(() => pms.checkOut(r.id, line.id))
-              : null
+            can('stay.check_out') ? () => action.mutate(() => pms.checkOut(r.id, line.id)) : null
           }
           extra={
             r.status === 'CONFIRMED' &&
             (line.status === 'RESERVED' || line.status === 'IN_HOUSE') &&
-            hasPermission(session.data, 'guest_portal.invite') ? (
+            can('guest_portal.invite') ? (
               <GuestMessage propertyId={propertyId} reservationId={r.id} lineId={line.id} />
             ) : null
           }

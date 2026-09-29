@@ -22,15 +22,14 @@ import { Check, Plane, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 /** Leave requests routed to this property (blueprint §13.4). */
 export default function LeavePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<LeaveRequest['status']>('PENDING');
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -52,7 +51,7 @@ export default function LeavePage() {
     decide.isPending &&
     decide.variables?.request.id === r.id &&
     decide.variables.decision === decision;
-  const canApprove = hasPermission(session.data, 'leave.approve');
+  const canApprove = can('leave.approve');
 
   return (
     <div className="flex flex-col gap-6">
@@ -105,7 +104,7 @@ export default function LeavePage() {
                   </span>
                 </div>
                 <Badge variant="primary" className="tabular-nums">
-                  {r.days} {t('hr.days')}
+                  {t('common.daysCount', { count: r.days })}
                 </Badge>
                 <Badge variant={statusVariant(r.status)} dot>
                   {statusLabel(r.status)}

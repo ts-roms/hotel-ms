@@ -6,9 +6,15 @@ import { createTranslator } from './translator.js';
 
 export const en = {
   'app.name': 'My stay',
+  'app.pageTitle': '{page} · {app}',
   'app.description': 'Your booking, online check-in and requests during your stay.',
 
   'error.generic': 'Something went wrong. Please try again.',
+  'error.pageTitle': 'This page could not load',
+  'error.retry': 'Try again',
+  'notFound.title': 'Not found',
+  'notFound.description': 'This page does not exist. Open the link from your booking email.',
+  'notFound.home': 'Go to the start page',
   'error.INVALID_TOKEN': 'This link is no longer valid. Ask the hotel to send you a new one.',
   'error.UNAUTHENTICATED': 'Your session has ended. Open the link from your email again.',
   'error.INVALID_MFA_CODE': 'That code did not work. Check the latest email and try again.',

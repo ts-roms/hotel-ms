@@ -1,7 +1,7 @@
 'use client';
 
 import type { PunchType } from '@hotel/contracts';
-import { addDays, formatDate, localDate } from '@hotel/format';
+import { addDays, formatDate, localDate, localToday } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -24,15 +24,14 @@ import { Clock as ClockIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { clock, duration, today } from '@/lib/hr';
+import { clock, duration, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { statusLabel, statusVariant } from '@/lib/status';
-import { PUNCH_LABEL } from './punch-labels';
 
 export function MyAttendance() {
   const queryClient = useQueryClient();
   const me = useQuery({ queryKey: ['me', 'employee'], queryFn: api.me.employee });
-  const to = today();
+  const to = localToday();
   const from = addDays(to, -6);
   const days = useQuery({
     queryKey: ['me', 'attendance', from],

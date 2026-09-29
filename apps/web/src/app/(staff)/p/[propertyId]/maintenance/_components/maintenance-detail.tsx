@@ -1,6 +1,6 @@
 'use client';
 
-import { type MaintenanceAction } from '@hotel/contracts';
+import type { MaintenanceAction, MaintenanceUpdate } from '@hotel/contracts';
 import { formatDateTime } from '@hotel/format';
 import {
   Alert,
@@ -16,10 +16,17 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { type MessageKey, t } from '@/lib/i18n';
+import { useCan, usePms, usePropertyTimeZone } from '@/lib/property';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+
+const UPDATE_KIND_LABEL: Record<MaintenanceUpdate['kind'], MessageKey> = {
+  CREATED: 'mnt.kind.CREATED',
+  ASSIGNED: 'mnt.kind.ASSIGNED',
+  STATUS: 'mnt.kind.STATUS',
+  NOTE: 'mnt.kind.NOTE',
+  PHOTO: 'mnt.kind.PHOTO',
+};
 
 export function MaintenanceDetail({
   propertyId,
@@ -30,10 +37,10 @@ export function MaintenanceDetail({
   requestId: string;
   onClose: () => void;
 }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
-  const can = (p: string) => hasPermission(session.data, p);
   const detail = useQuery({
     queryKey: ['maintenance-request', propertyId, requestId],
     queryFn: () => pms.maintenanceRequest(requestId),
@@ -86,10 +93,10 @@ export function MaintenanceDetail({
           <Badge variant={statusVariant(r.status)} dot>
             {statusLabel(r.status)}
           </Badge>
-          <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
+          <Badge variant={statusVariant(r.priority)}>{enumLabel('priority', r.priority)}</Badge>
           <span className="text-muted-foreground">
-            {r.roomNumber ? `${t('mnt.room')} ${r.roomNumber}` : r.location} ·{' '}
-            {statusLabel(r.category)}
+            {r.roomNumber ? t('roomNo', { number: r.roomNumber }) : r.location} ·{' '}
+            {enumLabel('category', r.category)}
           </span>
         </div>
         {r.description && <p className="whitespace-pre-wrap">{r.description}</p>}
@@ -210,10 +217,8 @@ export function MaintenanceDetail({
         <ol className="flex flex-col gap-1 border-t pt-2 text-xs text-muted-foreground">
           {r.updates.map((u) => (
             <li key={u.id}>
-              {formatDateTime(u.at)} · {u.byName ?? '—'} ·{' '}
-              {u.toStatus
-                ? statusLabel(u.toStatus)
-                : t(`mnt.kind.${u.kind}` as Parameters<typeof t>[0])}
+              {formatDateTime(u.at, { timeZone })} · {u.byName ?? '—'} ·{' '}
+              {u.toStatus ? statusLabel(u.toStatus) : t(UPDATE_KIND_LABEL[u.kind])}
               {u.note && `: ${u.note}`}
             </li>
           ))}

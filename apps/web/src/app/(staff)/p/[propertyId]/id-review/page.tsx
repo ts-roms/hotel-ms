@@ -21,8 +21,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
+import { enumLabel, enumLabelOr, statusLabel, statusVariant } from '@/lib/status';
 
 const FILTERS = [
   { key: 'PENDING', label: 'idr.pending' },
@@ -83,8 +83,8 @@ export default function IdReviewPage() {
                 </Badge>
               </span>
               <span className="text-muted-foreground">
-                {statusLabel(d.documentType)} · {d.confirmationNo} · {formatDate(d.arrivalDate)} →{' '}
-                {formatDate(d.departureDate)}
+                {enumLabel('idType', d.documentType)} · {d.confirmationNo} ·{' '}
+                {formatDate(d.arrivalDate)} → {formatDate(d.departureDate)}
               </span>
             </Button>
           ))}
@@ -98,6 +98,7 @@ export default function IdReviewPage() {
 }
 
 function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocument }) {
+  const timeZone = usePropertyTimeZone();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const [reason, setReason] = useState('');
@@ -123,8 +124,9 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
-          {statusLabel(d.documentType)} · {t('idr.uploaded')} {formatDateTime(d.uploadedAt)} ·{' '}
-          {statusLabel(d.stayStatus)}
+          {enumLabel('idType', d.documentType)} ·{' '}
+          {t('idr.uploadedAt', { time: formatDateTime(d.uploadedAt, { timeZone }) })} ·{' '}
+          {enumLabelOr('status', d.stayStatus)}
         </p>
         {d.purged ? (
           <p className="text-muted-foreground">{t('idr.purged')}</p>
@@ -149,7 +151,11 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
         )}
         {d.reviewerName && d.reviewedAt && (
           <p className="text-muted-foreground">
-            {statusLabel(d.status)} {t('idr.by')} {d.reviewerName}, {formatDateTime(d.reviewedAt)}
+            {t('idr.reviewedBy', {
+              status: statusLabel(d.status),
+              name: d.reviewerName,
+              time: formatDateTime(d.reviewedAt, { timeZone }),
+            })}
           </p>
         )}
         {review.error && <Alert>{errorMessage(review.error)}</Alert>}

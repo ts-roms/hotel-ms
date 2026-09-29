@@ -21,14 +21,13 @@ import { type FormEvent, useState } from 'react';
 import { PropertyPhotos } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 
 /** What guests see in the portal, and the self check-in ID rule (ADR-0027). */
 export default function GuestPortalSettingsPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const settings = useQuery({
     queryKey: ['guest-portal-settings', propertyId],
     queryFn: pms.guestPortalSettings,
@@ -37,10 +36,7 @@ export default function GuestPortalSettingsPage() {
     <div className="flex max-w-3xl flex-col gap-4">
       <PageHeader title={t('gps.title')} description={t('gps.hint')} />
       {settings.error && <Alert>{errorMessage(settings.error)}</Alert>}
-      <PropertyPhotos
-        propertyId={propertyId}
-        canManage={hasPermission(session.data, 'property.settings.manage')}
-      />
+      <PropertyPhotos propertyId={propertyId} canManage={can('property.settings.manage')} />
       {settings.data && <SettingsForm propertyId={propertyId} initial={settings.data} />}
     </div>
   );
@@ -54,8 +50,8 @@ function SettingsForm({
   initial: GuestPortalSettings;
 }) {
   const pms = usePms(propertyId);
-  const session = useSession();
-  const canManage = hasPermission(session.data, 'property.settings.manage');
+  const can = useCan();
+  const canManage = can('property.settings.manage');
   const queryClient = useQueryClient();
   const [s, setS] = useState(initial);
   const [amenities, setAmenities] = useState(initial.amenities.join('\n'));

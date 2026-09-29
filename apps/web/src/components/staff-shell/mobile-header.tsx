@@ -1,11 +1,18 @@
 'use client';
 
-import { Button, Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@hotel/ui';
-import { Menu, X } from 'lucide-react';
+import {
+  BrandMark,
+  Button,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from '@hotel/ui';
+import { Hotel, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { BrandMark } from '@/components/brand';
-import { NotificationBell } from '@/components/notification-bell';
+import { NotificationBell } from './notification-bell';
 import { t } from '@/lib/i18n';
 
 /** Top bar below the `lg` breakpoint, with the sidebar in a drawer. Hidden when printing. */
@@ -24,7 +31,7 @@ export function MobileHeader({
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/80 px-4 backdrop-blur-lg lg:hidden print:hidden">
       <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-        <BrandMark className="size-8" />
+        <BrandMark icon={Hotel} className="size-8" />
         <span className="truncate font-semibold">{organizationName}</span>
       </Link>
       <span className="flex-1" />

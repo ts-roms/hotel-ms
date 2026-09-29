@@ -7,13 +7,13 @@ import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms } from '@/lib/property';
 import { useRefreshFolio } from './folio-cache';
+import { enumLabel } from '@/lib/status';
 
 export function FolioPayments({ propertyId, folio }: { propertyId: string; folio: Folio }) {
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const refresh = useRefreshFolio(propertyId, folio.id);
   const [refunding, setRefunding] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
@@ -28,7 +28,7 @@ export function FolioPayments({ propertyId, folio }: { propertyId: string; folio
       return refresh();
     },
   });
-  const canRefund = hasPermission(session.data, 'payment.refund') && folio.status === 'OPEN';
+  const canRefund = can('payment.refund') && folio.status === 'OPEN';
   return (
     <Card>
       <CardHeader>
@@ -42,7 +42,7 @@ export function FolioPayments({ propertyId, folio }: { propertyId: string; folio
             <div key={p.id} className="flex flex-col gap-2 border-t pt-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span>
-                  {p.method.replace('_', ' ').toLowerCase()}
+                  {enumLabel('paymentMethod', p.method)}
                   {p.provider && <Badge className="ml-2">{t('fin.online')}</Badge>}
                   {p.reference && <span className="text-muted-foreground"> · {p.reference}</span>}
                   {p.tendered && (
@@ -57,7 +57,9 @@ export function FolioPayments({ propertyId, folio }: { propertyId: string; folio
                   <span className="tabular-nums">{formatMoney(p.amountMinor, folio.currency)}</span>
                   {p.refundedMinor > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      {t('fin.refunded')} {formatMoney(p.refundedMinor, folio.currency)}
+                      {t('fin.refundedAmount', {
+                        amount: formatMoney(p.refundedMinor, folio.currency),
+                      })}
                     </span>
                   )}
                   {canRefund && left > 0 && refunding !== p.id && (

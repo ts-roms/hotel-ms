@@ -19,8 +19,7 @@ import {
 } from '@hotel/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 import { AddRoomForm } from './_components/add-room-form';
 import { AddRoomTypeForm } from './_components/add-room-type-form';
@@ -30,7 +29,7 @@ import { RatePlanPrices } from './_components/rate-plan-prices';
 export default function RoomsPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const property = useProperty(propertyId);
   const queryClient = useQueryClient();
   const roomTypes = useQuery({ queryKey: ['room-types', propertyId], queryFn: pms.roomTypes });
@@ -38,7 +37,7 @@ export default function RoomsPage() {
   const ratePlans = useQuery({
     queryKey: ['rate-plans', propertyId],
     queryFn: pms.ratePlans,
-    enabled: hasPermission(session.data, 'rate.read'),
+    enabled: can('rate.read'),
   });
   const refresh = () =>
     Promise.all(
@@ -46,8 +45,8 @@ export default function RoomsPage() {
         queryClient.invalidateQueries({ queryKey: [k, propertyId] }),
       ),
     );
-  const canManageRooms = hasPermission(session.data, 'room.manage');
-  const canManageRates = hasPermission(session.data, 'rate.manage');
+  const canManageRooms = can('room.manage');
+  const canManageRates = can('rate.manage');
   const currency = property.data?.currency ?? 'PHP';
 
   return (
@@ -82,8 +81,11 @@ export default function RoomsPage() {
                   <span className="font-medium">{rt.name}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {rt.roomCount} {t('rooms.rooms').toLowerCase()} · {rt.baseOccupancy}–
-                  {rt.maxOccupancy}
+                  {t('rooms.typeSummary', {
+                    count: rt.roomCount,
+                    base: rt.baseOccupancy,
+                    max: rt.maxOccupancy,
+                  })}
                 </span>
               </li>
             ))}

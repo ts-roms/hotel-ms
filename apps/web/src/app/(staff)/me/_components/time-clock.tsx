@@ -8,9 +8,8 @@ import { Timer } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { clock, PUNCH_NEXT } from '@/lib/hr';
+import { clock, PUNCH_LABEL, PUNCH_NEXT } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { PUNCH_LABEL } from './punch-labels';
 import { SelfiePunch } from './selfie-punch';
 
 export function TimeClock() {

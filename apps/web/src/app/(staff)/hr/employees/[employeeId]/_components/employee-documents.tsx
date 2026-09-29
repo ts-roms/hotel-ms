@@ -5,7 +5,7 @@ import {
   EMPLOYEE_DOCUMENT_MAX_BYTES,
   EMPLOYEE_DOCUMENT_TYPES,
 } from '@hotel/contracts';
-import { formatDate } from '@hotel/format';
+import { formatBytes, formatDate } from '@hotel/format';
 import {
   Alert,
   AlertDialog,
@@ -31,9 +31,6 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { DOCUMENT_CATEGORY_LABELS } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-
-const sizeLabel = (bytes: number) =>
-  bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 /** Contracts, IDs and certificates (ADR-0019). Needs employee.documents and a 2FA session. */
 export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
@@ -95,13 +92,13 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 >
                   {d.title}
                 </a>
-                <Badge>{DOCUMENT_CATEGORY_LABELS[d.category]}</Badge>
+                <Badge>{t(DOCUMENT_CATEGORY_LABELS[d.category])}</Badge>
               </span>
               <span className="text-xs text-muted-foreground">
-                {d.fileName} · {sizeLabel(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
+                {d.fileName} · {formatBytes(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
                 {d.uploadedByName && ` · ${d.uploadedByName}`}
-                {d.expiresOn && ` · ${t('hr.expires')} ${formatDate(d.expiresOn)}`}
-                {d.purgeOn && ` · ${t('hr.deletedOn')} ${formatDate(d.purgeOn)}`}
+                {d.expiresOn && ` · ${t('hr.expiresOn', { date: formatDate(d.expiresOn) })}`}
+                {d.purgeOn && ` · ${t('hr.deletedOnDate', { date: formatDate(d.purgeOn) })}`}
               </span>
             </span>
             <AlertDialog>
@@ -154,7 +151,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
             >
               {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {DOCUMENT_CATEGORY_LABELS[c]}
+                  {t(DOCUMENT_CATEGORY_LABELS[c])}
                 </option>
               ))}
             </NativeSelect>

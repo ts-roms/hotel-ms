@@ -1,11 +1,10 @@
 'use client';
 
 import { formatDate, formatMoney } from '@hotel/format';
-import { Alert, Button, CardContent, cn, Notice, SkeletonCard } from '@hotel/ui';
+import { Alert, Button, CardContent, cn, Notice, SectionCard, SkeletonCard } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
@@ -40,7 +39,7 @@ export function GuestBill() {
   if (!bill.data) return null;
   const { currency, lines, balanceMinor } = bill.data;
   return (
-    <Section icon={<Receipt />} title={t('bill.title')}>
+    <SectionCard variant="badge" icon={Receipt} title={t('bill.title')}>
       <CardContent className="flex flex-col text-sm">
         {lines.length === 0 && (
           <p className="rounded-xl border border-dashed py-6 text-center text-muted-foreground">
@@ -78,6 +77,6 @@ export function GuestBill() {
           </Button>
         )}
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }

@@ -1,18 +1,11 @@
 'use client';
 
-import { KitchenBoard } from '@/components/kitchen-board';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { KitchenBoard } from '@/components/kitchen-board/kitchen-board';
+import { useCan, usePms, usePropertyId } from '@/lib/property';
 
 export default function KitchenPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
-  return (
-    <KitchenBoard
-      propertyId={propertyId}
-      pms={pms}
-      can={(permission) => hasPermission(session.data, permission)}
-    />
-  );
+  const can = useCan();
+  return <KitchenBoard propertyId={propertyId} pms={pms} can={can} />;
 }

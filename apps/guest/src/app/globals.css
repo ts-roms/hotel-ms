@@ -52,46 +52,8 @@
   }
 }
 
-@layer base {
-  * {
-    border-color: var(--border);
-  }
-  html {
-    -webkit-tap-highlight-color: transparent;
-  }
-  body {
-    background: var(--background);
-    color: var(--foreground);
-  }
-  ::selection {
-    background: color-mix(in oklch, var(--primary) 25%, transparent);
-  }
-}
-
+/* Base styles and .stagger come from @hotel/ui/theme.css. */
 @layer utilities {
-  /* Children enter one after another. Add to a list or stack container. */
-  .stagger > * {
-    animation: var(--animate-slide-up);
-  }
-  .stagger > :nth-child(2) {
-    animation-delay: 50ms;
-  }
-  .stagger > :nth-child(3) {
-    animation-delay: 100ms;
-  }
-  .stagger > :nth-child(4) {
-    animation-delay: 150ms;
-  }
-  .stagger > :nth-child(5) {
-    animation-delay: 200ms;
-  }
-  .stagger > :nth-child(6) {
-    animation-delay: 250ms;
-  }
-  .stagger > :nth-child(n + 7) {
-    animation-delay: 300ms;
-  }
-
   /* Soft brand gradient behind the page top and the signed-out screens. */
   .guest-backdrop {
     background:

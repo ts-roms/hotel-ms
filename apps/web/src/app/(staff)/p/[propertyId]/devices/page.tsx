@@ -26,32 +26,33 @@ import {
   PageHeader,
   NativeSelect,
 } from '@hotel/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { statusVariant } from '@/lib/status';
+import { type MessageKey, t } from '@/lib/i18n';
+import { usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
+import { statusLabel, statusVariant } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
-const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], string> = {
-  'fnb.order.read': 'See orders',
-  'fnb.order.update': 'Move orders along',
-  'fnb.menu.availability': 'Mark items sold out',
+const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], MessageKey> = {
+  'fnb.order.read': 'devicePerm.fnb.order.read',
+  'fnb.order.update': 'devicePerm.fnb.order.update',
+  'fnb.menu.availability': 'devicePerm.fnb.menu.availability',
 };
 
 /** Shared devices of a property (ADR-0020). */
 export default function DevicesPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
   const devices = useQuery({ queryKey: ['devices', propertyId], queryFn: pms.devices });
   const [kind, setKind] = useState<DeviceKind>('KITCHEN');
-  const [name, setName] = useState('Kitchen tablet');
+  const [name, setName] = useState(() => t('dev.kitchen'));
   const [permissions, setPermissions] = useState<string[]>([...DEVICE_PERMISSIONS]);
   const [pairing, setPairing] = useState<DevicePairing | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['devices', propertyId] });
-  const act = useMutation({
-    mutationFn: (fn: () => Promise<DevicePairing | unknown>) => fn(),
+  const act = useAction<DevicePairing | unknown>({
     onSuccess: (result) => {
       if (result && typeof result === 'object' && 'pairingCode' in result)
         setPairing(result as DevicePairing);
@@ -76,8 +77,10 @@ export default function DevicesPage() {
       {act.error && <Alert>{errorMessage(act.error)}</Alert>}
       {pairing && (
         <Notice>
-          <strong>{pairing.device.name}</strong> · {t('dev.pairingOpen')}{' '}
-          {formatTime(pairing.expiresAt, { seconds: true })}
+          <strong>{pairing.device.name}</strong> ·{' '}
+          {t('dev.pairingOpen', {
+            time: formatTime(pairing.expiresAt, { seconds: true, timeZone }),
+          })}
           <div className="mt-2 font-mono text-2xl tracking-widest">
             {pairing.pairingCode.slice(0, 4)}-{pairing.pairingCode.slice(4)}
           </div>
@@ -97,14 +100,15 @@ export default function DevicesPage() {
                 <span className="flex items-center gap-2 font-medium">
                   {d.name}
                   <Badge variant={statusVariant(d.status === 'PAIRED' ? 'ACTIVE' : d.status)}>
-                    {d.status.toLowerCase()}
+                    {statusLabel(d.status)}
                   </Badge>
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {d.kind === 'TIME_CLOCK'
                     ? t('dev.timeClock')
-                    : d.permissions.map((p) => PERMISSION_LABELS[p]).join(' · ')}
-                  {d.lastSeenAt && ` · ${t('dev.lastSeen')} ${formatDateTime(d.lastSeenAt)}`}
+                    : d.permissions.map((p) => t(PERMISSION_LABELS[p])).join(' · ')}
+                  {d.lastSeenAt &&
+                    ` · ${t('dev.lastSeen', { time: formatDateTime(d.lastSeenAt, { timeZone }) })}`}
                 </span>
               </span>
               {d.status !== 'REVOKED' && (
@@ -188,7 +192,7 @@ export default function DevicesPage() {
                       )
                     }
                   />
-                  {PERMISSION_LABELS[p]}
+                  {t(PERMISSION_LABELS[p])}
                 </Label>
               ))}
             </fieldset>

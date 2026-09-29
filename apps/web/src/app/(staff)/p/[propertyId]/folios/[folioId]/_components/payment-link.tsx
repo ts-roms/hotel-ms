@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
 
 export function PaymentLink({ propertyId, folio }: { propertyId: string; folio: Folio }) {
   const pms = usePms(propertyId);
@@ -59,7 +60,7 @@ export function PaymentLink({ propertyId, folio }: { propertyId: string; folio: 
               <span className="tabular-nums">{formatMoney(i.amountMinor, i.currency)}</span>
               <span className="flex items-center gap-2">
                 <Badge className={i.needsAttention ? 'text-destructive' : ''}>
-                  {i.status.toLowerCase()}
+                  {statusLabel(i.status)}
                   {i.needsAttention && ` · ${t('fin.needsAttention')}`}
                 </Badge>
                 {i.checkoutUrl && (

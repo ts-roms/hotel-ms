@@ -1,5 +1,6 @@
 'use client';
 
+import type { SEARCH_KINDS } from '@hotel/contracts';
 import { Alert, Badge, EmptyState, Input, PageHeader } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
@@ -8,9 +9,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 
 /** Global search (spec §73, ADR-0025): results limited to what the user may open. */
+const SEARCH_KIND_LABEL: Record<(typeof SEARCH_KINDS)[number], MessageKey> = {
+  guest: 'search.kind.guest',
+  reservation: 'search.kind.reservation',
+  room: 'search.kind.room',
+  employee: 'search.kind.employee',
+  order: 'search.kind.order',
+  invoice: 'search.kind.invoice',
+  service_request: 'search.kind.service_request',
+  maintenance: 'search.kind.maintenance',
+};
+
 export default function SearchPage() {
   return (
     <Suspense>
@@ -62,7 +74,7 @@ function SearchResults() {
                 {r.propertyName && ` · ${r.propertyName}`}
               </span>
             </span>
-            <Badge>{t(`search.kind.${r.kind}` as Parameters<typeof t>[0])}</Badge>
+            <Badge>{t(SEARCH_KIND_LABEL[r.kind])}</Badge>
           </Link>
         ))}
       </div>

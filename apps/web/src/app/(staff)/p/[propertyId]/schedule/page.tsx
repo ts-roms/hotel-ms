@@ -1,6 +1,6 @@
 'use client';
 
-import { addDays, formatDate } from '@hotel/format';
+import { addDays, formatDate, localToday, startOfWeek, weekDates } from '@hotel/format';
 import {
   Alert,
   Button,
@@ -15,10 +15,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { CalendarClock, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { Birthdays } from './_components/birthdays';
 import { CoverageGaps } from './_components/coverage-gaps';
 import { NewShift } from './_components/new-shift-form';
@@ -30,12 +28,15 @@ import { StaffingRequirements } from './_components/staffing-requirements';
 export default function SchedulePage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
+  const timeZone = usePropertyTimeZone();
   const queryClient = useQueryClient();
-  const [monday, setMonday] = useState(() => mondayOf(today()));
-  const days = weekDays(monday);
+  // Until another week is chosen: this week at the property.
+  const [picked, setMonday] = useState<string | null>(null);
+  const monday = picked ?? startOfWeek(localToday(timeZone));
+  const days = weekDates(monday);
   const sunday = days[6]!;
-  const canManage = hasPermission(session.data, 'schedule.manage');
+  const canManage = can('schedule.manage');
 
   const schedule = useQuery({
     queryKey: ['schedule', propertyId, monday],
@@ -72,7 +73,7 @@ export default function SchedulePage() {
   const data = schedule.data;
   const paging = schedule.isPlaceholderData;
   const drafts = data?.shifts.filter((s) => s.status === 'DRAFT').length ?? 0;
-  const todayDate = today();
+  const todayDate = localToday(timeZone);
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,14 +128,13 @@ export default function SchedulePage() {
       />
       {publish.isSuccess && (
         <Notice>
-          {publish.data.published} {t('hr.published')}
-          {publish.data.gaps.length > 0 && ` · ${publish.data.gaps.length} ${t('sched.gapsLeft')}`}
+          {t('hr.publishedCount', { count: publish.data.published })}
+          {publish.data.gaps.length > 0 &&
+            ` · ${t('sched.gapsLeftCount', { count: publish.data.gaps.length })}`}
         </Notice>
       )}
       {cancelSeries.isSuccess && (
-        <Notice>
-          {cancelSeries.data.cancelled} {t('sched.seriesCancelled')}
-        </Notice>
+        <Notice>{t('sched.seriesCancelledCount', { count: cancelSeries.data.cancelled })}</Notice>
       )}
       {(schedule.error || publish.error || cancel.error || cancelSeries.error) && (
         <Alert>
@@ -174,7 +174,7 @@ export default function SchedulePage() {
       )}
 
       <StaffingRequirements canManage={canManage} />
-      {hasPermission(session.data, 'birthday.read') && <Birthdays />}
+      {can('birthday.read') && <Birthdays />}
     </div>
   );
 }

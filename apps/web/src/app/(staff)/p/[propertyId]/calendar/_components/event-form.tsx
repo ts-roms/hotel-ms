@@ -8,7 +8,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
+import { enumLabel } from '@/lib/status';
 
 export function EventForm({
   propertyId,
@@ -93,7 +93,7 @@ export function EventForm({
         >
           {EVENT_CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {statusLabel(c)}
+              {enumLabel('category', c)}
             </option>
           ))}
         </NativeSelect>

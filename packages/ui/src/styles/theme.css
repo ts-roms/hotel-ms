@@ -3,7 +3,8 @@
  * Import after Tailwind: `@import 'tailwindcss'; @import '@hotel/ui/theme.css';`
  *
  * Each app defines the color values (--background, --primary, ...) for light and dark;
- * this file maps them to Tailwind colors and adds the motion tokens @hotel/ui uses.
+ * this file maps them to Tailwind colors, adds the motion tokens @hotel/ui uses, and the base
+ * styles and utilities both apps share (.stagger).
  */
 
 /* Let Tailwind see the class names used by the shared components. */
@@ -83,6 +84,56 @@
     to {
       transform: translateX(110%) scaleX(0.4);
     }
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 25%, transparent);
+  }
+}
+
+@layer utilities {
+  /*
+   * Children enter one after another. Add to a list, grid or stack container. One timing for
+   * both apps: 40 ms apart, capped at the 9th child (320 ms), so long lists do not drag.
+   */
+  .stagger > * {
+    animation: var(--animate-slide-up);
+  }
+  .stagger > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .stagger > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .stagger > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .stagger > :nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .stagger > :nth-child(6) {
+    animation-delay: 200ms;
+  }
+  .stagger > :nth-child(7) {
+    animation-delay: 240ms;
+  }
+  .stagger > :nth-child(8) {
+    animation-delay: 280ms;
+  }
+  .stagger > :nth-child(n + 9) {
+    animation-delay: 320ms;
   }
 }
 

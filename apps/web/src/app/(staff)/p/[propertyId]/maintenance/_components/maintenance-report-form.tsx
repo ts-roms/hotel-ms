@@ -22,9 +22,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel } from '@/lib/status';
+import { useCan, usePms } from '@/lib/property';
+import { enumLabel } from '@/lib/status';
 
 export function MaintenanceReportForm({
   propertyId,
@@ -34,7 +33,7 @@ export function MaintenanceReportForm({
   onCreated: (id: string) => void;
 }) {
   const pms = usePms(propertyId);
-  const session = useSession();
+  const can = useCan();
   const queryClient = useQueryClient();
   const rooms = useQuery({ queryKey: ['rooms', propertyId], queryFn: pms.rooms });
   const [roomId, setRoomId] = useState('');
@@ -46,7 +45,7 @@ export function MaintenanceReportForm({
   const [outOfOrder, setOutOfOrder] = useState(false);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const manage = hasPermission(session.data, 'maintenance.manage');
+  const manage = can('maintenance.manage');
   const report = useMutation({
     mutationFn: () =>
       pms.reportMaintenance({
@@ -90,7 +89,7 @@ export function MaintenanceReportForm({
               ?.filter((r) => !r.archived)
               .map((r) => (
                 <option key={r.id} value={r.id}>
-                  {t('mnt.room')} {r.number}
+                  {t('roomNo', { number: r.number })}
                 </option>
               ))}
           </NativeSelect>
@@ -110,7 +109,7 @@ export function MaintenanceReportForm({
           >
             {MAINTENANCE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {statusLabel(c)}
+                {enumLabel('category', c)}
               </option>
             ))}
           </NativeSelect>
@@ -121,7 +120,7 @@ export function MaintenanceReportForm({
           >
             {MAINTENANCE_PRIORITIES.map((p) => (
               <option key={p} value={p}>
-                {statusLabel(p)}
+                {enumLabel('priority', p)}
               </option>
             ))}
           </NativeSelect>

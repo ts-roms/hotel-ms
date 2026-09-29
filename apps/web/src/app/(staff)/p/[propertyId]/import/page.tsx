@@ -25,15 +25,19 @@ import { useMutation } from '@tanstack/react-query';
 import { Download, FileUp, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
-import { usePms, usePropertyId } from '@/lib/property';
-import { hasPermission, useSession } from '@/lib/session';
+import { type MessageKey, t } from '@/lib/i18n';
+import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 
 const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: string }[] = [
   { kind: 'guests', label: 'imp.guests', permission: 'guest.update' },
   { kind: 'rooms', label: 'imp.rooms', permission: 'room.manage' },
 ];
 
+const ROW_STATUS_LABEL: Record<ImportPreview['sample'][number]['status'], MessageKey> = {
+  NEW: 'imp.status.NEW',
+  DUPLICATE: 'imp.status.DUPLICATE',
+  ERROR: 'imp.status.ERROR',
+};
 const STATUS_VARIANT = { NEW: 'success', DUPLICATE: 'warning', ERROR: 'danger' } as const;
 
 /** A header-only CSV to fill in, as a download. */
@@ -44,10 +48,11 @@ function templateHref(kind: ImportKind): string {
 
 /** CSV import with a preview before anything is written (spec §74, ADR-0030). */
 export default function ImportPage() {
+  const timeZone = usePropertyTimeZone();
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
-  const session = useSession();
-  const kinds = KINDS.filter((k) => hasPermission(session.data, k.permission));
+  const can = useCan();
+  const kinds = KINDS.filter((k) => can(k.permission));
   const [kind, setKind] = useState<ImportKind | ''>('');
   const current = kind || kinds[0]?.kind || 'guests';
   const [fileName, setFileName] = useState('');
@@ -122,8 +127,12 @@ export default function ImportPage() {
           {commit.error && <Alert>{errorMessage(commit.error)}</Alert>}
           {commit.data && (
             <Notice>
-              {commit.data.created} {t('imp.created')}
-              {commit.data.skipped > 0 && `, ${commit.data.skipped} ${t('imp.skipped')}`}.
+              {commit.data.skipped > 0
+                ? t('imp.createdSkippedCount', {
+                    created: commit.data.created,
+                    skipped: commit.data.skipped,
+                  })
+                : t('imp.createdCount', { created: commit.data.created })}
             </Notice>
           )}
         </CardContent>
@@ -139,14 +148,12 @@ export default function ImportPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="success">
-                {p.newRows} {t('imp.new')}
-              </Badge>
+              <Badge variant="success">{t('imp.newCount', { count: p.newRows })}</Badge>
               <Badge variant="warning">
-                {p.duplicateRows} {t('imp.duplicates')}
+                {t('imp.duplicatesCount', { count: p.duplicateRows })}
               </Badge>
               <Badge variant={p.errorRows ? 'danger' : 'neutral'}>
-                {p.errorRows} {t('imp.errors')}
+                {t('imp.errorsCount', { count: p.errorRows })}
               </Badge>
             </div>
             {p.errorRows > 0 ? (
@@ -155,7 +162,7 @@ export default function ImportPage() {
                 <ul className="mt-1 list-disc pl-5">
                   {p.errors.map((e) => (
                     <li key={`${e.row}:${e.column}:${e.message}`}>
-                      {t('imp.row')} {e.row}
+                      {t('imp.rowNumber', { row: e.row })}
                       {e.column && ` · ${e.column}`}: {e.message}
                     </li>
                   ))}
@@ -172,7 +179,9 @@ export default function ImportPage() {
                   {t('imp.commit')} ({p.newRows})
                 </Button>
                 <span className="text-muted-foreground">
-                  {t('imp.validUntil')} {formatTime(p.expiresAt, { seconds: true })}
+                  {t('imp.validUntilTime', {
+                    time: formatTime(p.expiresAt, { seconds: true, timeZone }),
+                  })}
                 </span>
               </div>
             )}
@@ -193,7 +202,7 @@ export default function ImportPage() {
                       <TableCell className="tabular-nums">{r.row}</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANT[r.status]}>
-                          {t(`imp.status.${r.status}` as 'imp.status.NEW')}
+                          {t(ROW_STATUS_LABEL[r.status])}
                         </Badge>
                       </TableCell>
                       {columns.map((c) => (
@@ -208,7 +217,7 @@ export default function ImportPage() {
             </div>
             {p.totalRows > p.sample.length && (
               <p className="text-muted-foreground">
-                {t('imp.showing')} {p.sample.length} / {p.totalRows}
+                {t('imp.showingCount', { count: p.sample.length, total: p.totalRows })}
               </p>
             )}
           </CardContent>

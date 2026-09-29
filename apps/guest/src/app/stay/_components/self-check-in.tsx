@@ -2,11 +2,19 @@
 
 import { type GuestStay, type SelfCheckInResult } from '@hotel/contracts';
 import { formatMoney } from '@hotel/format';
-import { Alert, Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@hotel/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  SectionCard,
+} from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CreditCard, DoorOpen, KeyRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Section } from '@/components/section';
 import { api, errorMessage } from '@/lib/api';
 import { rich, t } from '@/lib/i18n';
 
@@ -52,8 +60,9 @@ export function SelfCheckIn({
     },
   });
   return (
-    <Section
-      icon={<KeyRound />}
+    <SectionCard
+      variant="badge"
+      icon={KeyRound}
       title={t('checkIn.title')}
       description={s.verified ? t('checkIn.description') : t('checkIn.verifyFirst')}
     >
@@ -99,7 +108,7 @@ export function SelfCheckIn({
           {t('checkIn.now')}
         </Button>
       </CardContent>
-    </Section>
+    </SectionCard>
   );
 }
 

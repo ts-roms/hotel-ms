@@ -49,7 +49,7 @@ export function FolioDocuments({ propertyId, folio }: { propertyId: string; foli
                 disabled={issue.isPending}
                 onClick={() => issue.mutate({ type: 'RECEIPT', paymentId: p.id })}
               >
-                {t('fin.receiptFor')} {formatMoney(p.amountMinor, folio.currency)}
+                {t('fin.receiptForAmount', { amount: formatMoney(p.amountMinor, folio.currency) })}
               </Button>
             ))}
         </div>

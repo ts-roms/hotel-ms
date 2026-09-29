@@ -23,7 +23,8 @@ export function NavGroup({
         </span>
       )}
       {items.map((item) => {
-        const active = pathname.startsWith(item.href);
+        // Exact match or a page below it: /me must not light up on /members.
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
         return (
           <Link

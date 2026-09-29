@@ -10,21 +10,23 @@ import { useEffect, useState } from 'react';
 import { SelfiePreview, useSelfieCamera } from '@/components/selfie-camera';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { PUNCH_LABEL } from '@/lib/hr';
 
 type Kiosk = ReturnType<typeof createKioskApiClient>;
 
-const ACTIONS: { type: PunchType; label: Parameters<typeof t>[0]; primary?: boolean }[] = [
-  { type: 'IN', label: 'clock.in', primary: true },
-  { type: 'BREAK_START', label: 'clock.breakStart' },
-  { type: 'BREAK_END', label: 'clock.breakEnd' },
-  { type: 'OUT', label: 'clock.out', primary: true },
+/** Kiosk buttons in screen order; labels are shared with My time (`PUNCH_LABEL`). */
+const ACTIONS: { type: PunchType; primary?: boolean }[] = [
+  { type: 'IN', primary: true },
+  { type: 'BREAK_START' },
+  { type: 'BREAK_END' },
+  { type: 'OUT', primary: true },
 ];
 
 /**
  * Time clock screen (ADR-0022): Employee ID, then In / Break / Out. The camera takes a
  * selfie with every punch; the photo goes to HR, never shown back on this shared screen.
  */
-export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk }) {
+export function KioskTimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk }) {
   const camera = useSelfieCamera();
   const [employeeNo, setEmployeeNo] = useState('');
   const [done, setDone] = useState<ClockPunchResult | null>(null);
@@ -64,10 +66,12 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
             >
               <CheckCircle2 className="size-8 text-success" />
               <strong>
-                {done.type === 'IN' ? t('clock.hello') : t('clock.thanks')}, {done.employeeName}
+                {t(done.type === 'IN' ? 'clock.hello' : 'clock.thanks', {
+                  name: done.employeeName,
+                })}
               </strong>
               <span className="text-sm text-muted-foreground">
-                {t(ACTIONS.find((a) => a.type === done.type)!.label)} · {formatTime(done.at)}
+                {t(PUNCH_LABEL[done.type])} · {formatTime(done.at)}
               </span>
             </div>
           ) : (
@@ -93,12 +97,12 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
                     loading={punch.isPending && punch.variables === a.type}
                     onClick={() => punch.mutate(a.type)}
                   >
-                    {t(a.label)}
+                    {t(PUNCH_LABEL[a.type])}
                   </Button>
                 ))}
               </div>
               <p className="text-center text-xs text-muted-foreground">
-                {t('clock.photoNotice')} {state.photoRetentionDays} {t('clock.days')}
+                {t('clock.photoNotice', { days: state.photoRetentionDays })}
               </p>
             </>
           )}
