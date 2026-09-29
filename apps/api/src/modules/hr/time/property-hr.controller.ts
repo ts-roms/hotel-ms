@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import {
   attendanceCorrectionSchema,
@@ -34,7 +34,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { sendCsv } from '../../../common/download.js';
-import { parseIfMatch } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -111,7 +111,7 @@ export class PropertyHrController {
   decideCorrection(
     @Param('propertyId') propertyId: string,
     @Param('correctionId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.attendance.decideCorrection(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -180,7 +180,7 @@ export class PropertyHrController {
   updateShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateShiftRequestSchema) body: UpdateShiftRequest,
   ) {
     return this.schedule.updateShift(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
@@ -193,7 +193,7 @@ export class PropertyHrController {
   cancelShift(
     @Param('propertyId') propertyId: string,
     @Param('shiftId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
   ) {
     return this.schedule.cancelShift(propertyId, uuidParam(id), parseIfMatch(ifMatch));
   }
@@ -215,7 +215,7 @@ export class PropertyHrController {
   decideLeave(
     @Param('propertyId') propertyId: string,
     @Param('leaveRequestId') id: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.leave.decide(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);

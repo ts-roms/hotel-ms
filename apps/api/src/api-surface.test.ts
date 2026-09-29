@@ -3,7 +3,7 @@ import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/
 import { createRequire } from 'node:module';
 import { RequestMethod, type Type } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
-import { CONTROLLERS } from './api-surface.js';
+import { CONTROLLERS, declarePathParameters } from './api-surface.js';
 import { CONTEXT_MODULES } from './app.module.js';
 
 function registeredControllers(): Type[] {
@@ -58,5 +58,29 @@ describe('API surface', () => {
     });
     expect(routes.length).toBeGreaterThan(0);
     expect(routes.filter((route, index) => routes.indexOf(route) !== index)).toEqual([]);
+  });
+});
+
+describe('declarePathParameters', () => {
+  it('adds the path parameters a handler does not read, first and in path order', () => {
+    const own = {
+      name: 'folioId',
+      required: true,
+      in: 'path' as const,
+      schema: { type: 'string' as const },
+    };
+    const doc = declarePathParameters({
+      openapi: '3.0.0',
+      info: { title: 't', version: '1' },
+      paths: {
+        '/properties/{propertyId}/folios/{folioId}': { get: { parameters: [own], responses: {} } },
+        '/health': { get: { responses: {} } },
+      },
+    });
+    expect(doc.paths['/properties/{propertyId}/folios/{folioId}']!.get!.parameters).toEqual([
+      { name: 'propertyId', required: true, in: 'path', schema: { type: 'string' } },
+      own,
+    ]);
+    expect(doc.paths['/health']!.get!.parameters).toBeUndefined();
   });
 });

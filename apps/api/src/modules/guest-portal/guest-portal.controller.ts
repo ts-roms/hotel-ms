@@ -14,6 +14,7 @@ import {
 import type { FastifyReply } from 'fastify';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
+import { GuestAccessService } from './guest-access.service.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { GuestSessions } from './guest-session.js';
 
@@ -27,6 +28,7 @@ import { GuestSessions } from './guest-session.js';
 export class GuestPortalController {
   constructor(
     private readonly portal: GuestPortalService,
+    private readonly access: GuestAccessService,
     private readonly sessions: GuestSessions,
   ) {}
 
@@ -38,7 +40,7 @@ export class GuestPortalController {
     @ZodBody(guestExchangeRequestSchema) body: GuestExchangeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    const { token, expiresAt, stay } = await this.portal.exchange(body.token);
+    const { token, expiresAt, stay } = await this.access.exchange(body.token);
     reply.setCookie(this.sessions.cookieName, token, this.sessions.cookieOptions(expiresAt));
     return stay;
   }
@@ -46,7 +48,7 @@ export class GuestPortalController {
   @Delete('session')
   @HttpCode(204)
   async logout(@Res({ passthrough: true }) reply: FastifyReply): Promise<void> {
-    await this.portal.logout();
+    await this.access.logout();
     reply.clearCookie(this.sessions.cookieName, { path: '/' });
   }
 
@@ -59,14 +61,14 @@ export class GuestPortalController {
   @Post('verification')
   @HttpCode(204)
   async requestCode(): Promise<void> {
-    await this.portal.requestCode();
+    await this.access.requestCode();
   }
 
   @Post('verification/confirm')
   @HttpCode(200)
   @ZodResponse(200, guestStaySchema)
   verifyCode(@ZodBody(guestOtpVerifyRequestSchema) body: GuestOtpVerifyRequest) {
-    return this.portal.verifyCode(body.code);
+    return this.access.verifyCode(body.code);
   }
 
   @Put('pre-check-in')

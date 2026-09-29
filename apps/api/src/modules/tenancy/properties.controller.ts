@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CreatePropertyRequest,
@@ -12,7 +12,7 @@ import {
   updatePropertyRequestSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { parseIfMatch, weakEtag } from '../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../common/etag.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { PropertiesService } from './properties.service.js';
@@ -61,7 +61,7 @@ export class PropertiesController {
   @ZodResponse(200, propertySchema)
   async update(
     @Param('propertyId') propertyId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updatePropertyRequestSchema) body: UpdatePropertyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<Property> {

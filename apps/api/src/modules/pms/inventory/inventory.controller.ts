@@ -1,15 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Headers,
-  HttpCode,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Res,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   buildingSchema,
@@ -33,17 +22,21 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { RoomTypesService } from './room-types.service.js';
 import { RoomsService } from './rooms.service.js';
 
 /** Property inventory: buildings, room types, rooms and room blocks. */
 @ApiTags('inventory')
 @Controller('properties/:propertyId')
 export class InventoryController {
-  constructor(private readonly rooms: RoomsService) {}
+  constructor(
+    private readonly rooms: RoomsService,
+    private readonly roomTypes: RoomTypesService,
+  ) {}
 
   // ---- Buildings ------------------------------------------------------------------------
 
@@ -51,7 +44,7 @@ export class InventoryController {
   @RequirePermission('room.read')
   @ZodResponse(200, z.array(buildingSchema))
   listBuildings() {
-    return this.rooms.listBuildings();
+    return this.roomTypes.listBuildings();
   }
 
   @Post('buildings')
@@ -59,7 +52,7 @@ export class InventoryController {
   @HttpCode(201)
   @ZodResponse(201, buildingSchema)
   createBuilding(@ZodBody(createBuildingRequestSchema) body: CreateBuildingRequest) {
-    return this.rooms.createBuilding(body);
+    return this.roomTypes.createBuilding(body);
   }
 
   // ---- Room types -----------------------------------------------------------------------
@@ -68,7 +61,7 @@ export class InventoryController {
   @RequirePermission('room.read')
   @ZodResponse(200, z.array(roomTypeSchema))
   listRoomTypes() {
-    return this.rooms.listRoomTypes();
+    return this.roomTypes.listRoomTypes();
   }
 
   @Post('room-types')
@@ -76,7 +69,7 @@ export class InventoryController {
   @HttpCode(201)
   @ZodResponse(201, roomTypeSchema)
   createRoomType(@ZodBody(createRoomTypeRequestSchema) body: CreateRoomTypeRequest) {
-    return this.rooms.createRoomType(body);
+    return this.roomTypes.createRoomType(body);
   }
 
   @Patch('room-types/:roomTypeId')
@@ -84,11 +77,11 @@ export class InventoryController {
   @ZodResponse(200, roomTypeSchema)
   async updateRoomType(
     @Param('roomTypeId') roomTypeId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateRoomTypeRequestSchema) body: UpdateRoomTypeRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
-    const roomType = await this.rooms.updateRoomType(
+    const roomType = await this.roomTypes.updateRoomType(
       uuidParam(roomTypeId),
       parseIfMatch(ifMatch),
       body,
@@ -119,7 +112,7 @@ export class InventoryController {
   @ZodResponse(200, roomSchema)
   async updateRoom(
     @Param('roomId') roomId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateRoomRequestSchema) body: UpdateRoomRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {

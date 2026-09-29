@@ -165,3 +165,34 @@ export function orderOperations(document: OpenAPIObject): OpenAPIObject {
   }
   return { ...document, paths };
 }
+
+interface PathParameter {
+  name: string;
+  in: string;
+}
+
+/**
+ * Declares every `{name}` of an operation's path as a path parameter. Nest documents only
+ * the parameters a handler reads with `@Param()`; many property routes leave `:propertyId`
+ * to TenantGuard, so their operations would not declare it. Missing ones are added first,
+ * in path order, in the shape Nest uses for the others.
+ */
+export function declarePathParameters(document: OpenAPIObject): OpenAPIObject {
+  const paths: OpenAPIObject['paths'] = {};
+  for (const [path, item] of Object.entries(document.paths)) {
+    const names = [...path.matchAll(/\{(\w+)\}/g)].map((match) => match[1]!);
+    paths[path] = Object.fromEntries(
+      Object.entries(item).map(([verb, operation]: [string, { parameters?: PathParameter[] }]) => {
+        const declared = new Set(
+          (operation.parameters ?? []).filter((p) => p.in === 'path').map((p) => p.name),
+        );
+        const missing = names
+          .filter((name) => !declared.has(name))
+          .map((name) => ({ name, required: true, in: 'path', schema: { type: 'string' } }));
+        if (missing.length === 0) return [verb, operation];
+        return [verb, { ...operation, parameters: [...missing, ...(operation.parameters ?? [])] }];
+      }),
+    );
+  }
+  return { ...document, paths };
+}

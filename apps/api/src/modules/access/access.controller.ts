@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Headers,
-  HttpCode,
-  Param,
-  Patch,
-  Post,
-  Res,
-} from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type AssignmentRequest,
@@ -32,7 +22,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
@@ -98,7 +88,7 @@ export class AccessController {
   @ZodResponse(200, roleSchema)
   async updateRole(
     @Param('roleId') roleId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateRoleRequestSchema) body: UpdateRoleRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<RoleDto> {

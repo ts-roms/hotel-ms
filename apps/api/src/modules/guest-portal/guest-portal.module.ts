@@ -7,6 +7,7 @@ import { PmsModule } from '../pms/pms.module.js';
 import { TenancyModule } from '../tenancy/tenancy.module.js';
 import { GuestAdminController } from './guest-admin.controller.js';
 import { GuestExtrasController } from './guest-extras.controller.js';
+import { GuestAccessService } from './guest-access.service.js';
 import { GuestInfoService } from './guest-info.service.js';
 import { GuestPortalLinkController } from './guest-portal-link.controller.js';
 import { GuestPortalController } from './guest-portal.controller.js';
@@ -38,9 +39,10 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './room-access.js';
   providers: [
     GuestSessions,
     GuestPortalService,
+    GuestAccessService,
     GuestInfoService,
     { provide: ROOM_ACCESS_PROVIDER, useClass: FrontDeskKeyProvider },
   ],
-  exports: [GuestSessions, GuestPortalService],
+  exports: [GuestSessions, GuestPortalService, GuestAccessService],
 })
 export class GuestPortalModule {}

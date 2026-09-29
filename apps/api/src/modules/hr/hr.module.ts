@@ -4,6 +4,7 @@ import { HrAccess } from './hr-access.js';
 import { AttendanceService } from './time/attendance.service.js';
 import { ClockPhotosController } from './time/clock-photos.controller.js';
 import { LeaveController } from './time/leave.controller.js';
+import { LeaveTypesService } from './time/leave-types.service.js';
 import { LeaveService } from './time/leave.service.js';
 import { MeController } from './time/me.controller.js';
 import { PayrollService } from './time/payroll.service.js';
@@ -55,6 +56,7 @@ import { ProfileRecordsService } from './workforce/profile-records.service.js';
     ScheduleService,
     StaffingService,
     LeaveService,
+    LeaveTypesService,
     PayrollService,
   ],
   exports: [

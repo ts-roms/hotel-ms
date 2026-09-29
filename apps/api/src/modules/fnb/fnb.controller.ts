@@ -40,7 +40,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
-import { parseIfMatch } from '../../common/etag.js';
+import { IfMatch, parseIfMatch } from '../../common/etag.js';
 import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import type { RequestContext } from '../../common/request-context.js';
@@ -90,7 +90,7 @@ export class FnbController {
   updateOutlet(
     @Param('propertyId') propertyId: string,
     @Param('outletId') outletId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateOutletRequestSchema) body: UpdateOutletRequest,
   ) {
     return this.menus.updateOutlet(propertyId, uuidParam(outletId), parseIfMatch(ifMatch), body);
@@ -196,7 +196,7 @@ export class FnbController {
   transition(
     @Param('propertyId') propertyId: string,
     @Param('orderId') orderId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(orderTransitionRequestSchema) body: OrderTransitionRequest,
   ) {
     return this.orders.transition(
@@ -214,7 +214,7 @@ export class FnbController {
   cancel(
     @Param('propertyId') propertyId: string,
     @Param('orderId') orderId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(cancelOrderRequestSchema) body: CancelOrderRequest,
   ) {
     const canOverride = this.cls

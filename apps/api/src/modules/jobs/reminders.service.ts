@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { addDays, toDbDate } from '../../common/dates.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { EventRemindersService } from '../calendar/event-reminders.service.js';
-import { GuestPortalService } from '../guest-portal/guest-portal.service.js';
+import { GuestAccessService } from '../guest-portal/guest-access.service.js';
 import { BirthdaysService } from '../hr/workforce/birthdays.service.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -23,7 +23,7 @@ export class RemindersService {
   constructor(
     private readonly db: TenantDb,
     private readonly inbox: NotificationsService,
-    private readonly portal: GuestPortalService,
+    private readonly guestAccess: GuestAccessService,
     private readonly guestMessages: GuestMessagesService,
     private readonly birthdays: BirthdaysService,
     private readonly eventReminders: EventRemindersService,
@@ -53,7 +53,7 @@ export class RemindersService {
     for (const r of arrivals) {
       if (!(await this.reserve(`checkin-reminder:${r.id}`))) continue;
       try {
-        await this.portal.sendLink(r.id, 'checkin-reminder');
+        await this.guestAccess.sendLink(r.id, 'checkin-reminder');
         checkIn++;
       } catch (error) {
         this.logger.error(`Check-in reminder for ${r.id} failed: ${String(error)}`);

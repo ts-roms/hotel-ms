@@ -14,13 +14,17 @@ import {
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { LeaveTypesService } from './leave-types.service.js';
 import { LeaveService } from './leave.service.js';
 
 /** Organization-level leave: employee balances and ledger entries, leave types. */
 @ApiTags('hr')
 @Controller()
 export class LeaveController {
-  constructor(private readonly leave: LeaveService) {}
+  constructor(
+    private readonly leave: LeaveService,
+    private readonly types: LeaveTypesService,
+  ) {}
 
   @Get('employees/:employeeId/leave')
   @RequirePermission('leave.read', 'any')
@@ -43,14 +47,14 @@ export class LeaveController {
   @RequirePermission('leave.request.own', 'any')
   @ZodResponse(200, listOf(leaveTypeSchema))
   async leaveTypes() {
-    return { items: await this.leave.types() };
+    return { items: await this.types.types() };
   }
 
   @Post('leave-types')
   @RequirePermission('leave.configure', 'organization')
   @ZodResponse(201, leaveTypeSchema)
   createLeaveType(@ZodBody(createLeaveTypeRequestSchema) body: CreateLeaveTypeRequest) {
-    return this.leave.createType(body);
+    return this.types.createType(body);
   }
 
   @Patch('leave-types/:leaveTypeId')
@@ -60,6 +64,6 @@ export class LeaveController {
     @Param('leaveTypeId') id: string,
     @ZodBody(updateLeaveTypeRequestSchema) body: UpdateLeaveTypeRequest,
   ) {
-    return this.leave.updateType(uuidParam(id), body);
+    return this.types.updateType(uuidParam(id), body);
   }
 }

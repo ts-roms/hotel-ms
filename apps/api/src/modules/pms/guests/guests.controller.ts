@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, HttpCode, Param, Patch, Post, Res } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Patch, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   type CreateGuestRequest,
@@ -11,7 +11,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../../common/etag.js';
+import { IfMatch, parseIfMatch, weakEtag } from '../../../common/etag.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
@@ -52,7 +52,7 @@ export class GuestsController {
   @ZodResponse(200, guestSchema)
   async update(
     @Param('guestId') guestId: string,
-    @Headers('if-match') ifMatch: string | undefined,
+    @IfMatch() ifMatch: string | undefined,
     @ZodBody(updateGuestRequestSchema) body: UpdateGuestRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ) {
