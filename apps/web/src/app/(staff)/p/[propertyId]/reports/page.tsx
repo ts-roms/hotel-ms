@@ -1,7 +1,16 @@
 'use client';
 
 import { formatMoney } from '@hotel/format';
-import { Alert, Card, CardContent, CardHeader, CardTitle, Input, Notice } from '@hotel/ui';
+import {
+  Alert,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  DocumentTitle,
+  Input,
+  Notice,
+} from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
@@ -61,6 +70,7 @@ export default function ReportsPage() {
   return (
     <div className="flex max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <DocumentTitle title={t('fin.reports')} />
         <h1 className="text-xl font-semibold">
           {t('fin.reports')} {r && `· ${r.businessDate}`}
         </h1>

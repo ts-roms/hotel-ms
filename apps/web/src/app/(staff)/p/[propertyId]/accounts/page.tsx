@@ -1,7 +1,7 @@
 'use client';
 
 import { formatMoney } from '@hotel/format';
-import { Alert, Badge, Button, Card, CardContent, Input } from '@hotel/ui';
+import { Alert, Badge, Button, Card, CardContent, DocumentTitle, Input } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -29,6 +29,7 @@ export default function AccountsPage() {
   const currency = property.data?.currency ?? 'PHP';
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DocumentTitle title={t('fin.accounts')} />
       <h1 className="text-xl font-semibold">{t('fin.accounts')}</h1>
       {(accounts.error || create.error) && (
         <Alert>{errorMessage(accounts.error ?? create.error)}</Alert>

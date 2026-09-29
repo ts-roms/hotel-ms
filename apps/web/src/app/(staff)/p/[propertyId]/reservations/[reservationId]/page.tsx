@@ -4,6 +4,7 @@ import type { Reservation } from '@hotel/contracts';
 import { formatMoney } from '@hotel/format';
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -11,7 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Avatar,
+  DocumentTitle,
   Input,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -66,6 +67,7 @@ export default function ReservationPage() {
         <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
+      <DocumentTitle title={`${r.confirmationNo} · ${r.booker.firstName} ${r.booker.lastName}`} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-2">

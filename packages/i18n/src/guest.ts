@@ -6,6 +6,7 @@ import { createTranslator } from './translator.js';
 
 export const en = {
   'app.name': 'My stay',
+  'app.pageTitle': '{page} · {app}',
   'app.description': 'Your booking, online check-in and requests during your stay.',
 
   'error.generic': 'Something went wrong. Please try again.',

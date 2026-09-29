@@ -9,6 +9,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  DocumentTitle,
   FormField,
   Input,
   NativeSelect,
@@ -140,6 +141,7 @@ export default function NewReservationPage() {
       </Link>
       <Card>
         <CardHeader>
+          <DocumentTitle title={t('res.new')} />
           <CardTitle className="text-xl">{t('res.new')}</CardTitle>
         </CardHeader>
         <CardContent>

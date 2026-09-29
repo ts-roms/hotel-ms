@@ -33,6 +33,7 @@ export * from './components/table.js';
 export * from './components/textarea.js';
 export * from './components/toggle.js';
 
+export * from './blocks/document-title.js';
 export * from './blocks/empty-state.js';
 export * from './blocks/filter-chips.js';
 export * from './blocks/form-field.js';

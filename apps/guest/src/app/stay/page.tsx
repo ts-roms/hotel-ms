@@ -2,7 +2,7 @@
 
 import { ApiError } from '@hotel/api-client';
 import { type SelfCheckInResult } from '@hotel/contracts';
-import { Alert, buttonVariants } from '@hotel/ui';
+import { Alert, buttonVariants, DocumentTitle } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -65,6 +65,7 @@ export default function StayPage() {
   const s = stay.data;
   return (
     <StayShell>
+      <DocumentTitle title={s.property.name} />
       <div className="stagger flex flex-col gap-4">
         <StayOverview stay={s} />
         {s.verified && <Notifications unread={s.unreadNotifications} />}

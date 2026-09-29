@@ -6,6 +6,7 @@ import { createTranslator } from './translator.js';
 
 export const en = {
   'app.name': 'Hotel Platform',
+  'app.pageTitle': '{page} · {app}',
   'login.title': 'Sign in',
   'login.subtitle': 'Use your staff account.',
   'login.email': 'Email',
@@ -369,6 +370,7 @@ export const en = {
   'fin.expected': 'Expected',
   'fin.float': 'Opening float',
   'fin.invoice': 'Invoice',
+  'fin.documentTitle': '{type} {number}',
   'fin.issueInvoice': 'Issue invoice',
   'fin.moveCharges': 'Move selected charges',
   'fin.needsAttention': 'needs attention',

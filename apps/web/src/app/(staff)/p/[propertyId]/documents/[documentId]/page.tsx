@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDate, formatDateTime, formatMoney } from '@hotel/format';
-import { Alert, Button, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
+import { Alert, Button, DocumentTitle, Table, TableBody, TableCell, TableRow } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
@@ -25,6 +25,12 @@ export default function DocumentPage() {
   const c = d.content;
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4 rounded-md border bg-card p-6 text-sm print:border-0">
+      <DocumentTitle
+        title={t('fin.documentTitle', {
+          type: d.type === 'INVOICE' ? t('fin.invoice') : t('fin.receipt'),
+          number: d.documentNo,
+        })}
+      />
       <header className="flex items-start justify-between gap-4">
         <div>
           <div className="text-lg font-semibold">{c.property.name}</div>

@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  DocumentTitle,
   Input,
   Label,
   Notice,
@@ -28,6 +29,7 @@ export default function FinanceSettingsPage() {
   const can = useCan();
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DocumentTitle title={t('nav.financeSettings')} />
       <h1 className="text-xl font-semibold">{t('nav.financeSettings')}</h1>
       <ExchangeRates propertyId={propertyId} canManage={can('exchange_rate.manage')} />
       <DiscountProfiles propertyId={propertyId} canManage={can('tax.manage')} />

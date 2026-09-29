@@ -10,6 +10,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  DocumentTitle,
   EmptyState,
   Input,
   LoadingRegion,
@@ -70,6 +71,7 @@ export default function FolioPage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DocumentTitle title={f.label ?? t('folio.title')} />
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">

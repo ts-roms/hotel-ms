@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
   cn,
+  DocumentTitle,
   Input,
   Table,
   TableBody,
@@ -66,6 +67,7 @@ export default function CashierPage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
+      <DocumentTitle title={t('fin.cashier')} />
       <h1 className="text-xl font-semibold">{t('fin.cashier')}</h1>
       {(shift.error || open.error || close.error) && (
         <Alert>{errorMessage(shift.error ?? open.error ?? close.error)}</Alert>

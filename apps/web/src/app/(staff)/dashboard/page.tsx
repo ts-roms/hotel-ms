@@ -38,6 +38,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
+        documentTitle={t('nav.dashboard')}
         title={
           firstName
             ? rich('dashboard.welcomeName', {

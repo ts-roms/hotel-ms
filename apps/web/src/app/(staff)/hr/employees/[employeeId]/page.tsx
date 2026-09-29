@@ -11,6 +11,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  DocumentTitle,
   Input,
   LoadingRegion,
   NativeSelect,
@@ -72,6 +73,7 @@ export default function EmployeePage() {
         <ArrowLeft className="size-4 transition-transform duration-200 group-hover:-translate-x-1" />
         {t('common.back')}
       </Link>
+      <DocumentTitle title={name} />
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
