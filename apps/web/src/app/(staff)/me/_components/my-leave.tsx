@@ -53,7 +53,7 @@ export function MyLeave() {
           )}
           {leave.data?.balances.map((b) => (
             <Badge key={b.leaveTypeId} variant="primary">
-              {b.leaveTypeName}: {b.days} {t('hr.days')}
+              {b.leaveTypeName}: {t('common.daysCount', { count: b.days })}
             </Badge>
           ))}
         </div>

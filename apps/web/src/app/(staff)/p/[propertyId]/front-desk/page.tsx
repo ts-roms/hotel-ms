@@ -169,9 +169,7 @@ export default function FrontDeskPage() {
         title={t('fd.title')}
         description={
           d ? (
-            <>
-              {t('res.businessDate')} {formatDate(d.businessDate)}
-            </>
+            t('common.businessDateOn', { date: formatDate(d.businessDate) })
           ) : (
             <Skeleton className="h-4 w-40" />
           )

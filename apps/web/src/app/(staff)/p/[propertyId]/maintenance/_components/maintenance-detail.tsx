@@ -94,7 +94,7 @@ export function MaintenanceDetail({
           </Badge>
           <Badge variant={statusVariant(r.priority)}>{enumLabel('priority', r.priority)}</Badge>
           <span className="text-muted-foreground">
-            {r.roomNumber ? `${t('mnt.room')} ${r.roomNumber}` : r.location} ·{' '}
+            {r.roomNumber ? t('roomNo', { number: r.roomNumber }) : r.location} ·{' '}
             {enumLabel('category', r.category)}
           </span>
         </div>

@@ -81,8 +81,11 @@ export default function RoomsPage() {
                   <span className="font-medium">{rt.name}</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {rt.roomCount} {t('rooms.rooms').toLowerCase()} · {rt.baseOccupancy}–
-                  {rt.maxOccupancy}
+                  {t('rooms.typeSummary', {
+                    count: rt.roomCount,
+                    base: rt.baseOccupancy,
+                    max: rt.maxOccupancy,
+                  })}
                 </span>
               </li>
             ))}

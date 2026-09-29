@@ -121,8 +121,12 @@ export default function ImportPage() {
           {commit.error && <Alert>{errorMessage(commit.error)}</Alert>}
           {commit.data && (
             <Notice>
-              {commit.data.created} {t('imp.created')}
-              {commit.data.skipped > 0 && `, ${commit.data.skipped} ${t('imp.skipped')}`}.
+              {commit.data.skipped > 0
+                ? t('imp.createdSkippedCount', {
+                    created: commit.data.created,
+                    skipped: commit.data.skipped,
+                  })
+                : t('imp.createdCount', { created: commit.data.created })}
             </Notice>
           )}
         </CardContent>
@@ -138,14 +142,12 @@ export default function ImportPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="success">
-                {p.newRows} {t('imp.new')}
-              </Badge>
+              <Badge variant="success">{t('imp.newCount', { count: p.newRows })}</Badge>
               <Badge variant="warning">
-                {p.duplicateRows} {t('imp.duplicates')}
+                {t('imp.duplicatesCount', { count: p.duplicateRows })}
               </Badge>
               <Badge variant={p.errorRows ? 'danger' : 'neutral'}>
-                {p.errorRows} {t('imp.errors')}
+                {t('imp.errorsCount', { count: p.errorRows })}
               </Badge>
             </div>
             {p.errorRows > 0 ? (
@@ -154,7 +156,7 @@ export default function ImportPage() {
                 <ul className="mt-1 list-disc pl-5">
                   {p.errors.map((e) => (
                     <li key={`${e.row}:${e.column}:${e.message}`}>
-                      {t('imp.row')} {e.row}
+                      {t('imp.rowNumber', { row: e.row })}
                       {e.column && ` · ${e.column}`}: {e.message}
                     </li>
                   ))}
@@ -171,7 +173,7 @@ export default function ImportPage() {
                   {t('imp.commit')} ({p.newRows})
                 </Button>
                 <span className="text-muted-foreground">
-                  {t('imp.validUntil')} {formatTime(p.expiresAt, { seconds: true })}
+                  {t('imp.validUntilTime', { time: formatTime(p.expiresAt, { seconds: true }) })}
                 </span>
               </div>
             )}
@@ -207,7 +209,7 @@ export default function ImportPage() {
             </div>
             {p.totalRows > p.sample.length && (
               <p className="text-muted-foreground">
-                {t('imp.showing')} {p.sample.length} / {p.totalRows}
+                {t('imp.showingCount', { count: p.sample.length, total: p.totalRows })}
               </p>
             )}
           </CardContent>

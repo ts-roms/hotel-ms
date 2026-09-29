@@ -138,7 +138,7 @@ export default function ReportsPage() {
               <div key={run.id} className="flex justify-between gap-2">
                 <span>{run.runDate}</span>
                 <span className={run.ok ? 'text-success' : 'text-destructive'}>
-                  {run.ok ? t('fin.runOk') : `${run.issues.length} ${t('fin.runIssues')}`}
+                  {run.ok ? t('fin.runOk') : t('fin.runIssuesCount', { count: run.issues.length })}
                 </span>
               </div>
             ))}

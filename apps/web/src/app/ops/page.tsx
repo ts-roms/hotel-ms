@@ -28,16 +28,8 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
+import { timeAgo, timeSince } from '@/lib/time';
 
-/** Seconds (or minutes, hours) since an instant, for "5 min ago". */
-function age(iso: string | null, now = Date.now()): string {
-  if (!iso) return '—';
-  const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
-  if (seconds < 90) return `${seconds} s`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 90) return `${minutes} min`;
-  return `${Math.round(minutes / 60)} h`;
-}
 const when = (iso: string | null) => (iso ? formatDateTime(iso) : '—');
 
 /**
@@ -76,7 +68,7 @@ export default function OpsPage() {
             title={t('ops.title')}
             description={
               overview.data?.snapshot
-                ? `${t('ops.updated')} ${age(overview.data.snapshot.generatedAt)} ${t('ops.ago')}`
+                ? t('ops.updatedAt', { time: timeAgo(overview.data.snapshot.generatedAt) })
                 : t('ops.hint')
             }
           />
@@ -161,8 +153,9 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
           <p
             className={cn('text-xs', schedulerLate ? 'text-destructive' : 'text-muted-foreground')}
           >
-            {t('ops.scheduler')}:{' '}
-            {s.schedulerRanAt ? `${age(s.schedulerRanAt)} ${t('ops.ago')}` : t('ops.never')}
+            {t('ops.schedulerAt', {
+              time: s.schedulerRanAt ? timeAgo(s.schedulerRanAt) : t('ops.never'),
+            })}
           </p>
           {s.failedJobs.length > 0 && (
             <div className="flex flex-col gap-2 border-t pt-3">
@@ -199,7 +192,7 @@ function Dashboard({ snapshot: s }: { snapshot: OpsSnapshot }) {
             <Stat label={t('ops.pending')} value={s.outbox.pending} />
             <Stat
               label={t('ops.oldestPending')}
-              value={age(s.outbox.oldestPendingAt)}
+              value={s.outbox.oldestPendingAt ? timeSince(s.outbox.oldestPendingAt) : '—'}
               alert={backlogMinutes > 5}
             />
             <Stat label={t('ops.retrying')} value={s.outbox.retrying} />

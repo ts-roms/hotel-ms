@@ -282,7 +282,7 @@ export default function NewReservationPage() {
                       {formatMoney(quote.data.totalMinor, quote.data.currency)}
                     </strong>{' '}
                     <span className="text-sm text-muted-foreground">
-                      · {quote.data.nights.length} {t('res.nights')}
+                      · {t('res.nightsCount', { count: quote.data.nights.length })}
                     </span>
                   </span>
                 ) : quote.error ? (

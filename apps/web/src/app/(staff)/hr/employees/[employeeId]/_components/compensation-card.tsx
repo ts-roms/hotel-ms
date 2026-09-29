@@ -66,7 +66,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
               className="flex justify-between gap-2 border-t pt-2 text-muted-foreground"
             >
               <span>
-                {t('hrx.from')} {formatDate(c.effectiveFrom)}
+                {t('hrx.fromDate', { date: formatDate(c.effectiveFrom) })}
                 {c.notes && ` · ${c.notes}`}
                 {c.createdByName && ` · ${c.createdByName}`}
               </span>

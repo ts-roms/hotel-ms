@@ -37,7 +37,7 @@ export default function OverviewPage() {
     <div className="flex flex-col gap-4">
       <PageHeader
         title={d.propertyName}
-        description={`${t('mgmt.businessDate')} ${formatDate(d.businessDate)}`}
+        description={t('common.businessDateOn', { date: formatDate(d.businessDate) })}
       />
       {d.rooms && (
         <Section title={t('mgmt.rooms')}>

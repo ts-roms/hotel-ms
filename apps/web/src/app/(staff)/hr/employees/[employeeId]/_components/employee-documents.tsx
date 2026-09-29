@@ -100,8 +100,8 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
               <span className="text-xs text-muted-foreground">
                 {d.fileName} · {sizeLabel(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
                 {d.uploadedByName && ` · ${d.uploadedByName}`}
-                {d.expiresOn && ` · ${t('hr.expires')} ${formatDate(d.expiresOn)}`}
-                {d.purgeOn && ` · ${t('hr.deletedOn')} ${formatDate(d.purgeOn)}`}
+                {d.expiresOn && ` · ${t('hr.expiresOn', { date: formatDate(d.expiresOn) })}`}
+                {d.purgeOn && ` · ${t('hr.deletedOnDate', { date: formatDate(d.purgeOn) })}`}
               </span>
             </span>
             <AlertDialog>

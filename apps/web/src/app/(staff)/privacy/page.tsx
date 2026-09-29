@@ -154,9 +154,7 @@ function PersonRow({ subject, person: p }: { subject: Subject; person: Person })
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    {t('priv.anonymizeTitle')} {p.name}?
-                  </AlertDialogTitle>
+                  <AlertDialogTitle>{t('priv.anonymizeName', { name: p.name })}</AlertDialogTitle>
                   <AlertDialogDescription>
                     {subject === 'guests' ? t('priv.guestEffect') : t('priv.employeeEffect')}
                   </AlertDialogDescription>

@@ -21,7 +21,7 @@ import { ArrowRight, Building2, CalendarDays, Clock, Coins, KeyRound } from 'luc
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { GroupOverview } from './_components/group-overview';
-import { t } from '@/lib/i18n';
+import { rich, t } from '@/lib/i18n';
 import { firstPropertyPage } from '@/lib/nav';
 import { useProperties } from '@/lib/property';
 import { useSession } from '@/lib/session';
@@ -39,10 +39,11 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <PageHeader
         title={
-          <>
-            {t('dashboard.welcome')}
-            {firstName && <span className="text-primary">, {firstName}</span>}
-          </>
+          firstName
+            ? rich('dashboard.welcomeName', {
+                name: <span className="text-primary">{firstName}</span>,
+              })
+            : t('dashboard.welcome')
         }
         description={t('dashboard.propertiesDescription')}
       />

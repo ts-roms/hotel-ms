@@ -161,7 +161,7 @@ export default function ServiceRequestsPage() {
             <CardContent className="flex flex-col gap-3 p-4 pl-5 text-sm">
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold">
-                  {r.roomNumber ? `${t('sr.room')} ${r.roomNumber}` : t('sr.noRoom')} ·{' '}
+                  {r.roomNumber ? t('roomNo', { number: r.roomNumber }) : t('sr.noRoom')} ·{' '}
                   {enumLabel('category', r.category)}
                 </span>
                 <Badge variant={statusVariant(r.status)} dot>

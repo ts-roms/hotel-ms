@@ -80,7 +80,10 @@ export function TrainingCard({
               </span>
             </span>
             <span className="text-muted-foreground">
-              {[r.provider, r.completedOn && `${t('hrx.completed')} ${formatDate(r.completedOn)}`]
+              {[
+                r.provider,
+                r.completedOn && t('hrx.completedOn', { date: formatDate(r.completedOn) }),
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </span>

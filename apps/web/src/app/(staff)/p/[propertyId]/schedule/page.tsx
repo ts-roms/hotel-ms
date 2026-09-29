@@ -126,14 +126,13 @@ export default function SchedulePage() {
       />
       {publish.isSuccess && (
         <Notice>
-          {publish.data.published} {t('hr.published')}
-          {publish.data.gaps.length > 0 && ` · ${publish.data.gaps.length} ${t('sched.gapsLeft')}`}
+          {t('hr.publishedCount', { count: publish.data.published })}
+          {publish.data.gaps.length > 0 &&
+            ` · ${t('sched.gapsLeftCount', { count: publish.data.gaps.length })}`}
         </Notice>
       )}
       {cancelSeries.isSuccess && (
-        <Notice>
-          {cancelSeries.data.cancelled} {t('sched.seriesCancelled')}
-        </Notice>
+        <Notice>{t('sched.seriesCancelledCount', { count: cancelSeries.data.cancelled })}</Notice>
       )}
       {(schedule.error || publish.error || cancel.error || cancelSeries.error) && (
         <Alert>

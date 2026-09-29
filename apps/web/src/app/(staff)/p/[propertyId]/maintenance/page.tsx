@@ -77,7 +77,7 @@ export default function MaintenancePage() {
               </span>
               <span className="font-medium">{r.title}</span>
               <span className="text-xs text-muted-foreground">
-                {r.roomNumber ? `${t('mnt.room')} ${r.roomNumber}` : r.location} ·{' '}
+                {r.roomNumber ? t('roomNo', { number: r.roomNumber }) : r.location} ·{' '}
                 {enumLabel('category', r.category)}
                 {r.assignedName && ` · ${r.assignedName}`}
               </span>

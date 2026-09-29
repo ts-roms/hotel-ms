@@ -38,7 +38,8 @@ export default function DocumentPage() {
         </div>
       </header>
       <div>
-        {t('fin.billTo')}: <strong>{c.billTo}</strong> · {t('folio.title')} {c.folioNo}
+        {t('fin.billTo')}: <strong>{c.billTo}</strong> ·{' '}
+        {t('folio.numbered', { number: c.folioNo })}
       </div>
       {c.payment ? (
         <div className="flex justify-between border-y py-2">

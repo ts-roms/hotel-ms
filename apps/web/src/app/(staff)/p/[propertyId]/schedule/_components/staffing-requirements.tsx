@@ -16,7 +16,7 @@ import { Trash2, Users } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { rich, t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 
 /** Minimum staffing per department and time window (spec §35, ADR-0028). */
@@ -80,7 +80,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
                 .join(', ')}
             </span>
             <span className="flex items-center gap-2">
-              {t('sched.atLeast')} <strong>{r.minStaff}</strong>
+              {rich('sched.atLeastCount', { count: <strong>{r.minStaff}</strong> })}
               {canManage && (
                 <Button
                   size="sm"
@@ -142,7 +142,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
                 value={form.minStaff}
                 onChange={(e) => setForm({ ...form, minStaff: e.target.value })}
               />
-              <span className="text-muted-foreground">{t('sched.people').toLowerCase()}</span>
+              <span className="text-muted-foreground">{t('sched.peopleUnit')}</span>
             </div>
             <WeekdayPicker
               label={t('sched.weekdays')}

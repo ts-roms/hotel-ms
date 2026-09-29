@@ -17,6 +17,10 @@
     "./guest": {
       "types": "./dist/guest.d.ts",
       "default": "./dist/guest.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
     }
   },
   "sideEffects": false,
@@ -26,6 +30,18 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "vitest": "^5.0.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
   }
 }

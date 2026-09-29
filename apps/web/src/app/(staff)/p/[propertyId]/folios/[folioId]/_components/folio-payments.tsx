@@ -57,7 +57,9 @@ export function FolioPayments({ propertyId, folio }: { propertyId: string; folio
                   <span className="tabular-nums">{formatMoney(p.amountMinor, folio.currency)}</span>
                   {p.refundedMinor > 0 && (
                     <span className="text-xs text-muted-foreground">
-                      {t('fin.refunded')} {formatMoney(p.refundedMinor, folio.currency)}
+                      {t('fin.refundedAmount', {
+                        amount: formatMoney(p.refundedMinor, folio.currency),
+                      })}
                     </span>
                   )}
                   {canRefund && left > 0 && refunding !== p.id && (

@@ -119,7 +119,7 @@ export default function ReservationPage() {
               {portalLink.isSuccess && (
                 <span className="flex animate-fade-in items-center gap-1 text-success">
                   <Check className="size-4" />
-                  {t('res.portalLinkSent')} {r.booker.email}
+                  {t('res.portalLinkSentTo', { email: r.booker.email ?? '' })}
                 </span>
               )}
               {portalLink.error && (

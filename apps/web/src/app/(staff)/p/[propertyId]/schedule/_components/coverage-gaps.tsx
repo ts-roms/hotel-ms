@@ -26,7 +26,7 @@ export function CoverageGaps({ gaps }: { gaps: CoverageGap[] }) {
             {g.published < g.scheduled && (
               <span className="text-muted-foreground">
                 {' '}
-                ({g.published} {t('sched.publishedShort')})
+                {t('sched.publishedCount', { count: g.published })}
               </span>
             )}
           </li>

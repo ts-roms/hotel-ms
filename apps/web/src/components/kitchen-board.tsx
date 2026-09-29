@@ -22,6 +22,8 @@ import type { createApiClient } from '@hotel/api-client';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
 import { statusVariant } from '@/lib/status';
+import { timeSince } from '@/lib/time';
+import { elapsed } from '@hotel/format';
 
 type Pms = ReturnType<ReturnType<typeof createApiClient>['pms']>;
 
@@ -64,8 +66,14 @@ function nextSteps(order: Order): { status: OrderStatus; label: MessageKey }[] {
   }
 }
 
-const minutesAgo = (iso: string) =>
-  Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));
+/** A ticket waiting this long (or longer) is flagged. */
+const LATE_MINUTES = 20;
+const isLate = (iso: string) => {
+  const e = elapsed(iso);
+  return (
+    e.unit === 'hours' || e.unit === 'days' || (e.unit === 'minutes' && e.value >= LATE_MINUTES)
+  );
+};
 
 /**
  * Kitchen display (blueprint §14): live over Server-Sent Events, with a slow poll as backup.
@@ -190,7 +198,7 @@ export function KitchenBoard({
                 )}
                 <div className="stagger flex flex-col gap-2">
                   {list.map((o) => {
-                    const age = minutesAgo(o.createdAt);
+                    const late = isLate(o.createdAt);
                     return (
                       <Card
                         key={o.id}
@@ -202,18 +210,16 @@ export function KitchenBoard({
                         <CardContent className="flex flex-col gap-2 p-3 pl-4 text-sm">
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold">
-                              {o.roomNumber ? `${t('fnb.room')} ${o.roomNumber}` : o.orderNo}
+                              {o.roomNumber ? t('roomNo', { number: o.roomNumber }) : o.orderNo}
                             </span>
                             <span
                               className={cn(
                                 'flex items-center gap-1 text-xs tabular-nums',
-                                age >= 20
-                                  ? 'font-medium text-destructive'
-                                  : 'text-muted-foreground',
+                                late ? 'font-medium text-destructive' : 'text-muted-foreground',
                               )}
                             >
                               <Clock className="size-3" />
-                              {age} {t('fnb.minutes')}
+                              {timeSince(o.createdAt)}
                             </span>
                           </div>
                           <ul className="flex flex-col gap-1">

@@ -89,7 +89,7 @@ export function MaintenanceReportForm({
               ?.filter((r) => !r.archived)
               .map((r) => (
                 <option key={r.id} value={r.id}>
-                  {t('mnt.room')} {r.number}
+                  {t('roomNo', { number: r.number })}
                 </option>
               ))}
           </NativeSelect>

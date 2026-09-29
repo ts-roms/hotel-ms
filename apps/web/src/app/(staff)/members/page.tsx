@@ -94,13 +94,7 @@ export default function MembersPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title={t('members.title')}
-        description={
-          members.data && (
-            <>
-              {members.data.length} {t('members.count')}
-            </>
-          )
-        }
+        description={members.data && t('members.countLabel', { count: members.data.length })}
       />
       {hasPermission(session.data, 'member.invite') && roles.data && (
         <InviteForm roles={roles.data} allowOrganization={orgAdmin} onInvited={refresh} />
@@ -272,7 +266,7 @@ function MemberRow({
                     variant="ghost"
                     size="icon"
                     className="ml-1 size-auto rounded-full p-0.5 hover:bg-destructive/10 hover:text-destructive [&_svg]:size-3"
-                    aria-label={`${t('members.remove')} ${a.roleName}`}
+                    aria-label={t('members.removeRole', { role: a.roleName })}
                     disabled={busy}
                     onClick={() =>
                       run(() => api.access.removeAssignment(member.membershipId, a.id))

@@ -50,7 +50,7 @@ export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Fo
                 <Badge>{statusLabel(h.status)}</Badge>
                 {h.capturedMinor > 0 && (
                   <span className="text-muted-foreground">
-                    {formatMoney(h.capturedMinor, h.currency)} {t('fin.captured')}
+                    {t('fin.capturedAmount', { amount: formatMoney(h.capturedMinor, h.currency) })}
                   </span>
                 )}
               </span>

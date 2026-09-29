@@ -123,8 +123,9 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
-          {enumLabel('idType', d.documentType)} · {t('idr.uploaded')} {formatDateTime(d.uploadedAt)}{' '}
-          · {enumLabelOr('status', d.stayStatus)}
+          {enumLabel('idType', d.documentType)} ·{' '}
+          {t('idr.uploadedAt', { time: formatDateTime(d.uploadedAt) })} ·{' '}
+          {enumLabelOr('status', d.stayStatus)}
         </p>
         {d.purged ? (
           <p className="text-muted-foreground">{t('idr.purged')}</p>
@@ -149,7 +150,11 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
         )}
         {d.reviewerName && d.reviewedAt && (
           <p className="text-muted-foreground">
-            {statusLabel(d.status)} {t('idr.by')} {d.reviewerName}, {formatDateTime(d.reviewedAt)}
+            {t('idr.reviewedBy', {
+              status: statusLabel(d.status),
+              name: d.reviewerName,
+              time: formatDateTime(d.reviewedAt),
+            })}
           </p>
         )}
         {review.error && <Alert>{errorMessage(review.error)}</Alert>}

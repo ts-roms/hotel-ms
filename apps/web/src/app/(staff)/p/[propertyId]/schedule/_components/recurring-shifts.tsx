@@ -20,10 +20,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Repeat } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 
-const SKIP_REASON: Record<RecurringShiftsResult['skipped'][number]['reason'], string> = {
+const SKIP_REASON: Record<RecurringShiftsResult['skipped'][number]['reason'], MessageKey> = {
   NOT_ASSIGNED: 'sched.skip.NOT_ASSIGNED',
   ON_LEAVE: 'sched.skip.ON_LEAVE',
   OVERLAP: 'sched.skip.OVERLAP',
@@ -149,19 +149,16 @@ export function RecurringShifts({
           {create.error && <Alert>{errorMessage(create.error)}</Alert>}
           {create.data && (
             <Notice>
-              {create.data.created} {t('sched.created')}
+              {t('sched.createdCount', { count: create.data.created })}
               {create.data.skipped.length > 0 && (
                 <ul className="mt-1 list-disc pl-5 text-xs">
                   {create.data.skipped.slice(0, 10).map((s) => (
                     <li key={`${s.employeeId}:${s.date}`}>
-                      {s.employeeName}, {formatDate(s.date)}:{' '}
-                      {t(SKIP_REASON[s.reason] as 'sched.skip.OVERLAP')}
+                      {s.employeeName}, {formatDate(s.date)}: {t(SKIP_REASON[s.reason])}
                     </li>
                   ))}
                   {create.data.skipped.length > 10 && (
-                    <li>
-                      +{create.data.skipped.length - 10} {t('sched.more')}
-                    </li>
+                    <li>{t('sched.moreSkipped', { count: create.data.skipped.length - 10 })}</li>
                   )}
                 </ul>
               )}

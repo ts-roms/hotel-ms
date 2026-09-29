@@ -98,7 +98,9 @@ function SignIn({ state, onSignedIn }: { state: KioskState; onSignedIn: (s: Kios
   return (
     <AuthShell
       title={`${state.device.name} · ${state.device.propertyName}`}
-      description={operator ? `${t('kiosk.enterPin')} ${operator.name}` : t('kiosk.whoAreYou')}
+      description={
+        operator ? t('kiosk.enterPinFor', { name: operator.name }) : t('kiosk.whoAreYou')
+      }
       className="max-w-md"
     >
       <CardContent className="flex flex-col gap-3">

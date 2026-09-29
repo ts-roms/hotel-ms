@@ -1,6 +1,5 @@
 'use client';
 
-import { elapsed, formatDate, localDate } from '@hotel/format';
 import { Button, cn, Popover, PopoverContent, PopoverTrigger } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
@@ -8,14 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { t } from '@/lib/i18n';
-
-const ago = (iso: string) => {
-  const e = elapsed(iso);
-  if (e.unit === 'now') return t('notif.now');
-  if (e.unit === 'minutes') return `${e.value} min`;
-  if (e.unit === 'hours') return `${e.value} h`;
-  return formatDate(localDate(iso));
-};
+import { timeSince } from '@/lib/time';
 
 /** In-app notifications (ADR-0024): unread count, a short list, open or mark read. */
 export function NotificationBell({ placement = 'up' }: { placement?: 'up' | 'down' }) {
@@ -40,7 +32,7 @@ export function NotificationBell({ placement = 'up' }: { placement?: 'up' | 'dow
         <Button
           variant="ghost"
           size="icon"
-          aria-label={`${t('notif.title')}${unread ? ` (${unread})` : ''}`}
+          aria-label={unread ? t('notif.titleUnread', { count: unread }) : t('notif.title')}
         >
           <Bell />
           {unread > 0 && (
@@ -85,7 +77,9 @@ export function NotificationBell({ placement = 'up' }: { placement?: 'up' | 'dow
             >
               <span className="flex items-center justify-between gap-2">
                 <span className={cn('font-medium', !n.read && 'text-primary')}>{n.title}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{ago(n.createdAt)}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {timeSince(n.createdAt)}
+                </span>
               </span>
               {n.body && (
                 <span className="line-clamp-2 text-xs text-muted-foreground">{n.body}</span>

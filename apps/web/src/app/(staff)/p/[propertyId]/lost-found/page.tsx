@@ -154,7 +154,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
               ?.filter((r) => !r.archived)
               .map((r) => (
                 <option key={r.id} value={r.id}>
-                  {t('mnt.room')} {r.number}
+                  {t('roomNo', { number: r.number })}
                 </option>
               ))}
           </NativeSelect>
@@ -207,12 +207,13 @@ function Item({
             </Badge>
           </span>
           <span className="text-xs text-muted-foreground">
-            {item.daysHeld} {t('lf.days')}
+            {t('common.daysCount', { count: item.daysHeld })}
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
-          {enumLabel('category', item.category)} · {t('lf.found')} {item.foundLocation}
-          {item.roomNumber && ` (${t('mnt.room')} ${item.roomNumber})`} ·{' '}
+          {enumLabel('category', item.category)} ·{' '}
+          {t('lf.foundAt', { location: item.foundLocation })}
+          {item.roomNumber && ` (${t('roomNo', { number: item.roomNumber })})`} ·{' '}
           {formatDateTime(item.foundAt)}
           {item.foundByName && ` · ${item.foundByName}`} · {t('lf.storedAt')}:{' '}
           {item.storageLocation}

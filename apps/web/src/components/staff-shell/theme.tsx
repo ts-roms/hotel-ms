@@ -3,7 +3,7 @@
 import { Button } from '@hotel/ui';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { THEME_KEY } from '@/components/theme-script';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -26,6 +26,11 @@ function applyTheme(theme: Theme) {
 
 const ORDER: Theme[] = ['system', 'light', 'dark'];
 const ICONS = { system: Monitor, light: Sun, dark: Moon };
+const THEME_LABEL: Record<Theme, MessageKey> = {
+  system: 'theme.system',
+  light: 'theme.light',
+  dark: 'theme.dark',
+};
 
 export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>('system');
@@ -43,7 +48,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   const next = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length]!;
   const Icon = ICONS[theme];
-  const label = `${t('theme.label')}: ${t(`theme.${theme}`)}`;
+  const label = t('theme.labelCurrent', { mode: t(THEME_LABEL[theme]) });
 
   return (
     <Button

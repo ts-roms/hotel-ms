@@ -104,7 +104,7 @@ export default function LeavePage() {
                   </span>
                 </div>
                 <Badge variant="primary" className="tabular-nums">
-                  {r.days} {t('hr.days')}
+                  {t('common.daysCount', { count: r.days })}
                 </Badge>
                 <Badge variant={statusVariant(r.status)} dot>
                   {statusLabel(r.status)}
