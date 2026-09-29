@@ -1,17 +1,5 @@
-// Workforce and time (blueprint §13): people, employment assignments, scheduling,
-// attendance and leave. Employees are organization-level; everything that happens at a
-// property carries property_id.
-
-enum EmployeeStatus {
-  ACTIVE
-  TERMINATED
-}
-
-enum BirthdayVisibility {
-  /// Colleagues see day and month; the year is never shown outside HR.
-  DAY_MONTH
-  HIDDEN
-}
+// Time and labour (blueprint §13): shift templates, scheduling, staffing requirements,
+// attendance (punches, corrections, time clock photos) and leave.
 
 enum ShiftStatus {
   DRAFT
@@ -46,120 +34,6 @@ enum LeaveLedgerKind {
   ADJUSTMENT
   /// Gives back the usage of a cancelled approved leave.
   REVERSAL
-}
-
-model Department {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  code           String
-  name           String
-  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  positions            Position[]
-  assignments          EmploymentAssignment[]
-  shifts               Shift[]
-  shiftTemplates       ShiftTemplate[]
-  staffingRequirements StaffingRequirement[]
-
-  @@unique([organizationId, id])
-  @@unique([organizationId, code])
-  @@map("departments")
-}
-
-model Position {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  departmentId   String    @map("department_id") @db.Uuid
-  code           String
-  name           String
-  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  department  Department             @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
-  assignments EmploymentAssignment[]
-
-  @@unique([organizationId, id])
-  @@unique([organizationId, code])
-  @@map("positions")
-}
-
-model Employee {
-  id                           String             @id @default(uuid(7)) @db.Uuid
-  organizationId               String             @map("organization_id") @db.Uuid
-  employeeNo                   String             @map("employee_no")
-  firstName                    String             @map("first_name")
-  lastName                     String             @map("last_name")
-  preferredName                String?            @map("preferred_name")
-  workEmail                    String?            @map("work_email")
-  workPhone                    String?            @map("work_phone")
-  /// Personal details: only with employee.personal.read.
-  personalEmail                String?            @map("personal_email")
-  personalPhone                String?            @map("personal_phone")
-  birthDate                    DateTime?          @map("birth_date") @db.Date
-  birthdayVisibility           BirthdayVisibility @default(HIDDEN) @map("birthday_visibility")
-  hireDate                     DateTime           @map("hire_date") @db.Date
-  status                       EmployeeStatus     @default(ACTIVE)
-  terminatedOn                 DateTime?          @map("terminated_on") @db.Date
-  /// FULL_TIME | PART_TIME | PROBATIONARY | CONTRACTUAL | SEASONAL | INTERN
-  employmentType               String             @default("FULL_TIME") @map("employment_type")
-  /// Emergency contact: personal details (employee.personal.read).
-  emergencyContactName         String?            @map("emergency_contact_name")
-  emergencyContactRelationship String?            @map("emergency_contact_relationship")
-  emergencyContactPhone        String?            @map("emergency_contact_phone")
-  /// Staff login of this employee, if any (blueprint §13.1).
-  membershipId                 String?            @map("membership_id") @db.Uuid
-  version                      Int                @default(1)
-  createdAt                    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt                    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
-  createdBy                    String?            @map("created_by") @db.Uuid
-
-  organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  membership    OrganizationMembership? @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
-  assignments   EmploymentAssignment[]
-  shifts        Shift[]
-  punches       AttendancePunch[]
-  corrections   AttendanceCorrection[]
-  leaveLedger   LeaveLedgerEntry[]
-  leaveBalances LeaveBalance[]
-  leaveRequests LeaveRequest[]
-  documents     EmployeeDocument[]
-  compensations EmployeeCompensation[]
-  trainings     EmployeeTraining[]
-  reviews       EmployeeReview[]
-
-  @@unique([organizationId, id])
-  @@unique([organizationId, employeeNo])
-  @@unique([organizationId, membershipId])
-  @@map("employees")
-}
-
-/// Employee ↔ property + department + position over a date range. Scheduling, attendance
-/// and property-scoped HR permissions all work through assignments.
-model EmploymentAssignment {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  employeeId     String    @map("employee_id") @db.Uuid
-  propertyId     String    @map("property_id") @db.Uuid
-  departmentId   String    @map("department_id") @db.Uuid
-  positionId     String?   @map("position_id") @db.Uuid
-  startDate      DateTime  @map("start_date") @db.Date
-  /// Last working day, inclusive. Null = open-ended.
-  endDate        DateTime? @map("end_date") @db.Date
-  isPrimary      Boolean   @default(false) @map("is_primary")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  createdBy      String?   @map("created_by") @db.Uuid
-
-  employee   Employee   @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
-  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
-  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
-  position   Position?  @relation(fields: [organizationId, positionId], references: [organizationId, id], onDelete: Restrict)
-
-  @@unique([organizationId, id])
-  @@index([organizationId, propertyId])
-  @@index([organizationId, employeeId])
-  @@map("employment_assignments")
 }
 
 model ShiftTemplate {
@@ -216,6 +90,30 @@ model Shift {
   @@map("shifts")
 }
 
+/// Minimum staffing for a department and time window on given weekdays (ADR-0028).
+model StaffingRequirement {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  departmentId   String    @map("department_id") @db.Uuid
+  /// 0 = Sunday … 6 = Saturday.
+  weekdays       Int[]
+  /// Property-local "HH:mm"; an end at or before the start ends the next day.
+  startTime      String    @map("start_time") @db.VarChar(5)
+  endTime        String    @map("end_time") @db.VarChar(5)
+  minStaff       Int       @map("min_staff")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId])
+  @@map("staffing_requirements")
+}
+
 /// Raw clock events. Append-only: corrections add punches, never edit them (§13.2).
 model AttendancePunch {
   id             String      @id @default(uuid(7)) @db.Uuid
@@ -261,6 +159,27 @@ model AttendanceCorrection {
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, status])
   @@map("attendance_corrections")
+}
+
+/// The selfie taken with a time clock punch (ADR-0022). Punches are append-only; the photo
+/// is personal data with its own, shorter life: deleted after a fixed number of days.
+model AttendancePhoto {
+  punchId        String    @id @map("punch_id") @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  deviceId       String?   @map("device_id") @db.Uuid
+  storageKey     String    @unique @map("storage_key")
+  contentType    String    @map("content_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  punch  AttendancePunch @relation(fields: [organizationId, punchId], references: [organizationId, id], onDelete: Restrict)
+  device Device?         @relation(fields: [organizationId, deviceId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, punchId])
+  @@index([organizationId, createdAt])
+  @@map("attendance_photos")
 }
 
 /// Organization leave policy per type. Jurisdiction packs are seed configuration, never code.
@@ -379,56 +298,4 @@ model LeaveApproval {
   @@unique([organizationId, id])
   @@unique([leaveRequestId, step])
   @@map("leave_approvals")
-}
-
-/// Employee documents (ADR-0019): metadata here, the file in object storage (S3 with
-/// SSE-KMS in the cloud) under an opaque key. Deleting keeps the row for the audit trail.
-model EmployeeDocument {
-  id             String    @id @default(uuid(7)) @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  employeeId     String    @map("employee_id") @db.Uuid
-  category       String
-  title          String
-  fileName       String    @map("file_name")
-  contentType    String    @map("content_type")
-  sizeBytes      Int       @map("size_bytes")
-  sha256         String    @db.Char(64)
-  storageKey     String    @map("storage_key")
-  expiresOn      DateTime? @map("expires_on") @db.Date
-  uploadedBy     String?   @map("uploaded_by") @db.Uuid
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  /// Null while the upload is in flight; the daily sweep removes those left behind.
-  storedAt       DateTime? @map("stored_at") @db.Timestamptz(3)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
-  deletedBy      String?   @map("deleted_by") @db.Uuid
-  /// USER (deleted by HR) or RETENTION (retention rules, ADR-0021).
-  deletionReason String?   @map("deletion_reason")
-
-  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
-
-  @@unique([organizationId, id])
-  @@unique([storageKey])
-  @@index([organizationId, employeeId])
-  @@map("employee_documents")
-}
-
-/// The selfie taken with a time clock punch (ADR-0022). Punches are append-only; the photo
-/// is personal data with its own, shorter life: deleted after a fixed number of days.
-model AttendancePhoto {
-  punchId        String    @id @map("punch_id") @db.Uuid
-  organizationId String    @map("organization_id") @db.Uuid
-  deviceId       String?   @map("device_id") @db.Uuid
-  storageKey     String    @unique @map("storage_key")
-  contentType    String    @map("content_type")
-  sizeBytes      Int       @map("size_bytes")
-  sha256         String    @db.Char(64)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
-
-  punch  AttendancePunch @relation(fields: [organizationId, punchId], references: [organizationId, id], onDelete: Restrict)
-  device Device?         @relation(fields: [organizationId, deviceId], references: [organizationId, id], onDelete: Restrict)
-
-  @@unique([organizationId, punchId])
-  @@index([organizationId, createdAt])
-  @@map("attendance_photos")
 }

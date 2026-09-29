@@ -1,4 +1,4 @@
-// Guests and reservations (blueprint §12.1). A reservation is the commercial booking; each
+// Reservations (blueprint §12.1). A reservation is the commercial booking; each
 // reservation room is one booked room with its own dates, rate and occupant.
 
 enum ReservationStatus {
@@ -28,38 +28,6 @@ enum RoomAssignmentKind {
   RESERVATION
   /// Out-of-order block: the room is not sellable for the dates.
   BLOCK
-}
-
-/// Organization-level guest profile (decision D3). Property staff see guests created at, or
-/// with reservations at, the properties they are authorized for.
-model Guest {
-  id                  String    @id @default(uuid(7)) @db.Uuid
-  organizationId      String    @map("organization_id") @db.Uuid
-  firstName           String    @map("first_name")
-  lastName            String    @map("last_name")
-  email               String?   @db.Citext
-  phone               String?
-  countryCode         String?   @map("country_code") @db.Char(2)
-  notes               String    @default("")
-  createdAtPropertyId String?   @map("created_at_property_id") @db.Uuid
-  archivedAt          DateTime? @map("archived_at") @db.Timestamptz(3)
-  version             Int       @default(1)
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  createdBy           String?   @map("created_by") @db.Uuid
-  updatedBy           String?   @map("updated_by") @db.Uuid
-
-  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  bookings          Reservation[]
-  reservationRooms  ReservationRoom[]
-  serviceRequests   ServiceRequest[]
-  orders            Order[]
-  identityDocuments GuestIdentityDocument[]
-
-  @@unique([organizationId, id])
-  @@index([organizationId, lastName, firstName])
-  @@index([organizationId, email])
-  @@map("guests")
 }
 
 model Reservation {
@@ -170,17 +138,4 @@ model RoomAssignment {
   @@index([organizationId, roomId, startDate])
   @@index([organizationId, reservationRoomId])
   @@map("room_assignments")
-}
-
-/// Per-property counters for human-readable numbers (confirmation numbers, folio numbers).
-/// Incremented with UPDATE ... RETURNING inside the business transaction, so numbers are
-/// unique and gap-free per committed transaction.
-model NumberSequence {
-  organizationId String @map("organization_id") @db.Uuid
-  propertyId     String @map("property_id") @db.Uuid
-  name           String
-  nextValue      BigInt @default(1) @map("next_value")
-
-  @@id([propertyId, name])
-  @@map("number_sequences")
 }

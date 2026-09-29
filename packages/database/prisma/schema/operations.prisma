@@ -1,3 +1,100 @@
+// Operations (blueprint §6.1): housekeeping tasks, guest service requests, maintenance
+// requests and lost and found.
+
+enum HousekeepingTaskType {
+  CHECKOUT_CLEAN
+  STAYOVER
+  TOUCH_UP
+  INSPECTION
+}
+
+enum HousekeepingTaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum ServiceRequestSource {
+  GUEST
+  STAFF
+}
+
+enum ServiceRequestStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum ServiceRequestPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model HousekeepingTask {
+  id                   String                 @id @default(uuid(7)) @db.Uuid
+  organizationId       String                 @map("organization_id") @db.Uuid
+  propertyId           String                 @map("property_id") @db.Uuid
+  roomId               String                 @map("room_id") @db.Uuid
+  type                 HousekeepingTaskType
+  status               HousekeepingTaskStatus @default(OPEN)
+  businessDate         DateTime               @map("business_date") @db.Date
+  assignedMembershipId String?                @map("assigned_membership_id") @db.Uuid
+  notes                String                 @default("")
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  startedAt            DateTime?              @map("started_at") @db.Timestamptz(3)
+  completedAt          DateTime?              @map("completed_at") @db.Timestamptz(3)
+  createdBy            String?                @map("created_by") @db.Uuid
+  version              Int                    @default(1)
+
+  room     Room                    @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  assignee OrganizationMembership? @relation(fields: [organizationId, assignedMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, businessDate])
+  @@index([organizationId, assignedMembershipId, status])
+  @@map("housekeeping_tasks")
+}
+
+model ServiceRequest {
+  id                   String                 @id @default(uuid(7)) @db.Uuid
+  organizationId       String                 @map("organization_id") @db.Uuid
+  propertyId           String                 @map("property_id") @db.Uuid
+  requestNo            String                 @map("request_no")
+  source               ServiceRequestSource
+  category             String
+  department           String
+  priority             ServiceRequestPriority @default(NORMAL)
+  description          String                 @default("")
+  status               ServiceRequestStatus   @default(OPEN)
+  reservationRoomId    String?                @map("reservation_room_id") @db.Uuid
+  roomId               String?                @map("room_id") @db.Uuid
+  guestId              String?                @map("guest_id") @db.Uuid
+  assignedMembershipId String?                @map("assigned_membership_id") @db.Uuid
+  rating               Int?
+  feedback             String?
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  acknowledgedAt       DateTime?              @map("acknowledged_at") @db.Timestamptz(3)
+  completedAt          DateTime?              @map("completed_at") @db.Timestamptz(3)
+  createdBy            String?                @map("created_by") @db.Uuid
+  version              Int                    @default(1)
+
+  room        Room?                   @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+  maintenance MaintenanceRequest[]
+  guest       Guest?                  @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+  assignee    OrganizationMembership? @relation(fields: [organizationId, assignedMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, requestNo])
+  @@index([organizationId, propertyId, status])
+  @@index([organizationId, reservationRoomId])
+  @@map("service_requests")
+}
+
 /// Maintenance requests (spec §32, ADR-0023). A request may take its room out of order
 /// through an out-of-order block (room_assignments, kind BLOCK), released when it closes.
 model MaintenanceRequest {

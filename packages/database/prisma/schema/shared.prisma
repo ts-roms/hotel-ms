@@ -1,4 +1,4 @@
-// Shared kernel: audit, outbox, idempotency.
+// Shared kernel: audit, outbox, idempotency, number sequences.
 
 enum ActorType {
   MEMBER
@@ -73,4 +73,17 @@ model IdempotencyKey {
   @@id([organizationId, scope, key])
   @@index([expiresAt])
   @@map("idempotency_keys")
+}
+
+/// Per-property counters for human-readable numbers (confirmation numbers, folio numbers).
+/// Incremented with UPDATE ... RETURNING inside the business transaction, so numbers are
+/// unique and gap-free per committed transaction.
+model NumberSequence {
+  organizationId String @map("organization_id") @db.Uuid
+  propertyId     String @map("property_id") @db.Uuid
+  name           String
+  nextValue      BigInt @default(1) @map("next_value")
+
+  @@id([propertyId, name])
+  @@map("number_sequences")
 }

@@ -1,3 +1,5 @@
+// Engagement (blueprint §6.1): hotel events. The calendar is a read model (§13.5).
+
 /// Hotel events (spec §38, ADR-0026): meetings, training, guest activities and more.
 model HotelEvent {
   id             String   @id @default(uuid(7)) @db.Uuid

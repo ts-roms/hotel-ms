@@ -1,0 +1,38 @@
+// Front office (blueprint §12.4, §12.5): stays from check-in to check-out, and night audit.
+
+/// A guest's actual occupancy of a room: created at check-in, closed at check-out.
+model Stay {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationRoomId String    @unique @map("reservation_room_id") @db.Uuid
+  roomId            String    @map("room_id") @db.Uuid
+  checkedInAt       DateTime  @default(now()) @map("checked_in_at") @db.Timestamptz(3)
+  checkedInBy       String?   @map("checked_in_by") @db.Uuid
+  checkedOutAt      DateTime? @map("checked_out_at") @db.Timestamptz(3)
+  checkedOutBy      String?   @map("checked_out_by") @db.Uuid
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  room            Room            @relation(fields: [organizationId, roomId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, checkedOutAt])
+  @@map("stays")
+}
+
+/// One row per closed business day (night audit), with the day's statistics.
+model BusinessDayClosing {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  businessDate   DateTime @map("business_date") @db.Date
+  closedAt       DateTime @default(now()) @map("closed_at") @db.Timestamptz(3)
+  closedBy       String?  @map("closed_by") @db.Uuid
+  stats          Json
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, businessDate])
+  @@map("business_day_closings")
+}

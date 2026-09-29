@@ -1,0 +1,81 @@
+// Pricing (blueprint §12): rate plans with their base and per-date prices, and the tax
+// rules applied to folio postings (§15). Property-owned.
+
+model RatePlan {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  organizationId     String    @map("organization_id") @db.Uuid
+  propertyId         String    @map("property_id") @db.Uuid
+  code               String
+  name               String
+  description        String    @default("")
+  cancellationPolicy String    @default("") @map("cancellation_policy")
+  /// Prices are stored in the property's currency; kept here so history survives changes.
+  currency           String    @db.Char(3)
+  archivedAt         DateTime? @map("archived_at") @db.Timestamptz(3)
+  version            Int       @default(1)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy          String?   @map("created_by") @db.Uuid
+  updatedBy          String?   @map("updated_by") @db.Uuid
+
+  property         Property           @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  roomTypePrices   RatePlanRoomType[]
+  overrides        RateOverride[]
+  reservationRooms ReservationRoom[]
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("rate_plans")
+}
+
+/// Base nightly price of a room type under a rate plan (minor units, e.g. centavos).
+model RatePlanRoomType {
+  organizationId  String @map("organization_id") @db.Uuid
+  ratePlanId      String @map("rate_plan_id") @db.Uuid
+  roomTypeId      String @map("room_type_id") @db.Uuid
+  baseAmountMinor BigInt @map("base_amount_minor")
+
+  ratePlan RatePlan @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Cascade)
+  roomType RoomType @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([ratePlanId, roomTypeId])
+  @@map("rate_plan_room_types")
+}
+
+/// Per-date price that replaces the base price (seasons, events).
+model RateOverride {
+  organizationId String   @map("organization_id") @db.Uuid
+  ratePlanId     String   @map("rate_plan_id") @db.Uuid
+  roomTypeId     String   @map("room_type_id") @db.Uuid
+  stayDate       DateTime @map("stay_date") @db.Date
+  amountMinor    BigInt   @map("amount_minor")
+
+  ratePlan RatePlan @relation(fields: [organizationId, ratePlanId], references: [organizationId, id], onDelete: Cascade)
+  roomType RoomType @relation(fields: [organizationId, roomTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([ratePlanId, roomTypeId, stayDate])
+  @@map("rate_overrides")
+}
+
+/// Tax applied to postings in the listed departments. Rates in basis points (1200 = 12%).
+/// Inclusive taxes are contained in the posted price; exclusive ones are added on top.
+model TaxRule {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  code           String
+  name           String
+  rateBps        Int       @map("rate_bps")
+  inclusive      Boolean
+  departments    String[]
+  sortOrder      Int       @default(0) @map("sort_order")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, code])
+  @@map("tax_rules")
+}
