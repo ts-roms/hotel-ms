@@ -147,6 +147,9 @@ importers:
       '@hotel/format':
         specifier: workspace:*
         version: link:../../packages/format
+      '@hotel/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@hotel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -196,6 +199,9 @@ importers:
       '@hotel/format':
         specifier: workspace:*
         version: link:../../packages/format
+      '@hotel/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@hotel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -356,6 +362,12 @@ importers:
         version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(yaml@2.9.1))
 
   packages/format:
+    devDependencies:
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0)(yaml@2.9.1))
+
+  packages/i18n:
     devDependencies:
       vitest:
         specifier: ^5.0.2
