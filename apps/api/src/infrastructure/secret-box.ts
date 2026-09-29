@@ -1,5 +1,8 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
+/** Nest injection token for the application's SecretBox. */
+export const SECRET_BOX = Symbol('SECRET_BOX');
+
 /**
  * Application-level encryption for high-sensitivity columns (blueprint §20.3), e.g. TOTP
  * secrets. AES-256-GCM with a random 96-bit IV per value.

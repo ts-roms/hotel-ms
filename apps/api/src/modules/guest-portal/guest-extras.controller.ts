@@ -27,7 +27,7 @@ import { uuidParam } from '../../common/params.js';
 import { GuestRoute, RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { GuestIdentityService } from './guest-identity.service.js';
-import { GuestInboxService } from './guest-inbox.service.js';
+import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { GuestInfoService } from './guest-info.service.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { ServiceRequestsService } from './service-requests.service.js';

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { matchesType } from '../../common/uploads.js';
 import { attachmentHeader } from './documents.controller.js';
-import { matchesType, purgeOn } from './documents.service.js';
+import { purgeOn } from './documents.service.js';
 
 describe('employee document files', () => {
   it('recognizes each accepted type by its magic bytes only', () => {

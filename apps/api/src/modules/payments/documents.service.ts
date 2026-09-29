@@ -3,13 +3,13 @@ import type { FolioDocument, IssueDocumentRequest } from '@hotel/contracts';
 import type { Prisma } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../common/dates.js';
+import { toMinor } from '../../common/money.js';
+import { nextNumber } from '../../common/numbering.js';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { toMinor } from '../pms/pricing.js';
-import { nextNumber } from '../pms/reservations.service.js';
 
 const signed = (v: bigint) => (v < 0n ? -toMinor(-v) : toMinor(v));
 const PREFIX = { INVOICE: 'INV', RECEIPT: 'RCT' } as const;

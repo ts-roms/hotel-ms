@@ -16,6 +16,7 @@ import { ClsService } from 'nestjs-cls';
 import { addDays } from '../../common/dates.js';
 import { ProblemException, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
+import { matchesType } from '../../common/uploads.js';
 import { fromLocal } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
@@ -25,9 +26,8 @@ import {
   type ObjectStorage,
 } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
-import type { ResolvedDevice } from '../devices/kiosk-auth.js';
+import type { ResolvedDevice } from '../auth/kiosk-auth.js';
 import { AttendanceService, toPunchDto } from './attendance.service.js';
-import { matchesType } from './documents.service.js';
 import { PHOTO_RETENTION_KEY, photoRetentionDaysInTx } from './photo-retention.js';
 import { activeOn, employeeName, HrAccess } from './hr-access.js';
 

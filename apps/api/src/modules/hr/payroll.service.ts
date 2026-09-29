@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { csvField } from '../../common/csv.js';
 import { addDays, fromDbDate, toDbDate } from '../../common/dates.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -21,14 +22,6 @@ const HEADER = [
   'leave_type',
   'leave_paid',
 ];
-
-/** RFC 4180 field; also defuses spreadsheet formula injection (=, +, -, @ at the start). */
-export function field(value: string | number | null): string {
-  if (value === null) return '';
-  let text = String(value);
-  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-}
 
 /**
  * Payroll export (decision D7: payroll itself stays outside; we export its inputs). One
@@ -92,7 +85,7 @@ export class PayrollService {
             l?.code ?? null,
             l ? (l.paid ? 'yes' : 'no') : null,
           ]
-            .map(field)
+            .map(csvField)
             .join(',');
         });
       await this.audit.record(tx, {

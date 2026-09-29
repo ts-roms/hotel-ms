@@ -86,3 +86,7 @@ export const Problems = {
       'retry-after': String(retryAfterSeconds),
     }),
 };
+
+/** 409 for an action the record's current state does not allow. */
+export const invalidState = (detail: string) =>
+  new ProblemException(409, 'INVALID_STATE', 'Not allowed in the current state', detail);

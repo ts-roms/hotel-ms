@@ -1,8 +1,9 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
+import { sha256 } from '../../common/crypto.js';
 import { ProblemException, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { GUEST_ROUTE, type GuestRouteOptions } from '../../common/route-metadata.js';
@@ -11,9 +12,6 @@ import { TenantDb } from '../../infrastructure/database.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const TOUCH_INTERVAL_MS = 60_000;
-
-export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-export const newToken = () => randomBytes(32).toString('base64url');
 
 /**
  * Guest sessions (blueprint §11.1): a separate cookie, a separate table, and a principal

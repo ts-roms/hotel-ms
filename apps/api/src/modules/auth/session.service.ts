@@ -1,6 +1,7 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Session } from '@hotel/database';
+import { newToken, sha256 } from '../../common/crypto.js';
 import { ENV, type Env } from '../../config/env.js';
 import { PrismaService } from '../../infrastructure/database.js';
 
@@ -45,8 +46,8 @@ export class SessionService {
     ip: string | null;
     userAgent: string | null;
   }): Promise<{ token: string; session: Session; tokenHash: string }> {
-    const token = randomBytes(32).toString('base64url');
-    const tokenHash = hashToken(token);
+    const token = newToken();
+    const tokenHash = sha256(token);
     const now = Date.now();
     const session = await this.prisma.platform.session.create({
       data: {
@@ -65,7 +66,7 @@ export class SessionService {
   /** Returns null for unknown, revoked, expired sessions or disabled identities. */
   async resolve(token: string): Promise<ResolvedSession | null> {
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-    const tokenHash = hashToken(token);
+    const tokenHash = sha256(token);
     const session = await this.prisma.platform.session.findUnique({
       where: { tokenHash },
       include: {
@@ -128,8 +129,8 @@ export class SessionService {
 
   /** Records a completed second factor and rotates the token (privilege change). */
   async markMfaVerified(sessionId: string): Promise<{ token: string; tokenHash: string }> {
-    const token = randomBytes(32).toString('base64url');
-    const tokenHash = hashToken(token);
+    const token = newToken();
+    const tokenHash = sha256(token);
     await this.prisma.platform.session.update({
       where: { id: sessionId },
       data: { tokenHash, mfaVerifiedAt: new Date() },
@@ -145,8 +146,8 @@ export class SessionService {
     sessionId: string,
     organizationId: string,
   ): Promise<{ token: string; tokenHash: string }> {
-    const token = randomBytes(32).toString('base64url');
-    const tokenHash = hashToken(token);
+    const token = newToken();
+    const tokenHash = sha256(token);
     await this.prisma.platform.session.update({
       where: { id: sessionId },
       data: { tokenHash, activeOrganizationId: organizationId },
@@ -176,8 +177,4 @@ export class SessionService {
       origin === this.env.GUEST_ORIGIN
     );
   }
-}
-
-function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
 }

@@ -42,3 +42,10 @@ export function convertMinor(
   const denominator = MICROS * 10n ** BigInt(currencyDigits(fromCurrency));
   return (numerator * 2n + denominator) / (denominator * 2n);
 }
+
+/** Minor units as a JSON-safe number (contracts use integers; bigint stays in the DB layer). */
+export function toMinor(value: bigint): number {
+  const n = Number(value);
+  if (!Number.isSafeInteger(n)) throw new Error('Amount exceeds safe integer range');
+  return n;
+}
