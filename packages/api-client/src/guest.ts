@@ -23,6 +23,7 @@ import { type ApiClientOptions, createCaller } from './http.js';
  */
 export function createGuestApiClient(options: ApiClientOptions = {}) {
   const { call } = createCaller(options);
+  const baseUrl = options.baseUrl ?? '/api/v1';
   const data = <T>(r: { data: T }) => r.data;
   return {
     exchange: (token: string) => call<GuestStay>('POST', '/guest/session', { token }).then(data),
@@ -58,6 +59,10 @@ export function createGuestApiClient(options: ApiClientOptions = {}) {
     uploadId: (file: Blob, documentType: GuestIdType) =>
       call<GuestStay>('POST', `/guest/identity?documentType=${documentType}`, file).then(data),
     hotelInfo: () => call<GuestHotelInfo>('GET', '/guest/hotel-info').then(data),
+    hotelImageUrl: (imageId: string, version: string) =>
+      `${baseUrl}/guest/hotel-images/${encodeURIComponent(imageId)}?v=${encodeURIComponent(version)}`,
+    menuItemImageUrl: (itemId: string, version: string) =>
+      `${baseUrl}/guest/menu-items/${encodeURIComponent(itemId)}/image?v=${encodeURIComponent(version)}`,
     notifications: () =>
       call<{ items: GuestNotification[] }>('GET', '/guest/notifications').then((r) => r.data.items),
     markNotificationsRead: () => call<void>('POST', '/guest/notifications/read').then(data),

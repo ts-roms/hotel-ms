@@ -1,0 +1,22 @@
+/// Photos of a property for the guest portal (ADR-0030). Re-encoded to WebP on upload;
+/// the file lives in object storage.
+model PropertyImage {
+  id             String   @id @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  propertyId     String   @map("property_id") @db.Uuid
+  storageKey     String   @map("storage_key")
+  sha256         String   @db.Char(64)
+  width          Int
+  height         Int
+  sizeBytes      Int      @map("size_bytes")
+  caption        String   @default("")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, sortOrder])
+  @@map("property_images")
+}

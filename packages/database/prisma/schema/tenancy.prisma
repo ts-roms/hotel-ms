@@ -104,6 +104,7 @@ model Property {
   shiftTemplates        ShiftTemplate[]
   shifts                Shift[]
   staffingRequirements  StaffingRequirement[]
+  images                PropertyImage[]
   attendancePunches     AttendancePunch[]
   attendanceCorrections AttendanceCorrection[]
   leaveRequests         LeaveRequest[]

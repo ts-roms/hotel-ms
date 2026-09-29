@@ -68,6 +68,7 @@ function toItemDto(i: ItemRow): MenuItem {
     priceMinor: toMinor(i.priceMinor),
     available: i.available,
     archived: i.archivedAt !== null,
+    imageVersion: i.imageSha256?.slice(0, 16) ?? null,
     modifierGroups: i.modifierGroups.map((g) => ({
       id: g.id,
       name: g.name,

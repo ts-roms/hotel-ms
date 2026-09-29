@@ -2,6 +2,7 @@ import { type ApiClientOptions, createCaller, type Transport } from '../http.js'
 import { authClient } from './auth.js';
 import { organizationClient } from './organization.js';
 import { opsClient } from './ops.js';
+import { privacyClient } from './privacy.js';
 import { hrClient } from './hr.js';
 import { meClient } from './me.js';
 import { inventoryClient } from './property/inventory.js';
@@ -10,6 +11,8 @@ import { reservationsClient } from './property/reservations.js';
 import { frontOfficeClient } from './property/front-office.js';
 import { operationsClient } from './property/operations.js';
 import { guestServicesClient } from './property/guest-services.js';
+import { importsClient } from './property/imports.js';
+import { imagesClient } from './property/images.js';
 import { financeClient } from './property/finance.js';
 import { fnbClient } from './property/fnb.js';
 import { insightsClient } from './property/insights.js';
@@ -31,6 +34,8 @@ function propertyClient(transport: Transport, propertyId: string) {
     ...frontOfficeClient(property),
     ...operationsClient(property),
     ...guestServicesClient(property),
+    ...importsClient(property),
+    ...imagesClient(property),
     ...financeClient(property),
     ...fnbClient(property),
     ...insightsClient(property),
@@ -51,6 +56,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
     ...organizationClient(transport),
     pms: (propertyId: string) => propertyClient(transport, propertyId),
     ...opsClient(transport),
+    ...privacyClient(transport),
     ...hrClient(transport),
     ...meClient(transport),
   };

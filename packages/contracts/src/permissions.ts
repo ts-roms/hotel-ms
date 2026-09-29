@@ -149,6 +149,11 @@ export const PERMISSIONS = {
     scopes: ORG_OR_PROPERTY,
     sensitive: true,
   },
+  'privacy.manage': {
+    description: "Export or anonymize a guest's or employee's personal data (data requests)",
+    scopes: ORG_ONLY,
+    sensitive: true,
+  },
   'guest_portal.invite': {
     description: 'Send guests their portal link',
     scopes: ORG_OR_PROPERTY,

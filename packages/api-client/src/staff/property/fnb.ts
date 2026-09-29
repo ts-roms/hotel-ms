@@ -55,5 +55,13 @@ export function fnbClient({ call, qs, baseUrl, p, id }: PropertyTransport) {
       ).then((r) => r.data),
     /** Server-Sent Events URL for the outlet's kitchen board. */
     orderStreamUrl: (outletId: string) => `${baseUrl}${p}/outlets/${id(outletId)}/orders/stream`,
+    setMenuItemImage: (itemId: string, file: Blob) =>
+      call<{ imageVersion: string }>('PUT', `${p}/menu-items/${id(itemId)}/image`, file).then(
+        (r) => r.data,
+      ),
+    removeMenuItemImage: (itemId: string) =>
+      call<void>('DELETE', `${p}/menu-items/${id(itemId)}/image`).then((r) => r.data),
+    menuItemImageUrl: (itemId: string, version: string) =>
+      `${baseUrl}${p}/menu-items/${id(itemId)}/image?v=${encodeURIComponent(version)}`,
   };
 }

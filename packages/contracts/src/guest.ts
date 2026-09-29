@@ -311,6 +311,8 @@ export const guestHotelInfoSchema = z.object({
   amenities: z.array(z.string()),
   services: z.array(z.object({ name: z.string(), description: z.string(), hours: z.string() })),
   houseRules: z.string(),
+  /** Hotel photos (ADR-0030), in display order. */
+  images: z.array(z.object({ id: z.uuid(), caption: z.string(), version: z.string() })),
 });
 export type GuestHotelInfo = z.infer<typeof guestHotelInfoSchema>;
 
