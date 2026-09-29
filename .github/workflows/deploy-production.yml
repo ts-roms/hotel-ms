@@ -19,12 +19,24 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # Releases run the workflow as it is on main. The "production" environment should also
+    # be limited to the main branch in the repository settings (ADR-0033).
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # The input goes through the environment, never into the script text, and must be a
+      # full commit SHA.
       - name: Commit is on main
-        run: git merge-base --is-ancestor "${{ inputs.sha }}" origin/main
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::sha must be a full 40-character commit SHA."
+            exit 1
+          fi
+          git merge-base --is-ancestor "$SHA" origin/main
       - name: Commit passed staging (deploy and smoke tests)
         env:
           GH_TOKEN: ${{ github.token }}

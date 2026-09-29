@@ -81,6 +81,7 @@ export class GuestPortalController {
   }
 
   @Put('pre-check-in')
+  @GuestRoute({ verified: true })
   @ZodResponse(200, guestStaySchema)
   preCheckIn(@ZodBody(preCheckInRequestSchema) body: PreCheckInRequest) {
     return this.portal.preCheckIn(body);

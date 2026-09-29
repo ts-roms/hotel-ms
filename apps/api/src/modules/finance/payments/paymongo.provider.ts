@@ -29,7 +29,7 @@ export const providerUnavailable = (detail: string) =>
   new ProblemException(502, 'INTERNAL_ERROR', 'Payment provider error', detail);
 
 /** PayMongo answered but said no (e.g. an amount below its minimum): staff can act on it. */
-const providerRejected = (detail: string) =>
+export const providerRejected = (detail: string) =>
   new ProblemException(422, 'PAYMENT_PROVIDER_REJECTED', 'Payment provider refused', detail);
 
 type Json = Record<string, unknown>;
@@ -216,7 +216,7 @@ export class PaymongoProvider implements PaymentProvider {
 
   private async session(reference: string): Promise<Json> {
     if (!/^cs_[A-Za-z0-9]+$/.test(reference)) {
-      throw providerUnavailable('Not a PayMongo checkout reference.');
+      throw providerRejected('Not a PayMongo checkout reference.');
     }
     return obj((await this.call('GET', `/checkout_sessions/${reference}`)).attributes);
   }
@@ -231,7 +231,7 @@ export class PaymongoProvider implements PaymentProvider {
       .map(obj)
       .find((p) => obj(p.attributes).status === 'paid');
     if (typeof payment?.id !== 'string') {
-      throw providerUnavailable('PayMongo has no paid payment for this checkout.');
+      throw providerRejected('PayMongo has no paid payment for this checkout.');
     }
     const refund = await this.call('POST', '/refunds', {
       amount: input.amountMinor,
@@ -239,8 +239,9 @@ export class PaymongoProvider implements PaymentProvider {
       reason: 'requested_by_customer',
     });
     const status = obj(refund.attributes).status;
-    if (typeof refund.id !== 'string' || status === 'failed') {
-      throw providerUnavailable('PayMongo refused the refund.');
+    if (status === 'failed') throw providerRejected('PayMongo refused the refund.');
+    if (typeof refund.id !== 'string') {
+      throw providerUnavailable('PayMongo returned an unexpected refund.');
     }
     return { reference: refund.id, status: status === 'succeeded' ? 'SUCCEEDED' : 'PENDING' };
   }

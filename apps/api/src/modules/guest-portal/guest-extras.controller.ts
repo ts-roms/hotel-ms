@@ -56,12 +56,14 @@ export class GuestExtrasController {
   }
 
   @Get('notifications')
+  @GuestRoute({ verified: true })
   @ZodResponse(200, z.object({ items: z.array(guestNotificationSchema) }))
   async notifications() {
     return { items: await this.guestInbox.list() };
   }
 
   @Post('notifications/read')
+  @GuestRoute({ verified: true })
   @HttpCode(204)
   async markRead(): Promise<void> {
     await this.guestInbox.markAllRead();

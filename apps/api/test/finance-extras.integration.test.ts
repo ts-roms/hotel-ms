@@ -570,14 +570,10 @@ describe('card holds for self check-in', () => {
     expect(released.status, JSON.stringify(released.body)).toBe(200);
     expect(released.body.status).toBe('CANCELLED');
     expect(await staleFor()).toHaveLength(0);
-    expect((await guest.request('GET', '/guest/payments')).body.items[0]).toMatchObject({
-      id: hold.body.id,
-      status: 'CANCELLED',
-    });
+    // Cancelling the booking also ended the guest's portal session.
+    expect((await guest.request('GET', '/guest/payments')).status).toBe(401);
 
     const off = await admin.request('PUT', settingsUrl(), { selfCheckInHoldMinor: 0 });
     expect(off.status).toBe(200);
-    const guest2 = await guest.request('POST', '/guest/holds', {}, idem());
-    expect(guest2.status).toBe(409);
   });
 });

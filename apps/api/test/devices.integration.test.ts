@@ -268,13 +268,16 @@ describe('operators on a device', () => {
     }
   });
 
-  it('locks a PIN after five wrong tries', async () => {
+  it('locks a PIN after five wrong tries, even when they arrive at once', async () => {
     const { kiosk } = await pairedKiosk(['fnb.order.read']);
     const kai = await membershipOf('kitchen@abc.test');
     const signIn = (pin: string) =>
       kiosk.request('POST', '/api/v1/kiosk/sign-in', { membershipId: kai, pin });
-    for (let i = 0; i < 4; i++) expect((await signIn('9999')).status).toBe(401);
-    expect((await signIn('9999')).status).toBe(401);
+    const burst = await Promise.all(Array.from({ length: 12 }, () => signIn('9999')));
+    const statuses = burst.map((r) => r.status).sort();
+    expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+    expect(statuses.filter((s) => s === 423)).toHaveLength(7);
+    // The right PIN does not get through a lock either.
     const locked = await signIn('2468');
     expect(locked.status).toBe(423);
     expect(locked.body.code).toBe('ACCOUNT_LOCKED');

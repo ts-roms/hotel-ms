@@ -365,8 +365,9 @@ export class DevicesService {
   }
 
   /**
-   * PIN sign-in on a device. Wrong PINs count per member (locked after 5) and per device
-   * (rate limit), so neither a person nor a tablet can be used to guess.
+   * PIN sign-in on a device. Wrong PINs count per member (locked after every 5, for longer
+   * each time) and per device (rate limit), so neither a person nor a tablet can be used
+   * to guess.
    */
   async signIn(
     device: ResolvedDevice,
@@ -379,7 +380,28 @@ export class DevicesService {
       if (!operators.some((o) => o.membershipId === membershipId)) throw wrongPin();
       return tx.staffPin.findUniqueOrThrow({ where: { membershipId } });
     });
-    if (staffPin.lockedUntil && staffPin.lockedUntil > new Date()) {
+    // Claim the attempt before checking the PIN, in one statement that also enforces the
+    // lock, so parallel guesses cannot slip past it. Every MAX_PIN_FAILURES-th miss locks,
+    // for twice as long each time (capped at a day); only a correct PIN resets the count.
+    const claimed = await this.asDevice(
+      device,
+      (tx) =>
+        tx.$queryRaw<{ failed_attempts: number }[]>`
+        UPDATE staff_pins
+        SET failed_attempts = failed_attempts + 1,
+            locked_until = CASE
+              WHEN (failed_attempts + 1) % ${MAX_PIN_FAILURES} = 0
+              THEN now() + LEAST(
+                make_interval(secs => ${PIN_LOCK_MS / 1000} * power(2, (failed_attempts + 1) / ${MAX_PIN_FAILURES} - 1)),
+                interval '24 hours')
+              ELSE locked_until
+            END,
+            updated_at = now()
+        WHERE membership_id = ${membershipId}::uuid
+          AND (locked_until IS NULL OR locked_until <= now())
+        RETURNING failed_attempts`,
+    );
+    if (claimed.length === 0) {
       throw new ProblemException(
         423,
         'ACCOUNT_LOCKED',
@@ -387,20 +409,12 @@ export class DevicesService {
         'Too many wrong PINs. Try again later, or ask a manager.',
       );
     }
+    const failures = claimed[0]!.failed_attempts;
     const ok = await verifyPassword(staffPin.pinHash, pin);
     return this.asDevice(device, async (tx) => {
       if (!ok) {
-        const failures = staffPin.failedAttempts + 1;
-        const locked = failures >= MAX_PIN_FAILURES;
-        await tx.staffPin.update({
-          where: { membershipId },
-          data: {
-            failedAttempts: locked ? 0 : failures,
-            lockedUntil: locked ? new Date(Date.now() + PIN_LOCK_MS) : staffPin.lockedUntil,
-          },
-        });
         await this.audit.record(tx, {
-          action: locked ? 'device.pin_locked' : 'device.pin_failed',
+          action: failures % MAX_PIN_FAILURES === 0 ? 'device.pin_locked' : 'device.pin_failed',
           entityType: 'membership',
           entityId: membershipId,
           propertyId: device.propertyId,

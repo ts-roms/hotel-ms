@@ -166,9 +166,19 @@ export class TenantGuard implements CanActivate {
       async (tx) => {
         const membership = await tx.organizationMembership.findUnique({
           where: { organizationId_identityId: { organizationId, identityId } },
-          select: { id: true, status: true, grantsVersion: true },
+          select: {
+            id: true,
+            status: true,
+            grantsVersion: true,
+            organization: { select: { status: true } },
+          },
         });
-        if (!membership || membership.status !== 'ACTIVE') {
+        // A suspended organization stops working for sessions already bound to it too.
+        if (
+          !membership ||
+          membership.status !== 'ACTIVE' ||
+          membership.organization.status !== 'ACTIVE'
+        ) {
           return { membership: null, grants: null, propertyFound: false };
         }
         const grants = await this.grants.load(tx, organizationId, membership);

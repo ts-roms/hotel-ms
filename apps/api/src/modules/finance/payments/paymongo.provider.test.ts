@@ -167,10 +167,10 @@ describe('PayMongo refunds', () => {
     const { reference } = await checkout();
     const args = { amountMinor: 1000, currency: 'PHP' };
     expect(await code(provider.refund({ paymentReference: reference, ...args }))).toBe(
-      'INTERNAL_ERROR',
+      'PAYMENT_PROVIDER_REJECTED',
     );
     expect(await code(provider.refund({ paymentReference: '../evil', ...args }))).toBe(
-      'INTERNAL_ERROR',
+      'PAYMENT_PROVIDER_REJECTED',
     );
   });
 });

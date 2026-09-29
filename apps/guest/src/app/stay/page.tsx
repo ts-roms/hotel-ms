@@ -129,12 +129,12 @@ export default function StayPage() {
     <Shell>
       <div className="stagger flex flex-col gap-4">
         <Overview stay={s} />
-        <Notifications unread={s.unreadNotifications} />
+        {s.verified && <Notifications unread={s.unreadNotifications} />}
         {!s.verified && <Verification stay={s} />}
         {s.verified && (s.stay.status === 'RESERVED' || s.stay.status === 'IN_HOUSE') && (
           <IdUpload stay={s} />
         )}
-        {s.stay.status === 'RESERVED' && <PreCheckIn stay={s} />}
+        {s.verified && s.stay.status === 'RESERVED' && <PreCheckIn stay={s} />}
         {checkedIn && <RoomAccess result={checkedIn} />}
         {s.selfCheckInAvailable && !checkedIn && (
           <SelfCheckIn stay={s} onCheckedIn={setCheckedIn} />

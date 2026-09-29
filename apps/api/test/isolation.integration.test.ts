@@ -465,3 +465,27 @@ describe('property lifecycle', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('suspended organization', () => {
+  it('stops working for sessions already signed in to it', async () => {
+    const { createPrismaClient, withDbContext } = await import('@hotel/database');
+    const { testDatabaseUrls } = await import('@hotel/database/testing');
+    const db = createPrismaClient({ connectionString: testDatabaseUrls().app, maxConnections: 1 });
+    const org = { organizationId: ctx.world.xyz.organizationId, identityId: null };
+    const setStatus = (status: 'ACTIVE' | 'SUSPENDED') =>
+      withDbContext(db, org, (tx) =>
+        tx.organization.update({ where: { id: org.organizationId }, data: { status } }),
+      );
+    try {
+      expect((await clients.xyzAdmin.get('/api/v1/properties')).status).toBe(200);
+      await setStatus('SUSPENDED');
+      const res = await clients.xyzAdmin.get('/api/v1/properties');
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('NO_ACTIVE_ORGANIZATION');
+    } finally {
+      await setStatus('ACTIVE');
+      await db.$disconnect();
+    }
+    expect((await clients.xyzAdmin.get('/api/v1/properties')).status).toBe(200);
+  });
+});
