@@ -1,21 +1,7 @@
 'use client';
 
-import { BOOKING_SOURCES } from '@hotel/contracts';
-import { addDays, formatMoney } from '@hotel/format';
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  DocumentTitle,
-  FormField,
-  Input,
-  NativeSelect,
-  Skeleton,
-  Spinner,
-} from '@hotel/ui';
+import { addDays } from '@hotel/format';
+import { Alert, Card, CardContent, CardHeader, CardTitle, DocumentTitle } from '@hotel/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -24,7 +10,10 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, useProperty, usePropertyId } from '@/lib/property';
-import { enumLabel } from '@/lib/status';
+import { GuestDetails } from './_components/guest-details';
+import { QuoteSummary } from './_components/quote-summary';
+import { type ReservationFormValues } from './_components/reservation-form';
+import { StayDetails } from './_components/stay-details';
 
 export default function NewReservationPage() {
   const propertyId = usePropertyId();
@@ -37,7 +26,7 @@ export default function NewReservationPage() {
   // One key per form: a double click or network retry replays instead of double-booking.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ReservationFormValues>({
     firstName: '',
     lastName: '',
     email: '',
@@ -48,7 +37,7 @@ export default function NewReservationPage() {
     departureDate: '',
     adults: 2,
     children: 0,
-    source: 'PHONE' as (typeof BOOKING_SOURCES)[number],
+    source: 'PHONE',
     specialRequests: '',
   });
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
@@ -147,156 +136,17 @@ export default function NewReservationPage() {
         <CardContent>
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
             {create.error && <Alert className="sm:col-span-2">{errorMessage(create.error)}</Alert>}
-            <FormField label={t('res.firstName')} htmlFor="firstName">
-              <Input
-                id="firstName"
-                required
-                value={form.firstName}
-                onChange={(e) => set('firstName', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('res.lastName')} htmlFor="lastName">
-              <Input
-                id="lastName"
-                required
-                value={form.lastName}
-                onChange={(e) => set('lastName', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('login.email')} htmlFor="email">
-              <Input
-                id="email"
-                type="email"
-                value={form.email}
-                onChange={(e) => set('email', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('res.phone')} htmlFor="phone">
-              <Input
-                id="phone"
-                type="tel"
-                value={form.phone}
-                onChange={(e) => set('phone', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('res.arrival')} htmlFor="arrival">
-              <Input
-                id="arrival"
-                type="date"
-                required
-                min={property.data?.currentBusinessDate}
-                value={form.arrivalDate}
-                onChange={(e) => set('arrivalDate', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('res.departure')} htmlFor="departure">
-              <Input
-                id="departure"
-                type="date"
-                required
-                min={form.arrivalDate ? addDays(form.arrivalDate, 1) : undefined}
-                value={form.departureDate}
-                onChange={(e) => set('departureDate', e.target.value)}
-              />
-            </FormField>
-            <FormField label={t('res.roomType')} htmlFor="roomType" loading={roomTypes.isPending}>
-              <NativeSelect
-                id="roomType"
-                value={form.roomTypeId}
-                onChange={(e) => set('roomTypeId', e.target.value)}
-              >
-                {roomTypes.data
-                  ?.filter((rt) => !rt.archived)
-                  .map((rt) => (
-                    <option key={rt.id} value={rt.id}>
-                      {rt.name} (max {rt.maxOccupancy})
-                    </option>
-                  ))}
-              </NativeSelect>
-            </FormField>
-            <FormField label={t('res.ratePlan')} htmlFor="ratePlan" loading={ratePlans.isPending}>
-              <NativeSelect
-                id="ratePlan"
-                value={form.ratePlanId}
-                onChange={(e) => set('ratePlanId', e.target.value)}
-              >
-                {ratePlans.data
-                  ?.filter((p) => !p.archived)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </NativeSelect>
-            </FormField>
-            <FormField label={t('res.adults')} htmlFor="adults">
-              <Input
-                id="adults"
-                type="number"
-                min={1}
-                max={20}
-                value={form.adults}
-                onChange={(e) => set('adults', Number(e.target.value))}
-              />
-            </FormField>
-            <FormField label={t('res.children')} htmlFor="children">
-              <Input
-                id="children"
-                type="number"
-                min={0}
-                max={20}
-                value={form.children}
-                onChange={(e) => set('children', Number(e.target.value))}
-              />
-            </FormField>
-            <FormField label={t('res.source')} htmlFor="source">
-              <NativeSelect
-                id="source"
-                value={form.source}
-                onChange={(e) => set('source', e.target.value as typeof form.source)}
-              >
-                {BOOKING_SOURCES.map((s) => (
-                  <option key={s} value={s}>
-                    {enumLabel('bookingSource', s)}
-                  </option>
-                ))}
-              </NativeSelect>
-            </FormField>
-            <FormField label={t('res.specialRequests')} htmlFor="requests">
-              <Input
-                id="requests"
-                value={form.specialRequests}
-                onChange={(e) => set('specialRequests', e.target.value)}
-              />
-            </FormField>
-
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 p-4 sm:col-span-2">
-              <div className="flex flex-col" aria-live="polite">
-                <span className="text-xs text-muted-foreground">{t('res.quote')}</span>
-                {quote.isFetching ? (
-                  <span className="flex items-center gap-2 py-1">
-                    <Spinner className="size-4 text-primary" />
-                    <Skeleton className="h-6 w-28" />
-                  </span>
-                ) : quote.data ? (
-                  <span key={quote.data.totalMinor} className="animate-fade-in">
-                    <strong className="text-xl tabular-nums">
-                      {formatMoney(quote.data.totalMinor, quote.data.currency)}
-                    </strong>{' '}
-                    <span className="text-sm text-muted-foreground">
-                      · {t('res.nightsCount', { count: quote.data.nights.length })}
-                    </span>
-                  </span>
-                ) : quote.error ? (
-                  <span className="text-sm text-destructive">{errorMessage(quote.error)}</span>
-                ) : (
-                  <span className="text-xl text-muted-foreground">—</span>
-                )}
-              </div>
-              <Button type="submit" size="lg" loading={create.isPending} disabled={!quote.data}>
-                {create.isPending ? t('res.creating') : t('res.create')}
-              </Button>
-            </div>
+            <GuestDetails form={form} set={set} />
+            <StayDetails
+              form={form}
+              set={set}
+              minArrivalDate={property.data?.currentBusinessDate}
+              roomTypes={roomTypes.data}
+              roomTypesLoading={roomTypes.isPending}
+              ratePlans={ratePlans.data}
+              ratePlansLoading={ratePlans.isPending}
+            />
+            <QuoteSummary quote={quote} creating={create.isPending} />
           </form>
         </CardContent>
       </Card>

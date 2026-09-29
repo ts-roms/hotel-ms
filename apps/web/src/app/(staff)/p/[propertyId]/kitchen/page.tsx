@@ -1,6 +1,6 @@
 'use client';
 
-import { KitchenBoard } from '@/components/kitchen-board';
+import { KitchenBoard } from '@/components/kitchen-board/kitchen-board';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
 
 export default function KitchenPage() {
