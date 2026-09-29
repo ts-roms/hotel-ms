@@ -24,45 +24,45 @@ import { MfaService } from './modules/auth/mfa.service.js';
 import { PasswordService } from './modules/auth/password.service.js';
 import { SessionService } from './modules/auth/session.service.js';
 import { HealthController } from './modules/health/health.controller.js';
-import { FolioService } from './modules/folio/folio.service.js';
+import { FolioService } from './modules/finance/folio/folio.service.js';
 import { FrontOfficeController } from './modules/front-office/front-office.controller.js';
 import { FrontOfficeService } from './modules/front-office/front-office.service.js';
-import { HousekeepingService } from './modules/front-office/housekeeping.service.js';
+import { HousekeepingService } from './modules/operations/housekeeping/housekeeping.service.js';
 import { NightAuditService } from './modules/front-office/night-audit.service.js';
 import { GuestPortalController } from './modules/guest-portal/guest-portal.controller.js';
 import { GuestServiceController } from './modules/guest-portal/guest-service.controller.js';
 import { GuestAdminController } from './modules/guest-portal/guest-admin.controller.js';
 import { GuestExtrasController } from './modules/guest-portal/guest-extras.controller.js';
-import { GuestIdentityService } from './modules/guest-portal/guest-identity.service.js';
+import { GuestIdentityService } from './modules/pms/guests/guest-identity.service.js';
 import { GuestInboxService } from './modules/notifications/guest-inbox.service.js';
 import { GuestInfoService } from './modules/guest-portal/guest-info.service.js';
 import { GuestPortalService } from './modules/guest-portal/guest-portal.service.js';
 import { GuestGuard, GuestSessions } from './modules/guest-portal/guest-session.js';
 import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-portal/room-access.js';
-import { ServiceRequestsService } from './modules/guest-portal/service-requests.service.js';
-import { AttendanceService } from './modules/hr/attendance.service.js';
+import { ServiceRequestsService } from './modules/operations/service-requests/service-requests.service.js';
+import { AttendanceService } from './modules/hr/time/attendance.service.js';
 import { HrAccess } from './modules/hr/hr-access.js';
 import { DevicesController } from './modules/devices/devices.controller.js';
 import { KioskController } from './modules/devices/kiosk.controller.js';
 import { PinController } from './modules/devices/pin.controller.js';
 import { DevicesService } from './modules/devices/devices.service.js';
 import { KioskAuth } from './modules/auth/kiosk-auth.js';
-import { DocumentRetentionController } from './modules/hr/document-retention.controller.js';
-import { EmployeeDocumentsController } from './modules/hr/employee-documents.controller.js';
-import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
-import { ClockPhotosController } from './modules/hr/clock-photos.controller.js';
-import { PhotoRetentionController } from './modules/hr/photo-retention.controller.js';
-import { TimeClockService } from './modules/hr/time-clock.service.js';
-import { HrController } from './modules/hr/hr.controller.js';
-import { MeController } from './modules/hr/me.controller.js';
-import { PropertyHrController } from './modules/hr/property-hr.controller.js';
-import { LeaveService } from './modules/hr/leave.service.js';
-import { PayrollService } from './modules/hr/payroll.service.js';
-import { PeopleService } from './modules/hr/people.service.js';
-import { EmployeeRecordsController } from './modules/hr/employee-records.controller.js';
-import { StaffingController } from './modules/hr/staffing.controller.js';
-import { ProfileRecordsService } from './modules/hr/profile-records.service.js';
-import { StaffingService } from './modules/hr/staffing.service.js';
+import { DocumentRetentionController } from './modules/hr/workforce/document-retention.controller.js';
+import { EmployeeDocumentsController } from './modules/hr/workforce/employee-documents.controller.js';
+import { EmployeeDocumentsService } from './modules/hr/workforce/employee-documents.service.js';
+import { ClockPhotosController } from './modules/hr/time/clock-photos.controller.js';
+import { PhotoRetentionController } from './modules/hr/time/photo-retention.controller.js';
+import { TimeClockService } from './modules/hr/time/time-clock.service.js';
+import { HrController } from './modules/hr/workforce/hr.controller.js';
+import { MeController } from './modules/hr/time/me.controller.js';
+import { PropertyHrController } from './modules/hr/time/property-hr.controller.js';
+import { LeaveService } from './modules/hr/time/leave.service.js';
+import { PayrollService } from './modules/hr/time/payroll.service.js';
+import { PeopleService } from './modules/hr/workforce/people.service.js';
+import { EmployeeRecordsController } from './modules/hr/workforce/employee-records.controller.js';
+import { StaffingController } from './modules/hr/time/staffing.controller.js';
+import { ProfileRecordsService } from './modules/hr/workforce/profile-records.service.js';
+import { StaffingService } from './modules/hr/time/staffing.service.js';
 import { OpsController } from './modules/ops/ops.controller.js';
 import { OperatorGuard, OpsService } from './modules/ops/ops.service.js';
 import { GuestImagesController } from './modules/privacy/guest-images.controller.js';
@@ -72,38 +72,39 @@ import { PrivacyController } from './modules/privacy/privacy.controller.js';
 import { ImagesService } from './modules/privacy/images.service.js';
 import { ImportsService } from './modules/privacy/imports.service.js';
 import { PrivacyService } from './modules/privacy/privacy.service.js';
-import { ScheduleService } from './modules/hr/schedule.service.js';
+import { ScheduleService } from './modules/hr/time/schedule.service.js';
 import { FnbController } from './modules/fnb/fnb.controller.js';
 import { GuestFnbController } from './modules/fnb/guest-fnb.controller.js';
 import { MenuService } from './modules/fnb/menu.service.js';
 import { OrdersService } from './modules/fnb/orders.service.js';
-import { CashierService } from './modules/payments/cashier.service.js';
-import { FinanceSettingsService } from './modules/payments/finance-settings.service.js';
-import { DocumentsService } from './modules/payments/documents.service.js';
-import { FinanceController } from './modules/payments/finance.controller.js';
-import { GuestPaymentsController } from './modules/payments/guest-payments.controller.js';
-import { PaymentWebhooksController } from './modules/payments/payment-webhooks.controller.js';
-import { SandboxGatewayController } from './modules/payments/sandbox-gateway.controller.js';
-import { PaymentsService } from './modules/payments/payments.service.js';
+import { CashierService } from './modules/finance/cashier/cashier.service.js';
+import { FinanceSettingsService } from './modules/finance/settings/finance-settings.service.js';
+import { FolioDocumentsService } from './modules/finance/documents/folio-documents.service.js';
+import { FinanceController } from './modules/finance/finance.controller.js';
+import { GuestPaymentsController } from './modules/finance/payments/guest-payments.controller.js';
+import { PaymentWebhooksController } from './modules/finance/payments/payment-webhooks.controller.js';
+import { SandboxGatewayController } from './modules/finance/payments/sandbox-gateway.controller.js';
+import { PaymentsService } from './modules/finance/payments/payments.service.js';
 import {
   PAYMENT_PROVIDERS,
   type PaymentProvider,
   SandboxProvider,
-} from './modules/payments/providers.js';
-import { ReportsService } from './modules/payments/reports.service.js';
+} from './modules/finance/payments/providers.js';
+import { FinanceReportsService } from './modules/finance/reports/finance-reports.service.js';
 import { TenantJobsProcessor } from './modules/jobs/tenant-jobs.processor.js';
 import { OutboxService } from './modules/outbox/outbox.service.js';
-import { GuestsService } from './modules/pms/guests.service.js';
-import { InventoryController } from './modules/pms/inventory.controller.js';
-import { RatesService } from './modules/pms/rates.service.js';
-import { GuestsController } from './modules/pms/guests.controller.js';
-import { ReservationsController } from './modules/pms/reservations.controller.js';
-import { ReservationsService } from './modules/pms/reservations.service.js';
-import { RoomsService } from './modules/pms/rooms.service.js';
-import { LostFoundService } from './modules/maintenance/lost-found.service.js';
-import { LostFoundController } from './modules/maintenance/lost-found.controller.js';
-import { MaintenanceController } from './modules/maintenance/maintenance.controller.js';
-import { MaintenanceService } from './modules/maintenance/maintenance.service.js';
+import { GuestsService } from './modules/pms/guests/guests.service.js';
+import { InventoryController } from './modules/pms/inventory/inventory.controller.js';
+import { RatesService } from './modules/pms/pricing/rates.service.js';
+import { TaxRulesService } from './modules/pms/pricing/tax-rules.service.js';
+import { GuestsController } from './modules/pms/guests/guests.controller.js';
+import { ReservationsController } from './modules/pms/reservations/reservations.controller.js';
+import { ReservationsService } from './modules/pms/reservations/reservations.service.js';
+import { RoomsService } from './modules/pms/inventory/rooms.service.js';
+import { LostFoundService } from './modules/operations/lost-found/lost-found.service.js';
+import { LostFoundController } from './modules/operations/lost-found/lost-found.controller.js';
+import { MaintenanceController } from './modules/operations/maintenance/maintenance.controller.js';
+import { MaintenanceService } from './modules/operations/maintenance/maintenance.service.js';
 import { GuestMessagesService } from './modules/notifications/guest-messages.service.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
@@ -213,6 +214,7 @@ export class AppModule {
         CalendarService,
         LostFoundService,
         RatesService,
+        TaxRulesService,
         GuestsService,
         ReservationsService,
         FolioService,
@@ -244,8 +246,8 @@ export class AppModule {
         PaymentsService,
         CashierService,
         FinanceSettingsService,
-        DocumentsService,
-        ReportsService,
+        FolioDocumentsService,
+        FinanceReportsService,
         TenantJobsProcessor,
         {
           provide: PAYMENT_PROVIDERS,

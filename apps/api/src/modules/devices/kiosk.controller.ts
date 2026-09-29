@@ -15,7 +15,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Problems } from '../../common/problem.js';
 import { Public } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { TimeClockService } from '../hr/time-clock.service.js';
+import { TimeClockService } from '../hr/time/time-clock.service.js';
 import { DevicesService } from './devices.service.js';
 import { KioskAuth } from '../auth/kiosk-auth.js';
 

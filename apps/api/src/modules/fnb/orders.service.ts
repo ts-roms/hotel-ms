@@ -20,8 +20,9 @@ import { TenantDb } from '../../infrastructure/database.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { RealtimeService } from '../../infrastructure/realtime.js';
 import { AuditService } from '../audit/audit.service.js';
-import { FolioService } from '../folio/folio.service.js';
-import { computeTaxes, type TaxRuleInput } from '../folio/tax-engine.js';
+import { FolioService } from '../finance/folio/folio.service.js';
+import { computeTaxes, type TaxRuleInput } from '../pms/pricing/tax-engine.js';
+import { TaxRulesService } from '../pms/pricing/tax-rules.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { isOpen, MenuService } from './menu.service.js';
 
@@ -117,6 +118,7 @@ export class OrdersService {
     private readonly db: TenantDb,
     private readonly menus: MenuService,
     private readonly folios: FolioService,
+    private readonly taxRules: TaxRulesService,
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly realtime: RealtimeService,
@@ -196,7 +198,7 @@ export class OrdersService {
       where: { id: input.propertyId },
       select: { currency: true },
     });
-    const taxRules = await this.folios.taxRulesFor(tx, input.propertyId, DEPARTMENT);
+    const taxRules = await this.taxRules.taxRulesFor(tx, input.propertyId, DEPARTMENT);
     const subtotal = lines.reduce((sum, l) => sum + l.lineTotalMinor, 0n);
     const breakdown = computeTaxes(subtotal, taxRules);
     const n = await nextNumber(tx, organizationId, input.propertyId, 'order');

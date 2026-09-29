@@ -17,7 +17,7 @@ import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { GuestPortalService } from './guest-portal.service.js';
-import { ServiceRequestsService } from './service-requests.service.js';
+import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 
 const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
 const etag = (r: ServiceRequest) => weakEtag(r.version);

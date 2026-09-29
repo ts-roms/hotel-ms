@@ -15,11 +15,11 @@ import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { GuestIdentityService } from './guest-identity.service.js';
+import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { GuestInfoService } from './guest-info.service.js';
 import { GuestPortalService } from './guest-portal.service.js';
-import { ServiceRequestsService } from './service-requests.service.js';
+import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 
 /** Guest portal extras (ADR-0027): ID upload, hotel info, notifications, checkout. */
 @ApiTags('guest portal')

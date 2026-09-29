@@ -18,9 +18,9 @@ import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { CacheRedis } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
-import { refreshCapacity } from '../pms/inventory.js';
-import { GuestsService } from '../pms/guests.service.js';
-import { businessDateOf } from '../pms/rooms.service.js';
+import { refreshCapacity } from '../pms/inventory/inventory.js';
+import { GuestsService } from '../pms/guests/guests.service.js';
+import { businessDateOf } from '../pms/inventory/rooms.service.js';
 
 const PLAN_TTL_SECONDS = 30 * 60;
 const MAX_ERRORS = 200;

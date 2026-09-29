@@ -17,7 +17,7 @@ import { parseIfMatch } from '../../common/etag.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { GuestIdentityService } from './guest-identity.service.js';
+import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { GuestInfoService } from './guest-info.service.js';
 

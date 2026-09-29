@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import { ClsService } from 'nestjs-cls';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { GuestIdentityService } from '../src/modules/guest-portal/guest-identity.service.js';
+import { GuestIdentityService } from '../src/modules/pms/guests/guest-identity.service.js';
 import {
   GuestClient,
   Mailbox,

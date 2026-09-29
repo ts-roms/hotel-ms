@@ -34,9 +34,10 @@ import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempoten
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
-import { FolioService } from '../folio/folio.service.js';
+import { FolioService } from '../finance/folio/folio.service.js';
+import { TaxRulesService } from '../pms/pricing/tax-rules.service.js';
 import { FrontOfficeService } from './front-office.service.js';
-import { HousekeepingService } from './housekeeping.service.js';
+import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
 import { NightAuditService } from './night-audit.service.js';
 
 @ApiTags('front office')
@@ -45,6 +46,7 @@ export class FrontOfficeController {
   constructor(
     private readonly frontOffice: FrontOfficeService,
     private readonly folios: FolioService,
+    private readonly taxes: TaxRulesService,
     private readonly housekeeping: HousekeepingService,
     private readonly nightAudit: NightAuditService,
     private readonly idempotency: IdempotencyService,
@@ -176,7 +178,7 @@ export class FrontOfficeController {
   @RequirePermission('folio.read')
   @ZodResponse(200, z.array(taxRuleSchema))
   taxRules() {
-    return this.folios.listTaxRules();
+    return this.taxes.listTaxRules();
   }
 
   @Post('tax-rules')
@@ -184,14 +186,14 @@ export class FrontOfficeController {
   @HttpCode(201)
   @ZodResponse(201, taxRuleSchema)
   createTaxRule(@ZodBody(createTaxRuleRequestSchema) body: CreateTaxRuleRequest) {
-    return this.folios.createTaxRule(body);
+    return this.taxes.createTaxRule(body);
   }
 
   @Post('tax-rules/:taxRuleId/archive')
   @RequirePermission('tax.manage')
   @HttpCode(204)
   async archiveTaxRule(@Param('taxRuleId') taxRuleId: string) {
-    await this.folios.archiveTaxRule(uuidParam(taxRuleId));
+    await this.taxes.archiveTaxRule(uuidParam(taxRuleId));
   }
 
   // ---- Housekeeping -----------------------------------------------------------------------

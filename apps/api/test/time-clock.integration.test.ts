@@ -8,7 +8,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ClsService } from 'nestjs-cls';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { RequestContext } from '../src/common/request-context.js';
-import { TimeClockService } from '../src/modules/hr/time-clock.service.js';
+import { TimeClockService } from '../src/modules/hr/time/time-clock.service.js';
 import { startTestApp, type TestContext, TestClient, WEB_ORIGIN, webPunch } from './harness.js';
 
 let ctx: TestContext;

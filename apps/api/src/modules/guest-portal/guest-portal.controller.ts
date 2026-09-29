@@ -23,7 +23,7 @@ import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
 import { GuestPortalService } from './guest-portal.service.js';
 import { GuestSessions } from './guest-session.js';
-import { ServiceRequestsService } from './service-requests.service.js';
+import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 
 const serviceRequestList = z.object({ items: z.array(serviceRequestSchema) });
 
