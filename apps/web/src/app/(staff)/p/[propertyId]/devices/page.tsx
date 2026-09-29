@@ -26,12 +26,13 @@ import {
   PageHeader,
   NativeSelect,
 } from '@hotel/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
 import { usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 const PERMISSION_LABELS: Record<(typeof DEVICE_PERMISSIONS)[number], MessageKey> = {
   'fnb.order.read': 'devicePerm.fnb.order.read',
@@ -51,8 +52,7 @@ export default function DevicesPage() {
   const [permissions, setPermissions] = useState<string[]>([...DEVICE_PERMISSIONS]);
   const [pairing, setPairing] = useState<DevicePairing | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['devices', propertyId] });
-  const act = useMutation({
-    mutationFn: (fn: () => Promise<DevicePairing | unknown>) => fn(),
+  const act = useAction<DevicePairing | unknown>({
     onSuccess: (result) => {
       if (result && typeof result === 'object' && 'pairingCode' in result)
         setPairing(result as DevicePairing);

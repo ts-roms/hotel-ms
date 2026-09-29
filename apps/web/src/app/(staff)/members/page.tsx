@@ -26,6 +26,7 @@ import { t } from '@/lib/i18n';
 import { useProperties } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 const ORG_SCOPE = '__organization__';
 
@@ -85,8 +86,7 @@ export default function MembersPage() {
   );
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['members'] });
-  const mutate = useMutation({
-    mutationFn: (action: () => Promise<unknown>) => action(),
+  const mutate = useAction({
     onSuccess: refresh,
   });
 

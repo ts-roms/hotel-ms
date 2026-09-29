@@ -22,7 +22,7 @@ import {
   TableCell,
   TableRow,
 } from '@hotel/ui';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
@@ -31,6 +31,7 @@ import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty } from '@/lib/property';
 import { enumLabel, statusVariant } from '@/lib/status';
 import { FolioFinance } from './_components/folio-finance';
+import { useAction } from '@/lib/use-action';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();
@@ -42,8 +43,7 @@ export default function FolioPage() {
     queryKey: ['folio', propertyId, folioId],
     queryFn: () => pms.folio(folioId),
   });
-  const action = useMutation({
-    mutationFn: (fn: () => Promise<Folio>) => fn(),
+  const action = useAction<Folio>({
     onSuccess: (data) => queryClient.setQueryData(['folio', propertyId, folioId], data),
   });
 

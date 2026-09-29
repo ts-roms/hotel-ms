@@ -12,12 +12,13 @@ import {
   Input,
   NativeSelect,
 } from '@hotel/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { useSetFolio } from './folio-cache';
+import { useAction } from '@/lib/use-action';
 
 /** Senior citizen / PWD discount on the folio: the holder's ID is stored encrypted. */
 export function StatutoryDiscount({ propertyId, folio }: { propertyId: string; folio: Folio }) {
@@ -32,8 +33,7 @@ export function StatutoryDiscount({ propertyId, folio }: { propertyId: string; f
   const [holderName, setHolderName] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const chosen = profileId || active[0]?.id || '';
-  const change = useMutation({
-    mutationFn: (fn: () => Promise<Folio>) => fn(),
+  const change = useAction<Folio>({
     onSuccess: (data) => {
       setHolderName('');
       setIdNumber('');

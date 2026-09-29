@@ -7,7 +7,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
-import { useAction } from './use-action';
+import { useAction } from '@/lib/use-action';
 
 export function RatePlanPrices({
   propertyId,
@@ -25,7 +25,7 @@ export function RatePlanPrices({
   onDone: () => unknown;
 }) {
   const pms = usePms(propertyId);
-  const action = useAction(onDone);
+  const action = useAction({ onSuccess: () => onDone() });
   const initial = Object.fromEntries(
     roomTypes.map((rt) => {
       const price = plan.prices.find((p) => p.roomTypeId === rt.id);

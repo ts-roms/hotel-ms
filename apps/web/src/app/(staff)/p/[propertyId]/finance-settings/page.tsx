@@ -22,6 +22,7 @@ import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 import { enumLabel, enumLabelOr } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 /** Exchange rates, statutory discount profiles and the self check-in card hold (ADR-0018). */
 export default function FinanceSettingsPage() {
@@ -125,8 +126,7 @@ function DiscountProfiles({ propertyId, canManage }: { propertyId: string; canMa
   const [percent, setPercent] = useState('20');
   const [exempt, setExempt] = useState('VAT');
   const [departments, setDepartments] = useState<string[]>(['ROOM', 'FNB']);
-  const act = useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
+  const act = useAction({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['discount-profiles', propertyId] }),
   });
   const create = () =>

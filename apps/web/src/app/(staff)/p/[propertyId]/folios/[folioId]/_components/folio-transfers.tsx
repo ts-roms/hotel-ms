@@ -22,6 +22,7 @@ import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 import { useRefreshFolio } from './folio-cache';
 import { enumLabel } from '@/lib/status';
+import { useAction } from '@/lib/use-action';
 
 export function FolioTransfers({ propertyId, folio }: { propertyId: string; folio: Folio }) {
   const pms = usePms(propertyId);
@@ -45,8 +46,7 @@ export function FolioTransfers({ propertyId, folio }: { propertyId: string; foli
       return refresh();
     },
   });
-  const routing = useMutation({
-    mutationFn: (fn: () => Promise<unknown>) => fn(),
+  const routing = useAction({
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['routing', propertyId, folio.id] }),
   });
   if (targets.length === 0) {

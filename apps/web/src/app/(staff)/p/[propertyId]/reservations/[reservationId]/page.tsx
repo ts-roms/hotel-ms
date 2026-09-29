@@ -27,6 +27,7 @@ import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 import { GuestMessage } from './_components/guest-message';
 import { DetailSkeleton } from './_components/reservation-skeleton';
 import { RoomLine } from './_components/room-line';
+import { useAction } from '@/lib/use-action';
 
 export default function ReservationPage() {
   const { propertyId, reservationId } = useParams<{ propertyId: string; reservationId: string }>();
@@ -43,8 +44,7 @@ export default function ReservationPage() {
     queryClient.setQueryData(['reservation', propertyId, reservationId], data);
     void queryClient.invalidateQueries({ queryKey: ['reservations', propertyId] });
   };
-  const action = useMutation({
-    mutationFn: (fn: () => Promise<Reservation>) => fn(),
+  const action = useAction<Reservation>({
     onSuccess: update,
   });
   const [reason, setReason] = useState('');
