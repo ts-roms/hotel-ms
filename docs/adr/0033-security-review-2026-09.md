@@ -46,6 +46,7 @@ against the route property, and every `'any'` route filters by the caller's scop
   - only a correct PIN resets the count.
 
   Kiosk operator sessions also end when the identity is disabled.
+
 - **HR assignments.** Adding an assignment now needs `employee.manage` over the employee,
   not just `employee.read`. Past assignments give lasting HR coverage (ADR-0014), so a
   backdated assignment used to be a way to reach another property's employee file.
