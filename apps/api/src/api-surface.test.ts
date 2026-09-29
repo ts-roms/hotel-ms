@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { MODULE_METADATA } from '@nestjs/common/constants.js';
-import type { Type } from '@nestjs/common';
+import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
+import { RequestMethod, type Type } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { CONTROLLERS } from './api-surface.js';
 import { CONTEXT_MODULES } from './app.module.js';
@@ -27,5 +27,22 @@ describe('API surface', () => {
     expect(new Set(registered).size).toBe(registered.length);
     expect(new Set(CONTROLLERS).size).toBe(CONTROLLERS.length);
     expect(new Set(CONTROLLERS)).toEqual(new Set(registered));
+  });
+
+  it('serves every route from exactly one controller', () => {
+    const routes = CONTROLLERS.flatMap((controller) => {
+      const base = String(Reflect.getMetadata(PATH_METADATA, controller) ?? '');
+      const proto = controller.prototype as Record<string, unknown>;
+      return Object.getOwnPropertyNames(proto).flatMap((name) => {
+        const handler = proto[name];
+        if (name === 'constructor' || typeof handler !== 'function') return [];
+        const path = Reflect.getMetadata(PATH_METADATA, handler) as string | undefined;
+        if (path === undefined) return [];
+        const method = Reflect.getMetadata(METHOD_METADATA, handler) as RequestMethod;
+        return [`${RequestMethod[method]} /${base}/${path}`.replace(/\/+/g, '/')];
+      });
+    });
+    expect(routes.length).toBeGreaterThan(0);
+    expect(routes.filter((route, index) => routes.indexOf(route) !== index)).toEqual([]);
   });
 });

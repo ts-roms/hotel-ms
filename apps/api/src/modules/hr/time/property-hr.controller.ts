@@ -4,7 +4,6 @@ import {
   attendanceCorrectionSchema,
   CLOCK_PHOTO_TYPES,
   attendanceDaySchema,
-  birthdaySchema,
   type CreateShiftRequest,
   createShiftRequestSchema,
   type CreateShiftTemplateRequest,
@@ -41,7 +40,6 @@ import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';
 import { AttendanceService } from './attendance.service.js';
 import { LeaveService } from './leave.service.js';
 import { PayrollService } from './payroll.service.js';
-import { PeopleService } from '../workforce/people.service.js';
 import { StaffingService } from './staffing.service.js';
 import { ScheduleService } from './schedule.service.js';
 import { TimeClockService } from './time-clock.service.js';
@@ -50,7 +48,7 @@ const correctionStatusQuery = z.object({
   status: z.enum(APPROVAL_STATUSES).optional(),
 });
 
-/** Property-level HR: clock, attendance, schedule, leave approvals, birthdays. */
+/** Property-level HR: clock, attendance, schedule, leave approvals, payroll export. */
 @ApiTags('hr: property')
 @Controller('properties/:propertyId')
 export class PropertyHrController {
@@ -58,7 +56,6 @@ export class PropertyHrController {
     private readonly attendance: AttendanceService,
     private readonly schedule: ScheduleService,
     private readonly leave: LeaveService,
-    private readonly people: PeopleService,
     private readonly payroll: PayrollService,
     private readonly timeClock: TimeClockService,
     private readonly staffing: StaffingService,
@@ -231,12 +228,5 @@ export class PropertyHrController {
     @ZodBody(decisionRequestSchema) body: DecisionRequest,
   ) {
     return this.leave.decide(propertyId, uuidParam(id), parseIfMatch(ifMatch), body);
-  }
-
-  @Get('birthdays')
-  @RequirePermission('birthday.read')
-  @ZodResponse(200, listOf(birthdaySchema))
-  async birthdays(@Param('propertyId') propertyId: string) {
-    return { items: await this.people.birthdays(propertyId) };
   }
 }
