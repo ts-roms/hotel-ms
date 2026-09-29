@@ -1,6 +1,7 @@
 'use client';
 
 import type { IdentityDocument } from '@hotel/contracts';
+import { formatDate, formatDateTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -19,7 +20,6 @@ import { IdCard } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
@@ -123,8 +123,8 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
-          {statusLabel(d.documentType)} · {t('idr.uploaded')}{' '}
-          {new Date(d.uploadedAt).toLocaleString('en-PH')} · {statusLabel(d.stayStatus)}
+          {statusLabel(d.documentType)} · {t('idr.uploaded')} {formatDateTime(d.uploadedAt)} ·{' '}
+          {statusLabel(d.stayStatus)}
         </p>
         {d.purged ? (
           <p className="text-muted-foreground">{t('idr.purged')}</p>
@@ -149,8 +149,7 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
         )}
         {d.reviewerName && d.reviewedAt && (
           <p className="text-muted-foreground">
-            {statusLabel(d.status)} {t('idr.by')} {d.reviewerName},{' '}
-            {new Date(d.reviewedAt).toLocaleString('en-PH')}
+            {statusLabel(d.status)} {t('idr.by')} {d.reviewerName}, {formatDateTime(d.reviewedAt)}
           </p>
         )}
         {review.error && <Alert>{errorMessage(review.error)}</Alert>}

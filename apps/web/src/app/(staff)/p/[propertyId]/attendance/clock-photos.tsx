@@ -1,10 +1,10 @@
 'use client';
 
+import { formatDate, localDate } from '@hotel/format';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useState } from 'react';
-import { formatDate } from '@/lib/format';
 import { clock } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
@@ -45,8 +45,8 @@ export function ClockPhotos({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 <span className="font-mono text-xs text-muted-foreground">{p.employeeNo}</span>{' '}
-                {p.employeeName} · {statusLabel(p.type)} ·{' '}
-                {formatDate(new Date(p.at).toLocaleDateString('en-CA'))} {clock(p.at)}
+                {p.employeeName} · {statusLabel(p.type)} · {formatDate(localDate(p.at))}{' '}
+                {clock(p.at)}
                 <span className="text-muted-foreground">
                   {' '}
                   · {p.source === 'WEB' ? t('clock.web') : (p.deviceName ?? t('dev.timeClock'))}

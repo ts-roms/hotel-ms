@@ -1,11 +1,11 @@
 'use client';
 
+import { formatMoney } from '@hotel/format';
 import { Alert, Badge, Button, Card, CardContent, Input } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { useProperty, usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';

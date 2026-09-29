@@ -7,6 +7,7 @@ import {
   SERVICE_CATEGORIES,
   type ServiceRequest,
 } from '@hotel/contracts';
+import { formatDate, formatMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -52,7 +53,7 @@ import Link from 'next/link';
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/guest-shell';
 import { Section } from '@/components/section';
-import { api, errorMessage, formatDate, formatMoney, rememberStay } from '@/lib/api';
+import { api, errorMessage, rememberStay } from '@/lib/api';
 import { CheckoutRequest, HotelInfo, IdUpload, Notifications } from './extras';
 import { RoomService } from './room-service';
 

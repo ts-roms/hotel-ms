@@ -1,6 +1,6 @@
 /**
- * Property-local wall-clock time ↔ instants in the browser, whatever the browser's own time
- * zone (same algorithm as the API's zoned-time helpers).
+ * Property-local wall-clock time ↔ instants, whatever the runtime's own time zone
+ * (same algorithm as the API's zoned-time helpers).
  */
 
 function parts(instant: Date, timeZone: string): Record<string, string> {

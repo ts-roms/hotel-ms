@@ -30,6 +30,7 @@ packages/
   contracts/  Zod schemas, permission catalog, error codes, event types (shared by all)
   database/   Prisma schema (one file per bounded context), migrations incl. RLS, seed
   api-client/ Typed clients for the staff and guest apps
+  format/     Money, date, time zone and relative-time formatting for the staff and guest apps
   ui/         Shared shadcn-style components
 docs/         Architecture blueprint, ADRs, database conventions, generated OpenAPI
 infrastructure/docker/     Local Postgres roles, multi-target Dockerfile

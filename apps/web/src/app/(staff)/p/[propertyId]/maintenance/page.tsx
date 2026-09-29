@@ -6,6 +6,7 @@ import {
   type MaintenanceAction,
   type MaintenanceRequest,
 } from '@hotel/contracts';
+import { formatDateTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -463,7 +464,7 @@ function Detail({
         <ol className="flex flex-col gap-1 border-t pt-2 text-xs text-muted-foreground">
           {r.updates.map((u) => (
             <li key={u.id}>
-              {new Date(u.at).toLocaleString('en-PH')} · {u.byName ?? '—'} ·{' '}
+              {formatDateTime(u.at)} · {u.byName ?? '—'} ·{' '}
               {u.toStatus
                 ? statusLabel(u.toStatus)
                 : t(`mnt.kind.${u.kind}` as Parameters<typeof t>[0])}

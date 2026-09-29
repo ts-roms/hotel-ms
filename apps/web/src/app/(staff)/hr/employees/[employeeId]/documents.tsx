@@ -5,6 +5,7 @@ import {
   EMPLOYEE_DOCUMENT_MAX_BYTES,
   EMPLOYEE_DOCUMENT_TYPES,
 } from '@hotel/contracts';
+import { formatDate } from '@hotel/format';
 import {
   Alert,
   AlertDialog,
@@ -30,7 +31,6 @@ import { FileText } from 'lucide-react';
 import { type FormEvent, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
 export const CATEGORY_LABELS: Record<(typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number], string> = {

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDate } from '@hotel/format';
 import {
   Alert,
   Avatar,
@@ -24,7 +25,6 @@ import { useParams } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
 import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Folio } from '@hotel/contracts';
+import { currencyDigits, formatMoney, minorToInput, parseMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -16,7 +17,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatMoney, minorToInput, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
 
@@ -24,11 +24,6 @@ function useSetFolio(propertyId: string, folioId: string) {
   const queryClient = useQueryClient();
   return (data: Folio) => queryClient.setQueryData(['folio', propertyId, folioId], data);
 }
-
-/** Minor units → decimal string with as many places as the currency uses. */
-const digitsOf = (currency: string) =>
-  new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
-    .maximumFractionDigits ?? 2;
 
 /** Foreign notes at the desk, converted at the property's current rate (ADR-0018). */
 export function ForeignCash({ propertyId, folio }: { propertyId: string; folio: Folio }) {
@@ -46,9 +41,9 @@ export function ForeignCash({ propertyId, folio }: { propertyId: string; folio: 
   const preview =
     tenderedMinor && latest.get(chosen)
       ? Math.round(
-          (tenderedMinor / 10 ** digitsOf(chosen)) *
+          (tenderedMinor / 10 ** currencyDigits(chosen)) *
             Number(latest.get(chosen)) *
-            10 ** digitsOf(folio.currency),
+            10 ** currencyDigits(folio.currency),
         )
       : null;
   const pay = useMutation({

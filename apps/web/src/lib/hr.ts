@@ -1,4 +1,4 @@
-import { addDays } from './format';
+import { addDays } from '@hotel/format';
 
 /** Today's calendar date on this device. */
 export function today(): string {

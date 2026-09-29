@@ -1,6 +1,7 @@
 'use client';
 
 import type { LeaveDecisionResult, LeaveRequest } from '@hotel/contracts';
+import { formatDate } from '@hotel/format';
 import {
   Alert,
   Avatar,
@@ -20,7 +21,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Plane, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';

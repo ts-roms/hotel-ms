@@ -1,5 +1,6 @@
 'use client';
 
+import { addDays, formatDate, localDate } from '@hotel/format';
 import {
   buttonVariants,
   Alert,
@@ -25,7 +26,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Check, Clock, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { addDays, formatDate } from '@/lib/format';
 import { clock, duration, today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { usePms, useRoutePropertyId } from '@/lib/property';
@@ -108,7 +108,7 @@ export default function AttendancePage() {
               >
                 <span>
                   <strong>{c.employeeName}</strong> · {statusLabel(c.type).toLowerCase()} ·{' '}
-                  {formatDate(new Date(c.at).toLocaleDateString('en-CA'))} {clock(c.at)} ·{' '}
+                  {formatDate(localDate(c.at))} {clock(c.at)} ·{' '}
                   <span className="text-muted-foreground">{c.reason}</span>
                 </span>
                 {canDecide && (

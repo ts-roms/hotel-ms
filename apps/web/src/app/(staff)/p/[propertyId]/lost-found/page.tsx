@@ -1,6 +1,7 @@
 'use client';
 
 import type { LostFoundItem } from '@hotel/contracts';
+import { formatDateTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -206,7 +207,7 @@ function Item({
         <span className="text-xs text-muted-foreground">
           {statusLabel(item.category)} · {t('lf.found')} {item.foundLocation}
           {item.roomNumber && ` (${t('mnt.room')} ${item.roomNumber})`} ·{' '}
-          {new Date(item.foundAt).toLocaleString('en-PH')}
+          {formatDateTime(item.foundAt)}
           {item.foundByName && ` · ${item.foundByName}`} · {t('lf.storedAt')}:{' '}
           {item.storageLocation}
         </span>

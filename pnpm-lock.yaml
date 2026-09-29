@@ -126,6 +126,9 @@ importers:
       '@hotel/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@hotel/format':
+        specifier: workspace:*
+        version: link:../../packages/format
       '@hotel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -172,6 +175,9 @@ importers:
       '@hotel/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@hotel/format':
+        specifier: workspace:*
+        version: link:../../packages/format
       '@hotel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -302,6 +308,12 @@ importers:
       prisma:
         specifier: 7.10.0
         version: 7.10.0(@types/node@22.20.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
+      vitest:
+        specifier: ^5.0.2
+        version: 5.0.2(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0))
+
+  packages/format:
+    devDependencies:
       vitest:
         specifier: ^5.0.2
         version: 5.0.2(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(jiti@2.7.0))

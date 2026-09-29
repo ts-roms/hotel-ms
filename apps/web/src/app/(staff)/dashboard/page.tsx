@@ -1,5 +1,6 @@
 'use client';
 
+import { formatDate } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -22,7 +23,6 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { GroupOverview } from '@/components/group-overview';
 import { api } from '@/lib/api';
-import { formatDate } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { DEPARTMENTS } from '@hotel/contracts';
+import { formatDateTime, formatMoney, minorToInput, parseMoney } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -17,7 +18,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { formatMoney, minorToInput, parseMoney } from '@/lib/format';
 import { t } from '@/lib/i18n';
 import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
@@ -71,7 +71,7 @@ function ExchangeRates({ propertyId, canManage }: { propertyId: string; canManag
               <span>
                 1 {r.currency} = {r.rate} {property.data?.currency ?? ''}
               </span>
-              <span>{new Date(r.effectiveFrom).toLocaleString('en-PH')}</span>
+              <span>{formatDateTime(r.effectiveFrom)}</span>
             </div>
           );
         })}
