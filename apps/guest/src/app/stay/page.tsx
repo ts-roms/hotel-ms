@@ -54,34 +54,24 @@ import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/guest-shell';
 import { Section } from '@/components/section';
 import { api, errorMessage, rememberStay } from '@/lib/api';
+import { rich, t } from '@/lib/i18n';
 import { CheckoutRequest, HotelInfo, IdUpload, Notifications } from './extras';
 import { RoomService } from './room-service';
 
-const CATEGORY_LABELS: Record<(typeof SERVICE_CATEGORIES)[number], string> = {
-  TOWELS: 'Towels',
-  TOILETRIES: 'Toiletries',
-  PILLOWS_BLANKETS: 'Pillows & blankets',
-  CLEANING: 'Room cleaning',
-  MAINTENANCE: 'Something is broken',
-  LAUNDRY: 'Laundry',
-  TRANSPORT: 'Transport',
-  LUGGAGE: 'Luggage help',
-  WAKE_UP_CALL: 'Wake-up call',
-  OTHER: 'Something else',
-  CHECKOUT: 'Checkout',
-};
+const categoryLabel = (category: (typeof SERVICE_CATEGORIES)[number]) =>
+  t(`requests.category.${category}`);
 
 /** What the request form offers; checkout has its own card. */
 const REQUEST_CATEGORIES = SERVICE_CATEGORIES.filter(
   (c): c is Exclude<(typeof SERVICE_CATEGORIES)[number], 'CHECKOUT'> => c !== 'CHECKOUT',
 );
 
-const STATUS_LABELS: Record<ServiceRequest['status'], [string, BadgeVariant]> = {
-  OPEN: ['Sent', 'info'],
-  ACKNOWLEDGED: ['Seen by staff', 'primary'],
-  IN_PROGRESS: ['On its way', 'warning'],
-  DONE: ['Done', 'success'],
-  CANCELLED: ['Cancelled', 'danger'],
+const STATUS_VARIANTS: Record<ServiceRequest['status'], BadgeVariant> = {
+  OPEN: 'info',
+  ACKNOWLEDGED: 'primary',
+  IN_PROGRESS: 'warning',
+  DONE: 'success',
+  CANCELLED: 'danger',
 };
 
 function useStay() {
@@ -113,12 +103,10 @@ export default function StayPage() {
         <div className="flex flex-col items-center gap-6 pt-16">
           <BrandMark />
           <Alert className="w-full">
-            {signedOut
-              ? 'Your session has ended. Open the link from your booking email again.'
-              : errorMessage(stay.error)}
+            {signedOut ? t('stay.signedOut') : errorMessage(stay.error)}
           </Alert>
           <Link href="/" className={buttonVariants({ variant: 'outline' })}>
-            How do I get my link?
+            {t('stay.howToGetLink')}
           </Link>
         </div>
       </Shell>
@@ -161,7 +149,7 @@ function Shell({ children }: { children: ReactNode }) {
 
 function StaySkeleton() {
   return (
-    <LoadingRegion label="Loading your stay…" className="flex flex-col gap-4">
+    <LoadingRegion label={t('stay.loading')} className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 rounded-2xl bg-muted p-6">
         <Skeleton className="h-3 w-32 bg-foreground/10" />
         <Skeleton className="h-7 w-48 bg-foreground/10" />
@@ -176,18 +164,13 @@ function StaySkeleton() {
   );
 }
 
-const STAY_STATUS: Record<GuestStay['stay']['status'], string> = {
-  RESERVED: 'Confirmed',
-  IN_HOUSE: 'Checked in',
-  CHECKED_OUT: 'Checked out',
-  CANCELLED: 'Cancelled',
-  NO_SHOW: 'No-show',
-};
-
 function Overview({ stay: s }: { stay: GuestStay }) {
   const guests = [
-    `${s.stay.adults} adult${s.stay.adults === 1 ? '' : 's'}`,
-    s.stay.children > 0 && `${s.stay.children} child${s.stay.children === 1 ? '' : 'ren'}`,
+    t(s.stay.adults === 1 ? 'stay.adults.one' : 'stay.adults.other', { count: s.stay.adults }),
+    s.stay.children > 0 &&
+      t(s.stay.children === 1 ? 'stay.children.one' : 'stay.children.other', {
+        count: s.stay.children,
+      }),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -196,38 +179,48 @@ function Overview({ stay: s }: { stay: GuestStay }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-sm opacity-80">{s.property.name}</span>
-          <h1 className="text-2xl font-semibold tracking-tight">Hello, {s.guest.firstName}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t('stay.hello', { name: s.guest.firstName })}
+          </h1>
         </div>
         <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur">
-          {STAY_STATUS[s.stay.status]}
+          {t(`stay.status.${s.stay.status}`)}
         </span>
       </div>
 
       {s.stay.roomNumber && (
         <div className="mt-5 flex items-center gap-3">
           <DoorOpen className="size-6 opacity-80" />
-          <span className="text-3xl font-semibold tracking-tight">Room {s.stay.roomNumber}</span>
+          <span className="text-3xl font-semibold tracking-tight">
+            {t('stay.room', { number: s.stay.roomNumber })}
+          </span>
         </div>
       )}
 
       <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-        <HeroTile icon={<CalendarDays />} label="Check-in">
+        <HeroTile icon={<CalendarDays />} label={t('stay.checkIn')}>
           {formatDate(s.stay.arrivalDate)}
-          <span className="block text-xs opacity-75">from {s.property.checkInTime}</span>
+          <span className="block text-xs opacity-75">
+            {t('stay.checkInFrom', { time: s.property.checkInTime })}
+          </span>
         </HeroTile>
-        <HeroTile icon={<CalendarDays />} label="Check-out">
+        <HeroTile icon={<CalendarDays />} label={t('stay.checkOut')}>
           {formatDate(s.stay.departureDate)}
-          <span className="block text-xs opacity-75">by {s.property.checkOutTime}</span>
+          <span className="block text-xs opacity-75">
+            {t('stay.checkOutBy', { time: s.property.checkOutTime })}
+          </span>
         </HeroTile>
-        <HeroTile icon={<BedDouble />} label="Room type">
+        <HeroTile icon={<BedDouble />} label={t('stay.roomType')}>
           {s.stay.roomTypeName}
         </HeroTile>
-        <HeroTile icon={<Users />} label="Guests">
+        <HeroTile icon={<Users />} label={t('stay.guests')}>
           {guests}
         </HeroTile>
       </div>
 
-      <p className="mt-4 font-mono text-xs opacity-75">Booking {s.confirmationNo}</p>
+      <p className="mt-4 font-mono text-xs opacity-75">
+        {t('stay.booking', { number: s.confirmationNo })}
+      </p>
     </section>
   );
 }
@@ -261,12 +254,7 @@ function Verification({ stay: s }: { stay: GuestStay }) {
     onSuccess: (stay) => queryClient.setQueryData(['stay'], rememberStay(stay)),
   });
   if (!s.verificationDestination) {
-    return (
-      <Notice>
-        We have no email address for this booking, so online check-in and requests are not
-        available. The front desk will be happy to help.
-      </Notice>
-    );
+    return <Notice>{t('verify.noEmail')}</Notice>;
   }
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -275,24 +263,21 @@ function Verification({ stay: s }: { stay: GuestStay }) {
   return (
     <Section
       icon={<ShieldCheck />}
-      title="Confirm it is you"
-      description={
-        <>
-          To check in online, see your bill or send requests, enter the code we email to{' '}
-          <strong className="text-foreground">{s.verificationDestination}</strong>.
-        </>
-      }
+      title={t('verify.title')}
+      description={rich('verify.description', {
+        destination: <strong className="text-foreground">{s.verificationDestination}</strong>,
+      })}
     >
       <CardContent className="flex flex-col gap-3">
         {(send.error || verify.error) && <Alert>{errorMessage(send.error ?? verify.error)}</Alert>}
         {!send.isSuccess ? (
           <Button size="lg" onClick={() => send.mutate()} loading={send.isPending}>
             {!send.isPending && <Mail />}
-            Email me a code
+            {t('verify.emailCode')}
           </Button>
         ) : (
           <form onSubmit={onSubmit} className="flex animate-fade-in flex-col gap-3" noValidate>
-            <Label htmlFor="code">6-digit code</Label>
+            <Label htmlFor="code">{t('verify.code')}</Label>
             <Input
               id="code"
               inputMode="numeric"
@@ -309,7 +294,7 @@ function Verification({ stay: s }: { stay: GuestStay }) {
               loading={verify.isPending}
               disabled={code.trim().length !== 6}
             >
-              Confirm
+              {t('verify.confirm')}
             </Button>
             <Button
               type="button"
@@ -318,7 +303,7 @@ function Verification({ stay: s }: { stay: GuestStay }) {
               loading={send.isPending}
               onClick={() => send.mutate()}
             >
-              Send a new code
+              {t('verify.resend')}
             </Button>
           </form>
         )}
@@ -352,10 +337,10 @@ function PreCheckIn({ stay: s }: { stay: GuestStay }) {
           <Check className="size-4" />
         </span>
         <span className="flex-1">
-          Thanks! We expect you around <strong>{s.stay.expectedArrivalTime}</strong>.
+          {rich('preCheckIn.thanks', { time: <strong>{s.stay.expectedArrivalTime}</strong> })}
         </span>
         <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-          Change
+          {t('preCheckIn.change')}
         </Button>
       </Card>
     );
@@ -367,14 +352,14 @@ function PreCheckIn({ stay: s }: { stay: GuestStay }) {
   return (
     <Section
       icon={<Clock />}
-      title="Before you arrive"
-      description="Help us prepare for your arrival."
+      title={t('preCheckIn.title')}
+      description={t('preCheckIn.description')}
     >
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
           {save.error && <Alert>{errorMessage(save.error)}</Alert>}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="arrival">Expected arrival time</Label>
+            <Label htmlFor="arrival">{t('preCheckIn.arrival')}</Label>
             <Input
               id="arrival"
               type="time"
@@ -383,7 +368,7 @@ function PreCheckIn({ stay: s }: { stay: GuestStay }) {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="phone">Mobile number (optional)</Label>
+            <Label htmlFor="phone">{t('preCheckIn.phone')}</Label>
             <Input
               id="phone"
               type="tel"
@@ -393,7 +378,7 @@ function PreCheckIn({ stay: s }: { stay: GuestStay }) {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="requests">Special requests (optional)</Label>
+            <Label htmlFor="requests">{t('preCheckIn.requests')}</Label>
             <Textarea
               id="requests"
               maxLength={1000}
@@ -402,7 +387,7 @@ function PreCheckIn({ stay: s }: { stay: GuestStay }) {
             />
           </div>
           <Button type="submit" size="lg" loading={save.isPending}>
-            Save
+            {t('preCheckIn.save')}
           </Button>
         </form>
       </CardContent>
@@ -418,7 +403,7 @@ function RoomAccess({ result }: { result: SelfCheckInResult }) {
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
             <Check className="size-4" />
           </span>
-          You are checked in to room {result.roomNumber}
+          {t('checkIn.done', { room: result.roomNumber })}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -475,32 +460,26 @@ function SelfCheckIn({
   return (
     <Section
       icon={<KeyRound />}
-      title="Check in online"
-      description={
-        s.verified
-          ? 'Skip the queue: we assign your room now and tell you how to get your key.'
-          : 'Confirm it is you first (above) to check in online.'
-      }
+      title={t('checkIn.title')}
+      description={s.verified ? t('checkIn.description') : t('checkIn.verifyFirst')}
     >
       <CardContent className="flex flex-col gap-3">
         {s.cardHold && (
           <div className="flex flex-col gap-2 rounded-xl border p-3 text-sm">
             <span className="flex items-center justify-between gap-2">
               <span>
-                Card hold for incidentals:{' '}
-                <strong>{formatMoney(s.cardHold.requiredMinor, s.cardHold.currency)}</strong>
+                {rich('checkIn.cardHold', {
+                  amount: (
+                    <strong>{formatMoney(s.cardHold.requiredMinor, s.cardHold.currency)}</strong>
+                  ),
+                })}
               </span>
-              {s.cardHold.authorized && <Badge variant="success">Authorized</Badge>}
+              {s.cardHold.authorized && <Badge variant="success">{t('checkIn.authorized')}</Badge>}
             </span>
             {!s.cardHold.authorized && (
               <>
-                <span className="text-muted-foreground">
-                  The amount is reserved on your card, not charged. You only pay for what you use;
-                  the rest is released after check-out.
-                </span>
-                {returnedHold?.status === 'FAILED' && (
-                  <Alert>Your card was declined. Try again or use another card.</Alert>
-                )}
+                <span className="text-muted-foreground">{t('checkIn.holdHint')}</span>
+                {returnedHold?.status === 'FAILED' && <Alert>{t('checkIn.declined')}</Alert>}
                 {hold.error && <Alert>{errorMessage(hold.error)}</Alert>}
                 <Button
                   variant="outline"
@@ -509,7 +488,7 @@ function SelfCheckIn({
                   disabled={!s.verified}
                 >
                   {!hold.isPending && <CreditCard />}
-                  Authorize card hold
+                  {t('checkIn.authorizeHold')}
                 </Button>
               </>
             )}
@@ -523,7 +502,7 @@ function SelfCheckIn({
           disabled={!s.verified || holdPending}
         >
           {!checkIn.isPending && <DoorOpen />}
-          Check in now
+          {t('checkIn.now')}
         </Button>
       </CardContent>
     </Section>
@@ -551,12 +530,12 @@ function Requests() {
     create.mutate();
   };
   return (
-    <Section icon={<BellRing />} title="Need anything?">
+    <Section icon={<BellRing />} title={t('requests.title')}>
       <CardContent className="flex flex-col gap-4">
         <form onSubmit={onSubmit} className="flex flex-col gap-3" noValidate>
           {create.error && <Alert>{errorMessage(create.error)}</Alert>}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="category">Request</Label>
+            <Label htmlFor="category">{t('requests.request')}</Label>
             <NativeSelect
               id="category"
               value={category}
@@ -564,13 +543,13 @@ function Requests() {
             >
               {REQUEST_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
+                  {categoryLabel(c)}
                 </option>
               ))}
             </NativeSelect>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="details">Details (optional)</Label>
+            <Label htmlFor="details">{t('requests.details')}</Label>
             <Input
               id="details"
               maxLength={1000}
@@ -580,25 +559,24 @@ function Requests() {
           </div>
           <Button type="submit" size="lg" loading={create.isPending}>
             {!create.isPending && <Send />}
-            Send request
+            {t('requests.send')}
           </Button>
         </form>
         {rate.error && <Alert>{errorMessage(rate.error)}</Alert>}
         {list.isPending && (
-          <LoadingRegion label="Loading your requests…" className="flex flex-col gap-2">
+          <LoadingRegion label={t('requests.loading')} className="flex flex-col gap-2">
             <Skeleton className="h-16 rounded-xl" />
             <Skeleton className="h-16 rounded-xl" />
           </LoadingRegion>
         )}
         <ul className="stagger flex flex-col gap-2">
           {list.data?.map((r) => {
-            const [label, variant] = STATUS_LABELS[r.status];
             return (
               <li key={r.id} className="flex flex-col gap-1 rounded-xl border p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{CATEGORY_LABELS[r.category]}</span>
-                  <Badge variant={variant} dot>
-                    {label}
+                  <span className="font-medium">{categoryLabel(r.category)}</span>
+                  <Badge variant={STATUS_VARIANTS[r.status]} dot>
+                    {t(`requests.status.${r.status}`)}
                   </Badge>
                 </div>
                 {r.description && <p className="text-muted-foreground">{r.description}</p>}
@@ -606,7 +584,7 @@ function Requests() {
                   (r.rating ? (
                     <p className="mt-1 flex items-center gap-1 text-muted-foreground">
                       <Star className="size-3.5 fill-warning text-warning" />
-                      You rated this {r.rating}/5. Thank you!
+                      {t('requests.rated', { rating: r.rating })}
                     </p>
                   ) : (
                     <StarRating
@@ -627,10 +605,10 @@ function StarRating({ disabled, onRate }: { disabled: boolean; onRate: (n: numbe
   const [hover, setHover] = useState(0);
   return (
     <div className="mt-1 flex items-center gap-2">
-      <span className="text-xs text-muted-foreground">How did we do?</span>
+      <span className="text-xs text-muted-foreground">{t('requests.howDidWeDo')}</span>
       <div
         role="group"
-        aria-label="Rate this request"
+        aria-label={t('requests.rate')}
         className="flex"
         onMouseLeave={() => setHover(0)}
       >
@@ -640,7 +618,7 @@ function StarRating({ disabled, onRate }: { disabled: boolean; onRate: (n: numbe
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={`${n} out of 5`}
+            aria-label={t('requests.stars', { count: n })}
             disabled={disabled}
             className="size-auto rounded p-1 duration-150 hover:scale-125 hover:bg-transparent active:scale-100 [&_svg]:size-5"
             onMouseEnter={() => setHover(n)}
@@ -692,11 +670,11 @@ function Bill() {
   if (!bill.data) return null;
   const { currency, lines, balanceMinor } = bill.data;
   return (
-    <Section icon={<Receipt />} title="Your bill">
+    <Section icon={<Receipt />} title={t('bill.title')}>
       <CardContent className="flex flex-col text-sm">
         {lines.length === 0 && (
           <p className="rounded-xl border border-dashed py-6 text-center text-muted-foreground">
-            No charges yet.
+            {t('bill.empty')}
           </p>
         )}
         {lines.map((l, i) => (
@@ -711,7 +689,7 @@ function Bill() {
           </div>
         ))}
         <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/60 px-4 py-3">
-          <span className="font-medium">Balance</span>
+          <span className="font-medium">{t('bill.balance')}</span>
           <span
             className={cn(
               'text-lg font-semibold tabular-nums',
@@ -721,14 +699,12 @@ function Bill() {
             {formatMoney(balanceMinor, currency)}
           </span>
         </div>
-        {outcome?.status === 'SUCCEEDED' && <Notice>Thank you, your payment was received.</Notice>}
-        {outcome?.status === 'FAILED' && (
-          <Alert>The payment did not go through. You can try again.</Alert>
-        )}
+        {outcome?.status === 'SUCCEEDED' && <Notice>{t('bill.paid')}</Notice>}
+        {outcome?.status === 'FAILED' && <Alert>{t('bill.failed')}</Alert>}
         {pay.error && <Alert>{errorMessage(pay.error)}</Alert>}
         {balanceMinor > 0 && (
           <Button disabled={pay.isPending} onClick={() => pay.mutate()}>
-            Pay {formatMoney(balanceMinor, currency)} now
+            {t('bill.pay', { amount: formatMoney(balanceMinor, currency) })}
           </Button>
         )}
       </CardContent>
@@ -752,7 +728,7 @@ function HotelEvents({ timeZone }: { timeZone: string }) {
       new Date(iso),
     );
   return (
-    <Section icon={<PartyPopper />} title="What's on">
+    <Section icon={<PartyPopper />} title={t('events.title')}>
       <CardContent className="flex flex-col gap-3">
         {events.data.map((e) => (
           <div key={e.id} className="flex flex-col gap-0.5 rounded-xl border p-3">
@@ -811,9 +787,9 @@ function Contact({ stay: s }: { stay: GuestStay }) {
       )}
       <Button variant="ghost" size="sm" loading={logout.isPending} onClick={() => logout.mutate()}>
         {!logout.isPending && <LogOut />}
-        Sign out on this device
+        {t('contact.signOut')}
       </Button>
-      {logout.isSuccess && <span>Signed out. Your email link still works to sign back in.</span>}
+      {logout.isSuccess && <span>{t('contact.signedOut')}</span>}
     </footer>
   );
 }

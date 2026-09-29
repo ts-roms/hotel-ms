@@ -13,6 +13,7 @@
     "@hotel/api-client": "workspace:*",
     "@hotel/contracts": "workspace:*",
     "@hotel/format": "workspace:*",
+    "@hotel/i18n": "workspace:*",
     "@hotel/ui": "workspace:*",
     "@tanstack/react-query": "^5.104.0",
     "lucide-react": "^1.48.0",

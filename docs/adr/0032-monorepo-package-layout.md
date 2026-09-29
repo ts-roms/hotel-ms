@@ -26,7 +26,8 @@ portal) and `apps/guest` (guest PWA).
 | `@hotel/ui`         | shadcn-style components and blocks, plus the design tokens in `@hotel/ui/theme.css`.                                                                                                                                                                                                 |
 | `@hotel/format`     | Money, date, time zone and relative-time formatting shared by the apps and the worker.                                                                                                                                                                                               |
 
-A `packages/i18n` package (message catalogs) is planned in the same change set as this ADR.
+`@hotel/i18n` holds the message catalogs: `@hotel/i18n/staff` (the staff app) and `@hotel/i18n/guest`
+(the guest portal), with a small typed translator. Formatting stays in `@hotel/format`.
 
 **Domain logic stays in the API.** There is no `packages/domain`. Bounded-context modules live
 in `apps/api/src/modules/` (ADR-0031). The worker only relays the outbox, delivers email and

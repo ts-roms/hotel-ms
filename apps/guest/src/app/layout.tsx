@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { t } from '@/lib/i18n';
 import { Providers } from './providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'My stay',
-  description: 'Your booking, online check-in and requests during your stay.',
+  title: t('app.name'),
+  description: t('app.description'),
   robots: { index: false, follow: false },
-  appleWebApp: { capable: true, title: 'My stay' },
+  appleWebApp: { capable: true, title: t('app.name') },
 };
 
 export const viewport: Viewport = {
