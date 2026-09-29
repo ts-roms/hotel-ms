@@ -316,6 +316,10 @@ export class MembersService {
   }
 
   async updateStatus(membershipId: string, input: UpdateMemberRequest): Promise<Member> {
+    // Suspending or reactivating someone switches all their access off or on, so it is
+    // held to the same bar as granting it: a second factor, and only for members whose
+    // roles the actor could grant (no reactivating a suspended administrator).
+    this.requireMfa();
     const organizationId = this.cls.get('organizationId')!;
     if (membershipId === this.cls.get('membershipId')) {
       throw Problems.forbidden('You cannot change your own membership status.');
@@ -325,6 +329,23 @@ export class MembersService {
       const row = await this.findVisible(tx, membershipId, 'member.update');
       if (!coversMember(this.grants, 'member.update', scopesOf(row))) {
         throw Problems.forbidden('This member has access outside your scope.');
+      }
+      const roles = await tx.role.findMany({
+        where: { id: { in: row.roleAssignments.map((a) => a.roleId) } },
+        include: { permissions: { select: { permissionCode: true } } },
+      });
+      for (const assignment of row.roleAssignments) {
+        const role = roles.find((r) => r.id === assignment.roleId);
+        const decision = canGrantRole(
+          this.grants,
+          role?.permissions.map((p) => p.permissionCode) ?? [],
+          { scopeType: assignment.scopeType, propertyId: assignment.propertyId },
+        );
+        if (!decision.ok) {
+          throw Problems.forbidden(
+            `This member holds ${role?.name ?? 'a role'}, which you cannot grant.`,
+          );
+        }
       }
       if (row.status === 'INVITED' || row.status === 'REMOVED') {
         throw Problems.conflict(

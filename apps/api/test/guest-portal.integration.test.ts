@@ -108,7 +108,7 @@ afterAll(async () => {
 });
 
 describe('portal link', () => {
-  it('is emailed to the booker; a new link revokes the previous one', async () => {
+  it('is emailed to the booker; a new link revokes the previous one and its sessions', async () => {
     const email = `link-${randomUUID().slice(0, 8)}@example.test`;
     const booking = await book(...later(), email);
     expect((await sendLink(booking.id)).status).toBe(204);
@@ -117,8 +117,12 @@ describe('portal link', () => {
       /^http:\/\/localhost:43200\/welcome#token=/,
     );
     const first = await linkToken(email);
+    const early = new GuestClient(ctx.app);
+    expect((await early.request('POST', '/guest/session', { token: first })).status).toBe(200);
 
     expect((await sendLink(booking.id)).status).toBe(204);
+    // Whoever opened the old link (e.g. it went to the wrong person) is signed out.
+    expect((await early.request('GET', '/guest/stay')).status).toBe(401);
     const second = await linkToken(email);
     expect(second).not.toBe(first);
 
@@ -177,7 +181,8 @@ describe('guest realm', () => {
   });
 
   it('unsafe guest requests need the CSRF token and an allowed Origin', async () => {
-    const { guest } = await guestFor(...later());
+    const { guest, email } = await guestFor(...later());
+    await verify(guest, email);
     const body = { expectedArrivalTime: '15:00' };
     expect(
       (await guest.request('PUT', '/guest/pre-check-in', body, { 'x-csrf-token': 'nope' })).status,
@@ -223,7 +228,8 @@ describe('guest realm', () => {
 
 describe('pre-check-in', () => {
   it('records the arrival time, phone and requests on the booking', async () => {
-    const { guest, booking } = await guestFor(...later());
+    const { guest, booking, email } = await guestFor(...later());
+    await verify(guest, email);
     const res = await guest.request('PUT', '/guest/pre-check-in', {
       expectedArrivalTime: '16:30',
       phone: '+63 917 555 0101',
@@ -251,6 +257,9 @@ describe('verification', () => {
       ['POST', '/guest/check-in'],
       ['GET', '/guest/bill'],
       ['GET', '/guest/service-requests'],
+      // A forwarded link alone must not change the guest's details or read staff messages.
+      ['PUT', '/guest/pre-check-in'],
+      ['GET', '/guest/notifications'],
     ] as const) {
       const res = await guest.request(method, url);
       expect(res.status, `${method} ${url}`).toBe(403);

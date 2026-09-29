@@ -90,6 +90,19 @@ describe('availability and pricing', () => {
       totalMinor: 1550000,
     });
   });
+
+  it('refuses ranges longer than a year instead of expanding them', async () => {
+    const quote = await reception.get(
+      `${base()}/quote?roomTypeId=${inv().roomTypes.STD}&ratePlanId=${inv().ratePlans.BAR}&arrivalDate=2026-12-23&departureDate=9999-12-31`,
+    );
+    expect(quote.status).toBe(400);
+    const block = await admin.request('POST', `${base()}/rooms/${inv().rooms['104']}/blocks`, {
+      startDate: '2026-12-01',
+      endDate: '9999-12-31',
+      reason: 'Forever',
+    });
+    expect(block.status).toBe(400);
+  });
 });
 
 describe('creating reservations', () => {

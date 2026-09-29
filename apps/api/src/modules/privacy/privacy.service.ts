@@ -210,6 +210,24 @@ export class PrivacyService {
       });
       const lines = await tx.reservationRoom.findMany({ where: { guestId }, select: { id: true } });
       const lineIds = lines.map((l) => l.id);
+      // Free text and statutory-discount details tied to their stays. Order items and the
+      // audit log are append-only by design and keep what they recorded (ADR-0033).
+      const orders = await tx.order.updateMany({
+        where: { OR: [{ guestId }, { reservationRoomId: { in: lineIds } }], notes: { not: '' } },
+        data: { notes: '' },
+      });
+      const notifications = await tx.guestNotification.updateMany({
+        where: { reservationRoomId: { in: lineIds } },
+        data: { title: 'Message', body: '' },
+      });
+      const discounts = await tx.folio.updateMany({
+        where: { reservationRoomId: { in: lineIds }, discountProfileId: { not: null } },
+        data: {
+          discountHolderName: 'Anonymized',
+          discountIdLast4: '----',
+          discountIdEncrypted: new Uint8Array(0),
+        },
+      });
       await tx.guestSession.updateMany({
         where: { guestId, revokedAt: null },
         data: { revokedAt: now },
@@ -233,6 +251,9 @@ export class PrivacyService {
         serviceRequestsCleared: requests.count,
         stays: lineIds.length,
         idFilesDeleted: docs.length,
+        ordersCleared: orders.count,
+        notificationsCleared: notifications.count,
+        discountsCleared: discounts.count,
       };
       // The reason and what was done; never the personal data itself.
       await this.audit.record(tx, {

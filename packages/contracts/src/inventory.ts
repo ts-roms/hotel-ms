@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { localDateSchema } from './common.js';
+import { localDateSchema, MAX_STAY_NIGHTS, nightsBetween } from './common.js';
 import { codeSchema } from './internal.js';
 
 /**
@@ -131,6 +131,10 @@ export const createRoomBlockRequestSchema = z
   })
   .refine((v) => v.endDate > v.startDate, {
     message: 'End date must be after start date',
+    path: ['endDate'],
+  })
+  .refine((v) => nightsBetween(v.startDate, v.endDate) <= MAX_STAY_NIGHTS, {
+    message: `A block can be at most ${MAX_STAY_NIGHTS} days`,
     path: ['endDate'],
   });
 export type CreateRoomBlockRequest = z.infer<typeof createRoomBlockRequestSchema>;

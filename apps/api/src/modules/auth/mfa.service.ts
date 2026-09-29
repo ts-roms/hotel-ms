@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import type { MfaChallengeRequest, RecoveryCodes, TotpEnrollment } from '@hotel/contracts';
-import type { Tx } from '@hotel/database';
+import { type Tx, verifyPassword } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
@@ -77,11 +77,22 @@ export class MfaService {
   }
 
   /**
-   * Step 2: prove the authenticator works. Activates the factor, issues recovery codes,
-   * marks this session verified and signs out every other session of the identity.
+   * Step 2: prove the authenticator works and re-enter the password. Activates the factor,
+   * issues recovery codes, marks this session verified and signs out every other session
+   * of the identity. The password check keeps someone holding only a session cookie from
+   * attaching their own authenticator and unlocking sensitive permissions.
    */
-  async confirmEnrollment(code: string): Promise<{ token: string; recoveryCodes: RecoveryCodes }> {
+  async confirmEnrollment(
+    code: string,
+    password: string,
+  ): Promise<{ token: string; recoveryCodes: RecoveryCodes }> {
     await this.limitAttempts();
+    const credential = await this.prisma.platform.identityCredential.findUnique({
+      where: { identityId: this.identityId },
+    });
+    if (!credential || !(await verifyPassword(credential.passwordHash, password))) {
+      throw Problems.validation([{ path: 'password', message: 'Password is incorrect' }]);
+    }
     const pending = await this.prisma.platform.mfaFactor.findFirst({
       where: { identityId: this.identityId, verifiedAt: null },
       orderBy: { createdAt: 'desc' },

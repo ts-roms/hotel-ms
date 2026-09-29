@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { amountMinorSchema, localDateSchema } from './common.js';
+import { amountMinorSchema, localDateSchema, MAX_STAY_NIGHTS, nightsBetween } from './common.js';
 import { codeSchema } from './internal.js';
 
 /**
@@ -86,6 +86,10 @@ export const quoteQuerySchema = z
   })
   .refine((v) => v.departureDate > v.arrivalDate, {
     message: 'Departure must be after arrival',
+    path: ['departureDate'],
+  })
+  .refine((v) => nightsBetween(v.arrivalDate, v.departureDate) <= MAX_STAY_NIGHTS, {
+    message: `A stay can be at most ${MAX_STAY_NIGHTS} nights`,
     path: ['departureDate'],
   });
 export type QuoteQuery = z.infer<typeof quoteQuerySchema>;

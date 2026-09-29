@@ -176,6 +176,7 @@ export class TestClient {
     mfaState.set(email, { secret: start.body.secret, lastStep: 0n });
     const confirm = await client.request('POST', '/api/v1/auth/mfa/totp/enrollment/confirm', {
       code: nextTotp(email),
+      password: DEMO_PASSWORD,
     });
     if (confirm.status !== 200)
       throw new Error(`MFA confirm failed: ${JSON.stringify(confirm.body)}`);

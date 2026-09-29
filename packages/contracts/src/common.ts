@@ -32,6 +32,13 @@ export const localTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Mu
 /** Calendar date YYYY-MM-DD (property-local business date). */
 export const localDateSchema = z.iso.date();
 
+/** Longest stay, block or quote: one (leap) year. Longer ranges are refused, not looped. */
+export const MAX_STAY_NIGHTS = 366;
+
+/** Nights between two ISO dates (departure exclusive). */
+export const nightsBetween = (from: string, to: string): number =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+
 export const cursorPageQuerySchema = z.object({
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),

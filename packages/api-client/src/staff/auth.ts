@@ -1,4 +1,5 @@
 import type {
+  ConfirmEnrollmentRequest,
   AcceptInvitationRequest,
   ChangePasswordRequest,
   InvitationPreview,
@@ -21,13 +22,11 @@ export function authClient({ call }: Transport) {
         call<SessionInfo>('POST', '/auth/mfa/challenge', body).then((r) => r.data),
       startTotpEnrollment: () =>
         call<TotpEnrollment>('POST', '/auth/mfa/totp/enrollment').then((r) => r.data),
-      confirmTotpEnrollment: (code: string) =>
+      confirmTotpEnrollment: (body: ConfirmEnrollmentRequest) =>
         call<RecoveryCodes & { session: SessionInfo }>(
           'POST',
           '/auth/mfa/totp/enrollment/confirm',
-          {
-            code,
-          },
+          body,
         ).then((r) => r.data),
       regenerateRecoveryCodes: (code: string) =>
         call<RecoveryCodes>('POST', '/auth/mfa/recovery-codes', { code }).then((r) => r.data),

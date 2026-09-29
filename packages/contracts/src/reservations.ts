@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { amountMinorSchema, localDateSchema } from './common.js';
+import { amountMinorSchema, localDateSchema, MAX_STAY_NIGHTS, nightsBetween } from './common.js';
 import { createGuestRequestSchema, guestSummarySchema } from './guests.js';
 import { nightPriceSchema } from './pricing.js';
 
@@ -72,6 +72,15 @@ export type Reservation = z.infer<typeof reservationSchema>;
 const stayRangeRefinement = <T extends { arrivalDate?: string; departureDate?: string }>(v: T) =>
   !v.arrivalDate || !v.departureDate || v.departureDate > v.arrivalDate;
 
+const stayLengthRefinement = <T extends { arrivalDate?: string; departureDate?: string }>(v: T) =>
+  !v.arrivalDate ||
+  !v.departureDate ||
+  nightsBetween(v.arrivalDate, v.departureDate) <= MAX_STAY_NIGHTS;
+const stayLengthMessage = {
+  message: `A stay can be at most ${MAX_STAY_NIGHTS} nights`,
+  path: ['departureDate'],
+};
+
 export const reservationRoomRequestSchema = z
   .strictObject({
     roomTypeId: z.uuid(),
@@ -88,7 +97,8 @@ export const reservationRoomRequestSchema = z
   .refine(stayRangeRefinement, {
     message: 'Departure must be after arrival',
     path: ['departureDate'],
-  });
+  })
+  .refine(stayLengthRefinement, stayLengthMessage);
 export type ReservationRoomRequest = z.infer<typeof reservationRoomRequestSchema>;
 
 export const createReservationRequestSchema = z.strictObject({
@@ -118,7 +128,8 @@ export const updateReservationRoomRequestSchema = z
   .refine(stayRangeRefinement, {
     message: 'Departure must be after arrival',
     path: ['departureDate'],
-  });
+  })
+  .refine(stayLengthRefinement, stayLengthMessage);
 export type UpdateReservationRoomRequest = z.infer<typeof updateReservationRoomRequestSchema>;
 
 export const assignRoomRequestSchema = z.strictObject({ roomId: z.uuid() });
