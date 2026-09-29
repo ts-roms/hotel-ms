@@ -657,10 +657,20 @@ export class ReservationsService {
         });
       }
 
+      // Guest portal access to a cancelled stay ends with it.
+      const now = new Date();
+      await tx.guestSession.updateMany({
+        where: { reservationRoomId: { in: targets.map((l) => l.id) }, revokedAt: null },
+        data: { revokedAt: now },
+      });
       const stillActive = reservation.rooms.some(
         (l) => !targets.includes(l) && l.status !== 'CANCELLED',
       );
       if (!stillActive) {
+        await tx.guestPortalLink.updateMany({
+          where: { reservationId, revokedAt: null },
+          data: { revokedAt: now },
+        });
         await tx.reservation.update({
           where: { id: reservationId },
           data: {

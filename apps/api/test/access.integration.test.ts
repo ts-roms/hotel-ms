@@ -338,6 +338,30 @@ describe('suspension and grant freshness', () => {
   });
 });
 
+describe('member status changes', () => {
+  it('only reach members whose roles the actor could grant', async () => {
+    // A GM at MNL holds member.update there, but not payroll.export.
+    const role = await admin.request('POST', '/api/v1/roles', {
+      key: 'payroll_clerk',
+      name: 'Payroll clerk',
+      permissions: ['property.read', 'payroll.export'],
+    });
+    expect(role.status, JSON.stringify(role.body)).toBe(201);
+    const reception = membershipIds['reception@abc.test'];
+    const assigned = await admin.request('POST', `/api/v1/members/${reception}/role-assignments`, {
+      roleId: role.body.id,
+      propertyId: P().MNL,
+    });
+    expect(assigned.status, JSON.stringify(assigned.body)).toBe(201);
+
+    const res = await john.request('PATCH', `/api/v1/members/${reception}`, {
+      status: 'SUSPENDED',
+    });
+    expect(res.status).toBe(403);
+    expect(res.body.detail).toContain('Payroll clerk');
+  });
+});
+
 describe('last administrator protection', () => {
   it('cannot suspend yourself', async () => {
     const res = await admin.request('PATCH', `/api/v1/members/${membershipIds['admin@abc.test']}`, {

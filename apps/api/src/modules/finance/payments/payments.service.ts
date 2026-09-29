@@ -835,19 +835,31 @@ export class PaymentsService {
 
     if (created.payment.provider) {
       const provider = this.providers.get(created.payment.provider);
-      let result: { reference: string; status: 'SUCCEEDED' | 'PENDING' } | null = null;
+      let result: { reference: string; status: 'SUCCEEDED' | 'PENDING' } | 'REFUSED' | 'UNKNOWN';
       try {
-        if (!provider) throw new Error(`Provider ${created.payment.provider} is not configured`);
-        result = await provider.refund({
-          paymentReference: created.payment.reference ?? '',
-          amountMinor,
-          currency: created.payment.currency,
-        });
-      } catch {
-        result = null;
+        result = provider
+          ? await provider.refund({
+              paymentReference: created.payment.reference ?? '',
+              amountMinor,
+              currency: created.payment.currency,
+            })
+          : 'REFUSED';
+      } catch (error) {
+        // Only a clear "no" frees the amount again. A timeout or outage may have refunded
+        // at the provider, so the refund stays PENDING (still counted against the cap) and
+        // shows in reconciliation instead of inviting a second, real refund.
+        const refused =
+          error instanceof ProblemException && error.code === 'PAYMENT_PROVIDER_REJECTED';
+        if (!refused) {
+          this.cls
+            .get('log')
+            ?.warn({ err: error, refundId: created.refund.id }, 'refund outcome unknown');
+        }
+        result = refused ? 'REFUSED' : 'UNKNOWN';
       }
       await this.db.run(async (tx) => {
-        if (!result) {
+        if (result === 'UNKNOWN') return;
+        if (result === 'REFUSED') {
           await tx.refund.update({
             where: { id: created.refund.id },
             data: { status: 'FAILED', completedAt: new Date() },

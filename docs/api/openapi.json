@@ -751,10 +751,16 @@
                   "code": {
                     "type": "string",
                     "pattern": "^\\d{6}$"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
                   }
                 },
                 "required": [
-                  "code"
+                  "code",
+                  "password"
                 ],
                 "additionalProperties": false
               }

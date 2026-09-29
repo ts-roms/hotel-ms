@@ -99,9 +99,16 @@ export class GuestPortalService {
         .map((l) => fromDbDate(l.departureDate))
         .sort()
         .at(-1)!;
+      // A new link replaces the old one: sessions opened from it end too, so re-sending
+      // a link that went to the wrong person actually locks that person out.
+      const now = new Date();
       await tx.guestPortalLink.updateMany({
         where: { reservationId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: now },
+      });
+      await tx.guestSession.updateMany({
+        where: { reservationId, revokedAt: null },
+        data: { revokedAt: now },
       });
       await tx.guestPortalLink.create({
         data: {
@@ -232,6 +239,11 @@ export class GuestPortalService {
     await this.rateLimiter.consume(`guest-code-send:${this.guest.sessionId}`, 3, 15 * 60, {
       failClosed: true,
     });
+    // Per booking as well: a new session from the same link must not reset the budget
+    // (or flood the booker's inbox).
+    await this.rateLimiter.consume(`guest-code-send:res:${this.guest.reservationId}`, 6, 60 * 60, {
+      failClosed: true,
+    });
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
     const target = await this.db.run(async (tx) => {
       const reservation = await tx.reservation.findUniqueOrThrow({
@@ -258,6 +270,12 @@ export class GuestPortalService {
     await this.rateLimiter.consume(`guest-code-verify:${this.guest.sessionId}`, 5, 5 * 60, {
       failClosed: true,
     });
+    await this.rateLimiter.consume(
+      `guest-code-verify:res:${this.guest.reservationId}`,
+      15,
+      60 * 60,
+      { failClosed: true },
+    );
     const stored = await this.redis.client.get(this.codeKey());
     if (!stored || stored !== createHash('sha256').update(code).digest('hex'))
       throw Problems.invalidMfaCode();
@@ -339,9 +357,12 @@ export class GuestPortalService {
           adults: line.adults,
           children: line.children,
           status: line.status,
-          // The room number is only shown once the guest is in house.
+          // The room number is only shown once the guest is in house, and only to a verified
+          // session: a forwarded link alone must not tell someone where the guest sleeps.
           roomNumber:
-            line.status === 'IN_HOUSE' ? (line.assignments[0]?.room.number ?? null) : null,
+            line.status === 'IN_HOUSE' && this.guest.verified
+              ? (line.assignments[0]?.room.number ?? null)
+              : null,
           preCheckInCompleted: line.preCheckInAt !== null,
           expectedArrivalTime: line.expectedArrivalTime,
         },

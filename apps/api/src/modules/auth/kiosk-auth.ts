@@ -93,12 +93,22 @@ export class KioskAuth {
       tx.device.findUnique({ where: { tokenHash } }),
     );
     if (!device || device.revokedAt) return null;
-    if (!device.lastSeenAt || Date.now() - device.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
-      await this.db.runWithTrustedContext(
-        { organizationId: device.organizationId, identityId: null },
-        (tx) => tx.device.update({ where: { id: device.id }, data: { lastSeenAt: new Date() } }),
-      );
-    }
+    const active = await this.db.runWithTrustedContext(
+      { organizationId: device.organizationId, identityId: null },
+      async (tx) => {
+        // Devices of a suspended organization stop working, like its staff sessions.
+        const organization = await tx.organization.findUnique({
+          where: { id: device.organizationId },
+          select: { status: true },
+        });
+        if (organization?.status !== 'ACTIVE') return false;
+        if (!device.lastSeenAt || Date.now() - device.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
+          await tx.device.update({ where: { id: device.id }, data: { lastSeenAt: new Date() } });
+        }
+        return true;
+      },
+    );
+    if (!active) return null;
     return {
       id: device.id,
       organizationId: device.organizationId,
@@ -120,7 +130,11 @@ export class KioskAuth {
       async (tx) => {
         const session = await tx.deviceSession.findUnique({
           where: { tokenHash },
-          include: { membership: { select: { identityId: true, status: true } } },
+          include: {
+            membership: {
+              select: { identityId: true, status: true, identity: { select: { status: true } } },
+            },
+          },
         });
         const now = Date.now();
         if (
@@ -129,7 +143,8 @@ export class KioskAuth {
           session.endedAt ||
           session.expiresAt.getTime() <= now ||
           now - session.lastSeenAt.getTime() > OPERATOR_IDLE_MS ||
-          session.membership.status !== 'ACTIVE'
+          session.membership.status !== 'ACTIVE' ||
+          session.membership.identity.status !== 'ACTIVE'
         ) {
           return null;
         }

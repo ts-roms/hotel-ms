@@ -346,7 +346,9 @@ export class PeopleService {
   async addEmployeeAssignment(id: string, input: NewAssignment): Promise<Employee> {
     return withConstraintMapping(() =>
       this.db.run(async (tx) => {
-        const employee = await this.access.requireEmployee(tx, 'employee.read', id);
+        // Managing the employee already, not just seeing them: an assignment (even a
+        // backdated one) extends every property-scoped HR permission to them for good.
+        const employee = await this.access.requireEmployee(tx, 'employee.manage', id);
         if (employee.status !== 'ACTIVE') throw Problems.conflict('The employee is terminated.');
         await this.checkAssignment(tx, input);
         await this.addAssignment(tx, id, input);

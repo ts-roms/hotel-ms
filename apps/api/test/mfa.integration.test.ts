@@ -1,5 +1,5 @@
 import { createPrismaClient } from '@hotel/database';
-import { testDatabaseUrls } from '@hotel/database/testing';
+import { DEMO_PASSWORD, testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { nextTotp, startTestApp, type TestContext, TestClient } from './harness.js';
 
@@ -32,7 +32,7 @@ describe('sensitive permissions require MFA', () => {
 });
 
 describe('TOTP enrollment', () => {
-  it('rejects a wrong code, then activates with a right one and signs out other sessions', async () => {
+  it('rejects a wrong code or password, then activates and signs out other sessions', async () => {
     const other = await TestClient.as(ctx.app, 'robert.finance@abc.test');
     const client = await TestClient.as(ctx.app, 'robert.finance@abc.test');
 
@@ -45,14 +45,24 @@ describe('TOTP enrollment', () => {
 
     const wrong = await client.request('POST', '/api/v1/auth/mfa/totp/enrollment/confirm', {
       code: '000000',
+      password: DEMO_PASSWORD,
     });
     expect(wrong.status).toBe(401);
     expect(wrong.body.code).toBe('INVALID_MFA_CODE');
 
     const { hotp, base32Decode } = await import('../src/infrastructure/totp.js');
     const code = hotp(base32Decode(start.body.secret), BigInt(Math.floor(Date.now() / 30_000)));
+    // Someone holding only the session cookie cannot turn MFA on.
+    const noPassword = await client.request('POST', '/api/v1/auth/mfa/totp/enrollment/confirm', {
+      code,
+      password: 'not-the-password',
+    });
+    expect(noPassword.status).toBe(400);
+    expect(noPassword.body.errors[0].path).toBe('password');
+
     const confirm = await client.request('POST', '/api/v1/auth/mfa/totp/enrollment/confirm', {
       code,
+      password: DEMO_PASSWORD,
     });
     expect(confirm.status).toBe(200);
     expect(confirm.body.recoveryCodes).toHaveLength(10);

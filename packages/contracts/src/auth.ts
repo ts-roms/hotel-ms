@@ -69,6 +69,13 @@ export type TotpEnrollment = z.infer<typeof totpEnrollmentSchema>;
 export const mfaCodeRequestSchema = z.strictObject({ code: totpCodeSchema });
 export type MfaCodeRequest = z.infer<typeof mfaCodeRequestSchema>;
 
+/** Turning MFA on needs the password too: a stolen session alone must not claim it. */
+export const confirmEnrollmentRequestSchema = z.strictObject({
+  code: totpCodeSchema,
+  password: z.string().min(1).max(1024),
+});
+export type ConfirmEnrollmentRequest = z.infer<typeof confirmEnrollmentRequestSchema>;
+
 export const recoveryCodeSchema = z
   .string()
   .trim()

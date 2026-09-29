@@ -44,6 +44,7 @@ function MfaCard() {
   const [enrollment, setEnrollment] = useState<TotpEnrollment | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
 
   const start = useMutation({ mutationFn: api.auth.startTotpEnrollment, onSuccess: setEnrollment });
@@ -53,6 +54,7 @@ function MfaCard() {
       setRecoveryCodes(result.recoveryCodes);
       setEnrollment(null);
       setCode('');
+      setPassword('');
       setSession(result.session);
     },
   });
@@ -116,7 +118,7 @@ function MfaCard() {
             className="flex flex-col gap-3"
             onSubmit={(e: FormEvent) => {
               e.preventDefault();
-              confirm.mutate(code);
+              confirm.mutate({ code, password });
             }}
           >
             <p className="text-sm">{t('security.scan')}</p>
@@ -143,10 +145,18 @@ function MfaCard() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
+            <Label htmlFor="enroll-password">{t('security.currentPassword')}</Label>
+            <Input
+              id="enroll-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <Button
               type="submit"
               loading={confirm.isPending}
-              disabled={code.length !== 6}
+              disabled={code.length !== 6 || password.length === 0}
               className="self-start"
             >
               {t('security.confirm')}

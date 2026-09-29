@@ -145,6 +145,23 @@ describe('role template propagation', () => {
     expect(after.membership.grantsVersion).toBe(versionBefore.grantsVersion + 1);
   });
 
+  it('the system role can only add a template its own permissions (ADR-0033)', async () => {
+    const frontDesk = await withDbContext(app, abc(), (tx) =>
+      tx.role.findFirstOrThrow({ where: { key: 'front_desk' } }),
+    );
+    // payment.refund is not in the front desk template: a compromised worker must not be
+    // able to hand it out.
+    await expect(
+      system.rolePermission.create({
+        data: {
+          organizationId: frontDesk.organizationId,
+          roleId: frontDesk.id,
+          permissionCode: 'payment.refund',
+        },
+      }),
+    ).rejects.toThrow(/row-level security/);
+  });
+
   it('the system role still cannot read tenant business data', async () => {
     await expect(system.reservation.findMany()).rejects.toThrow(/permission denied/);
     await expect(system.guest.findMany()).rejects.toThrow(/permission denied/);
