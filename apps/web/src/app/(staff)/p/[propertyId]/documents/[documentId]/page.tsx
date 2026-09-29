@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
+import { enumLabelOr } from '@/lib/status';
 
 /** Printable invoice or receipt, rendered from its frozen snapshot. */
 export default function DocumentPage() {
@@ -42,7 +43,7 @@ export default function DocumentPage() {
       {c.payment ? (
         <div className="flex justify-between border-y py-2">
           <span>
-            {c.payment.method.toLowerCase().replace('_', ' ')}
+            {enumLabelOr('paymentMethod', c.payment.method)}
             {c.payment.reference && ` · ${c.payment.reference}`}
           </span>
           <strong className="tabular-nums">{money(c.payment.amountMinor)}</strong>

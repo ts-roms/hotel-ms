@@ -28,7 +28,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusVariant } from '@/lib/status';
 import { FolioFinance } from './_components/folio-finance';
 
 export default function FolioPage() {
@@ -127,7 +127,7 @@ export default function FolioPage() {
                   </TableCell>
                   <TableCell className="px-2">
                     <Badge variant={line.type === 'PAYMENT' ? 'success' : 'neutral'}>
-                      {statusLabel(line.type)}
+                      {enumLabel('folioLine', line.type)}
                     </Badge>
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-2 text-right font-medium tabular-nums">
@@ -168,6 +168,7 @@ export default function FolioPage() {
           title={t('folio.postCharge')}
           currency={f.currency}
           options={DEPARTMENTS}
+          labelOf={(d) => enumLabel('department', d)}
           optionLabel={t('folio.department')}
           withDescription
           busy={action.isPending}
@@ -176,7 +177,7 @@ export default function FolioPage() {
               pms.postCharge(
                 f.id,
                 {
-                  department: department as (typeof DEPARTMENTS)[number],
+                  department,
                   description,
                   amountMinor,
                 },
@@ -191,6 +192,7 @@ export default function FolioPage() {
           title={t('folio.recordPayment')}
           currency={f.currency}
           options={PAYMENT_METHODS}
+          labelOf={(m) => enumLabel('paymentMethod', m)}
           optionLabel={t('folio.method')}
           descriptionLabel={t('folio.reference')}
           withDescription
@@ -201,7 +203,7 @@ export default function FolioPage() {
               pms.recordPayment(
                 f.id,
                 {
-                  method: method as (typeof PAYMENT_METHODS)[number],
+                  method,
                   amountMinor,
                   reference: reference || null,
                 },
@@ -216,10 +218,11 @@ export default function FolioPage() {
   );
 }
 
-function AmountForm({
+function AmountForm<O extends string>({
   title,
   currency,
   options,
+  labelOf,
   optionLabel,
   withDescription,
   descriptionLabel,
@@ -229,13 +232,15 @@ function AmountForm({
 }: {
   title: string;
   currency: string;
-  options: readonly string[];
+  options: readonly O[];
+  /** Display label of an option. */
+  labelOf: (option: O) => string;
   optionLabel: string;
   withDescription?: boolean;
   descriptionLabel?: string;
   defaultAmount?: number;
   busy: boolean;
-  onSubmit: (option: string, amountMinor: number, description: string) => void;
+  onSubmit: (option: O, amountMinor: number, description: string) => void;
 }) {
   const [option, setOption] = useState(options[0]!);
   const [description, setDescription] = useState('');
@@ -261,11 +266,11 @@ function AmountForm({
           <NativeSelect
             aria-label={optionLabel}
             value={option}
-            onChange={(e) => setOption(e.target.value)}
+            onChange={(e) => setOption(e.target.value as O)}
           >
             {options.map((o) => (
               <option key={o} value={o}>
-                {o.replace('_', ' ').toLowerCase()}
+                {labelOf(o)}
               </option>
             ))}
           </NativeSelect>

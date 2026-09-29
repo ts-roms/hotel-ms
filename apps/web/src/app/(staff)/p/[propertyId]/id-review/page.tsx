@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, enumLabelOr, statusLabel, statusVariant } from '@/lib/status';
 
 const FILTERS = [
   { key: 'PENDING', label: 'idr.pending' },
@@ -83,8 +83,8 @@ export default function IdReviewPage() {
                 </Badge>
               </span>
               <span className="text-muted-foreground">
-                {statusLabel(d.documentType)} · {d.confirmationNo} · {formatDate(d.arrivalDate)} →{' '}
-                {formatDate(d.departureDate)}
+                {enumLabel('idType', d.documentType)} · {d.confirmationNo} ·{' '}
+                {formatDate(d.arrivalDate)} → {formatDate(d.departureDate)}
               </span>
             </Button>
           ))}
@@ -123,8 +123,8 @@ function Review({ propertyId, doc: d }: { propertyId: string; doc: IdentityDocum
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <p className="text-muted-foreground">
-          {statusLabel(d.documentType)} · {t('idr.uploaded')} {formatDateTime(d.uploadedAt)} ·{' '}
-          {statusLabel(d.stayStatus)}
+          {enumLabel('idType', d.documentType)} · {t('idr.uploaded')} {formatDateTime(d.uploadedAt)}{' '}
+          · {enumLabelOr('status', d.stayStatus)}
         </p>
         {d.purged ? (
           <p className="text-muted-foreground">{t('idr.purged')}</p>

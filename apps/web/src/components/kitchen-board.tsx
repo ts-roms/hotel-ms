@@ -20,12 +20,12 @@ import { ChefHat, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { createApiClient } from '@hotel/api-client';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { statusVariant } from '@/lib/status';
 
 type Pms = ReturnType<ReturnType<typeof createApiClient>['pms']>;
 
-const COLUMNS: { status: OrderStatus; label: Parameters<typeof t>[0] }[] = [
+const COLUMNS: { status: OrderStatus; label: MessageKey }[] = [
   { status: 'PENDING', label: 'fnb.new' },
   { status: 'CONFIRMED', label: 'fnb.confirmed' },
   { status: 'PREPARING', label: 'fnb.preparing' },
@@ -42,7 +42,7 @@ const STATUS_STRIPE: Partial<Record<OrderStatus, string>> = {
   OUT_FOR_DELIVERY: 'before:bg-info',
 };
 
-function nextSteps(order: Order): { status: OrderStatus; label: Parameters<typeof t>[0] }[] {
+function nextSteps(order: Order): { status: OrderStatus; label: MessageKey }[] {
   switch (order.status) {
     case 'PENDING':
       return [{ status: 'CONFIRMED', label: 'fnb.accept' }];

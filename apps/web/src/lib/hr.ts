@@ -1,5 +1,6 @@
 import type { EMPLOYEE_DOCUMENT_CATEGORIES, PunchType } from '@hotel/contracts';
 import { addDays, formatTime } from '@hotel/format';
+import type { MessageKey } from './i18n';
 
 /** Today's calendar date on this device. */
 export function today(): string {
@@ -38,15 +39,23 @@ export const PUNCH_NEXT: Record<PunchType | 'NONE', PunchType[]> = {
   BREAK_END: ['BREAK_START', 'OUT'],
 };
 
+/** Punch button and history labels, shared by My time and the kiosk time clock. */
+export const PUNCH_LABEL: Record<PunchType, MessageKey> = {
+  IN: 'hr.clockIn',
+  OUT: 'hr.clockOut',
+  BREAK_START: 'hr.breakStart',
+  BREAK_END: 'hr.breakEnd',
+};
+
 /** Employee document categories (shared by the employee file and the retention settings). */
 export const DOCUMENT_CATEGORY_LABELS: Record<
   (typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number],
-  string
+  MessageKey
 > = {
-  CONTRACT: 'Contract',
-  GOVERNMENT_ID: 'Government ID',
-  TAX: 'Tax',
-  MEDICAL: 'Medical',
-  CERTIFICATE: 'Certificate',
-  OTHER: 'Other',
+  CONTRACT: 'docCategory.CONTRACT',
+  GOVERNMENT_ID: 'docCategory.GOVERNMENT_ID',
+  TAX: 'docCategory.TAX',
+  MEDICAL: 'docCategory.MEDICAL',
+  CERTIFICATE: 'docCategory.CERTIFICATE',
+  OTHER: 'docCategory.OTHER',
 };

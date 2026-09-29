@@ -29,6 +29,7 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
+import { statusLabel } from '@/lib/status';
 
 type Subject = 'guests' | 'employees';
 interface Person {
@@ -64,7 +65,7 @@ export default function PrivacyPage() {
         : (await api.hr.employees({ q: query, limit: 20 })).map((e) => ({
             id: e.id,
             name: `${e.firstName} ${e.lastName}`,
-            detail: `${e.employeeNo} · ${e.status.toLowerCase()}`,
+            detail: `${e.employeeNo} · ${statusLabel(e.status)}`,
             canAnonymize: e.status === 'TERMINATED',
             anonymized: e.firstName === 'Former',
           })),

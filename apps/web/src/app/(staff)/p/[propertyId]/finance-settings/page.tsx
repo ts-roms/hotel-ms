@@ -20,6 +20,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { enumLabel, enumLabelOr } from '@/lib/status';
 
 /** Exchange rates, statutory discount profiles and the self check-in card hold (ADR-0018). */
 export default function FinanceSettingsPage() {
@@ -154,7 +155,7 @@ function DiscountProfiles({ propertyId, canManage }: { propertyId: string; canMa
             <span className={p.active ? '' : 'text-muted-foreground'}>
               <strong>{p.code}</strong> {p.name} · {p.discountPercent}%
               {p.exemptTaxCodes.length > 0 && ` · ${p.exemptTaxCodes.join(', ')}-exempt`} ·{' '}
-              {p.departments.join(', ').toLowerCase()}
+              {p.departments.map((d) => enumLabelOr('department', d)).join(', ')}
               {!p.active && <Badge className="ml-2">{t('fin.archived')}</Badge>}
             </span>
             {canManage && p.active && (
@@ -217,7 +218,7 @@ function DiscountProfiles({ propertyId, canManage }: { propertyId: string; canMa
                       )
                     }
                   />
-                  {d.toLowerCase()}
+                  {enumLabel('department', d)}
                 </Label>
               ))}
             </fieldset>

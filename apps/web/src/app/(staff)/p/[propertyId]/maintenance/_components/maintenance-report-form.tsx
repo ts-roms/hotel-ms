@@ -23,7 +23,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
+import { enumLabel } from '@/lib/status';
 
 export function MaintenanceReportForm({
   propertyId,
@@ -109,7 +109,7 @@ export function MaintenanceReportForm({
           >
             {MAINTENANCE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {statusLabel(c)}
+                {enumLabel('category', c)}
               </option>
             ))}
           </NativeSelect>
@@ -120,7 +120,7 @@ export function MaintenanceReportForm({
           >
             {MAINTENANCE_PRIORITIES.map((p) => (
               <option key={p} value={p}>
-                {statusLabel(p)}
+                {enumLabel('priority', p)}
               </option>
             ))}
           </NativeSelect>

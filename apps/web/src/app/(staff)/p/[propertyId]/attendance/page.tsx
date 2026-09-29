@@ -26,7 +26,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Check, Clock, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { clock, duration, today } from '@/lib/hr';
+import { clock, duration, PUNCH_LABEL, today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
@@ -106,7 +106,7 @@ export default function AttendancePage() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
               >
                 <span>
-                  <strong>{c.employeeName}</strong> · {statusLabel(c.type).toLowerCase()} ·{' '}
+                  <strong>{c.employeeName}</strong> · {t(PUNCH_LABEL[c.type])} ·{' '}
                   {formatDate(localDate(c.at))} {clock(c.at)} ·{' '}
                   <span className="text-muted-foreground">{c.reason}</span>
                 </span>

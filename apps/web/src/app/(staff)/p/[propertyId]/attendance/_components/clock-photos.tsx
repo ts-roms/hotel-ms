@@ -5,10 +5,9 @@ import { Button, CardContent, SectionCard } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useState } from 'react';
-import { clock } from '@/lib/hr';
+import { clock, PUNCH_LABEL } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
 
 /**
  * Punches with their selfies, from the web and time clocks (ADR-0022). A photo loads only when asked for:
@@ -39,7 +38,7 @@ export function ClockPhotos({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 <span className="font-mono text-xs text-muted-foreground">{p.employeeNo}</span>{' '}
-                {p.employeeName} · {statusLabel(p.type)} · {formatDate(localDate(p.at))}{' '}
+                {p.employeeName} · {t(PUNCH_LABEL[p.type])} · {formatDate(localDate(p.at))}{' '}
                 {clock(p.at)}
                 <span className="text-muted-foreground">
                   {' '}
@@ -57,7 +56,7 @@ export function ClockPhotos({
             {open === p.punchId && (
               <img
                 src={pms.clockPhotoUrl(p.punchId)}
-                alt={`${p.employeeName}, ${statusLabel(p.type)}`}
+                alt={`${p.employeeName}, ${t(PUNCH_LABEL[p.type])}`}
                 className="max-h-64 self-start rounded-lg border"
               />
             )}

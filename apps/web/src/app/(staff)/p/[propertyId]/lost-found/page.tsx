@@ -19,13 +19,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageSearch } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
+import { enumLabel, statusLabel } from '@/lib/status';
 
 const CATEGORIES = ['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER'] as const;
 
 /** Lost & found (spec §31, ADR-0023). */
+/** List filters: items still held, closed ones, or everything. */
+const STATUS_FILTERS = {
+  HELD: 'lf.held',
+  CLOSED: 'lf.closed',
+  ALL: 'lf.all',
+} as const satisfies Record<string, MessageKey>;
+
 export default function LostFoundPage() {
   const propertyId = usePropertyId();
   const pms = usePms(propertyId);
@@ -43,14 +50,14 @@ export default function LostFoundPage() {
       <PageHeader title={t('lf.title')} description={t('lf.hint')} />
       <LogItem propertyId={propertyId} />
       <div className="flex flex-wrap gap-2">
-        {(['HELD', 'CLOSED', 'ALL'] as const).map((s) => (
+        {(Object.keys(STATUS_FILTERS) as (keyof typeof STATUS_FILTERS)[]).map((s) => (
           <Button
             key={s}
             size="sm"
             variant={status === s ? 'default' : 'outline'}
             onClick={() => setStatus(s)}
           >
-            {t(`lf.${s.toLowerCase()}` as Parameters<typeof t>[0])}
+            {t(STATUS_FILTERS[s])}
           </Button>
         ))}
         <Input
@@ -126,7 +133,7 @@ function LogItem({ propertyId }: { propertyId: string }) {
           >
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {statusLabel(c)}
+                {enumLabel('category', c)}
               </option>
             ))}
           </NativeSelect>
@@ -204,7 +211,7 @@ function Item({
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
-          {statusLabel(item.category)} · {t('lf.found')} {item.foundLocation}
+          {enumLabel('category', item.category)} · {t('lf.found')} {item.foundLocation}
           {item.roomNumber && ` (${t('mnt.room')} ${item.roomNumber})`} ·{' '}
           {formatDateTime(item.foundAt)}
           {item.foundByName && ` · ${item.foundByName}`} · {t('lf.storedAt')}:{' '}

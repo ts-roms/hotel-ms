@@ -29,7 +29,7 @@ import { errorMessage } from '@/lib/errors';
 import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 import { CompensationCard } from './_components/compensation-card';
 import { EmployeeDocuments } from './_components/employee-documents';
 import { EmploymentDetails } from './_components/employment-details';
@@ -235,7 +235,8 @@ function EmployeeLeave({ employeeId }: { employeeId: string }) {
             className="flex justify-between gap-2 border-t pt-2 text-muted-foreground"
           >
             <span>
-              {formatDate(l.effectiveDate)} · {l.leaveTypeCode} · {l.kind.toLowerCase()} · {l.note}
+              {formatDate(l.effectiveDate)} · {l.leaveTypeCode} · {enumLabel('leaveKind', l.kind)} ·{' '}
+              {l.note}
             </span>
             <span
               className={

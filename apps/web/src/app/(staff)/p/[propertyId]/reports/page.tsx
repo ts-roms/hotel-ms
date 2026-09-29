@@ -8,6 +8,7 @@ import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 import { OperationalReports } from './_components/operational-reports';
+import { enumLabelOr } from '@/lib/status';
 
 /** Daily financial report and ledger reconciliation (blueprint §15). */
 export default function ReportsPage() {
@@ -43,7 +44,7 @@ export default function ReportsPage() {
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between gap-2">
             <span>
-              {row.label.toLowerCase().replace('_', ' ')}
+              {row.label}
               {row.count !== undefined && ` (${row.count})`}
             </span>
             <span className="tabular-nums">{money(row.value)}</span>
@@ -93,7 +94,10 @@ export default function ReportsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {table(
             t('fin.revenue'),
-            r.revenue.map((x) => ({ label: x.department, value: x.netMinor })),
+            r.revenue.map((x) => ({
+              label: enumLabelOr('department', x.department),
+              value: x.netMinor,
+            })),
             r.totals.revenueNetMinor,
           )}
           {table(
@@ -103,12 +107,20 @@ export default function ReportsPage() {
           )}
           {table(
             t('fin.payments'),
-            r.payments.map((x) => ({ label: x.method, value: x.amountMinor, count: x.count })),
+            r.payments.map((x) => ({
+              label: enumLabelOr('paymentMethod', x.method),
+              value: x.amountMinor,
+              count: x.count,
+            })),
             r.totals.paymentsMinor,
           )}
           {table(
             t('fin.refunds'),
-            r.refunds.map((x) => ({ label: x.method, value: x.amountMinor, count: x.count })),
+            r.refunds.map((x) => ({
+              label: enumLabelOr('paymentMethod', x.method),
+              value: x.amountMinor,
+              count: x.count,
+            })),
             r.totals.refundsMinor,
           )}
           <Notice>

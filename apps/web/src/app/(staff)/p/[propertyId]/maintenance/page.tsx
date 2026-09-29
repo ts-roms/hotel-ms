@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 import { MaintenanceDetail } from './_components/maintenance-detail';
 import { MaintenanceReportForm } from './_components/maintenance-report-form';
 
@@ -65,7 +65,9 @@ export default function MaintenancePage() {
             >
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted-foreground">{r.requestNo}</span>
-                <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
+                <Badge variant={statusVariant(r.priority)}>
+                  {enumLabel('priority', r.priority)}
+                </Badge>
                 <Badge variant={statusVariant(r.status)} dot>
                   {statusLabel(r.status)}
                 </Badge>
@@ -76,7 +78,7 @@ export default function MaintenancePage() {
               <span className="font-medium">{r.title}</span>
               <span className="text-xs text-muted-foreground">
                 {r.roomNumber ? `${t('mnt.room')} ${r.roomNumber}` : r.location} ·{' '}
-                {statusLabel(r.category)}
+                {enumLabel('category', r.category)}
                 {r.assignedName && ` · ${r.assignedName}`}
               </span>
             </Button>

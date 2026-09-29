@@ -21,7 +21,7 @@ import { errorMessage } from '@/lib/errors';
 import { duration, today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useCan, usePms } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
+import { enumLabelOr } from '@/lib/status';
 
 const TABS = [
   { key: 'occupancy', label: 'mgmt.tab.occupancy', permission: 'finance.report.read' },
@@ -211,7 +211,7 @@ function GuestServices({
         {data.byCategory.map((c) => (
           <Row
             key={c.category}
-            label={`${statusLabel(c.category)} (${c.requests})`}
+            label={`${enumLabelOr('category', c.category)} (${c.requests})`}
             value={minutes(c.averageCompletionMinutes)}
           />
         ))}

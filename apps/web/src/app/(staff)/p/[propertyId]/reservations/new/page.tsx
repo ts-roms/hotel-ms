@@ -23,6 +23,7 @@ import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, useProperty, usePropertyId } from '@/lib/property';
+import { enumLabel } from '@/lib/status';
 
 export default function NewReservationPage() {
   const propertyId = usePropertyId();
@@ -254,7 +255,7 @@ export default function NewReservationPage() {
               >
                 {BOOKING_SOURCES.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace('_', ' ').toLowerCase()}
+                    {enumLabel('bookingSource', s)}
                   </option>
                 ))}
               </NativeSelect>

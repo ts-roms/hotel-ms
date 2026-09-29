@@ -10,7 +10,7 @@ import { AuthShell } from '@/components/auth-shell';
 import { KitchenBoard } from '@/components/kitchen-board';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { TimeClock } from './_components/time-clock';
+import { KioskTimeClock } from './_components/kiosk-time-clock';
 
 // The device's CSRF token, from the latest kiosk response. Memory only.
 let csrfToken: string | undefined;
@@ -48,7 +48,7 @@ export default function KioskPage() {
   const unpaired = state.error instanceof ApiError && state.error.status === 401;
   if (unpaired || !state.data) return <Pair onPaired={set} error={unpaired ? null : state.error} />;
   if (state.data.device.kind === 'TIME_CLOCK')
-    return <TimeClock state={state.data} kiosk={kiosk} />;
+    return <KioskTimeClock state={state.data} kiosk={kiosk} />;
   if (!state.data.operator) return <SignIn state={state.data} onSignedIn={set} />;
   return <Board state={state.data} onSignedOut={set} />;
 }

@@ -13,6 +13,8 @@ import type {
   SHIFT_STATUSES,
 } from '@hotel/contracts';
 import type { BadgeVariant } from '@hotel/ui';
+import { en } from '@hotel/i18n/staff';
+import { type MessageKey, t } from './i18n';
 
 type Values<T extends readonly string[]> = T[number];
 
@@ -89,8 +91,49 @@ export function statusVariant(status: string): BadgeVariant {
   return STATUS_VARIANTS[status as KnownStatus] ?? 'neutral';
 }
 
-/** IN_HOUSE → "In house". */
-export function statusLabel(status: string): string {
-  const words = status.replaceAll('_', ' ').toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+/** Enum label families in the staff catalog: `<family>.<RAW_VALUE>` keys. */
+export type LabelFamily =
+  | 'status'
+  | 'priority'
+  | 'category'
+  | 'department'
+  | 'employmentType'
+  | 'trainingKind'
+  | 'calendarKind'
+  | 'hkTask'
+  | 'folioLine'
+  | 'idType'
+  | 'paymentMethod'
+  | 'bookingSource'
+  | 'leaveKind'
+  | 'docCategory'
+  | 'devicePerm';
+
+/** The raw values a family has labels for, e.g. `LabelValue<'priority'>` = 'LOW' | 'NORMAL' | … */
+export type LabelValue<F extends LabelFamily> = MessageKey extends infer K
+  ? K extends `${F}.${infer V}`
+    ? V
+    : never
+  : never;
+
+/**
+ * The catalog label of an enum value (IN_HOUSE → "In house"). Typed: a value without a label in
+ * its family does not compile, so a new enum value needs a catalog entry.
+ */
+export function enumLabel<F extends LabelFamily>(family: F, value: LabelValue<F>): string {
+  return t(`${family}.${value}` as MessageKey);
+}
+
+/** The label of a status (reservation, room, order, request, approval, …). */
+export function statusLabel(status: LabelValue<'status'>): string {
+  return enumLabel('status', status);
+}
+
+/**
+ * For values the API types as plain strings (report rows): the label when the catalog has one,
+ * else the value as sent.
+ */
+export function enumLabelOr<F extends LabelFamily>(family: F, value: string): string {
+  const key = `${family}.${value}`;
+  return Object.hasOwn(en, key) ? t(key as MessageKey) : value;
 }

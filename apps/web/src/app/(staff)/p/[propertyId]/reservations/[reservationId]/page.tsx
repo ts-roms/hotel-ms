@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 import { GuestMessage } from './_components/guest-message';
 import { DetailSkeleton } from './_components/reservation-skeleton';
 import { RoomLine } from './_components/room-line';
@@ -91,7 +91,7 @@ export default function ReservationPage() {
         <CardContent className="flex flex-col gap-2 text-sm">
           <span>
             <span className="text-muted-foreground">{t('res.source')}:</span>{' '}
-            {r.source.replace('_', ' ').toLowerCase()}
+            {enumLabel('bookingSource', r.source)}
           </span>
           {r.specialRequests && (
             <span>

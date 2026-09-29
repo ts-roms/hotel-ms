@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
 
 /** The cashier's drawer (blueprint §15.2): open with a float, close with a count. */
 export default function CashierPage() {
@@ -144,7 +145,7 @@ export default function CashierPage() {
                 <TableCell>{h.cashierName}</TableCell>
                 <TableCell>{formatDateTime(h.openedAt)}</TableCell>
                 <TableCell>
-                  <Badge>{h.status.toLowerCase()}</Badge>
+                  <Badge>{statusLabel(h.status)}</Badge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatMoney(h.expectedCashMinor, currency)}

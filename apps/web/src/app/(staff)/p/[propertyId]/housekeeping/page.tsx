@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { type MessageKey, t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 type BoardRoom = HousekeepingBoard['rooms'][number];
 type Status = BoardRoom['housekeepingStatus'];
@@ -155,7 +155,7 @@ export default function HousekeepingPage() {
               {room.openTask && (
                 <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 px-2.5 py-2 text-xs">
                   <span>
-                    {statusLabel(room.openTask.type)} · {statusLabel(room.openTask.status)}
+                    {enumLabel('hkTask', room.openTask.type)} · {statusLabel(room.openTask.status)}
                   </span>
                   {canAssign ? (
                     <NativeSelect

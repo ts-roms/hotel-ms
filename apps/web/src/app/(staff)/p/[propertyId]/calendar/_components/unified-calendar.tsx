@@ -18,7 +18,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
-import { statusLabel } from '@/lib/status';
+import { enumLabel } from '@/lib/status';
 import { EventPanel } from './event-panel';
 
 type Kind = (typeof CALENDAR_KINDS)[number];
@@ -91,7 +91,7 @@ export function UnifiedCalendar() {
               className="size-2.5 rounded-full"
               style={{ backgroundColor: KIND_COLORS[kind] }}
             />
-            {statusLabel(kind)}
+            {enumLabel('calendarKind', kind)}
           </FilterChip>
         ))}
       </ChipGroup>

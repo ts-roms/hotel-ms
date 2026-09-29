@@ -1,6 +1,6 @@
 'use client';
 
-import { type MaintenanceAction } from '@hotel/contracts';
+import type { MaintenanceAction, MaintenanceUpdate } from '@hotel/contracts';
 import { formatDateTime } from '@hotel/format';
 import {
   Alert,
@@ -16,9 +16,17 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { useCan, usePms } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
+
+const UPDATE_KIND_LABEL: Record<MaintenanceUpdate['kind'], MessageKey> = {
+  CREATED: 'mnt.kind.CREATED',
+  ASSIGNED: 'mnt.kind.ASSIGNED',
+  STATUS: 'mnt.kind.STATUS',
+  NOTE: 'mnt.kind.NOTE',
+  PHOTO: 'mnt.kind.PHOTO',
+};
 
 export function MaintenanceDetail({
   propertyId,
@@ -84,10 +92,10 @@ export function MaintenanceDetail({
           <Badge variant={statusVariant(r.status)} dot>
             {statusLabel(r.status)}
           </Badge>
-          <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
+          <Badge variant={statusVariant(r.priority)}>{enumLabel('priority', r.priority)}</Badge>
           <span className="text-muted-foreground">
             {r.roomNumber ? `${t('mnt.room')} ${r.roomNumber}` : r.location} ·{' '}
-            {statusLabel(r.category)}
+            {enumLabel('category', r.category)}
           </span>
         </div>
         {r.description && <p className="whitespace-pre-wrap">{r.description}</p>}
@@ -209,9 +217,7 @@ export function MaintenanceDetail({
           {r.updates.map((u) => (
             <li key={u.id}>
               {formatDateTime(u.at)} · {u.byName ?? '—'} ·{' '}
-              {u.toStatus
-                ? statusLabel(u.toStatus)
-                : t(`mnt.kind.${u.kind}` as Parameters<typeof t>[0])}
+              {u.toStatus ? statusLabel(u.toStatus) : t(UPDATE_KIND_LABEL[u.kind])}
               {u.note && `: ${u.note}`}
             </li>
           ))}

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, useProperty, usePropertyId } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
 
 /** Company and group accounts (city ledger): folios without a stay. */
 export default function AccountsPage() {
@@ -61,7 +62,7 @@ export default function AccountsPage() {
             {a.label} <span className="font-mono text-xs text-muted-foreground">{a.folioNo}</span>
           </span>
           <span className="flex items-center gap-2">
-            {a.status === 'CLOSED' && <Badge>{a.status.toLowerCase()}</Badge>}
+            {a.status === 'CLOSED' && <Badge>{statusLabel(a.status)}</Badge>}
             <span className="tabular-nums">{formatMoney(a.balanceMinor, currency)}</span>
           </span>
         </Link>

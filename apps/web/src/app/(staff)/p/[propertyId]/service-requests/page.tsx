@@ -29,7 +29,7 @@ import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId } from '@/lib/property';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 const PRIORITY_STRIPE: Record<ServiceRequest['priority'], string> = {
   LOW: 'before:bg-border',
@@ -122,7 +122,7 @@ export default function ServiceRequestsPage() {
               <option value="">{t('sr.all')}</option>
               {SERVICE_DEPARTMENTS.map((d) => (
                 <option key={d} value={d}>
-                  {statusLabel(d)}
+                  {enumLabel('department', d)}
                 </option>
               ))}
             </NativeSelect>
@@ -162,7 +162,7 @@ export default function ServiceRequestsPage() {
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold">
                   {r.roomNumber ? `${t('sr.room')} ${r.roomNumber}` : t('sr.noRoom')} ·{' '}
-                  {statusLabel(r.category).toLowerCase()}
+                  {enumLabel('category', r.category)}
                 </span>
                 <Badge variant={statusVariant(r.status)} dot>
                   {statusLabel(r.status)}
@@ -170,8 +170,10 @@ export default function ServiceRequestsPage() {
               </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="font-mono">{r.requestNo}</span>·
-                <span>{statusLabel(r.department)}</span>·
-                <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
+                <span>{enumLabel('department', r.department)}</span>·
+                <Badge variant={statusVariant(r.priority)}>
+                  {enumLabel('priority', r.priority)}
+                </Badge>
                 <span className="ml-auto tabular-nums">{formatTime(r.createdAt)}</span>
               </div>
               {r.guestName && <span className="font-medium">{r.guestName}</span>}
@@ -331,7 +333,7 @@ function NewRequest({
           >
             {SERVICE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {statusLabel(c)}
+                {enumLabel('category', c)}
               </option>
             ))}
           </NativeSelect>

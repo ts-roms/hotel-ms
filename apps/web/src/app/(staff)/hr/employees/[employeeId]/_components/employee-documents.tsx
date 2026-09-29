@@ -95,7 +95,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 >
                   {d.title}
                 </a>
-                <Badge>{DOCUMENT_CATEGORY_LABELS[d.category]}</Badge>
+                <Badge>{t(DOCUMENT_CATEGORY_LABELS[d.category])}</Badge>
               </span>
               <span className="text-xs text-muted-foreground">
                 {d.fileName} · {sizeLabel(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
@@ -154,7 +154,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
             >
               {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {DOCUMENT_CATEGORY_LABELS[c]}
+                  {t(DOCUMENT_CATEGORY_LABELS[c])}
                 </option>
               ))}
             </NativeSelect>

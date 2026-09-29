@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms } from '@/lib/property';
+import { statusLabel } from '@/lib/status';
 
 /** Card holds on the stay: capture onto this folio at check-out, or release. */
 export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Folio }) {
@@ -46,7 +47,7 @@ export function CardHolds({ propertyId, folio }: { propertyId: string; folio: Fo
             >
               <span className="flex items-center gap-2">
                 <span className="tabular-nums">{formatMoney(h.amountMinor, h.currency)}</span>
-                <Badge>{h.status.toLowerCase()}</Badge>
+                <Badge>{statusLabel(h.status)}</Badge>
                 {h.capturedMinor > 0 && (
                   <span className="text-muted-foreground">
                     {formatMoney(h.capturedMinor, h.currency)} {t('fin.captured')}

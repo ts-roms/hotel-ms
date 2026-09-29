@@ -25,7 +25,7 @@ export function SelfiePunch({
       <SelfiePreview camera={camera} className="max-w-sm" />
       {camera.error && <Alert>{camera.error}</Alert>}
       <p className="text-xs text-muted-foreground">
-        {t('clock.photoNotice')} {retentionDays} {t('clock.days')}
+        {t('clock.photoNotice', { days: retentionDays })}
       </p>
       <div className="flex gap-2">
         <Button

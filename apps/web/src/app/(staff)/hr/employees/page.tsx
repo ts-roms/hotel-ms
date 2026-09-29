@@ -26,7 +26,7 @@ import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useProperties } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
-import { statusLabel, statusVariant } from '@/lib/status';
+import { enumLabel, statusLabel, statusVariant } from '@/lib/status';
 
 export default function EmployeesPage() {
   const session = useSession();
@@ -192,7 +192,7 @@ function NewEmployee() {
           >
             {EMPLOYMENT_TYPES.map((x) => (
               <option key={x} value={x}>
-                {statusLabel(x)}
+                {enumLabel('employmentType', x)}
               </option>
             ))}
           </NativeSelect>
