@@ -50,7 +50,11 @@ import { mondayOf, today, weekDays } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
-import { CoverageGaps, RecurringShifts, StaffingRequirements } from './staffing';
+import {
+  CoverageGaps,
+  RecurringShifts,
+  StaffingRequirements,
+} from './_components/recurring-shifts-and-staffing';
 
 /** Weekly staff schedule (blueprint §13.3): plan in drafts, then publish. */
 export default function SchedulePage() {

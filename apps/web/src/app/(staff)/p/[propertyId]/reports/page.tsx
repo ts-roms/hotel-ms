@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
-import { OperationalReports } from './operational';
+import { OperationalReports } from './_components/operational-reports';
 
 /** Daily financial report and ledger reconciliation (blueprint §15). */
 export default function ReportsPage() {

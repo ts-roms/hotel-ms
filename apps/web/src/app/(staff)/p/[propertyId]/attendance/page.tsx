@@ -31,7 +31,7 @@ import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
-import { ClockPhotos } from './clock-photos';
+import { ClockPhotos } from './_components/clock-photos';
 
 /** Daily attendance computed from punches and the published schedule (blueprint §13.2). */
 export default function AttendancePage() {

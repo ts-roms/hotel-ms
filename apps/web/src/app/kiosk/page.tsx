@@ -10,7 +10,7 @@ import { AuthShell } from '@/components/auth-shell';
 import { KitchenBoard } from '@/components/kitchen-board';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { TimeClock } from './time-clock';
+import { TimeClock } from './_components/time-clock';
 
 // The device's CSRF token, from the latest kiosk response. Memory only.
 let csrfToken: string | undefined;

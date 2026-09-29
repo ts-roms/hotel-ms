@@ -30,7 +30,7 @@ import { t } from '@/lib/i18n';
 import { usePms, useProperty } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
-import { FolioFinance } from './finance';
+import { FolioFinance } from './_components/folio-finance';
 
 export default function FolioPage() {
   const { propertyId, folioId } = useParams<{ propertyId: string; folioId: string }>();

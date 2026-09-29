@@ -29,8 +29,13 @@ import { today } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
-import { EmployeeDocuments } from './documents';
-import { CompensationCard, EmploymentDetails, ReviewsCard, TrainingCard } from './records';
+import { EmployeeDocuments } from './_components/employee-documents';
+import {
+  CompensationCard,
+  EmploymentDetails,
+  ReviewsCard,
+  TrainingCard,
+} from './_components/employee-records';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
