@@ -84,6 +84,44 @@ still serve routes of more than one context and live in the context that owns mo
 Moving these routes into controllers of their own context would change their operation ids
 and tags. It can be done later together with the API clients.
 
+## Writes to another context's tables
+
+A context writes only its own tables (blueprint §6.2). When a use case changes another
+context's rows, it calls a method of that context's exported service that takes the
+caller's transaction (`...InTx(tx, ...)`), so the whole use case still commits or rolls
+back together. The caller keeps the rules of its use case and records its audit entry and
+event. Examples:
+
+- Guest pre-check-in (`guest-portal/`) → `ReservationsService` (arrival time, guest
+  requests) and `GuestsService` (phone).
+- Check-in, check-out and night audit (`front-office/`) → `ReservationsService` (line
+  status, early departure, no-shows), `FolioService` (closing the folio),
+  `HousekeepingService` (cleaning tasks), `ServiceRequestsService` (the guest's checkout
+  request) and `RoomsService` (housekeeping status).
+- A room's housekeeping status, with its status history row and `RoomStatusChanged`
+  event, is written by `RoomsService` (Inventory owns `rooms`); housekeeping checks the
+  transition first.
+- CSV room import (`privacy/`) → `RoomsService`; menu item photos → `MenuService`.
+
+Known exceptions:
+
+- **Night audit advances `properties.current_business_date`** (a Tenancy table). The night
+  audit owns the business date (ADR-0008, ADR-0012) and advances it in its own
+  transaction, under the lock on the property row that serializes audits.
+- **Data export and anonymization** (`privacy/`, ADR-0030) rewrite personal data in every
+  context's tables by design; they are shared-kernel tooling, not a domain.
+- **Settings tables** (`property_settings`, `organization_settings`) are key-value stores;
+  each context writes only its own keys (payments, guest portal, time clock, employee
+  documents).
+- **Access writes identities**: adding a member and accepting an invitation create the
+  global identity and its first credential. Access comes before Platform in
+  `API_CONTEXTS`, so it cannot call `auth/`.
+- **Kiosk sign-in** (`auth/kiosk-auth.ts`, a global guard) refreshes `last_seen_at` on
+  `devices` and `device_sessions` (ADR-0020); `auth/` comes before `devices/` in
+  `API_CONTEXTS`.
+- `hr/workforce` cancels future shifts in `hr/time` when an assignment ends: one context
+  (see above).
+
 ## Consequences
 
 - A context's public surface is its module's `exports`; injecting anything else fails at boot.
