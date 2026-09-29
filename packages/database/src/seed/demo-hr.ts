@@ -1,5 +1,5 @@
-import type { PrismaClient } from './generated/prisma/client.js';
-import { withDbContext } from './context.js';
+import type { PrismaClient } from '../generated/prisma/client.js';
+import { withDbContext } from '../context.js';
 
 export interface DemoHr {
   departments: Record<string, string>;

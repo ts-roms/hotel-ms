@@ -56,6 +56,9 @@ importers:
       '@hotel/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@hotel/format':
+        specifier: workspace:*
+        version: link:../../packages/format
       '@nestjs/common':
         specifier: ^12.1.0
         version: 12.1.0(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
@@ -251,6 +254,9 @@ importers:
       '@hotel/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@hotel/format':
+        specifier: workspace:*
+        version: link:../../packages/format
       '@opentelemetry/api':
         specifier: ^1.9.1
         version: 1.9.1

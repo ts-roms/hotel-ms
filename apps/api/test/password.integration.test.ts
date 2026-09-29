@@ -113,7 +113,7 @@ describe('change password', () => {
     });
     expect(wrong.status).toBe(400);
 
-    const { DEMO_PASSWORD } = await import('@hotel/database');
+    const { DEMO_PASSWORD } = await import('@hotel/database/testing');
     const ok = await client.request('POST', '/api/v1/auth/password/change', {
       currentPassword: DEMO_PASSWORD,
       newPassword: NEW_PASSWORD,

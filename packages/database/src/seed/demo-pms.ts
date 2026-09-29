@@ -1,5 +1,5 @@
-import type { PrismaClient } from './generated/prisma/client.js';
-import { withDbContext } from './context.js';
+import type { PrismaClient } from '../generated/prisma/client.js';
+import { withDbContext } from '../context.js';
 
 /** Demo inventory per property: room types, numbered rooms, one "BAR" rate plan. */
 export interface DemoInventorySpec {

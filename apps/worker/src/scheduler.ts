@@ -1,4 +1,5 @@
 import type { TenantJob } from '@hotel/contracts';
+import { toLocal } from '@hotel/format';
 import type { PrismaClient } from '@hotel/database';
 import type { JobsOptions, Queue } from 'bullmq';
 import type { Logger } from 'pino';
@@ -7,26 +8,6 @@ import type { Logger } from 'pino';
 export const NIGHTLY_AFTER = '03:00';
 /** Reminders go out in the morning, property-local time (ADR-0024). */
 export const REMINDERS_AFTER = '09:00';
-
-function toLocal(instant: Date, timeZone: string): { date: string; time: string } {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hourCycle: 'h23',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-      .formatToParts(instant)
-      .map((p) => [p.type, p.value]),
-  );
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,
-    time: `${parts.hour}:${parts.minute}`,
-  };
-}
 
 const jobOptions = (jobId: string): JobsOptions => ({
   // The job id makes planning idempotent: the same run is queued at most once, however

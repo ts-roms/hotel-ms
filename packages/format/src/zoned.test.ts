@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromLocal, localToday, toLocal } from './zoned-time.js';
+import { fromLocal, localToday, toLocal } from './zoned.js';
 
 describe('zoned time', () => {
   it('converts Manila wall-clock times (UTC+8, no DST)', () => {

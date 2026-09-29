@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import {
+  DOMAIN_EVENTS_QUEUE,
   type DomainEventEnvelope,
   type EmailJob,
   NOTIFICATIONS_QUEUE,
@@ -21,7 +22,7 @@ import { createTransport } from './email/transports.js';
 import { flushErrorReporting, initErrorReporting, reportError } from './error-reporting.js';
 import { dispatch } from './handlers.js';
 import { publishOpsSnapshot, runOpsCommand } from './ops.js';
-import { DOMAIN_EVENTS_QUEUE, OUTBOX_MAX_ATTEMPTS, relayOutboxBatch } from './outbox-relay.js';
+import { OUTBOX_MAX_ATTEMPTS, relayOutboxBatch } from './outbox-relay.js';
 import { planTenantJobs } from './scheduler.js';
 import { createSmsTransport, deliverSms } from './sms.js';
 

@@ -3,7 +3,8 @@
  * narrowed to the device's permissions at its own property.
  */
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { createPrismaClient, DEMO_PASSWORD, withDbContext } from '@hotel/database';
+import { createPrismaClient, withDbContext } from '@hotel/database';
+import { DEMO_PASSWORD } from '@hotel/database/testing';
 import { testDatabaseUrls } from '@hotel/database/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startTestApp, type TestContext, TestClient, WEB_ORIGIN } from './harness.js';

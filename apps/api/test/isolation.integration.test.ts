@@ -15,7 +15,7 @@ import {
   NO_ORGANIZATION,
   REQUIRED_PERMISSION,
 } from '../src/common/route-metadata.js';
-import { DEMO_PASSWORD } from '@hotel/database';
+import { DEMO_PASSWORD } from '@hotel/database/testing';
 import { startTestApp, type TestContext, TestClient, WEB_ORIGIN } from './harness.js';
 
 interface RouteInfo {

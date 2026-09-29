@@ -5,4 +5,4 @@
 export { addDays, formatDate, formatDateTime, localDate } from './dates.js';
 export { currencyDigits, formatMoney, minorToInput, parseMoney } from './money.js';
 export { type Elapsed, elapsed } from './relative.js';
-export { fromZoned, toZoned } from './zoned.js';
+export { fromLocal, fromZoned, localToday, toLocal, toZoned } from './zoned.js';

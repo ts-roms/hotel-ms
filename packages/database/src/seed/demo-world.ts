@@ -1,10 +1,10 @@
-import type { PrismaClient } from './generated/prisma/client.js';
-import { withDbContext } from './context.js';
+import type { PrismaClient } from '../generated/prisma/client.js';
+import { withDbContext } from '../context.js';
 import { type DemoFnb, seedDemoFnb } from './demo-fnb.js';
 import { DEMO_EMPLOYEES, type DemoHr, seedDemoHr } from './demo-hr.js';
 import { DEMO_INVENTORY, type DemoInventory, seedDemoInventory } from './demo-pms.js';
-import { hashPassword } from './password.js';
-import { provisionOrganization } from './provisioning.js';
+import { hashPassword } from '../password.js';
+import { provisionOrganization } from '../provisioning.js';
 
 /**
  * Development/test-only password for every demo identity. Never used outside local
