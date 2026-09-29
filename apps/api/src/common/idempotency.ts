@@ -1,10 +1,18 @@
 import { createHash } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
+import { ApiHeader } from '@nestjs/swagger';
 import { Prisma } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { TenantDb } from '../infrastructure/database.js';
 import { ProblemException, Problems } from './problem.js';
 import type { RequestContext } from './request-context.js';
+
+/** OpenAPI: the Idempotency-Key header an idempotent route requires. */
+export const idempotencyKeyHeader = ApiHeader({
+  name: 'Idempotency-Key',
+  required: true,
+  description: 'Unique per attempt; retries reuse it',
+});
 
 const KEY_RE = /^[A-Za-z0-9_-]{8,100}$/;
 const TTL_MS = 24 * 3600_000;

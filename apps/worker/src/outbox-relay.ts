@@ -3,8 +3,6 @@ import type { PrismaClient } from '@hotel/database';
 import type { Queue } from 'bullmq';
 import type { Logger } from 'pino';
 
-export const DOMAIN_EVENTS_QUEUE = 'domain-events';
-
 interface OutboxRow {
   id: string;
   organization_id: string;

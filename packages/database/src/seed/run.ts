@@ -5,10 +5,10 @@ import {
 } from '../catalog.js';
 import { createPrismaClient } from '../client.js';
 import { withDbContext } from '../context.js';
-import { seedDemoFnb } from '../demo-fnb.js';
-import { DEMO_EMPLOYEES, seedDemoHr } from '../demo-hr.js';
-import { DEMO_INVENTORY, seedDemoInventory } from '../demo-pms.js';
-import { seedDemoWorld } from '../demo-world.js';
+import { seedDemoFnb } from './demo-fnb.js';
+import { DEMO_EMPLOYEES, seedDemoHr } from './demo-hr.js';
+import { DEMO_INVENTORY, seedDemoInventory } from './demo-pms.js';
+import { seedDemoWorld } from './demo-world.js';
 
 /** Adds demo inventory and HR data to demo databases created before they existed. */
 async function ensureDemoInventory(): Promise<void> {
@@ -79,7 +79,7 @@ try {
       console.log(
         `Demo data created: ${Object.keys(world.identities).length} identities, 2 organizations, 4 properties.`,
       );
-      console.log('Demo password: see DEMO_PASSWORD in packages/database/src/demo-world.ts');
+      console.log('Demo password: see DEMO_PASSWORD in packages/database/src/seed/demo-world.ts');
     }
   }
 } finally {

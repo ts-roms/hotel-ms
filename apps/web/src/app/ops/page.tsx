@@ -1,6 +1,7 @@
 'use client';
 
 import type { OpsSnapshot } from '@hotel/contracts';
+import { formatDateTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -39,7 +40,7 @@ function age(iso: string | null, now = Date.now()): string {
   if (minutes < 90) return `${minutes} min`;
   return `${Math.round(minutes / 60)} h`;
 }
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-PH') : '—');
+const when = (iso: string | null) => (iso ? formatDateTime(iso) : '—');
 
 /**
  * Operations dashboard for platform operators (ADR-0029): queues and failed jobs, the

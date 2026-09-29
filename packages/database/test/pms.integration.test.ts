@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { propagateTemplatePermissions } from '../src/catalog.js';
 import { createPrismaClient, withDbContext, type PrismaClient } from '../src/index.js';
 import { prepareTestDatabase, testDatabaseUrls } from '../src/testing.js';
-import type { DemoWorld } from '../src/demo-world.js';
+import type { DemoWorld } from '../src/seed/demo-world.js';
 
 let world: DemoWorld;
 let app: PrismaClient;

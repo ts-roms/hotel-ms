@@ -5,7 +5,10 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { syncPlatformCatalog } from './catalog.js';
 import { createPrismaClient } from './client.js';
-import { seedDemoWorld, type DemoWorld } from './demo-world.js';
+import { seedDemoWorld, type DemoWorld } from './seed/demo-world.js';
+
+// The demo world is test and seed data, so it is exported here, not from the main entry.
+export { DEMO_PASSWORD, type DemoWorld } from './seed/demo-world.js';
 
 export interface TestDatabaseUrls {
   owner: string;

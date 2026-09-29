@@ -10,7 +10,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { ApiHeader, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import {
   type CancelOrderRequest,
   cancelOrderRequestSchema,
@@ -20,8 +20,6 @@ import {
   createMenuItemRequestSchema,
   type CreateOutletRequest,
   createOutletRequestSchema,
-  type GuestOrderRequest,
-  guestOrderRequestSchema,
   menuItemSchema,
   menuSchema,
   type OrderListQuery,
@@ -43,10 +41,10 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
 import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
-import { IdempotencyService } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
 import { uuidParam } from '../../common/params.js';
 import type { RequestContext } from '../../common/request-context.js';
-import { GuestRoute, RequirePermission } from '../../common/route-metadata.js';
+import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { RealtimeService } from '../../infrastructure/realtime.js';
@@ -54,11 +52,6 @@ import { MenuService } from './menu.service.js';
 import { OrdersService } from './orders.service.js';
 
 const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
-const idempotencyHeader = ApiHeader({
-  name: 'Idempotency-Key',
-  required: true,
-  description: 'Unique per attempt; retries reuse it',
-});
 const HEARTBEAT_MS = 25_000;
 
 @ApiTags('f&b')
@@ -169,7 +162,7 @@ export class FnbController {
 
   @Post('orders')
   @RequirePermission('fnb.order.create')
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(201, orderSchema)
   async place(
     @Param('propertyId') propertyId: string,
@@ -272,52 +265,5 @@ export class FnbController {
       clearInterval(heartbeat);
       unsubscribe();
     });
-  }
-}
-
-/** Room service in the guest portal (behind the guest_food_ordering flag). */
-@ApiTags('guest portal')
-@Controller('guest')
-@GuestRoute({ verified: true })
-export class GuestFnbController {
-  constructor(
-    private readonly orders: OrdersService,
-    private readonly idempotency: IdempotencyService,
-  ) {}
-
-  @Get('menus')
-  @GuestRoute()
-  @ZodResponse(200, items(menuSchema))
-  async menus() {
-    return { items: await this.orders.guestMenus() };
-  }
-
-  @Get('orders')
-  @ZodResponse(200, items(orderSchema))
-  async list() {
-    return { items: await this.orders.guestOrders() };
-  }
-
-  @Post('orders')
-  @idempotencyHeader
-  @ZodResponse(201, orderSchema)
-  async place(
-    @Headers('idempotency-key') key: string | undefined,
-    @ZodBody(guestOrderRequestSchema) body: GuestOrderRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const result = await this.idempotency.run('guest.order.place', key, body, async () => ({
-      status: 201,
-      body: await this.orders.guestPlace(body),
-    }));
-    if (result.replayed) reply.header('idempotent-replayed', 'true');
-    return result.body;
-  }
-
-  @Post('orders/:orderId/cancel')
-  @HttpCode(200)
-  @ZodResponse(200, orderSchema)
-  cancel(@Param('orderId') orderId: string) {
-    return this.orders.guestCancel(uuidParam(orderId));
   }
 }

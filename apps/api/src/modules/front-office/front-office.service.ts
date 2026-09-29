@@ -7,13 +7,16 @@ import { ProblemException, Problems, invalidState } from '../../common/problem.j
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
-import { FolioService } from '../folio/folio.service.js';
+import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { toGuestSummary } from '../pms/guests.service.js';
-import { releaseInventory } from '../pms/inventory.js';
-import { ReservationsService, toReservationDto } from '../pms/reservations.service.js';
-import { businessDateOf } from '../pms/rooms.service.js';
-import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';
+import { toGuestSummary } from '../pms/guests/guests.service.js';
+import { releaseInventory } from '../pms/inventory/inventory.js';
+import { ReservationsService, toReservationDto } from '../pms/reservations/reservations.service.js';
+import { businessDateOf } from '../pms/inventory/rooms.service.js';
+import {
+  ensureHousekeepingTask,
+  recordRoomStatus,
+} from '../operations/housekeeping/room-status.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 

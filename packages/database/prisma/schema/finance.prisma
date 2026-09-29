@@ -1,5 +1,34 @@
-// Finance (blueprint §15): online payment intents and webhooks, refunds, cashier shifts,
-// invoices and receipts, folio routing.
+// Finance (blueprint §15): folios and their append-only ledger, payments, online payment
+// intents and webhooks, refunds, cashier shifts, invoices and receipts, folio routing.
+
+enum FolioStatus {
+  OPEN
+  CLOSED
+}
+
+enum FolioLineType {
+  /// Net amount of a charge (tax is posted as separate TAX lines).
+  CHARGE
+  TAX
+  /// Negative: money received.
+  PAYMENT
+  /// Signed correction after the business day closed (needs folio.adjust).
+  ADJUSTMENT
+  /// Exact negation of an earlier line, same business day only.
+  REVERSAL
+  /// Positive: money given back to the payer.
+  REFUND
+  /// Balance moved between folios, always posted in pairs.
+  TRANSFER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  EWALLET
+  OTHER
+}
 
 enum PaymentIntentStatus {
   PENDING
@@ -33,6 +62,108 @@ enum CashierShiftStatus {
 enum FolioDocumentType {
   INVOICE
   RECEIPT
+}
+
+model Folio {
+  id                  String      @id @default(uuid(7)) @db.Uuid
+  organizationId      String      @map("organization_id") @db.Uuid
+  propertyId          String      @map("property_id") @db.Uuid
+  folioNo             String      @map("folio_no")
+  reservationRoomId   String?     @map("reservation_room_id") @db.Uuid
+  /// Company / group account name; null for guest folios.
+  label               String?
+  /// Statutory discount applied to this folio's charges.
+  discountProfileId   String?     @map("discount_profile_id") @db.Uuid
+  discountHolderName  String?     @map("discount_holder_name")
+  discountIdLast4     String?     @map("discount_id_last4") @db.VarChar(4)
+  /// The holder's ID number, encrypted (SecretBox, blueprint §20.3).
+  discountIdEncrypted Bytes?      @map("discount_id_encrypted")
+  status              FolioStatus @default(OPEN)
+  currency            String      @db.Char(3)
+  /// Cached SUM(folio_lines.amount_minor), updated in the posting transaction.
+  balanceMinor        BigInt      @default(0) @map("balance_minor")
+  openedAt            DateTime    @default(now()) @map("opened_at") @db.Timestamptz(3)
+  closedAt            DateTime?   @map("closed_at") @db.Timestamptz(3)
+  version             Int         @default(1)
+
+  reservationRoom ReservationRoom?   @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  lines           FolioLine[]
+  payments        Payment[]
+  paymentIntents  PaymentIntent[]
+  discountProfile DiscountProfile?   @relation(fields: [organizationId, discountProfileId], references: [organizationId, id], onDelete: Restrict)
+  documents       FolioDocument[]
+  routingRules    FolioRoutingRule[] @relation("RoutingSource")
+  routedFrom      FolioRoutingRule[] @relation("RoutingTarget")
+
+  @@unique([organizationId, id])
+  @@unique([propertyId, folioNo])
+  @@map("folios")
+}
+
+/// Append-only ledger (§15.1): corrections are new lines, never edits or deletes.
+model FolioLine {
+  id             String        @id @default(uuid(7)) @db.Uuid
+  organizationId String        @map("organization_id") @db.Uuid
+  propertyId     String        @map("property_id") @db.Uuid
+  folioId        String        @map("folio_id") @db.Uuid
+  businessDate   DateTime      @map("business_date") @db.Date
+  type           FolioLineType
+  department     String
+  description    String
+  /// Signed minor units: charges and taxes positive, payments negative.
+  amountMinor    BigInt        @map("amount_minor")
+  currency       String        @db.Char(3)
+  /// TAX lines point at their CHARGE/ADJUSTMENT line.
+  parentLineId   String?       @map("parent_line_id") @db.Uuid
+  reversesLineId String?       @map("reverses_line_id") @db.Uuid
+  /// Pairs the two sides of a TRANSFER.
+  transferId     String?       @map("transfer_id") @db.Uuid
+  taxCode        String?       @map("tax_code")
+  /// Idempotency within the folio (e.g. "room:<line>:<date>" for night-audit room charges).
+  sourceKey      String?       @map("source_key")
+  reason         String?
+  postedBy       String?       @map("posted_by") @db.Uuid
+  postedAt       DateTime      @default(now()) @map("posted_at") @db.Timestamptz(3)
+
+  folio Folio @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([folioId, sourceKey])
+  @@index([organizationId, folioId, postedAt])
+  @@index([organizationId, propertyId, businessDate])
+  @@map("folio_lines")
+}
+
+model Payment {
+  id                  String        @id @default(uuid(7)) @db.Uuid
+  organizationId      String        @map("organization_id") @db.Uuid
+  propertyId          String        @map("property_id") @db.Uuid
+  folioId             String        @map("folio_id") @db.Uuid
+  folioLineId         String        @map("folio_line_id") @db.Uuid
+  method              PaymentMethod
+  amountMinor         BigInt        @map("amount_minor")
+  currency            String        @db.Char(3)
+  /// Card terminal / transfer / e-wallet reference. Never card numbers.
+  reference           String?
+  businessDate        DateTime      @map("business_date") @db.Date
+  receivedBy          String?       @map("received_by") @db.Uuid
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Online gateway and its reference, for payments taken through a payment intent.
+  provider            String?
+  intentId            String?       @unique @map("intent_id") @db.Uuid
+  cashierShiftId      String?       @map("cashier_shift_id") @db.Uuid
+  /// Foreign cash: what was handed over, and the rate used (property currency x 1e6).
+  tenderedCurrency    String?       @map("tendered_currency") @db.Char(3)
+  tenderedAmountMinor BigInt?       @map("tendered_amount_minor")
+  exchangeRateMicros  BigInt?       @map("exchange_rate_micros")
+
+  folio        Folio         @relation(fields: [organizationId, folioId], references: [organizationId, id], onDelete: Restrict)
+  cashierShift CashierShift? @relation(fields: [organizationId, cashierShiftId], references: [organizationId, id], onDelete: Restrict)
+  refunds      Refund[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, businessDate])
+  @@map("payments")
 }
 
 /// A request to collect money through an online gateway. The folio PAYMENT line is posted

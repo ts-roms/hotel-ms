@@ -1,3 +1,5 @@
+// Shared devices (ADR-0020, ADR-0022): paired devices, staff PINs and device sessions.
+
 /// Shared devices (ADR-0020): e.g. a kitchen tablet paired to one property. The device
 /// authenticates with a long-lived token (cookie); staff sign in on it with a PIN.
 model Device {

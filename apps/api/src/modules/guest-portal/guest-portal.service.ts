@@ -15,13 +15,13 @@ import { CacheRedis, RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
 import { FrontOfficeService } from '../front-office/front-office.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { cardHoldStateInTx } from '../payments/holds.js';
-import { ReservationsService } from '../pms/reservations.service.js';
+import { cardHoldStateInTx } from '../finance/payments/holds.js';
+import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { guestPortalSettingsInTx } from './guest-info.service.js';
-import { GuestIdentityService } from './guest-identity.service.js';
+import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 import { GuestSessions } from './guest-session.js';
-import { ServiceRequestsService } from './service-requests.service.js';
+import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 import { ROOM_ACCESS_PROVIDER, type RoomAccessProvider } from './room-access.js';
 
 const CODE_TTL_SECONDS = 600;

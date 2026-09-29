@@ -1,12 +1,13 @@
 'use client';
 
+import { tokenFromHash } from '@hotel/api-client';
 import { Alert, buttonVariants, CardContent, Spinner } from '@hotel/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { GuestShell } from '@/components/guest-shell';
-import { api, errorMessage, rememberStay, tokenFromHash } from '@/lib/api';
+import { api, errorMessage, rememberStay } from '@/lib/api';
 
 /** Landing page of the emailed link: trades the token for a session, then opens the stay. */
 export default function WelcomePage() {

@@ -1,0 +1,67 @@
+// Guests (blueprint §12.1): organization-level guest profiles and the identity documents
+// guests upload for a stay.
+
+/// Organization-level guest profile (decision D3). Property staff see guests created at, or
+/// with reservations at, the properties they are authorized for.
+model Guest {
+  id                  String    @id @default(uuid(7)) @db.Uuid
+  organizationId      String    @map("organization_id") @db.Uuid
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  email               String?   @db.Citext
+  phone               String?
+  countryCode         String?   @map("country_code") @db.Char(2)
+  notes               String    @default("")
+  createdAtPropertyId String?   @map("created_at_property_id") @db.Uuid
+  archivedAt          DateTime? @map("archived_at") @db.Timestamptz(3)
+  version             Int       @default(1)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy           String?   @map("created_by") @db.Uuid
+  updatedBy           String?   @map("updated_by") @db.Uuid
+
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  bookings          Reservation[]
+  reservationRooms  ReservationRoom[]
+  serviceRequests   ServiceRequest[]
+  orders            Order[]
+  identityDocuments GuestIdentityDocument[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, lastName, firstName])
+  @@index([organizationId, email])
+  @@map("guests")
+}
+
+/// A guest's ID uploaded in the guest portal for one stay, reviewed by the front desk
+/// (ADR-0027). The file is deleted 30 days after departure (or when superseded); the
+/// review record stays.
+model GuestIdentityDocument {
+  id                String    @id @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  propertyId        String    @map("property_id") @db.Uuid
+  reservationRoomId String    @map("reservation_room_id") @db.Uuid
+  guestId           String    @map("guest_id") @db.Uuid
+  /// PASSPORT | DRIVERS_LICENSE | NATIONAL_ID | OTHER
+  documentType      String    @map("document_type")
+  contentType       String    @map("content_type")
+  sizeBytes         Int       @map("size_bytes")
+  sha256            String    @db.Char(64)
+  storageKey        String    @map("storage_key")
+  /// PENDING | APPROVED | REJECTED | SUPERSEDED
+  status            String    @default("PENDING")
+  rejectionReason   String?   @map("rejection_reason")
+  uploadedAt        DateTime  @default(now()) @map("uploaded_at") @db.Timestamptz(3)
+  reviewedAt        DateTime? @map("reviewed_at") @db.Timestamptz(3)
+  reviewedBy        String?   @map("reviewed_by") @db.Uuid
+  purgedAt          DateTime? @map("purged_at") @db.Timestamptz(3)
+  version           Int       @default(1)
+
+  reservationRoom ReservationRoom @relation(fields: [organizationId, reservationRoomId], references: [organizationId, id], onDelete: Restrict)
+  guest           Guest           @relation(fields: [organizationId, guestId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, status])
+  @@index([organizationId, reservationRoomId])
+  @@map("guest_identity_documents")
+}

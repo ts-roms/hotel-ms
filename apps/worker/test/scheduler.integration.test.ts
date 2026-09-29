@@ -1,7 +1,6 @@
 import type { TenantJob } from '@hotel/contracts';
 import { createPrismaClient, type PrismaClient } from '@hotel/database';
-import type { DemoWorld } from '@hotel/database';
-import { prepareTestDatabase, testDatabaseUrls } from '@hotel/database/testing';
+import { type DemoWorld, prepareTestDatabase, testDatabaseUrls } from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { pino } from 'pino';

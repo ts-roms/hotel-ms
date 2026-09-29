@@ -1,3 +1,4 @@
+import type { EMPLOYEE_DOCUMENT_CATEGORIES } from '@hotel/contracts';
 import { addDays } from '@hotel/format';
 
 /** Today's calendar date on this device. */
@@ -38,4 +39,17 @@ export const PUNCH_NEXT: Record<string, ('IN' | 'OUT' | 'BREAK_START' | 'BREAK_E
   IN: ['BREAK_START', 'OUT'],
   BREAK_START: ['BREAK_END'],
   BREAK_END: ['BREAK_START', 'OUT'],
+};
+
+/** Employee document categories (shared by the employee file and the retention settings). */
+export const DOCUMENT_CATEGORY_LABELS: Record<
+  (typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number],
+  string
+> = {
+  CONTRACT: 'Contract',
+  GOVERNMENT_ID: 'Government ID',
+  TAX: 'Tax',
+  MEDICAL: 'Medical',
+  CERTIFICATE: 'Certificate',
+  OTHER: 'Other',
 };

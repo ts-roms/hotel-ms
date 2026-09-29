@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DOMAIN_EVENTS_QUEUE, NOTIFICATIONS_QUEUE, SMS_QUEUE, TENANT_JOBS_QUEUE } from './jobs.js';
 
 /**
  * Operations dashboard (ADR-0029), for platform operators only. The worker, which already
@@ -12,7 +13,12 @@ export const OPS_SNAPSHOT_INTERVAL_MS = 30_000;
 /** Commands from the ops dashboard, run by the worker. */
 export const OPS_COMMANDS_QUEUE = 'ops-commands';
 /** The queues on the dashboard (the domain-events queue is the outbox relay's). */
-export const OPS_QUEUES = ['domain-events', 'notifications', 'sms', 'tenant-jobs'] as const;
+export const OPS_QUEUES = [
+  DOMAIN_EVENTS_QUEUE,
+  NOTIFICATIONS_QUEUE,
+  SMS_QUEUE,
+  TENANT_JOBS_QUEUE,
+] as const;
 export type OpsQueue = (typeof OPS_QUEUES)[number];
 
 export type OpsCommand = { type: 'outbox.retry'; eventId: string; requestedBy: string };

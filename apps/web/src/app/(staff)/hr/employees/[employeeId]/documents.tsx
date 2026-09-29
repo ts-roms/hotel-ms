@@ -31,16 +31,8 @@ import { FileText } from 'lucide-react';
 import { type FormEvent, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
+import { DOCUMENT_CATEGORY_LABELS } from '@/lib/hr';
 import { t } from '@/lib/i18n';
-
-export const CATEGORY_LABELS: Record<(typeof EMPLOYEE_DOCUMENT_CATEGORIES)[number], string> = {
-  CONTRACT: 'Contract',
-  GOVERNMENT_ID: 'Government ID',
-  TAX: 'Tax',
-  MEDICAL: 'Medical',
-  CERTIFICATE: 'Certificate',
-  OTHER: 'Other',
-};
 
 const sizeLabel = (bytes: number) =>
   bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -111,7 +103,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
                 >
                   {d.title}
                 </a>
-                <Badge>{CATEGORY_LABELS[d.category]}</Badge>
+                <Badge>{DOCUMENT_CATEGORY_LABELS[d.category]}</Badge>
               </span>
               <span className="text-xs text-muted-foreground">
                 {d.fileName} · {sizeLabel(d.sizeBytes)} · {formatDate(d.createdAt.slice(0, 10))}
@@ -170,7 +162,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
             >
               {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
+                  {DOCUMENT_CATEGORY_LABELS[c]}
                 </option>
               ))}
             </NativeSelect>

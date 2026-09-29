@@ -1,0 +1,229 @@
+// Workforce (blueprint §13): departments, positions, employees, employment assignments,
+// employee documents, pay history, trainings and reviews. Employees are organization-level;
+// everything that happens at a property carries property_id.
+
+enum EmployeeStatus {
+  ACTIVE
+  TERMINATED
+}
+
+enum BirthdayVisibility {
+  /// Colleagues see day and month; the year is never shown outside HR.
+  DAY_MONTH
+  HIDDEN
+}
+
+model Department {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  code           String
+  name           String
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  positions            Position[]
+  assignments          EmploymentAssignment[]
+  shifts               Shift[]
+  shiftTemplates       ShiftTemplate[]
+  staffingRequirements StaffingRequirement[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("departments")
+}
+
+model Position {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  departmentId   String    @map("department_id") @db.Uuid
+  code           String
+  name           String
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  department  Department             @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+  assignments EmploymentAssignment[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("positions")
+}
+
+model Employee {
+  id                           String             @id @default(uuid(7)) @db.Uuid
+  organizationId               String             @map("organization_id") @db.Uuid
+  employeeNo                   String             @map("employee_no")
+  firstName                    String             @map("first_name")
+  lastName                     String             @map("last_name")
+  preferredName                String?            @map("preferred_name")
+  workEmail                    String?            @map("work_email")
+  workPhone                    String?            @map("work_phone")
+  /// Personal details: only with employee.personal.read.
+  personalEmail                String?            @map("personal_email")
+  personalPhone                String?            @map("personal_phone")
+  birthDate                    DateTime?          @map("birth_date") @db.Date
+  birthdayVisibility           BirthdayVisibility @default(HIDDEN) @map("birthday_visibility")
+  hireDate                     DateTime           @map("hire_date") @db.Date
+  status                       EmployeeStatus     @default(ACTIVE)
+  terminatedOn                 DateTime?          @map("terminated_on") @db.Date
+  /// FULL_TIME | PART_TIME | PROBATIONARY | CONTRACTUAL | SEASONAL | INTERN
+  employmentType               String             @default("FULL_TIME") @map("employment_type")
+  /// Emergency contact: personal details (employee.personal.read).
+  emergencyContactName         String?            @map("emergency_contact_name")
+  emergencyContactRelationship String?            @map("emergency_contact_relationship")
+  emergencyContactPhone        String?            @map("emergency_contact_phone")
+  /// Staff login of this employee, if any (blueprint §13.1).
+  membershipId                 String?            @map("membership_id") @db.Uuid
+  version                      Int                @default(1)
+  createdAt                    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdBy                    String?            @map("created_by") @db.Uuid
+
+  organization  Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  membership    OrganizationMembership? @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  assignments   EmploymentAssignment[]
+  shifts        Shift[]
+  punches       AttendancePunch[]
+  corrections   AttendanceCorrection[]
+  leaveLedger   LeaveLedgerEntry[]
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+  documents     EmployeeDocument[]
+  compensations EmployeeCompensation[]
+  trainings     EmployeeTraining[]
+  reviews       EmployeeReview[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, employeeNo])
+  @@unique([organizationId, membershipId])
+  @@map("employees")
+}
+
+/// Employee ↔ property + department + position over a date range. Scheduling, attendance
+/// and property-scoped HR permissions all work through assignments.
+model EmploymentAssignment {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  departmentId   String    @map("department_id") @db.Uuid
+  positionId     String?   @map("position_id") @db.Uuid
+  startDate      DateTime  @map("start_date") @db.Date
+  /// Last working day, inclusive. Null = open-ended.
+  endDate        DateTime? @map("end_date") @db.Date
+  isPrimary      Boolean   @default(false) @map("is_primary")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  employee   Employee   @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+  position   Position?  @relation(fields: [organizationId, positionId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId])
+  @@index([organizationId, employeeId])
+  @@map("employment_assignments")
+}
+
+/// Employee documents (ADR-0019): metadata here, the file in object storage (S3 with
+/// SSE-KMS in the cloud) under an opaque key. Deleting keeps the row for the audit trail.
+model EmployeeDocument {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  category       String
+  title          String
+  fileName       String    @map("file_name")
+  contentType    String    @map("content_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  storageKey     String    @map("storage_key")
+  expiresOn      DateTime? @map("expires_on") @db.Date
+  uploadedBy     String?   @map("uploaded_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Null while the upload is in flight; the daily sweep removes those left behind.
+  storedAt       DateTime? @map("stored_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  /// USER (deleted by HR) or RETENTION (retention rules, ADR-0021).
+  deletionReason String?   @map("deletion_reason")
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([storageKey])
+  @@index([organizationId, employeeId])
+  @@map("employee_documents")
+}
+
+/// Pay history (ADR-0028): start-dated records, never edited; the latest one on or before
+/// a date is the pay in effect. Sensitive: employee.compensation.
+model EmployeeCompensation {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  employeeId     String   @map("employee_id") @db.Uuid
+  effectiveFrom  DateTime @map("effective_from") @db.Date
+  /// MONTHLY | DAILY | HOURLY
+  payBasis       String   @map("pay_basis")
+  amountMinor    BigInt   @map("amount_minor")
+  currency       String   @db.Char(3)
+  notes          String   @default("")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?  @map("created_by") @db.Uuid
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, effectiveFrom])
+  @@map("employee_compensations")
+}
+
+/// Trainings attended and certifications held (ADR-0028).
+model EmployeeTraining {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  /// TRAINING | CERTIFICATION
+  kind           String
+  title          String
+  provider       String    @default("")
+  completedOn    DateTime? @map("completed_on") @db.Date
+  expiresOn      DateTime? @map("expires_on") @db.Date
+  notes          String    @default("")
+  /// An employee document (not a foreign key: retention may delete the document).
+  documentId     String?   @map("document_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId])
+  @@index([organizationId, expiresOn])
+  @@map("employee_trainings")
+}
+
+/// Performance reviews (ADR-0028). Sensitive: employee.performance.
+model EmployeeReview {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  reviewDate     DateTime  @map("review_date") @db.Date
+  periodFrom     DateTime? @map("period_from") @db.Date
+  periodTo       DateTime? @map("period_to") @db.Date
+  rating         Int
+  summary        String
+  strengths      String    @default("")
+  improvements   String    @default("")
+  goals          String    @default("")
+  reviewerId     String?   @map("reviewer_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, reviewDate])
+  @@map("employee_reviews")
+}
