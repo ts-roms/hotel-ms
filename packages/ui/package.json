@@ -21,7 +21,8 @@
     "./lib/utils": {
       "types": "./dist/lib/utils.d.ts",
       "default": "./dist/lib/utils.js"
-    }
+    },
+    "./theme.css": "./src/styles/theme.css"
   },
   "sideEffects": false,
   "scripts": {

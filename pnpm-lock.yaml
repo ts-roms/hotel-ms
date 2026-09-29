@@ -297,6 +297,16 @@ importers:
       '@hotel/contracts':
         specifier: workspace:*
         version: link:../contracts
+    devDependencies:
+      '@tanstack/react-query':
+        specifier: ^5.104.0
+        version: 5.104.0(react@19.3.0)
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
 
   packages/contracts:
     dependencies:

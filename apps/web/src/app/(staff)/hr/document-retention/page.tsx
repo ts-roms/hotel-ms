@@ -6,9 +6,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
+import { DOCUMENT_CATEGORY_LABELS } from '@/lib/hr';
 import { t } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
-import { CATEGORY_LABELS } from '../employees/[employeeId]/documents';
 
 type Rules = DocumentRetention['rules'];
 
@@ -61,7 +61,7 @@ export default function DocumentRetentionPage() {
           >
             {EMPLOYEE_DOCUMENT_CATEGORIES.map((c) => (
               <Label key={c} className="flex items-center justify-between gap-3 font-normal">
-                <span>{CATEGORY_LABELS[c]}</span>
+                <span>{DOCUMENT_CATEGORY_LABELS[c]}</span>
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <Input
                     className="w-24 text-right"

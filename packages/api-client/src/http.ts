@@ -21,6 +21,20 @@ export class ApiError extends Error {
   }
 }
 
+/** The API's own wording for a failure: the field messages of a validation error, else the detail or title. */
+export function problemText(error: ApiError): string {
+  if (error.code === 'VALIDATION_FAILED') {
+    return error.problem.errors?.map((e) => e.message).join(' ') ?? error.message;
+  }
+  return error.problem.detail ?? error.problem.title;
+}
+
+/** Reads `token` from the URL fragment (#token=...), which is never sent to servers. */
+export function tokenFromHash(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.hash.slice(1)).get('token');
+}
+
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;
