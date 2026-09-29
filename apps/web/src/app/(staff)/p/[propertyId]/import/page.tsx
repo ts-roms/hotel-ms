@@ -1,6 +1,7 @@
 'use client';
 
 import { IMPORT_COLUMNS, type ImportKind, type ImportPreview } from '@hotel/contracts';
+import { formatTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -171,7 +172,7 @@ export default function ImportPage() {
                   {t('imp.commit')} ({p.newRows})
                 </Button>
                 <span className="text-muted-foreground">
-                  {t('imp.validUntil')} {new Date(p.expiresAt).toLocaleTimeString('en-PH')}
+                  {t('imp.validUntil')} {formatTime(p.expiresAt, { seconds: true })}
                 </span>
               </div>
             )}

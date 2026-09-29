@@ -1,4 +1,4 @@
-import { Card, CardDescription, CardHeader, CardTitle, cn } from '@hotel/ui';
+import { cn, ShellCard } from '@hotel/ui';
 import type { ReactNode } from 'react';
 import { t } from '@/lib/i18n';
 import { BrandMark } from './brand';
@@ -36,18 +36,13 @@ export function AuthCard({
   className?: string;
 }) {
   return (
-    <Card
-      className={cn(
-        'w-full max-w-sm animate-scale-in border-border/70 bg-card/85 shadow-xl shadow-black/5 backdrop-blur-xl',
-        className,
-      )}
+    <ShellCard
+      title={title}
+      description={description}
+      className={cn('max-w-sm bg-card/85', className)}
     >
-      <CardHeader className="gap-2 pb-4 text-center">
-        <CardTitle className="text-xl">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
       {children}
-    </Card>
+    </ShellCard>
   );
 }
 

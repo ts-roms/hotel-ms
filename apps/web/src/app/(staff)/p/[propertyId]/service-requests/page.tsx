@@ -6,6 +6,7 @@ import {
   type ServiceRequest,
   type ServiceRequestUpdate,
 } from '@hotel/contracts';
+import { formatTime } from '@hotel/format';
 import {
   Alert,
   Badge,
@@ -172,12 +173,7 @@ export default function ServiceRequestsPage() {
                 <span className="font-mono">{r.requestNo}</span>·
                 <span>{statusLabel(r.department)}</span>·
                 <Badge variant={statusVariant(r.priority)}>{statusLabel(r.priority)}</Badge>
-                <span className="ml-auto tabular-nums">
-                  {new Date(r.createdAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
+                <span className="ml-auto tabular-nums">{formatTime(r.createdAt)}</span>
               </div>
               {r.guestName && <span className="font-medium">{r.guestName}</span>}
               {r.description && (

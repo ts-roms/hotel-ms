@@ -1,4 +1,4 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@hotel/ui';
+import { ShellCard } from '@hotel/ui';
 import { House } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -29,13 +29,9 @@ export function GuestShell({
         <div className="animate-fade-in">
           <BrandMark />
         </div>
-        <Card className="w-full animate-scale-in border-border/70 bg-card/90 shadow-xl shadow-black/5 backdrop-blur-xl">
-          <CardHeader className="gap-2 pb-4 text-center">
-            <CardTitle className="text-xl">{title}</CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
-          </CardHeader>
+        <ShellCard title={title} description={description}>
           {children}
-        </Card>
+        </ShellCard>
       </div>
     </main>
   );

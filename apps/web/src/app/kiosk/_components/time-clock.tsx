@@ -2,6 +2,7 @@
 
 import type { createKioskApiClient } from '@hotel/api-client';
 import type { ClockPunchResult, KioskState, PunchType } from '@hotel/contracts';
+import { formatTime } from '@hotel/format';
 import { Alert, Button, Card, CardContent, Input } from '@hotel/ui';
 import { useMutation } from '@tanstack/react-query';
 import { CheckCircle2 } from 'lucide-react';
@@ -49,9 +50,7 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col gap-4 pt-6">
           <div className="text-center">
-            <div className="text-4xl font-semibold tabular-nums">
-              {now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
-            </div>
+            <div className="text-4xl font-semibold tabular-nums">{formatTime(now)}</div>
             <div className="text-sm text-muted-foreground">
               {state.device.name} · {state.device.propertyName}
             </div>
@@ -68,11 +67,7 @@ export function TimeClock({ state, kiosk }: { state: KioskState; kiosk: Kiosk })
                 {done.type === 'IN' ? t('clock.hello') : t('clock.thanks')}, {done.employeeName}
               </strong>
               <span className="text-sm text-muted-foreground">
-                {t(ACTIONS.find((a) => a.type === done.type)!.label)} ·{' '}
-                {new Date(done.at).toLocaleTimeString('en-PH', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {t(ACTIONS.find((a) => a.type === done.type)!.label)} · {formatTime(done.at)}
               </span>
             </div>
           ) : (

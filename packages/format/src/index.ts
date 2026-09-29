@@ -3,7 +3,7 @@
  * dates, instants, property time zones and relative time. Isomorphic (Intl only). Also
  * HTML escaping for the pages and emails the API and worker render as strings.
  */
-export { addDays, formatDate, formatDateTime, localDate } from './dates.js';
+export { addDays, formatDate, formatDateTime, formatTime, localDate } from './dates.js';
 export { escapeHtml } from './html.js';
 export { currencyDigits, formatMoney, minorToInput, parseMoney } from './money.js';
 export { type Elapsed, elapsed } from './relative.js';

@@ -1,7 +1,7 @@
 'use client';
 
 import { DEVICE_PERMISSIONS, type DeviceKind, type DevicePairing } from '@hotel/contracts';
-import { formatDateTime } from '@hotel/format';
+import { formatDateTime, formatTime } from '@hotel/format';
 import {
   Alert,
   AlertDialog,
@@ -77,7 +77,7 @@ export default function DevicesPage() {
       {pairing && (
         <Notice>
           <strong>{pairing.device.name}</strong> · {t('dev.pairingOpen')}{' '}
-          {new Date(pairing.expiresAt).toLocaleTimeString('en-PH')}
+          {formatTime(pairing.expiresAt, { seconds: true })}
           <div className="mt-2 font-mono text-2xl tracking-widest">
             {pairing.pairingCode.slice(0, 4)}-{pairing.pairingCode.slice(4)}
           </div>

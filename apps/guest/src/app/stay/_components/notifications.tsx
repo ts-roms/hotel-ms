@@ -1,6 +1,6 @@
 'use client';
 
-import { elapsed } from '@hotel/format';
+import { elapsed, formatDate, localDate } from '@hotel/format';
 import { Badge, Button, CardContent } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check } from 'lucide-react';
@@ -14,7 +14,7 @@ const timeAgo = (iso: string) => {
   if (e.unit === 'now') return t('time.justNow');
   if (e.unit === 'minutes') return t('time.minutesAgo', { count: e.value });
   if (e.unit === 'hours') return t('time.hoursAgo', { count: e.value });
-  return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+  return formatDate(localDate(iso));
 };
 
 /**

@@ -253,7 +253,7 @@ export class NightAuditService {
     return rows.map((r) => ({
       businessDate: fromDbDate(r.businessDate),
       closedAt: r.closedAt.toISOString(),
-      stats: r.stats as unknown as DayStats,
+      stats: r.stats as DayStats,
       nextBusinessDate: addDays(fromDbDate(r.businessDate), 1),
     }));
   }

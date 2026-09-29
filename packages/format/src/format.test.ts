@@ -5,6 +5,7 @@ import {
   elapsed,
   formatDate,
   formatMoney,
+  formatTime,
   fromZoned,
   localDate,
   minorToInput,
@@ -43,6 +44,20 @@ describe('dates', () => {
     // 2026-10-05 17:30 UTC is already Oct 6 in Manila (UTC+8).
     expect(localDate('2026-10-05T17:30:00Z', 'Asia/Manila')).toBe('2026-10-06');
     expect(localDate('2026-10-05T17:30:00Z', 'UTC')).toBe('2026-10-05');
+  });
+});
+
+describe('formatTime', () => {
+  const iso = '2026-10-05T06:03:09Z'; // 14:03:09 in Manila
+  it('shows the time of day in a time zone', () => {
+    expect(formatTime(iso, { timeZone: 'Asia/Manila', hour12: false })).toBe('14:03');
+    expect(formatTime(iso, { timeZone: 'Asia/Manila', hour12: false, seconds: true })).toBe(
+      '14:03:09',
+    );
+    expect(formatTime(iso, { timeZone: 'UTC', hour12: false })).toBe('06:03');
+  });
+  it('uses a 12-hour clock by default in en-PH', () => {
+    expect(formatTime(iso, { timeZone: 'Asia/Manila' }).replace(/s/g, ' ')).toMatch(/^2:03 PM$/i);
   });
 });
 

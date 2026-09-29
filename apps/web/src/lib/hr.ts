@@ -1,5 +1,5 @@
 import type { EMPLOYEE_DOCUMENT_CATEGORIES, PunchType } from '@hotel/contracts';
-import { addDays } from '@hotel/format';
+import { addDays, formatTime } from '@hotel/format';
 
 /** Today's calendar date on this device. */
 export function today(): string {
@@ -26,11 +26,7 @@ export function duration(minutes: number): string {
 /** "2026-10-05T06:03:00.000Z" → "14:03" on this device. */
 export function clock(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  return formatTime(iso, { hour12: false });
 }
 
 /** Punches allowed after the last one (NONE: no punch yet). */
