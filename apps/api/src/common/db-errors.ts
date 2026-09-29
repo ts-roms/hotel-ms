@@ -87,6 +87,11 @@ function describe(error: unknown): string {
   return `${error.message} ${meta} ${cause instanceof Error ? cause.message : ''}`;
 }
 
+/** Whether the error is a violation of the named constraint (e.g. an exclusion constraint). */
+export function isConstraintViolation(error: unknown, constraint: string): boolean {
+  return describe(error).includes(constraint);
+}
+
 /** Rethrows a mapped problem for known constraint violations; otherwise rethrows as is. */
 export function rethrowConstraintError(error: unknown): never {
   const text = describe(error);

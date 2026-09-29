@@ -4,6 +4,7 @@ import { FrontOfficeModule } from '../front-office/front-office.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { OperationsModule } from '../operations/operations.module.js';
 import { PmsModule } from '../pms/pms.module.js';
+import { TenancyModule } from '../tenancy/tenancy.module.js';
 import { GuestAdminController } from './guest-admin.controller.js';
 import { GuestExtrasController } from './guest-extras.controller.js';
 import { GuestInfoService } from './guest-info.service.js';
@@ -20,7 +21,14 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './room-access.js';
  * registered globally by AppModule.
  */
 @Module({
-  imports: [PmsModule, FinanceModule, FrontOfficeModule, OperationsModule, NotificationsModule],
+  imports: [
+    TenancyModule,
+    PmsModule,
+    FinanceModule,
+    FrontOfficeModule,
+    OperationsModule,
+    NotificationsModule,
+  ],
   controllers: [
     GuestPortalLinkController,
     GuestExtrasController,

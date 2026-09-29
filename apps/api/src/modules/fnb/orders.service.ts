@@ -23,6 +23,7 @@ import { AuditService } from '../audit/audit.service.js';
 import { FolioService } from '../finance/folio/folio.service.js';
 import { computeTaxes, type TaxRuleInput } from '../pms/pricing/tax-engine.js';
 import { TaxRulesService } from '../pms/pricing/tax-rules.service.js';
+import { FeatureFlagsService } from '../tenancy/feature-flags.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { isOpen, MenuService } from './menu.service.js';
 
@@ -124,6 +125,7 @@ export class OrdersService {
     private readonly realtime: RealtimeService,
     private readonly cls: ClsService<RequestContext>,
     private readonly guestInbox: GuestInboxService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   private get organizationId() {
@@ -526,15 +528,7 @@ export class OrdersService {
   }
 
   private async requireFoodOrdering(tx: Tx): Promise<void> {
-    const flag = await tx.organizationFeatureFlag.findUnique({
-      where: {
-        organizationId_flagKey: {
-          organizationId: this.organizationId,
-          flagKey: 'guest_food_ordering',
-        },
-      },
-    });
-    if (!flag?.enabled) {
+    if (!(await this.flags.isEnabledInTx(tx, 'guest_food_ordering'))) {
       throw new ProblemException(
         403,
         'FEATURE_DISABLED',

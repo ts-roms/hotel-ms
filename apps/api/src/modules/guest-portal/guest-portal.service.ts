@@ -17,11 +17,13 @@ import { AuditService } from '../audit/audit.service.js';
 import { FrontOfficeService } from '../front-office/front-office.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { CardHoldsService } from '../finance/payments/card-holds.service.js';
+import { FeatureFlagsService } from '../tenancy/feature-flags.service.js';
 import { ReservationsService } from '../pms/reservations/reservations.service.js';
 import { guestPortalSettingsInTx } from './guest-info.service.js';
 import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
 import { GuestsService } from '../pms/guests/guests.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
+import { assignFirstFree } from './ready-room.js';
 import { GuestSessions } from './guest-session.js';
 import { ServiceRequestsService } from '../operations/service-requests/service-requests.service.js';
 import { ROOM_ACCESS_PROVIDER, type RoomAccessProvider } from './room-access.js';
@@ -61,6 +63,7 @@ export class GuestPortalService {
     private readonly requests: ServiceRequestsService,
     private readonly guests: GuestsService,
     private readonly cardHolds: CardHoldsService,
+    private readonly flags: FeatureFlagsService,
   ) {}
 
   private get guest() {
@@ -301,16 +304,8 @@ export class GuestPortalService {
     });
   }
 
-  private async selfCheckInEnabled(tx: Tx): Promise<boolean> {
-    const flag = await tx.organizationFeatureFlag.findUnique({
-      where: {
-        organizationId_flagKey: {
-          organizationId: this.cls.get('organizationId')!,
-          flagKey: 'self_checkin',
-        },
-      },
-    });
-    return flag?.enabled ?? false;
+  private selfCheckInEnabled(tx: Tx): Promise<boolean> {
+    return this.flags.isEnabledInTx(tx, 'self_checkin');
   }
 
   private async cardHold(
@@ -513,35 +508,12 @@ export class GuestPortalService {
   ): Promise<void> {
     const propertyId = this.cls.get('propertyId')!;
     const candidates = await this.db.run((tx) =>
-      tx.room.findMany({
-        where: {
-          propertyId,
-          roomTypeId,
-          archivedAt: null,
-          serviceStatus: 'IN_SERVICE',
-          housekeepingStatus: { in: ['INSPECTED', 'CLEAN'] },
-          stays: { none: { checkedOutAt: null } },
-          assignments: {
-            none: { releasedAt: null, startDate: { lt: departure }, endDate: { gt: arrival } },
-          },
-        },
-        orderBy: { number: 'asc' },
-        take: 10,
-      }),
+      this.frontOffice.readyRoomsInTx(tx, { propertyId, roomTypeId, arrival, departure }),
     );
-    // Inspected rooms first: they need no further housekeeping check.
-    candidates.sort(
-      (a, b) =>
-        Number(b.housekeepingStatus === 'INSPECTED') - Number(a.housekeepingStatus === 'INSPECTED'),
+    const assigned = await assignFirstFree(candidates, (room) =>
+      this.db.run((tx) => this.reservations.assignInTx(tx, lineId, room.id)),
     );
-    for (const room of candidates) {
-      try {
-        await this.db.run((tx) => this.reservations.assignInTx(tx, lineId, room.id));
-        return;
-      } catch {
-        // Taken meanwhile; try the next one.
-      }
-    }
+    if (assigned) return;
     throw seeFrontDesk(
       'No room is ready for you yet. The front desk will let you know as soon as one is.',
     );
