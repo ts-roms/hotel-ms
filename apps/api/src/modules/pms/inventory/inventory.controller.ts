@@ -12,33 +12,20 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
-  availabilitySchema,
-  type AvailabilityQuery,
-  availabilityQuerySchema,
   buildingSchema,
   type CreateBuildingRequest,
   createBuildingRequestSchema,
-  type CreateRatePlanRequest,
-  createRatePlanRequestSchema,
   type CreateRoomBlockRequest,
   createRoomBlockRequestSchema,
   type CreateRoomRequest,
   createRoomRequestSchema,
   type CreateRoomTypeRequest,
   createRoomTypeRequestSchema,
-  type QuoteQuery,
-  quoteQuerySchema,
-  quoteSchema,
-  ratePlanSchema,
   roomBlockSchema,
   roomSchema,
   roomTypeSchema,
-  type SetRateOverridesRequest,
-  setRateOverridesRequestSchema,
   type SetServiceStatusRequest,
   setServiceStatusRequestSchema,
-  type UpdateRatePlanRequest,
-  updateRatePlanRequestSchema,
   type UpdateRoomRequest,
   updateRoomRequestSchema,
   type UpdateRoomTypeRequest,
@@ -46,21 +33,17 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../common/etag.js';
-import { uuidParam } from '../../common/params.js';
-import { RequirePermission } from '../../common/route-metadata.js';
-import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { RatesService } from './pricing/rates.service.js';
-import { RoomsService } from './inventory/rooms.service.js';
+import { parseIfMatch, weakEtag } from '../../../common/etag.js';
+import { uuidParam } from '../../../common/params.js';
+import { RequirePermission } from '../../../common/route-metadata.js';
+import { ZodBody, ZodResponse } from '../../../common/zod.js';
+import { RoomsService } from './rooms.service.js';
 
-/** Property configuration and inventory. Every route is scoped to :propertyId. */
+/** Property inventory: buildings, room types, rooms and room blocks. */
 @ApiTags('inventory')
 @Controller('properties/:propertyId')
 export class InventoryController {
-  constructor(
-    private readonly rooms: RoomsService,
-    private readonly rates: RatesService,
-  ) {}
+  constructor(private readonly rooms: RoomsService) {}
 
   // ---- Buildings ------------------------------------------------------------------------
 
@@ -186,60 +169,5 @@ export class InventoryController {
   @HttpCode(204)
   async releaseBlock(@Param('roomId') roomId: string, @Param('blockId') blockId: string) {
     await this.rooms.releaseBlock(uuidParam(roomId), uuidParam(blockId));
-  }
-
-  // ---- Rates ----------------------------------------------------------------------------
-
-  @Get('rate-plans')
-  @RequirePermission('rate.read')
-  @ZodResponse(200, z.array(ratePlanSchema))
-  listRatePlans() {
-    return this.rates.list();
-  }
-
-  @Post('rate-plans')
-  @RequirePermission('rate.manage')
-  @HttpCode(201)
-  @ZodResponse(201, ratePlanSchema)
-  createRatePlan(@ZodBody(createRatePlanRequestSchema) body: CreateRatePlanRequest) {
-    return this.rates.create(body);
-  }
-
-  @Patch('rate-plans/:ratePlanId')
-  @RequirePermission('rate.manage')
-  @ZodResponse(200, ratePlanSchema)
-  async updateRatePlan(
-    @Param('ratePlanId') ratePlanId: string,
-    @Headers('if-match') ifMatch: string | undefined,
-    @ZodBody(updateRatePlanRequestSchema) body: UpdateRatePlanRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const plan = await this.rates.update(uuidParam(ratePlanId), parseIfMatch(ifMatch), body);
-    reply.header('etag', weakEtag(plan.version));
-    return plan;
-  }
-
-  @Put('rate-plans/:ratePlanId/overrides')
-  @RequirePermission('rate.manage')
-  @HttpCode(204)
-  async setOverrides(
-    @Param('ratePlanId') ratePlanId: string,
-    @ZodBody(setRateOverridesRequestSchema) body: SetRateOverridesRequest,
-  ) {
-    await this.rates.setOverrides(uuidParam(ratePlanId), body);
-  }
-
-  @Get('quote')
-  @RequirePermission('rate.read')
-  @ZodResponse(200, quoteSchema, 'Nightly prices for a prospective stay')
-  quote(@ZodQuery(quoteQuerySchema) query: QuoteQuery) {
-    return this.rates.quote(query);
-  }
-
-  @Get('availability')
-  @RequirePermission('reservation.read')
-  @ZodResponse(200, availabilitySchema)
-  availability(@ZodQuery(availabilityQuerySchema) query: AvailabilityQuery) {
-    return this.rates.availability(query);
   }
 }

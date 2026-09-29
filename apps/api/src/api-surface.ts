@@ -9,6 +9,7 @@ import { DevicesController } from './modules/devices/devices.controller.js';
 import { KioskController } from './modules/devices/kiosk.controller.js';
 import { PinController } from './modules/devices/pin.controller.js';
 import { FinanceController } from './modules/finance/finance.controller.js';
+import { FolioController } from './modules/finance/folio/folio.controller.js';
 import { GuestPaymentsController } from './modules/finance/payments/guest-payments.controller.js';
 import { PaymentWebhooksController } from './modules/finance/payments/payment-webhooks.controller.js';
 import { SandboxGatewayController } from './modules/finance/payments/sandbox-gateway.controller.js';
@@ -21,10 +22,12 @@ import { GuestPortalController } from './modules/guest-portal/guest-portal.contr
 import { GuestServiceController } from './modules/guest-portal/guest-service.controller.js';
 import { HealthController } from './modules/health/health.controller.js';
 import { ClockPhotosController } from './modules/hr/time/clock-photos.controller.js';
+import { LeaveController } from './modules/hr/time/leave.controller.js';
 import { MeController } from './modules/hr/time/me.controller.js';
 import { PhotoRetentionController } from './modules/hr/time/photo-retention.controller.js';
 import { PropertyHrController } from './modules/hr/time/property-hr.controller.js';
 import { StaffingController } from './modules/hr/time/staffing.controller.js';
+import { BirthdaysController } from './modules/hr/workforce/birthdays.controller.js';
 import { DocumentRetentionController } from './modules/hr/workforce/document-retention.controller.js';
 import { EmployeeDocumentsController } from './modules/hr/workforce/employee-documents.controller.js';
 import { EmployeeRecordsController } from './modules/hr/workforce/employee-records.controller.js';
@@ -32,11 +35,16 @@ import { HrController } from './modules/hr/workforce/hr.controller.js';
 import { ManagementController } from './modules/management/management.controller.js';
 import { PropertyReportsController } from './modules/management/property-reports.controller.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
+import { HousekeepingController } from './modules/operations/housekeeping/housekeeping.controller.js';
 import { LostFoundController } from './modules/operations/lost-found/lost-found.controller.js';
 import { MaintenanceController } from './modules/operations/maintenance/maintenance.controller.js';
+import { ServiceRequestsController } from './modules/operations/service-requests/service-requests.controller.js';
 import { OpsController } from './modules/ops/ops.controller.js';
+import { GuestIdentityController } from './modules/pms/guests/guest-identity.controller.js';
 import { GuestsController } from './modules/pms/guests/guests.controller.js';
-import { InventoryController } from './modules/pms/inventory.controller.js';
+import { InventoryController } from './modules/pms/inventory/inventory.controller.js';
+import { PricingController } from './modules/pms/pricing/pricing.controller.js';
+import { TaxRulesController } from './modules/pms/pricing/tax-rules.controller.js';
 import { ReservationsController } from './modules/pms/reservations/reservations.controller.js';
 import { GuestImagesController } from './modules/privacy/guest-images.controller.js';
 import { ImagesController } from './modules/privacy/images.controller.js';
@@ -51,7 +59,8 @@ import { PropertiesController } from './modules/tenancy/properties.controller.js
  * only fixes the documentation order, so moving a controller between modules does not
  * reorder the checked-in document. It is also the route inventory of the tenant isolation
  * suite; api-surface.test.ts checks that it names exactly the registered controllers.
- * Append new controllers at the end.
+ * Append new controllers at the end; a controller split off another goes next to it, so
+ * the moved routes keep their place in the document.
  */
 export const CONTROLLERS: readonly Type[] = [
   HealthController,
@@ -61,14 +70,21 @@ export const CONTROLLERS: readonly Type[] = [
   AccessController,
   AuditController,
   InventoryController,
+  PricingController,
   ReservationsController,
   GuestsController,
   FrontOfficeController,
+  FolioController,
+  TaxRulesController,
+  HousekeepingController,
   GuestServiceController,
+  ServiceRequestsController,
   GuestExtrasController,
+  GuestIdentityController,
   GuestAdminController,
   GuestPortalController,
   HrController,
+  LeaveController,
   EmployeeDocumentsController,
   DocumentRetentionController,
   CalendarController,
@@ -92,6 +108,7 @@ export const CONTROLLERS: readonly Type[] = [
   ImagesController,
   GuestImagesController,
   PropertyHrController,
+  BirthdaysController,
   FnbController,
   GuestFnbController,
   FinanceController,

@@ -5,6 +5,7 @@ import { PmsModule } from '../pms/pms.module.js';
 import { CashierService } from './cashier/cashier.service.js';
 import { FolioDocumentsService } from './documents/folio-documents.service.js';
 import { FinanceController } from './finance.controller.js';
+import { FolioController } from './folio/folio.controller.js';
 import { FolioService } from './folio/folio.service.js';
 import { GuestPaymentsController } from './payments/guest-payments.controller.js';
 import { PaymentWebhooksController } from './payments/payment-webhooks.controller.js';
@@ -22,6 +23,7 @@ import { FinanceSettingsService } from './settings/finance-settings.service.js';
 @Module({
   imports: [PmsModule, NotificationsModule],
   controllers: [
+    FolioController,
     FinanceController,
     GuestPaymentsController,
     PaymentWebhooksController,

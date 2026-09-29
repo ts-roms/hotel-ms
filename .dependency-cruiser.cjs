@@ -67,15 +67,10 @@ module.exports = {
       name: 'no-api-subcontext-cycles',
       comment:
         'Folders inside a context (e.g. finance/folio, operations/housekeeping) may not ' +
-        'depend on each other in a cycle. Exception: hr/workforce and hr/time, which ' +
-        'HrController (leave configuration) and PropertyHrController (birthdays) couple ' +
-        'both ways (ADR-0031).',
+        'depend on each other in a cycle.',
       severity: 'error',
       scope: 'folder',
-      from: {
-        path: '^apps/api/src/modules/[^/]+/[^/]+',
-        pathNot: '^apps/api/src/modules/hr/(workforce|time)$',
-      },
+      from: { path: '^apps/api/src/modules/[^/]+/[^/]+' },
       to: { path: '^apps/api/src/modules/[^/]+/[^/]+', circular: true },
     },
     {

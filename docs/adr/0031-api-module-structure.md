@@ -49,8 +49,7 @@ modules never re-provide these.
 - `API_CONTEXTS` lists the contexts in dependency order; a context may import only contexts
   listed before it. The context graph, and the Nest module imports that follow it, therefore
   cannot have a cycle, and no module needs `forwardRef`. Every context folder must be listed.
-- Sub-folders of a context may not depend on each other in a cycle, except `hr/workforce` and
-  `hr/time` (see below).
+- Sub-folders of a context may not depend on each other in a cycle.
 - Unchanged: no file cycles, and `common/`, `infrastructure/` and `config/` never import a
   context.
 
@@ -59,30 +58,50 @@ modules never re-provide these.
 ordered list of all controllers (`CONTROLLERS`, also the route inventory of the tenant
 isolation suite), and the document's operations are ordered by it and by method declaration
 order. A unit test checks the list matches the controllers the modules register. New
-controllers go at the end of the list.
+controllers go at the end of the list, except a controller split off an existing one, which
+goes next to it so the document's path order stays as it was.
 
-## Kept as they are
+## Routes served by the context that owns them
 
-Routes, operation ids (`<Controller>_<method>`), tags and permissions are public contract and
-did not change, so no route moved between controller classes. Some controllers therefore
-still serve routes of more than one context and live in the context that owns most of them:
+Every controller lives in the context whose service it calls. Routes that the first cut of
+this ADR left in a neighbouring context's controller moved to a controller of their own
+context (2026-09-29):
 
-- `FrontOfficeController` also serves folio, tax-rule and housekeeping desk routes; it calls
-  `FolioService` (Finance), `TaxRulesService` (Pricing) and `HousekeepingService`
-  (Operations).
-- `GuestServiceController` (staff service-request routes plus the guest portal link) and
-  `GuestAdminController` (guest ID review, portal settings, guest messages) stay in
-  `guest-portal/`; they call `ServiceRequestsService` (Operations) and
-  `GuestIdentityService` (Guests).
-- `HrController` (workforce) also serves leave balances and leave types, and
-  `PropertyHrController` (time) also serves birthdays. Workforce and Time are therefore
-  sub-folders of one `hr/` context and one `HrModule`, not two modules.
-- `MeController` (self service) is in `hr/time/`; only its `/me/employee` route is
-  workforce data.
-- `InventoryController` serves rooms and rate plans, so it sits at the `pms/` root.
+| Routes                                                                | From                     | To                                                           |
+| --------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------ |
+| a stay's folio, folio charges, payments, adjustments, voids           | `FrontOfficeController`  | `FolioController` (`finance/folio/`)                         |
+| tax rules                                                             | `FrontOfficeController`  | `TaxRulesController` (`pms/pricing/`)                        |
+| housekeeping board, housekeeping status, housekeeping staff and tasks | `FrontOfficeController`  | `HousekeepingController` (`operations/housekeeping/`)        |
+| staff service-request routes                                          | `GuestServiceController` | `ServiceRequestsController` (`operations/service-requests/`) |
+| guest ID review                                                       | `GuestAdminController`   | `GuestIdentityController` (`pms/guests/`)                    |
+| rate plans and overrides, quote, availability                         | `InventoryController`    | `PricingController` (`pms/pricing/`)                         |
+| leave balances and ledger entries, leave types                        | `HrController`           | `LeaveController` (`hr/time/`)                               |
+| birthdays                                                             | `PropertyHrController`   | `BirthdaysController` (`hr/workforce/`)                      |
 
-Moving these routes into controllers of their own context would change their operation ids
-and tags. It can be done later together with the API clients.
+`InventoryController` now serves rooms only and moved to `pms/inventory/`. With leave in
+`hr/time` and birthdays in `hr/workforce`, the two HR sub-folders no longer import each
+other, and the sub-folder cycle rule has no exception left. They stay one `hr/` context and
+one `HrModule` (they share `hr-access.ts`).
+
+**Contract change.** Paths, methods, permissions, request and response schemas and status
+codes did not change. The moved operations' ids changed with their controller class
+(`<Controller>_<method>`, e.g. `FrontOfficeController_postCharge` →
+`FolioController_postCharge`; method names were kept). Their tags changed where the old tag
+named another context: folio routes are tagged `finance`, tax rules and rate plans
+`pricing`, housekeeping `housekeeping`, guest ID review `guests`; service-request, leave and
+birthday routes kept `guest service`, `hr` and `hr: property`. The night-audit and
+business-day paths now follow the check-in/out routes in the document, ahead of the folio
+routes. Clients that key on operation ids or tags must be regenerated.
+
+Still served across a boundary:
+
+- `GuestServiceController` keeps only the guest portal link, and `GuestAdminController`
+  portal settings and staff messages to a guest; both stay in `guest-portal/`. The message
+  route calls `GuestInboxService` (Messaging), which comes before `guest-portal` in
+  `API_CONTEXTS`.
+- `MeController` (self service) is in `hr/time/`; its `/me/employee` route answers from
+  `AttendanceService` (Time), which reads the employee record through `HrAccess`
+  (shared by both HR sub-folders).
 
 ## Writes to another context's tables
 
@@ -119,8 +138,8 @@ Known exceptions:
 - **Kiosk sign-in** (`auth/kiosk-auth.ts`, a global guard) refreshes `last_seen_at` on
   `devices` and `device_sessions` (ADR-0020); `auth/` comes before `devices/` in
   `API_CONTEXTS`.
-- `hr/workforce` cancels future shifts in `hr/time` when an assignment ends: one context
-  (see above).
+- `hr/workforce` cancels future shifts in `hr/time` when an assignment ends: both are
+  sub-folders of the one `hr/` context.
 
 ## Consequences
 
