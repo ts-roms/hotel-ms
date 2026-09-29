@@ -8,11 +8,26 @@ import { Banknote } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { RecordSection } from './record-section';
 
-/** Pay history (employee.compensation, two-step verification). */
-export function CompensationCard({ employeeId }: { employeeId: string }) {
+const PER_BASIS: Record<(typeof PAY_BASES)[number], MessageKey> = {
+  MONTHLY: 'hrx.per.MONTHLY',
+  DAILY: 'hrx.per.DAILY',
+  HOURLY: 'hrx.per.HOURLY',
+};
+
+/**
+ * Pay history (employee.compensation, two-step verification). New pay defaults to the currency
+ * of the current pay, else `defaultCurrency` (the employee's property's).
+ */
+export function CompensationCard({
+  employeeId,
+  defaultCurrency,
+}: {
+  employeeId: string;
+  defaultCurrency?: string;
+}) {
   const queryClient = useQueryClient();
   const pay = useQuery({
     queryKey: ['compensation', employeeId],
@@ -23,17 +38,19 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
     effectiveFrom: localToday(),
     payBasis: 'MONTHLY' as (typeof PAY_BASES)[number],
     amount: '',
-    currency: 'PHP',
+    /** null until the user types one. */
+    currency: null as string | null,
     notes: '',
   });
-  const amountMinor = parseMoney(form.amount, form.currency);
+  const currency = form.currency ?? pay.data?.current?.currency ?? defaultCurrency ?? '';
+  const amountMinor = /^[A-Z]{3}$/.test(currency) ? parseMoney(form.amount, currency) : null;
   const add = useMutation({
     mutationFn: () =>
       api.hr.addCompensation(employeeId, {
         effectiveFrom: form.effectiveFrom,
         payBasis: form.payBasis,
         amountMinor: amountMinor ?? 0,
-        currency: form.currency,
+        currency,
         notes: form.notes,
       }),
     onSuccess: (data) => {
@@ -41,7 +58,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
       setForm({ ...form, amount: '', notes: '' });
     },
   });
-  const per = (basis: string) => t(`hrx.per.${basis}` as 'hrx.per.MONTHLY');
+  const per = (basis: (typeof PAY_BASES)[number]) => t(PER_BASIS[basis]);
 
   return (
     <RecordSection icon={<Banknote />} title={t('hrx.pay')}>
@@ -100,7 +117,7 @@ export function CompensationCard({ employeeId }: { employeeId: string }) {
               className="w-20"
               maxLength={3}
               aria-label={t('fin.currency')}
-              value={form.currency}
+              value={currency}
               onChange={(ev) => setForm({ ...form, currency: ev.target.value.toUpperCase() })}
             />
             <NativeSelect

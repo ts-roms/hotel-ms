@@ -67,6 +67,8 @@ export default function PrivacyPage() {
             name: `${e.firstName} ${e.lastName}`,
             detail: `${e.employeeNo} · ${statusLabel(e.status)}`,
             canAnonymize: e.status === 'TERMINATED',
+            // TODO(api): the employee list (employeeSummarySchema) has no anonymized flag, so this
+            // relies on the placeholder name the anonymizer writes. Needs an `anonymizedAt` field.
             anonymized: e.firstName === 'Former',
           })),
   });

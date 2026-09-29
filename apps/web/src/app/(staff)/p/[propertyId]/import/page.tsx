@@ -25,7 +25,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Download, FileUp, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { useCan, usePms, usePropertyId, usePropertyTimeZone } from '@/lib/property';
 
 const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: string }[] = [
@@ -33,6 +33,11 @@ const KINDS: { kind: ImportKind; label: 'imp.guests' | 'imp.rooms'; permission: 
   { kind: 'rooms', label: 'imp.rooms', permission: 'room.manage' },
 ];
 
+const ROW_STATUS_LABEL: Record<ImportPreview['sample'][number]['status'], MessageKey> = {
+  NEW: 'imp.status.NEW',
+  DUPLICATE: 'imp.status.DUPLICATE',
+  ERROR: 'imp.status.ERROR',
+};
 const STATUS_VARIANT = { NEW: 'success', DUPLICATE: 'warning', ERROR: 'danger' } as const;
 
 /** A header-only CSV to fill in, as a download. */
@@ -197,7 +202,7 @@ export default function ImportPage() {
                       <TableCell className="tabular-nums">{r.row}</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_VARIANT[r.status]}>
-                          {t(`imp.status.${r.status}` as 'imp.status.NEW')}
+                          {t(ROW_STATUS_LABEL[r.status])}
                         </Badge>
                       </TableCell>
                       {columns.map((c) => (

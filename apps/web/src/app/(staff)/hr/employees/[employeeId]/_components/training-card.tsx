@@ -8,7 +8,7 @@ import { Award, ClipboardCheck, Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { enumLabel } from '@/lib/status';
 import { RecordSection } from './record-section';
 
@@ -19,6 +19,12 @@ const EXPIRY_BADGE: Record<
   VALID: 'success',
   EXPIRING: 'warning',
   EXPIRED: 'danger',
+};
+
+const EXPIRY_LABEL: Record<NonNullable<TrainingRecord['expiry']>, MessageKey> = {
+  VALID: 'hrx.expiry.VALID',
+  EXPIRING: 'hrx.expiry.EXPIRING',
+  EXPIRED: 'hrx.expiry.EXPIRED',
 };
 
 /** Trainings and certifications (employee.read; employee.manage records them). */
@@ -91,7 +97,7 @@ export function TrainingCard({
           <span className="flex items-center gap-2">
             {r.expiresOn && r.expiry && (
               <Badge variant={EXPIRY_BADGE[r.expiry]} dot>
-                {t(`hrx.expiry.${r.expiry}` as 'hrx.expiry.VALID')} {formatDate(r.expiresOn)}
+                {t(EXPIRY_LABEL[r.expiry], { date: formatDate(r.expiresOn) })}
               </Badge>
             )}
             {canManage && (

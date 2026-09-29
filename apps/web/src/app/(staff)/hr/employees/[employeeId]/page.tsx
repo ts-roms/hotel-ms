@@ -35,6 +35,7 @@ import { EmployeeDocuments } from './_components/employee-documents';
 import { EmploymentDetails } from './_components/employment-details';
 import { ReviewsCard } from './_components/reviews-card';
 import { TrainingCard } from './_components/training-card';
+import { useProperties } from '@/lib/property';
 
 export default function EmployeePage() {
   const { employeeId } = useParams<{ employeeId: string }>();
@@ -43,6 +44,7 @@ export default function EmployeePage() {
     queryKey: ['employee', employeeId],
     queryFn: () => api.hr.employee(employeeId),
   });
+  const properties = useProperties();
   const e = employee.data;
   if (employee.error) return <Alert>{errorMessage(employee.error)}</Alert>;
   if (!e)
@@ -63,6 +65,9 @@ export default function EmployeePage() {
       </LoadingRegion>
     );
   const name = `${e.preferredName || e.firstName} ${e.lastName}`;
+  // Pay defaults to the currency of the property the employee mainly works at.
+  const home = e.assignments.find((a) => a.isPrimary) ?? e.assignments[0];
+  const homeCurrency = properties.data?.items.find((p) => p.id === home?.propertyId)?.currency;
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
@@ -133,7 +138,7 @@ export default function EmployeePage() {
 
       <EmploymentDetails employee={e} canManage={hasPermission(session.data, 'employee.manage')} />
       {hasPermission(session.data, 'employee.compensation') && (
-        <CompensationCard employeeId={e.id} />
+        <CompensationCard employeeId={e.id} defaultCurrency={homeCurrency} />
       )}
       <TrainingCard employeeId={e.id} canManage={hasPermission(session.data, 'employee.manage')} />
       {hasPermission(session.data, 'employee.performance') && <ReviewsCard employeeId={e.id} />}

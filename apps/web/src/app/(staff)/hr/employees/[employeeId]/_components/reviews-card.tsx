@@ -7,8 +7,17 @@ import { Star } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
-import { t } from '@/lib/i18n';
+import { type MessageKey, t } from '@/lib/i18n';
 import { RecordSection } from './record-section';
+
+/** Performance ratings 1–5 (spec: employee reviews). */
+const RATING_LABEL: Record<1 | 2 | 3 | 4 | 5, MessageKey> = {
+  1: 'hrx.rating.1',
+  2: 'hrx.rating.2',
+  3: 'hrx.rating.3',
+  4: 'hrx.rating.4',
+  5: 'hrx.rating.5',
+};
 
 /** Performance reviews (employee.performance, two-step verification). */
 export function ReviewsCard({ employeeId }: { employeeId: string }) {
@@ -141,9 +150,9 @@ export function ReviewsCard({ employeeId }: { employeeId: string }) {
                 value={String(form.rating)}
                 onChange={(ev) => setForm({ ...form, rating: Number(ev.target.value) })}
               >
-                {[5, 4, 3, 2, 1].map((n) => (
+                {([5, 4, 3, 2, 1] as const).map((n) => (
                   <option key={n} value={n}>
-                    {n} · {t(`hrx.rating.${n}` as 'hrx.rating.1')}
+                    {n} · {t(RATING_LABEL[n])}
                   </option>
                 ))}
               </NativeSelect>
