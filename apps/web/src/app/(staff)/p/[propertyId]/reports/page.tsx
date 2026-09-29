@@ -6,12 +6,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { OperationalReports } from './operational';
 
 /** Daily financial report and ledger reconciliation (blueprint §15). */
 export default function ReportsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const [date, setDate] = useState('');
   const report = useQuery({

@@ -22,10 +22,10 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useProperty, useRoutePropertyId } from '@/lib/property';
+import { usePms, useProperty, usePropertyId } from '@/lib/property';
 
 export default function NewReservationPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const router = useRouter();
   const property = useProperty(propertyId);

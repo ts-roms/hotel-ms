@@ -22,7 +22,7 @@ import { type FormEvent, useState } from 'react';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 
 /** Recurring shifts, minimum staffing and coverage gaps (spec §35, ADR-0028). */
 
@@ -76,7 +76,7 @@ export function RecurringShifts({
   from: string;
   onCreated: () => void;
 }) {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const templates = useQuery({
     queryKey: ['shift-templates', propertyId],
@@ -250,7 +250,7 @@ export function CoverageGaps({ gaps }: { gaps: CoverageGap[] }) {
 
 /** Minimum staffing per department and time window. */
 export function StaffingRequirements({ canManage }: { canManage: boolean }) {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const requirements = useQuery({

@@ -27,10 +27,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BedDouble, CalendarDays, MoonStar, TriangleAlert, UserX } from 'lucide-react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 
 export default function NightAuditPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const preview = useQuery({

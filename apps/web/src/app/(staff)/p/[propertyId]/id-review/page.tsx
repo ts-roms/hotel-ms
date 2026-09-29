@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { statusLabel, statusVariant } from '@/lib/status';
 
 const FILTERS = [
@@ -33,7 +33,7 @@ const FILTERS = [
 
 /** Guest IDs uploaded in the guest portal, for the front desk to review (ADR-0027). */
 export default function IdReviewPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['key']>('PENDING');
   const [selected, setSelected] = useState<string | null>(null);

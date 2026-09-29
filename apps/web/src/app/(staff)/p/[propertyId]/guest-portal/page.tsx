@@ -21,12 +21,12 @@ import { type FormEvent, useState } from 'react';
 import { PropertyPhotos } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 
 /** What guests see in the portal, and the self check-in ID rule (ADR-0027). */
 export default function GuestPortalSettingsPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const settings = useQuery({

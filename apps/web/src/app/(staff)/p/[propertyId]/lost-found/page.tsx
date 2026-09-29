@@ -20,7 +20,7 @@ import { PackageSearch } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel } from '@/lib/status';
 
@@ -28,7 +28,7 @@ const CATEGORIES = ['VALUABLES', 'DOCUMENTS', 'ELECTRONICS', 'CLOTHING', 'OTHER'
 
 /** Lost & found (spec §31, ADR-0023). */
 export default function LostFoundPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const [status, setStatus] = useState<'HELD' | 'CLOSED' | 'ALL'>('HELD');

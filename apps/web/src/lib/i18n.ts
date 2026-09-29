@@ -934,6 +934,17 @@ const en = {
   'hr.prevWeek': 'Previous week',
   'hr.nextWeek': 'Next week',
   loading: 'Loading…',
+  'nav.group.frontOffice': 'Front office',
+  'nav.group.operations': 'Operations',
+  'nav.group.fnb': 'Food & beverage',
+  'nav.group.people': 'People',
+  'nav.group.finance': 'Finance',
+  'nav.group.admin': 'Property setup',
+  'notFound.title': 'Not found',
+  'notFound.description': 'This page does not exist, or you do not have access to it.',
+  'notFound.toDashboard': 'Go to dashboard',
+  'error.pageTitle': 'This page could not load',
+  'error.retry': 'Try again',
 } as const;
 
 export type MessageKey = keyof typeof en;

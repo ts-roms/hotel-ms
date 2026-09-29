@@ -37,7 +37,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { type FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { useProperty, usePms, useRoutePropertyId } from '@/lib/property';
+import { useProperty, usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel } from '@/lib/status';
 
@@ -67,7 +67,7 @@ export default function CalendarPage() {
 }
 
 function UnifiedCalendar() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const property = useProperty(propertyId);
   const session = useSession();

@@ -23,11 +23,11 @@ import { type FormEvent, useState } from 'react';
 import { MenuItemPhoto } from '@/components/photos';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 
 /** Outlet menus: categories, items, prices and availability (blueprint §14). */
 export default function MenusPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const queryClient = useQueryClient();
   const outlets = useQuery({ queryKey: ['outlets', propertyId], queryFn: pms.outlets });

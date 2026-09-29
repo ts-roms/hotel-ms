@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 
 function Stat({ label, value, href }: { label: string; value: ReactNode; href?: string }) {
   const body = (
@@ -34,7 +34,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 /** Today at the property (spec §66, ADR-0025): sections by the user's permissions. */
 export default function OverviewPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const dashboard = useQuery({
     queryKey: ['property-dashboard', propertyId],

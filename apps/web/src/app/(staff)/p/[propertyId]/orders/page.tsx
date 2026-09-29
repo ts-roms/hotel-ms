@@ -30,7 +30,7 @@ import { Plus, ReceiptText, ShoppingBag, X } from 'lucide-react';
 import { useState } from 'react';
 import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
-import { usePms, useRoutePropertyId } from '@/lib/property';
+import { usePms, usePropertyId } from '@/lib/property';
 import { hasPermission, useSession } from '@/lib/session';
 import { statusLabel, statusVariant } from '@/lib/status';
 
@@ -42,7 +42,7 @@ interface CartLine {
 
 /** Order taking for outlets and phone room service (blueprint §14). */
 export default function OrdersPage() {
-  const propertyId = useRoutePropertyId()!;
+  const propertyId = usePropertyId();
   const pms = usePms(propertyId);
   const session = useSession();
   const queryClient = useQueryClient();
