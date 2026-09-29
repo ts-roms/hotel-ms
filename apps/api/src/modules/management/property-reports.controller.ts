@@ -11,11 +11,11 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { csvField } from '../../common/csv.js';
+import { toDecimalString } from '../../common/money.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodQuery, ZodResponse } from '../../common/zod.js';
 import { ManagementService } from './management.service.js';
 
-const money = (minor: number) => (minor / 100).toFixed(2);
 const toCsv = (header: string[], rows: (string | number | null)[][]) =>
   [header, ...rows].map((r) => r.map((v) => csvField(v)).join(',')).join('\r\n') + '\r\n';
 
@@ -83,9 +83,9 @@ export class PropertyReportsController {
           d.roomsAvailable,
           d.roomsSold,
           d.occupancyPct,
-          money(d.roomRevenueMinor),
-          money(d.adrMinor),
-          money(d.revparMinor),
+          toDecimalString(d.roomRevenueMinor, r.currency),
+          toDecimalString(d.adrMinor, r.currency),
+          toDecimalString(d.revparMinor, r.currency),
           d.arrivals,
           d.departures,
           d.noShows,
@@ -161,7 +161,7 @@ export class PropertyReportsController {
       query,
       toCsv(
         ['item', 'quantity', `sales_${r.currency}`],
-        r.topItems.map((i) => [i.name, i.quantity, money(i.salesMinor)]),
+        r.topItems.map((i) => [i.name, i.quantity, toDecimalString(i.salesMinor, r.currency)]),
       ),
     );
   }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { convertMinor, currencyDigits, formatMinor, formatRate, parseRateMicros } from './money.js';
+import {
+  convertMinor,
+  currencyDigits,
+  formatMinor,
+  formatRate,
+  parseRateMicros,
+  toDecimalString,
+  toMajor,
+} from './money.js';
 
 describe('money', () => {
   it('knows minor units per currency', () => {
@@ -33,5 +41,13 @@ describe('money', () => {
     expect(plain(formatMinor(123_450n, 'PHP'))).toBe('1,234.50');
     expect(plain(formatMinor(1_500n, 'JPY'))).toBe('1,500');
     expect(plain(formatMinor(1_500n, 'KWD'))).toBe('1.500');
+  });
+
+  it('converts minor units to major units by the currency (exports)', () => {
+    expect(toMajor(123_450n, 'PHP')).toBe(1234.5);
+    expect(toMajor(1_500, 'JPY')).toBe(1500);
+    expect(toDecimalString(123_450n, 'PHP')).toBe('1234.50');
+    expect(toDecimalString(1_500, 'JPY')).toBe('1500');
+    expect(toDecimalString(1_500n, 'KWD')).toBe('1.500');
   });
 });
