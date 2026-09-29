@@ -24,13 +24,14 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  ChipGroup,
   cn,
+  FilterChip,
   Input,
   Label,
   PageHeader,
   NativeSelect,
   Textarea,
-  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -112,24 +113,22 @@ function UnifiedCalendar() {
           )
         }
       />
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t('cal.show')}>
+      <ChipGroup label={t('cal.show')}>
         {CALENDAR_KINDS.map((kind) => (
-          <Toggle
+          <FilterChip
             key={kind}
-            variant="outline"
-            size="sm"
             pressed={!hidden.has(kind)}
             onPressedChange={() => toggle(kind)}
-            className={cn('gap-1.5 rounded-full px-3', hidden.has(kind) && 'opacity-40')}
+            className={cn('gap-1.5', hidden.has(kind) && 'opacity-40')}
           >
             <span
               className="size-2.5 rounded-full"
               style={{ backgroundColor: KIND_COLORS[kind] }}
             />
             {statusLabel(kind)}
-          </Toggle>
+          </FilterChip>
         ))}
-      </div>
+      </ChipGroup>
       {calendar.error && <Alert>{errorMessage(calendar.error)}</Alert>}
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
         <Card>

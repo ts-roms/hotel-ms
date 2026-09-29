@@ -13,7 +13,7 @@ import {
   PageHeader,
   NativeSelect,
   Skeleton,
-  Toggle,
+  FilterChip,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChefHat, Clock } from 'lucide-react';
@@ -316,17 +316,16 @@ function SoldOut({
           c.items
             .filter((i) => !i.archived)
             .map((i) => (
-              <Toggle
+              <FilterChip
                 key={i.id}
-                variant="outline"
-                size="sm"
+                tone="destructive"
                 pressed={!i.available}
                 disabled={toggle.isPending}
                 onPressedChange={() => toggle.mutate({ id: i.id, available: !i.available })}
-                className="rounded-full px-3 text-muted-foreground active:scale-95 disabled:opacity-60 hover:border-ring/40 hover:bg-card hover:text-foreground data-[state=on]:border-destructive/30 data-[state=on]:bg-destructive/10 data-[state=on]:text-destructive data-[state=on]:line-through"
+                className="data-[state=on]:line-through"
               >
                 {i.name}
-              </Toggle>
+              </FilterChip>
             )),
         )}
       </CardContent>

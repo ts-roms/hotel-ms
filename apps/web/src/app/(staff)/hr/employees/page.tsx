@@ -6,16 +6,14 @@ import {
   Avatar,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   cn,
   EmptyState,
   Input,
   LoadingRegion,
-  PageHeader,
   NativeSelect,
+  PageHeader,
+  SectionCard,
   SkeletonRow,
 } from '@hotel/ui';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -155,13 +153,12 @@ function NewEmployee() {
     create.mutate();
   };
   return (
-    <Card className="animate-fade-in">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="size-4 text-primary" />
-          {t('hr.addEmployee')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard
+      className="animate-fade-in"
+      headerClassName="pb-4"
+      icon={UserPlus}
+      title={t('hr.addEmployee')}
+    >
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2" noValidate>
           <Input
@@ -248,6 +245,6 @@ function NewEmployee() {
         </form>
         {create.error && <Alert className="mt-2">{errorMessage(create.error)}</Alert>}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

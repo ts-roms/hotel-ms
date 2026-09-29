@@ -16,6 +16,7 @@ import {
   LoadingRegion,
   PageHeader,
   NativeSelect,
+  SectionCard,
   Skeleton,
   SkeletonTable,
   Table,
@@ -203,18 +204,21 @@ export default function OrdersPage() {
               ))}
             </CardContent>
           </Card>
-          <Card className="animate-fade-in lg:sticky lg:top-6 lg:self-start">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ShoppingBag className="size-4 text-primary" />
+          <SectionCard
+            className="animate-fade-in lg:sticky lg:top-6 lg:self-start"
+            headerClassName="pb-4"
+            icon={ShoppingBag}
+            title={
+              <>
                 {t('fnb.newOrder')}
                 {cart.length > 0 && (
                   <Badge variant="primary" className="tabular-nums">
                     {cart.reduce((n, l) => n + l.quantity, 0)}
                   </Badge>
                 )}
-              </CardTitle>
-            </CardHeader>
+              </>
+            }
+          >
             <CardContent className="flex flex-col gap-3 text-sm">
               {cart.length === 0 && (
                 <p className="rounded-lg border border-dashed py-8 text-center text-muted-foreground">
@@ -344,7 +348,7 @@ export default function OrdersPage() {
                 <span className="tabular-nums">{formatMoney(total, currency)}</span>
               </Button>
             </CardContent>
-          </Card>
+          </SectionCard>
         </div>
       )}
 

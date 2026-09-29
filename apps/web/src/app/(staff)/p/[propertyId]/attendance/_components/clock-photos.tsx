@@ -1,7 +1,7 @@
 'use client';
 
 import { formatDate, localDate } from '@hotel/format';
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@hotel/ui';
+import { Button, CardContent, SectionCard } from '@hotel/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Camera } from 'lucide-react';
 import { useState } from 'react';
@@ -31,13 +31,7 @@ export function ClockPhotos({
   const [open, setOpen] = useState<string | null>(null);
   if (!photos.data) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Camera className="size-4 text-primary" />
-          {t('clock.photos')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Camera} title={t('clock.photos')}>
       <CardContent className="flex flex-col gap-2 text-sm">
         {photos.data.length === 0 && <p className="text-muted-foreground">{t('clock.none')}</p>}
         {photos.data.map((p) => (
@@ -70,6 +64,6 @@ export function ClockPhotos({
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

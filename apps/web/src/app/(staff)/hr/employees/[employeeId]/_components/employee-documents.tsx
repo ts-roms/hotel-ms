@@ -18,13 +18,11 @@ import {
   AlertDialogTrigger,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   NativeSelect,
+  SectionCard,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
@@ -78,13 +76,7 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FileText className="size-4 text-primary" />
-          {t('hr.documents')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={FileText} title={t('hr.documents')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         {documents.error && <Alert>{errorMessage(documents.error)}</Alert>}
         {documents.data?.length === 0 && (
@@ -191,6 +183,6 @@ export function EmployeeDocuments({ employeeId }: { employeeId: string }) {
           </form>
         )}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

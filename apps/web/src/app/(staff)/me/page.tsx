@@ -6,19 +6,17 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   LoadingRegion,
+  NativeSelect,
   Notice,
   PageHeader,
-  NativeSelect,
+  SectionCard,
+  Skeleton,
   SkeletonCard,
   SkeletonTable,
-  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -95,13 +93,7 @@ function Clock() {
   const last = me.data?.lastPunch;
   const state = last?.type ?? 'NONE';
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Timer className="size-4 text-primary" />
-          {t('hr.clock')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Timer} title={t('hr.clock')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         {punch.error && <Alert>{errorMessage(punch.error)}</Alert>}
         <p className="flex items-center gap-2 text-muted-foreground">
@@ -146,7 +138,7 @@ function Clock() {
           />
         )}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -197,13 +189,7 @@ function MyShifts() {
     queryFn: () => api.me.shifts(monday, addDays(monday, 13)),
   });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <CalendarClock className="size-4 text-primary" />
-          {t('hr.myShifts')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={CalendarClock} title={t('hr.myShifts')}>
       <CardContent className="flex flex-col gap-1 text-sm">
         {shifts.isPending && <SkeletonTable rows={3} columns={3} />}
         {shifts.data?.length === 0 && (
@@ -228,7 +214,7 @@ function MyShifts() {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -262,13 +248,7 @@ function MyAttendance() {
     request.mutate();
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ClockIcon className="size-4 text-primary" />
-          {t('hr.myAttendance')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={ClockIcon} title={t('hr.myAttendance')}>
       <CardContent className="flex flex-col gap-4 text-sm">
         {days.isPending && <SkeletonTable rows={4} columns={6} />}
         <Table className="[&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
@@ -354,7 +334,7 @@ function MyAttendance() {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -380,13 +360,7 @@ function MyLeave() {
     request.mutate();
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Plane className="size-4 text-primary" />
-          {t('hr.myLeave')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={Plane} title={t('hr.myLeave')}>
       <CardContent className="flex flex-col gap-4 text-sm">
         <div className="flex flex-wrap gap-2">
           {leave.isPending && (
@@ -485,6 +459,6 @@ function MyLeave() {
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

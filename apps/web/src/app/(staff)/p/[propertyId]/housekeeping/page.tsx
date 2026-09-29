@@ -7,14 +7,15 @@ import {
   Button,
   Card,
   CardContent,
+  ChipGroup,
   cn,
+  FilterChip,
   EmptyState,
   LoadingRegion,
   Notice,
   PageHeader,
   NativeSelect,
   Skeleton,
-  Toggle,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BedDouble } from 'lucide-react';
@@ -89,23 +90,19 @@ export default function HousekeepingPage() {
       {(board.error || action.error) && <Alert>{errorMessage(board.error ?? action.error)}</Alert>}
 
       {board.data && rooms.length > 0 && (
-        <div
-          role="group"
-          aria-label={t('hk.summary')}
-          className="flex animate-fade-in flex-wrap gap-2"
-        >
-          <FilterChip active={filter === null} onClick={() => setFilter(null)}>
+        <ChipGroup label={t('hk.summary')} className="animate-fade-in">
+          <FilterChip pressed={filter === null} onPressedChange={() => setFilter(null)}>
             {t('hk.all')} <span className="tabular-nums opacity-70">{rooms.length}</span>
           </FilterChip>
           {HOUSEKEEPING_STATUSES.map((s) => (
-            <FilterChip key={s} active={filter === s} onClick={() => setFilter(s)}>
+            <FilterChip key={s} pressed={filter === s} onPressedChange={() => setFilter(s)}>
               <Badge variant={statusVariant(s)} dot className="border-0 bg-transparent p-0">
                 {statusLabel(s)}
               </Badge>
               <span className="tabular-nums opacity-70">{counts[s]}</span>
             </FilterChip>
           ))}
-        </div>
+        </ChipGroup>
       )}
 
       {board.isPending && (
@@ -219,30 +216,5 @@ export default function HousekeepingPage() {
         ))}
       </div>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Toggle
-      variant="outline"
-      size="sm"
-      pressed={active}
-      onPressedChange={onClick}
-      className={cn(
-        'rounded-full px-3 active:scale-95 data-[state=on]:hover:bg-primary/10 data-[state=on]:hover:text-primary',
-        active ? 'shadow-sm' : 'text-muted-foreground hover:border-ring/40 hover:text-foreground',
-      )}
-    >
-      {children}
-    </Toggle>
   );
 }

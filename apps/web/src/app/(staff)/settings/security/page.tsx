@@ -3,17 +3,14 @@
 import { passwordSchema, type TotpEnrollment } from '@hotel/contracts';
 import {
   Alert,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
   Badge,
+  Button,
+  CardContent,
+  Input,
   Label,
   Notice,
   PageHeader,
+  SectionCard,
   Skeleton,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -75,21 +72,18 @@ function MfaCard() {
   const error = start.error ?? confirm.error ?? disable.error;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldCheck className="size-4 text-primary" />
-            {t('security.mfa')}
-          </CardTitle>
-          {session.data && (
-            <Badge variant={enabled ? 'success' : 'neutral'} dot>
-              {enabled ? 'on' : 'off'}
-            </Badge>
-          )}
-        </div>
-        <CardDescription>{enabled ? t('security.mfaOn') : t('security.mfaOff')}</CardDescription>
-      </CardHeader>
+    <SectionCard
+      icon={ShieldCheck}
+      title={t('security.mfa')}
+      description={enabled ? t('security.mfaOn') : t('security.mfaOff')}
+      actions={
+        session.data && (
+          <Badge variant={enabled ? 'success' : 'neutral'} dot>
+            {enabled ? 'on' : 'off'}
+          </Badge>
+        )
+      }
+    >
       <CardContent className="flex flex-col gap-4">
         {error && <Alert>{errorMessage(error)}</Alert>}
 
@@ -184,7 +178,7 @@ function MfaCard() {
           </form>
         )}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -201,13 +195,7 @@ function ChangePasswordCard() {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <KeyRound className="size-4 text-primary" />
-          {t('security.changePassword')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={KeyRound} title={t('security.changePassword')}>
       <CardContent>
         <form
           className="flex flex-col gap-3"
@@ -244,7 +232,7 @@ function ChangePasswordCard() {
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -269,14 +257,7 @@ function PinCard() {
   // Members without an organization context have nothing to sign in to.
   if (status.error) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Grid3x3 className="size-4 text-primary" />
-          {t('pin.title')}
-        </CardTitle>
-        <CardDescription>{t('pin.hint')}</CardDescription>
-      </CardHeader>
+    <SectionCard icon={Grid3x3} title={t('pin.title')} description={t('pin.hint')}>
       <CardContent>
         <form
           className="flex flex-col gap-3"
@@ -331,6 +312,6 @@ function PinCard() {
           </div>
         </form>
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

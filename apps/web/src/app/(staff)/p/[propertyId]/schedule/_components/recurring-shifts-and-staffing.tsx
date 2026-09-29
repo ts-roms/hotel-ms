@@ -12,9 +12,12 @@ import {
   Checkbox,
   Input,
   Label,
-  Notice,
   NativeSelect,
-  Toggle,
+  Notice,
+  SectionCard,
+  WeekdayPicker,
+  WEEKDAYS_MONDAY_FIRST,
+  weekdayShortName,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Repeat, TriangleAlert, Trash2, Users } from 'lucide-react';
@@ -25,40 +28,6 @@ import { t } from '@/lib/i18n';
 import { usePms, usePropertyId } from '@/lib/property';
 
 /** Recurring shifts, minimum staffing and coverage gaps (spec §35, ADR-0028). */
-
-/** Monday first, as the schedule grid; values are 0 = Sunday … 6 = Saturday. */
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0] as const;
-const weekdayName = (d: number) =>
-  // 2023-01-01 was a Sunday.
-  new Date(Date.UTC(2023, 0, 1 + d)).toLocaleString([], { weekday: 'short', timeZone: 'UTC' });
-
-function WeekdayPicker({
-  value,
-  onChange,
-}: {
-  value: number[];
-  onChange: (days: number[]) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1" role="group" aria-label={t('sched.weekdays')}>
-      {WEEKDAYS.map((d) => {
-        const on = value.includes(d);
-        return (
-          <Toggle
-            key={d}
-            variant="outline"
-            size="sm"
-            pressed={on}
-            onPressedChange={() => onChange(on ? value.filter((x) => x !== d) : [...value, d])}
-            className="h-7 rounded-md px-2 font-normal data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90"
-          >
-            {weekdayName(d)}
-          </Toggle>
-        );
-      })}
-    </div>
-  );
-}
 
 const SKIP_REASON: Record<RecurringShiftsResult['skipped'][number]['reason'], string> = {
   NOT_ASSIGNED: 'sched.skip.NOT_ASSIGNED',
@@ -160,7 +129,7 @@ export function RecurringShifts({
               />
             </Label>
           </div>
-          <WeekdayPicker value={weekdays} onChange={setWeekdays} />
+          <WeekdayPicker label={t('sched.weekdays')} value={weekdays} onChange={setWeekdays} />
           <fieldset className="flex flex-col gap-1">
             <legend className="mb-1 font-medium">{t('sched.people')}</legend>
             <div className="grid max-h-48 gap-1 overflow-y-auto rounded-md border p-2 sm:grid-cols-2">
@@ -292,13 +261,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
   if (!canManage && !requirements.data?.length) return null;
 
   return (
-    <Card className="animate-fade-in">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Users className="size-4 text-primary" />
-          {t('sched.minimumStaffing')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard className="animate-fade-in" icon={Users} title={t('sched.minimumStaffing')}>
       <CardContent className="flex flex-col gap-3 text-sm">
         {requirements.data?.length === 0 && (
           <p className="text-muted-foreground">{t('sched.noRequirements')}</p>
@@ -310,8 +273,8 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
           >
             <span>
               <strong>{r.departmentName}</strong> · {r.startTime}–{r.endTime} ·{' '}
-              {WEEKDAYS.filter((d) => r.weekdays.includes(d))
-                .map(weekdayName)
+              {WEEKDAYS_MONDAY_FIRST.filter((d) => r.weekdays.includes(d))
+                .map(weekdayShortName)
                 .join(', ')}
             </span>
             <span className="flex items-center gap-2">
@@ -380,6 +343,7 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
               <span className="text-muted-foreground">{t('sched.people').toLowerCase()}</span>
             </div>
             <WeekdayPicker
+              label={t('sched.weekdays')}
               value={form.weekdays}
               onChange={(weekdays) => setForm({ ...form, weekdays })}
             />
@@ -397,6 +361,6 @@ export function StaffingRequirements({ canManage }: { canManage: boolean }) {
           </form>
         )}
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }

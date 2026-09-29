@@ -8,14 +8,13 @@ import {
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
   Input,
   Label,
   LoadingRegion,
+  NativeSelect,
   Notice,
   PageHeader,
-  NativeSelect,
+  SectionCard,
   SkeletonRow,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -166,13 +165,7 @@ function InviteForm({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="size-4 text-primary" />
-          {t('members.invite')}
-        </CardTitle>
-      </CardHeader>
+    <SectionCard icon={UserPlus} title={t('members.invite')}>
       <CardContent>
         <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
           {invite.error && <Alert className="sm:col-span-2">{errorMessage(invite.error)}</Alert>}
@@ -219,7 +212,7 @@ function InviteForm({
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 

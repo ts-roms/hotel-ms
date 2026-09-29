@@ -19,7 +19,7 @@ import {
   PageHeader,
   NativeSelect,
   Skeleton,
-  Toggle,
+  SegmentedControl,
 } from '@hotel/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellRing, Check, Plus, Star } from 'lucide-react';
@@ -105,19 +105,14 @@ export default function ServiceRequestsPage() {
         title={t('sr.title')}
         actions={
           <>
-            <div className="flex rounded-lg border bg-card p-0.5">
-              {(['ACTIVE', 'DONE'] as const).map((s) => (
-                <Toggle
-                  key={s}
-                  size="sm"
-                  pressed={status === s}
-                  onPressedChange={() => setStatus(s)}
-                  className="px-3 hover:bg-transparent hover:text-foreground active:scale-100 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground"
-                >
-                  {t(s === 'ACTIVE' ? 'sr.active' : 'sr.done')}
-                </Toggle>
-              ))}
-            </div>
+            <SegmentedControl
+              options={[
+                { value: 'ACTIVE', label: t('sr.active') },
+                { value: 'DONE', label: t('sr.done') },
+              ]}
+              value={status}
+              onChange={setStatus}
+            />
             <NativeSelect
               className="h-9 w-auto"
               aria-label={t('sr.all')}
