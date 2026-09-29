@@ -89,6 +89,10 @@ export class HousekeepingService {
         status: { in: ['OPEN', 'IN_PROGRESS'] },
         ...(fullBoard ? {} : { assignedMembershipId: membershipId }),
       };
+      // Flat queries by property, joined here. Prisma's `include` sends the keys of every
+      // parent row (two per room, as relations are keyed by organization too), which makes
+      // large statements and costs Prisma CPU per room; these stay small at any hotel size
+      // and use the property indexes (ADR-0034).
       const rooms = await tx.room.findMany({
         where: {
           propertyId,
@@ -96,44 +100,97 @@ export class HousekeepingService {
           ...(only ? { id: only.roomId } : {}),
           ...(fullBoard ? {} : { housekeepingTasks: { some: openTaskFilter } }),
         },
-        include: {
-          roomType: { select: { code: true } },
-          stays: { where: { checkedOutAt: null }, select: { id: true } },
-          housekeepingTasks: {
-            where: openTaskFilter,
-            include: taskInclude,
-            orderBy: { createdAt: 'asc' },
-            take: 1,
-          },
-          assignments: {
-            where: { releasedAt: null, startDate: { lte: day }, endDate: { gte: day } },
-            include: {
-              reservationRoom: { select: { status: true, arrivalDate: true, departureDate: true } },
-            },
-          },
-        },
         orderBy: { number: 'asc' },
       });
+      const oneRoom = only ? { roomId: only.roomId } : {};
+      const typeCodes = new Map(
+        (
+          await tx.roomType.findMany({ where: { propertyId }, select: { id: true, code: true } })
+        ).map((t) => [t.id, t.code]),
+      );
+      const occupiedRooms = new Set(
+        (
+          await tx.stay.findMany({
+            where: { propertyId, checkedOutAt: null, ...oneRoom },
+            select: { roomId: true },
+          })
+        ).map((s) => s.roomId),
+      );
+      const openTasks = await tx.housekeepingTask.findMany({
+        where: { propertyId, ...openTaskFilter, ...oneRoom },
+        orderBy: { createdAt: 'asc' },
+      });
+      const assigneeIds = [
+        ...new Set(openTasks.map((t) => t.assignedMembershipId).filter((id) => id !== null)),
+      ];
+      const assignees = new Map(
+        (
+          await tx.organizationMembership.findMany({
+            where: { id: { in: assigneeIds } },
+            select: { id: true, identity: { select: { displayName: true } } },
+          })
+        ).map((m) => [m.id, m]),
+      );
+      const roomNumbers = new Map(rooms.map((r) => [r.id, r.number]));
+      const firstTask = new Map<string, TaskRow>();
+      for (const t of openTasks) {
+        if (firstTask.has(t.roomId)) continue;
+        firstTask.set(t.roomId, {
+          ...t,
+          room: { number: roomNumbers.get(t.roomId) ?? '' },
+          assignee: t.assignedMembershipId ? (assignees.get(t.assignedMembershipId) ?? null) : null,
+        });
+      }
+      const assignments = await tx.roomAssignment.findMany({
+        where: {
+          propertyId,
+          releasedAt: null,
+          startDate: { lte: day },
+          endDate: { gte: day },
+          ...oneRoom,
+        },
+      });
+      const lineIds = [
+        ...new Set(assignments.map((a) => a.reservationRoomId).filter((id) => id !== null)),
+      ];
+      const linesById = new Map(
+        (
+          await tx.reservationRoom.findMany({
+            where: { id: { in: lineIds } },
+            select: { id: true, status: true, arrivalDate: true, departureDate: true },
+          })
+        ).map((l) => [l.id, l]),
+      );
+      const assignmentsByRoom = new Map<string, typeof assignments>();
+      for (const a of assignments) {
+        const list = assignmentsByRoom.get(a.roomId) ?? [];
+        list.push(a);
+        assignmentsByRoom.set(a.roomId, list);
+      }
       return {
         businessDate,
         fullBoard,
         rooms: rooms.map((room) => {
-          const blocked = room.assignments.some((a) => a.kind === 'BLOCK' && a.endDate > day);
-          const lines = room.assignments.map((a) => a.reservationRoom).filter((l) => l !== null);
+          const roomAssignments = assignmentsByRoom.get(room.id) ?? [];
+          const blocked = roomAssignments.some((a) => a.kind === 'BLOCK' && a.endDate > day);
+          const lines = roomAssignments
+            .map((a) => (a.reservationRoomId ? linesById.get(a.reservationRoomId) : undefined))
+            .filter((l) => l !== undefined);
+          const task = firstTask.get(room.id);
           return {
             roomId: room.id,
             number: room.number,
-            roomTypeCode: room.roomType.code,
+            roomTypeCode: typeCodes.get(room.roomTypeId) ?? '',
             housekeepingStatus: room.housekeepingStatus,
             serviceStatus: blocked ? 'OUT_OF_ORDER' : room.serviceStatus,
-            occupied: room.stays.length > 0,
+            occupied: occupiedRooms.has(room.id),
             arrivalToday: lines.some(
               (l) => l.status === 'RESERVED' && fromDbDate(l.arrivalDate) === businessDate,
             ),
             departureToday: lines.some(
               (l) => l.status === 'IN_HOUSE' && fromDbDate(l.departureDate) <= businessDate,
             ),
-            openTask: room.housekeepingTasks[0] ? toTaskDto(room.housekeepingTasks[0]) : null,
+            openTask: task ? toTaskDto(task) : null,
           };
         }),
       };

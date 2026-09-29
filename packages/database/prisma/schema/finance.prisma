@@ -163,6 +163,7 @@ model Payment {
 
   @@unique([organizationId, id])
   @@index([organizationId, propertyId, businessDate])
+  @@index([organizationId, folioId])
   @@map("payments")
 }
 

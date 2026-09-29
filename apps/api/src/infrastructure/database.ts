@@ -1,4 +1,4 @@
-import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import {
   createPrismaClient,
   withDbContext,
@@ -23,6 +23,9 @@ export class PrismaService implements OnModuleDestroy {
       connectionString: env.DATABASE_URL,
       applicationName: 'hotel-api',
       maxConnections: env.DATABASE_POOL_SIZE,
+      slowQueryMs: env.DB_SLOW_QUERY_MS,
+      onSlowQuery: ({ sql, durationMs }) =>
+        new Logger('Database').warn(`slow query ${durationMs}ms: ${sql.slice(0, 2000)}`),
     });
   }
 
