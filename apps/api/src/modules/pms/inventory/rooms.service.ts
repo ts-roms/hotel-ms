@@ -23,6 +23,8 @@ import { AuditService } from '../../audit/audit.service.js';
 import { OutboxService } from '../../outbox/outbox.service.js';
 import { refreshCapacity, releaseInventory, takeInventory } from './inventory.js';
 
+type HousekeepingStatus = 'DIRTY' | 'CLEANING' | 'CLEAN' | 'INSPECTED';
+
 /** Current business date of the route's property (the only "today" PMS code may use). */
 export async function businessDateOf(tx: Tx, propertyId: string): Promise<string> {
   const property = await tx.property.findUniqueOrThrow({
@@ -374,6 +376,53 @@ export class RoomsService {
       );
     });
     return this.getRoom(roomId);
+  }
+
+  /**
+   * Changes a room's housekeeping status with its history row and event, inside the
+   * caller's transaction (housekeeping, check-out, night audit). No-op when the status is
+   * unchanged. The caller checks the transition is allowed.
+   */
+  async setHousekeepingStatusInTx(
+    tx: Tx,
+    input: {
+      organizationId: string;
+      propertyId: string;
+      roomId: string;
+      to: HousekeepingStatus;
+      reason: string | null;
+      actorId: string | null;
+    },
+  ): Promise<void> {
+    const room = await tx.room.findUniqueOrThrow({ where: { id: input.roomId } });
+    if (room.housekeepingStatus === input.to) return;
+    await tx.room.update({
+      where: { id: input.roomId },
+      data: { housekeepingStatus: input.to, version: { increment: 1 } },
+    });
+    await tx.roomStatusEvent.create({
+      data: {
+        organizationId: input.organizationId,
+        propertyId: input.propertyId,
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        fromValue: room.housekeepingStatus,
+        toValue: input.to,
+        reason: input.reason,
+        actorId: input.actorId,
+      },
+    });
+    await this.outbox.enqueue(
+      tx,
+      'RoomStatusChanged',
+      {
+        roomId: input.roomId,
+        dimension: 'HOUSEKEEPING',
+        from: room.housekeepingStatus,
+        to: input.to,
+      },
+      { propertyId: input.propertyId },
+    );
   }
 
   // ---- Out-of-order blocks --------------------------------------------------------------

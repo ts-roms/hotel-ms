@@ -12,11 +12,8 @@ import { OutboxService } from '../outbox/outbox.service.js';
 import { toGuestSummary } from '../pms/guests/guests.service.js';
 import { releaseInventory } from '../pms/inventory/inventory.js';
 import { ReservationsService, toReservationDto } from '../pms/reservations/reservations.service.js';
-import { businessDateOf } from '../pms/inventory/rooms.service.js';
-import {
-  ensureHousekeepingTask,
-  recordRoomStatus,
-} from '../operations/housekeeping/room-status.js';
+import { businessDateOf, RoomsService } from '../pms/inventory/rooms.service.js';
+import { HousekeepingService } from '../operations/housekeeping/housekeeping.service.js';
 import { GuestMessagesService } from '../notifications/guest-messages.service.js';
 import { GuestInboxService } from '../notifications/guest-inbox.service.js';
 
@@ -66,6 +63,8 @@ export class FrontOfficeService {
     private readonly audit: AuditService,
     private readonly outbox: OutboxService,
     private readonly cls: ClsService<RequestContext>,
+    private readonly rooms: RoomsService,
+    private readonly housekeeping: HousekeepingService,
     private readonly guestMessages: GuestMessagesService,
     private readonly guestInbox: GuestInboxService,
   ) {}
@@ -208,24 +207,17 @@ export class FrontOfficeService {
         data: { status: 'CHECKED_OUT', version: { increment: 1 } },
       });
 
-      await recordRoomStatus(
-        tx,
-        {
-          organizationId,
-          propertyId,
-          roomId: stay.roomId,
-          to: 'DIRTY',
-          reason: 'Check-out',
-          actorId,
-        },
-        this.outbox,
-      );
-      // The departed guest's stayover cleaning is superseded by the checkout clean.
-      await tx.housekeepingTask.updateMany({
-        where: { roomId: stay.roomId, type: 'STAYOVER', status: { in: ['OPEN', 'IN_PROGRESS'] } },
-        data: { status: 'CANCELLED', version: { increment: 1 } },
+      await this.rooms.setHousekeepingStatusInTx(tx, {
+        organizationId,
+        propertyId,
+        roomId: stay.roomId,
+        to: 'DIRTY',
+        reason: 'Check-out',
+        actorId,
       });
-      await ensureHousekeepingTask(tx, {
+      // The departed guest's stayover cleaning is superseded by the checkout clean.
+      await this.housekeeping.cancelOpenTasksInTx(tx, stay.roomId, 'STAYOVER');
+      await this.housekeeping.ensureTaskInTx(tx, {
         organizationId,
         propertyId,
         roomId: stay.roomId,

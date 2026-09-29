@@ -12,9 +12,7 @@ import { Problems, invalidState } from '../../../common/problem.js';
 import type { RequestContext } from '../../../common/request-context.js';
 import { TenantDb } from '../../../infrastructure/database.js';
 import { AuditService } from '../../audit/audit.service.js';
-import { OutboxService } from '../../outbox/outbox.service.js';
-import { businessDateOf } from '../../pms/inventory/rooms.service.js';
-import { recordRoomStatus } from './room-status.js';
+import { businessDateOf, RoomsService } from '../../pms/inventory/rooms.service.js';
 
 const taskInclude = {
   room: { select: { number: true } },
@@ -40,6 +38,7 @@ function toTaskDto(t: TaskRow): HousekeepingTask {
 }
 
 type Status = SetHousekeepingStatusRequest['status'];
+type TaskType = 'CHECKOUT_CLEAN' | 'STAYOVER' | 'TOUCH_UP' | 'INSPECTION';
 
 /** Allowed transitions and the permission each needs (blueprint §31). */
 const TRANSITIONS: Record<
@@ -57,7 +56,7 @@ export class HousekeepingService {
   constructor(
     private readonly db: TenantDb,
     private readonly audit: AuditService,
-    private readonly outbox: OutboxService,
+    private readonly rooms: RoomsService,
     private readonly cls: ClsService<RequestContext>,
   ) {}
 
@@ -166,18 +165,14 @@ export class HousekeepingService {
         throw Problems.forbidden('This room is not assigned to you.');
       }
 
-      await recordRoomStatus(
-        tx,
-        {
-          organizationId,
-          propertyId,
-          roomId,
-          to: input.status,
-          reason: input.reason || null,
-          actorId,
-        },
-        this.outbox,
-      );
+      await this.rooms.setHousekeepingStatusInTx(tx, {
+        organizationId,
+        propertyId,
+        roomId,
+        to: input.status,
+        reason: input.reason || null,
+        actorId,
+      });
       await this.advanceTasks(tx, openTasks, input.status);
       await this.audit.record(tx, {
         action: 'room.housekeeping_status_changed',
@@ -191,6 +186,48 @@ export class HousekeepingService {
     const board = await this.boardForRoom(roomId);
     if (!board) throw Problems.notFound('Room');
     return board;
+  }
+
+  // ---- Called by Front Office (check-out, night audit) ----------------------------------
+
+  /**
+   * Creates a housekeeping task unless an open one of the same type exists for the room,
+   * inside the caller's transaction. Checks first instead of relying on the unique index,
+   * because a constraint error would abort the surrounding transaction.
+   */
+  async ensureTaskInTx(
+    tx: Tx,
+    input: {
+      organizationId: string;
+      propertyId: string;
+      roomId: string;
+      type: TaskType;
+      businessDate: Date;
+      actorId: string | null;
+    },
+  ): Promise<void> {
+    const open = await tx.housekeepingTask.findFirst({
+      where: { roomId: input.roomId, type: input.type, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+    });
+    if (open) return;
+    await tx.housekeepingTask.create({
+      data: {
+        organizationId: input.organizationId,
+        propertyId: input.propertyId,
+        roomId: input.roomId,
+        type: input.type,
+        businessDate: input.businessDate,
+        createdBy: input.actorId,
+      },
+    });
+  }
+
+  /** Cancels the room's open tasks of one type, inside the caller's transaction. */
+  async cancelOpenTasksInTx(tx: Tx, roomId: string, type: TaskType): Promise<void> {
+    await tx.housekeepingTask.updateMany({
+      where: { roomId, type, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+      data: { status: 'CANCELLED', version: { increment: 1 } },
+    });
   }
 
   private async advanceTasks(
