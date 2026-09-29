@@ -15,8 +15,7 @@ export const en = {
   'error.RATE_LIMITED': 'Too many attempts. Wait a few minutes and try again.',
 
   'home.description': 'Open the personal link from your booking email to see your stay.',
-  'home.emailHint':
-    'Look for an email with the subject “Your stay at” followed by the hotel name.',
+  'home.emailHint': 'Look for an email with the subject “Your stay at” followed by the hotel name.',
   'home.alreadyOpened': 'Already opened your link on this device?',
   'home.continue': 'Continue to my stay',
 

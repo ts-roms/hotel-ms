@@ -25,15 +25,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Minus, Plus, ShoppingBag, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { api, errorMessage } from '@/lib/api';
+import { t } from '@/lib/i18n';
 
-const STATUS: Record<Order['status'], [string, BadgeVariant]> = {
-  PENDING: ['Sent to the kitchen', 'info'],
-  CONFIRMED: ['Accepted', 'primary'],
-  PREPARING: ['Being prepared', 'warning'],
-  READY: ['Ready', 'success'],
-  OUT_FOR_DELIVERY: ['On its way', 'info'],
-  DELIVERED: ['Delivered', 'neutral'],
-  CANCELLED: ['Cancelled', 'danger'],
+const STATUS_VARIANTS: Record<Order['status'], BadgeVariant> = {
+  PENDING: 'info',
+  CONFIRMED: 'primary',
+  PREPARING: 'warning',
+  READY: 'success',
+  OUT_FOR_DELIVERY: 'info',
+  DELIVERED: 'neutral',
+  CANCELLED: 'danger',
 };
 
 interface Line {
@@ -121,12 +122,12 @@ export function RoomService() {
           </span>
           {menu.outlet.name}
           <Badge variant={menu.open ? 'success' : 'neutral'} dot className="ml-auto">
-            {menu.open ? 'Open' : 'Closed'}
+            {menu.open ? t('roomService.open') : t('roomService.closed')}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-5 text-sm">
-        {!menu.open && <Notice>Room service is closed right now.</Notice>}
+        {!menu.open && <Notice>{t('roomService.closedNotice')}</Notice>}
         {menu.categories.map((c) => (
           <div key={c.id} className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -158,7 +159,7 @@ export function RoomService() {
                   size="icon"
                   variant="outline"
                   className="shrink-0 rounded-full"
-                  aria-label={`Add ${i.name}`}
+                  aria-label={t('roomService.add', { item: i.name })}
                   disabled={!menu.open}
                   onClick={() => add(i)}
                 >
@@ -173,7 +174,7 @@ export function RoomService() {
           <div className="flex animate-scale-in flex-col gap-3 rounded-2xl bg-muted/50 p-3">
             <div className="flex items-center gap-2 px-1 font-medium">
               <ShoppingBag className="size-4 text-primary" />
-              Your order
+              {t('roomService.yourOrder')}
               <Badge variant="primary" className="tabular-nums">
                 {count}
               </Badge>
@@ -187,7 +188,7 @@ export function RoomService() {
                       size="icon"
                       variant="ghost"
                       className="size-7 rounded-full"
-                      aria-label="One less"
+                      aria-label={t('roomService.less')}
                       onClick={() =>
                         l.quantity > 1
                           ? update(index, { quantity: l.quantity - 1 })
@@ -201,7 +202,7 @@ export function RoomService() {
                       size="icon"
                       variant="ghost"
                       className="size-7 rounded-full"
-                      aria-label="One more"
+                      aria-label={t('roomService.more')}
                       onClick={() => update(index, { quantity: Math.min(50, l.quantity + 1) })}
                     >
                       <Plus />
@@ -271,18 +272,19 @@ export function RoomService() {
               </div>
             ))}
             <NativeSelect
-              aria-label="Payment"
+              aria-label={t('roomService.payment')}
               value={payment}
               onChange={(e) => setChargeMethod(e.target.value as typeof chargeMethod)}
             >
               {menu.outlet.allowRoomCharge && (
-                <option value="ROOM_CHARGE">Charge to my room</option>
+                <option value="ROOM_CHARGE">{t('roomService.roomCharge')}</option>
               )}
-              <option value="PAY_ON_DELIVERY">Pay on delivery</option>
+              <option value="PAY_ON_DELIVERY">{t('roomService.payOnDelivery')}</option>
             </NativeSelect>
             {place.error && <Alert>{errorMessage(place.error)}</Alert>}
             <Button size="lg" loading={place.isPending} onClick={() => place.mutate()}>
-              Order · <span className="tabular-nums">{formatMoney(total, menu.currency)}</span>
+              {t('roomService.order')} ·{' '}
+              <span className="tabular-nums">{formatMoney(total, menu.currency)}</span>
             </Button>
           </div>
         )}
@@ -291,11 +293,10 @@ export function RoomService() {
         {!!orders.data?.length && (
           <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Your orders
+              {t('roomService.yourOrders')}
             </div>
             <div className="stagger flex flex-col gap-2">
               {orders.data.map((o) => {
-                const [label, variant] = STATUS[o.status];
                 return (
                   <div
                     key={o.id}
@@ -308,8 +309,8 @@ export function RoomService() {
                       </span>
                     </span>
                     <span className="flex items-center gap-2">
-                      <Badge variant={variant} dot>
-                        {label}
+                      <Badge variant={STATUS_VARIANTS[o.status]} dot>
+                        {t(`roomService.status.${o.status}`)}
                       </Badge>
                       {o.status === 'PENDING' && (
                         <Button
@@ -320,7 +321,7 @@ export function RoomService() {
                           disabled={cancel.isPending}
                           onClick={() => cancel.mutate(o.id)}
                         >
-                          Cancel
+                          {t('roomService.cancel')}
                         </Button>
                       )}
                     </span>
