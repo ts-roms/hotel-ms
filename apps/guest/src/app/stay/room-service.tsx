@@ -137,7 +137,15 @@ export function RoomService() {
                 key={i.id}
                 className="flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors hover:border-primary/30"
               >
-                <span className="flex min-w-0 flex-col">
+                {i.imageVersion && (
+                  <img
+                    src={api.menuItemImageUrl(i.id, i.imageVersion)}
+                    alt=""
+                    loading="lazy"
+                    className="size-16 shrink-0 rounded-lg bg-muted object-cover"
+                  />
+                )}
+                <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-medium">{i.name}</span>
                   {i.description && (
                     <span className="text-xs text-muted-foreground">{i.description}</span>

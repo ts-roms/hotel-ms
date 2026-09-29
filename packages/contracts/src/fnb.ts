@@ -100,6 +100,8 @@ export const menuItemSchema = z.object({
   /** Quick "86" toggle: sold out for now. */
   available: z.boolean(),
   archived: z.boolean(),
+  /** Version of the item's photo (ADR-0030); null when it has none. */
+  imageVersion: z.string().nullable(),
   modifierGroups: z.array(modifierGroupSchema),
 });
 export type MenuItem = z.infer<typeof menuItemSchema>;

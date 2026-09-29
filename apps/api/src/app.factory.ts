@@ -8,7 +8,11 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 import type { FastifyBaseLogger, FastifyServerOptions } from 'fastify';
-import { EMPLOYEE_DOCUMENT_MAX_BYTES, EMPLOYEE_DOCUMENT_TYPES } from '@hotel/contracts';
+import {
+  EMPLOYEE_DOCUMENT_MAX_BYTES,
+  EMPLOYEE_DOCUMENT_TYPES,
+  IMPORT_MAX_BYTES,
+} from '@hotel/contracts';
 import { ClsService } from 'nestjs-cls';
 import { AppModule } from './app.module.js';
 import type { RequestContext } from './common/request-context.js';
@@ -91,6 +95,12 @@ export async function createApp(env: Env): Promise<NestFastifyApplication> {
   fastify.addContentTypeParser(
     [...EMPLOYEE_DOCUMENT_TYPES],
     { parseAs: 'buffer', bodyLimit: EMPLOYEE_DOCUMENT_MAX_BYTES },
+    (_req, body, done) => done(null, body),
+  );
+  // CSV imports (ADR-0030): the body is the file, read as text.
+  fastify.addContentTypeParser(
+    ['text/csv'],
+    { parseAs: 'string', bodyLimit: IMPORT_MAX_BYTES },
     (_req, body, done) => done(null, body),
   );
 
