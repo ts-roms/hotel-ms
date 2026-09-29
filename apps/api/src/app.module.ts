@@ -29,14 +29,10 @@ import { FrontOfficeController } from './modules/front-office/front-office.contr
 import { FrontOfficeService } from './modules/front-office/front-office.service.js';
 import { HousekeepingService } from './modules/front-office/housekeeping.service.js';
 import { NightAuditService } from './modules/front-office/night-audit.service.js';
-import {
-  GuestPortalController,
-  GuestServiceController,
-} from './modules/guest-portal/guest-portal.controller.js';
-import {
-  GuestAdminController,
-  GuestExtrasController,
-} from './modules/guest-portal/guest-extras.controller.js';
+import { GuestPortalController } from './modules/guest-portal/guest-portal.controller.js';
+import { GuestServiceController } from './modules/guest-portal/guest-service.controller.js';
+import { GuestAdminController } from './modules/guest-portal/guest-admin.controller.js';
+import { GuestExtrasController } from './modules/guest-portal/guest-extras.controller.js';
 import { GuestIdentityService } from './modules/guest-portal/guest-identity.service.js';
 import { GuestInboxService } from './modules/notifications/guest-inbox.service.js';
 import { GuestInfoService } from './modules/guest-portal/guest-info.service.js';
@@ -46,57 +42,48 @@ import { FrontDeskKeyProvider, ROOM_ACCESS_PROVIDER } from './modules/guest-port
 import { ServiceRequestsService } from './modules/guest-portal/service-requests.service.js';
 import { AttendanceService } from './modules/hr/attendance.service.js';
 import { HrAccess } from './modules/hr/hr-access.js';
-import {
-  DevicesController,
-  KioskController,
-  PinController,
-} from './modules/devices/devices.controller.js';
+import { DevicesController } from './modules/devices/devices.controller.js';
+import { KioskController } from './modules/devices/kiosk.controller.js';
+import { PinController } from './modules/devices/pin.controller.js';
 import { DevicesService } from './modules/devices/devices.service.js';
 import { KioskAuth } from './modules/auth/kiosk-auth.js';
-import {
-  DocumentRetentionController,
-  EmployeeDocumentsController,
-} from './modules/hr/documents.controller.js';
+import { DocumentRetentionController } from './modules/hr/document-retention.controller.js';
+import { EmployeeDocumentsController } from './modules/hr/employee-documents.controller.js';
 import { EmployeeDocumentsService } from './modules/hr/documents.service.js';
-import {
-  ClockPhotosController,
-  PhotoRetentionController,
-} from './modules/hr/time-clock.controller.js';
+import { ClockPhotosController } from './modules/hr/clock-photos.controller.js';
+import { PhotoRetentionController } from './modules/hr/photo-retention.controller.js';
 import { TimeClockService } from './modules/hr/time-clock.service.js';
-import { HrController, MeController, PropertyHrController } from './modules/hr/hr.controller.js';
+import { HrController } from './modules/hr/hr.controller.js';
+import { MeController } from './modules/hr/me.controller.js';
+import { PropertyHrController } from './modules/hr/property-hr.controller.js';
 import { LeaveService } from './modules/hr/leave.service.js';
 import { PayrollService } from './modules/hr/payroll.service.js';
 import { PeopleService } from './modules/hr/people.service.js';
-import {
-  EmployeeRecordsController,
-  StaffingController,
-} from './modules/hr/hr-records.controller.js';
+import { EmployeeRecordsController } from './modules/hr/employee-records.controller.js';
+import { StaffingController } from './modules/hr/staffing.controller.js';
 import { ProfileRecordsService } from './modules/hr/profile-records.service.js';
 import { StaffingService } from './modules/hr/staffing.service.js';
 import { OpsController } from './modules/ops/ops.controller.js';
 import { OperatorGuard, OpsService } from './modules/ops/ops.service.js';
-import {
-  GuestImagesController,
-  ImagesController,
-  ImportsController,
-  PrivacyController,
-} from './modules/privacy/privacy.controller.js';
+import { GuestImagesController } from './modules/privacy/guest-images.controller.js';
+import { ImagesController } from './modules/privacy/images.controller.js';
+import { ImportsController } from './modules/privacy/imports.controller.js';
+import { PrivacyController } from './modules/privacy/privacy.controller.js';
 import { ImagesService } from './modules/privacy/images.service.js';
 import { ImportsService } from './modules/privacy/imports.service.js';
 import { PrivacyService } from './modules/privacy/privacy.service.js';
 import { ScheduleService } from './modules/hr/schedule.service.js';
-import { FnbController, GuestFnbController } from './modules/fnb/fnb.controller.js';
+import { FnbController } from './modules/fnb/fnb.controller.js';
+import { GuestFnbController } from './modules/fnb/guest-fnb.controller.js';
 import { MenuService } from './modules/fnb/menu.service.js';
 import { OrdersService } from './modules/fnb/orders.service.js';
 import { CashierService } from './modules/payments/cashier.service.js';
 import { FinanceSettingsService } from './modules/payments/finance-settings.service.js';
 import { DocumentsService } from './modules/payments/documents.service.js';
-import {
-  FinanceController,
-  GuestPaymentsController,
-  PaymentWebhooksController,
-  SandboxGatewayController,
-} from './modules/payments/payments.controller.js';
+import { FinanceController } from './modules/payments/finance.controller.js';
+import { GuestPaymentsController } from './modules/payments/guest-payments.controller.js';
+import { PaymentWebhooksController } from './modules/payments/payment-webhooks.controller.js';
+import { SandboxGatewayController } from './modules/payments/sandbox-gateway.controller.js';
 import { PaymentsService } from './modules/payments/payments.service.js';
 import {
   PAYMENT_PROVIDERS,
@@ -109,29 +96,24 @@ import { OutboxService } from './modules/outbox/outbox.service.js';
 import { GuestsService } from './modules/pms/guests.service.js';
 import { InventoryController } from './modules/pms/inventory.controller.js';
 import { RatesService } from './modules/pms/rates.service.js';
-import { GuestsController, ReservationsController } from './modules/pms/reservations.controller.js';
+import { GuestsController } from './modules/pms/guests.controller.js';
+import { ReservationsController } from './modules/pms/reservations.controller.js';
 import { ReservationsService } from './modules/pms/reservations.service.js';
 import { RoomsService } from './modules/pms/rooms.service.js';
 import { LostFoundService } from './modules/maintenance/lost-found.service.js';
-import {
-  LostFoundController,
-  MaintenanceController,
-} from './modules/maintenance/maintenance.controller.js';
+import { LostFoundController } from './modules/maintenance/lost-found.controller.js';
+import { MaintenanceController } from './modules/maintenance/maintenance.controller.js';
 import { MaintenanceService } from './modules/maintenance/maintenance.service.js';
 import { GuestMessagesService } from './modules/notifications/guest-messages.service.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { RemindersService } from './modules/jobs/reminders.service.js';
-import {
-  ManagementController,
-  PropertyReportsController,
-} from './modules/management/management.controller.js';
+import { ManagementController } from './modules/management/management.controller.js';
+import { PropertyReportsController } from './modules/management/property-reports.controller.js';
 import { ManagementService } from './modules/management/management.service.js';
 import { SearchService } from './modules/management/search.service.js';
-import {
-  CalendarController,
-  GuestEventsController,
-} from './modules/calendar/calendar.controller.js';
+import { CalendarController } from './modules/calendar/calendar.controller.js';
+import { GuestEventsController } from './modules/calendar/guest-events.controller.js';
 import { CalendarService } from './modules/calendar/calendar.service.js';
 import { OrganizationController } from './modules/tenancy/organization.controller.js';
 import { PropertiesController } from './modules/tenancy/properties.controller.js';

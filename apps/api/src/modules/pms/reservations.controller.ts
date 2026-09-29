@@ -16,30 +16,21 @@ import {
   assignRoomRequestSchema,
   type CancelRequest,
   cancelRequestSchema,
-  type CreateGuestRequest,
-  createGuestRequestSchema,
   type CreateReservationRequest,
   createReservationRequestSchema,
   cursorPage,
-  guestSchema,
-  type GuestSearchQuery,
-  guestSearchQuerySchema,
   type ReservationListQuery,
   reservationListQuerySchema,
   reservationSchema,
-  type UpdateGuestRequest,
-  updateGuestRequestSchema,
   type UpdateReservationRoomRequest,
   updateReservationRoomRequestSchema,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { parseIfMatch, weakEtag } from '../../common/etag.js';
+import { parseIfMatch } from '../../common/etag.js';
 import { IdempotencyService } from '../../common/idempotency.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { GuestsService } from './guests.service.js';
 import { ReservationsService } from './reservations.service.js';
 
 @ApiTags('reservations')
@@ -147,50 +138,5 @@ export class ReservationsController {
     @ZodBody(cancelRequestSchema) body: CancelRequest,
   ) {
     return this.reservations.cancel(uuidParam(reservationId), body.reason, uuidParam(lineId));
-  }
-}
-
-/** Guest profiles are organization-wide; creation is attributed to a property. */
-@ApiTags('guests')
-@Controller()
-export class GuestsController {
-  constructor(private readonly guests: GuestsService) {}
-
-  @Get('guests')
-  @RequirePermission('guest.read', 'any')
-  @ZodResponse(200, z.array(guestSchema))
-  search(@ZodQuery(guestSearchQuerySchema) query: GuestSearchQuery) {
-    return this.guests.search(query);
-  }
-
-  @Get('guests/:guestId')
-  @RequirePermission('guest.read', 'any')
-  @ZodResponse(200, guestSchema)
-  async get(@Param('guestId') guestId: string, @Res({ passthrough: true }) reply: FastifyReply) {
-    const guest = await this.guests.get(uuidParam(guestId));
-    reply.header('etag', weakEtag(guest.version));
-    return guest;
-  }
-
-  @Post('properties/:propertyId/guests')
-  @RequirePermission('guest.update')
-  @HttpCode(201)
-  @ZodResponse(201, guestSchema)
-  create(@ZodBody(createGuestRequestSchema) body: CreateGuestRequest) {
-    return this.guests.create(body);
-  }
-
-  @Patch('guests/:guestId')
-  @RequirePermission('guest.update', 'any')
-  @ZodResponse(200, guestSchema)
-  async update(
-    @Param('guestId') guestId: string,
-    @Headers('if-match') ifMatch: string | undefined,
-    @ZodBody(updateGuestRequestSchema) body: UpdateGuestRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const guest = await this.guests.update(uuidParam(guestId), parseIfMatch(ifMatch), body);
-    reply.header('etag', weakEtag(guest.version));
-    return guest;
   }
 }

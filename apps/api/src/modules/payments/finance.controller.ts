@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  Headers,
-  HttpCode,
-  Inject,
-  NotFoundException,
-  Param,
-  Post,
-  Put,
-  Req,
-  Res,
-} from '@nestjs/common';
-import type { RawBodyRequest } from '@nestjs/common';
-import { ApiExcludeController, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { Controller, Delete, Get, Headers, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import {
   accountFolioSchema,
   type ApplyDiscountRequest,
@@ -38,8 +24,6 @@ import {
   exchangeRateSchema,
   folioDocumentSchema,
   folioSchema,
-  type GuestPaymentRequest,
-  guestPaymentRequestSchema,
   type IssueDocumentRequest,
   issueDocumentRequestSchema,
   type OpenShiftRequest,
@@ -58,30 +42,21 @@ import {
   type TransferRequest,
   transferRequestSchema,
 } from '@hotel/contracts';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
-import { IdempotencyService } from '../../common/idempotency.js';
-import { formatMinor, toMinor } from '../../common/money.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
 import { uuidParam } from '../../common/params.js';
-import { GuestRoute, Public, RequirePermission, Webhook } from '../../common/route-metadata.js';
+import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
-import { ENV, type Env } from '../../config/env.js';
 import { FolioService } from '../folio/folio.service.js';
 import { CashierService } from './cashier.service.js';
 import { DocumentsService } from './documents.service.js';
 import { FinanceSettingsService } from './finance-settings.service.js';
 import { PaymentsService } from './payments.service.js';
-import { PAYMENT_PROVIDERS, type PaymentProviders, SandboxProvider } from './providers.js';
 import { ReportsService } from './reports.service.js';
 
 const items = <T extends z.ZodType>(item: T) => z.object({ items: z.array(item) });
-const idempotencyHeader = ApiHeader({
-  name: 'Idempotency-Key',
-  required: true,
-  description: 'Unique per attempt; retries reuse it',
-});
-
 @ApiTags('finance')
 @Controller('properties/:propertyId')
 export class FinanceController {
@@ -114,7 +89,7 @@ export class FinanceController {
 
   @Post('folios/:folioId/payment-links')
   @RequirePermission('payment.create')
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(201, paymentIntentSchema)
   paymentLink(
     @Param('propertyId') propertyId: string,
@@ -137,7 +112,7 @@ export class FinanceController {
 
   @Post('payments/:paymentId/refunds')
   @RequirePermission('payment.refund')
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(201, refundSchema)
   refund(
     @Param('propertyId') propertyId: string,
@@ -179,7 +154,7 @@ export class FinanceController {
 
   @Post('holds/:intentId/capture')
   @RequirePermission('payment.create')
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @HttpCode(200)
   @ZodResponse(200, paymentIntentSchema)
   async captureHold(
@@ -426,166 +401,5 @@ export class FinanceController {
   @ZodResponse(200, reconciliationSchema)
   reconciliation(@Param('propertyId') propertyId: string) {
     return this.reports.reconciliation(propertyId);
-  }
-}
-
-/** Guest portal: pay the stay folio online (hosted checkout). */
-@ApiTags('guest portal')
-@Controller('guest')
-@GuestRoute({ verified: true })
-export class GuestPaymentsController {
-  constructor(
-    private readonly payments: PaymentsService,
-    private readonly idempotency: IdempotencyService,
-  ) {}
-
-  @Post('payments')
-  @idempotencyHeader
-  @ZodResponse(201, paymentIntentSchema)
-  async pay(
-    @Headers('idempotency-key') key: string | undefined,
-    @ZodBody(guestPaymentRequestSchema) body: GuestPaymentRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const result = await this.idempotency.run('guest.payment', key, body, async () => ({
-      status: 201,
-      body: await this.payments.guestPay(body.amountMinor),
-    }));
-    if (result.replayed) reply.header('idempotent-replayed', 'true');
-    return result.body;
-  }
-
-  @Get('payments')
-  @ZodResponse(200, items(paymentIntentSchema))
-  async list() {
-    return { items: await this.payments.guestIntents() };
-  }
-
-  /** Card hold (pre-authorization) the property asks for before self check-in. */
-  @Post('holds')
-  @idempotencyHeader
-  @ZodResponse(201, paymentIntentSchema)
-  async hold(
-    @Headers('idempotency-key') key: string | undefined,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
-    const result = await this.idempotency.run('guest.hold', key, {}, async () => ({
-      status: 201,
-      body: await this.payments.guestHold(),
-    }));
-    if (result.replayed) reply.header('idempotent-replayed', 'true');
-    return result.body;
-  }
-}
-
-/** Provider → us. Authenticated by the provider's signature over the raw body. */
-@ApiTags('webhooks')
-@Controller('webhooks/payments')
-export class PaymentWebhooksController {
-  constructor(private readonly payments: PaymentsService) {}
-
-  @Post(':provider')
-  @Webhook()
-  @HttpCode(200)
-  async receive(@Param('provider') provider: string, @Req() req: RawBodyRequest<FastifyRequest>) {
-    const raw = req.rawBody ?? Buffer.from('');
-    const outcome = await this.payments.handleWebhook(provider, raw, req.headers);
-    return { received: true, outcome };
-  }
-}
-
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  );
-
-/**
- * The sandbox gateway's hosted checkout (development, tests, staging only). A payer
- * chooses "Pay" or "Decline"; the sandbox then sends the signed webhook and returns the
- * payer to the merchant, as a real provider would.
- */
-@ApiExcludeController()
-@Controller('sandbox-gateway/checkout')
-export class SandboxGatewayController {
-  constructor(
-    private readonly payments: PaymentsService,
-    @Inject(PAYMENT_PROVIDERS) private readonly providers: PaymentProviders,
-    @Inject(ENV) private readonly env: Env,
-  ) {}
-
-  private sandbox(): SandboxProvider {
-    const provider = this.providers.get('sandbox');
-    if (!this.env.PAYMENT_SANDBOX_ENABLED || !(provider instanceof SandboxProvider))
-      throw new NotFoundException();
-    return provider;
-  }
-
-  @Get(':reference')
-  @Public()
-  async page(@Param('reference') reference: string, @Res() reply: FastifyReply): Promise<void> {
-    this.sandbox();
-    const intent = await this.payments.findByReference('sandbox', reference);
-    if (!intent) throw new NotFoundException();
-    const amount = formatMinor(intent.amountMinor, intent.currency);
-    const base = `/api/v1/sandbox-gateway/checkout/${encodeURIComponent(reference)}`;
-    const verb = intent.kind === 'HOLD' ? 'Authorize a hold of' : 'Pay';
-    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sandbox checkout</title></head>
-<body><h1>Sandbox checkout</h1><p>Test payments only. No money moves.</p>
-<p>Amount: <strong>${escapeHtml(amount)}</strong></p><p>Status: ${escapeHtml(intent.status)}</p>
-${
-  intent.status === 'PENDING'
-    ? `<form method="post" action="${base}/pay"><label>Method <select name="method"><option value="CARD">Card</option><option value="EWALLET">E-wallet</option></select></label> <button type="submit">${verb} ${escapeHtml(amount)}</button></form>
-<form method="post" action="${base}/decline"><button type="submit">Decline</button></form>`
-    : ''
-}
-</body></html>`;
-    await reply.type('text/html; charset=utf-8').send(html);
-  }
-
-  private async complete(
-    reference: string,
-    outcome: 'pay' | 'decline',
-    method: string,
-    reply: FastifyReply,
-  ) {
-    const sandbox = this.sandbox();
-    const intent = await this.payments.findByReference('sandbox', reference);
-    if (!intent) throw new NotFoundException();
-    if (intent.status === 'PENDING') {
-      const event = sandbox.event({
-        type:
-          outcome === 'decline'
-            ? 'payment.failed'
-            : intent.kind === 'HOLD'
-              ? 'payment.authorized'
-              : 'payment.succeeded',
-        reference,
-        amountMinor: toMinor(intent.amountMinor),
-        currency: intent.currency,
-        method: method === 'EWALLET' ? 'EWALLET' : 'CARD',
-        ...(outcome === 'decline' ? { failureReason: 'Declined by the payer (sandbox)' } : {}),
-      });
-      // Delivered in-process, through the same verification path as a real webhook.
-      await this.payments.handleWebhook('sandbox', Buffer.from(event.rawBody), event.headers);
-    }
-    await reply.redirect(intent.returnUrl, 303);
-  }
-
-  @Post(':reference/pay')
-  @Webhook()
-  pay(
-    @Param('reference') reference: string,
-    @Req() req: FastifyRequest,
-    @Res() reply: FastifyReply,
-  ) {
-    const method = (req.body as { method?: string } | undefined)?.method ?? 'CARD';
-    return this.complete(reference, 'pay', method, reply);
-  }
-
-  @Post(':reference/decline')
-  @Webhook()
-  decline(@Param('reference') reference: string, @Res() reply: FastifyReply) {
-    return this.complete(reference, 'decline', 'CARD', reply);
   }
 }

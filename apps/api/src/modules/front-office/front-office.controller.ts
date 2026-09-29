@@ -1,5 +1,5 @@
 import { Controller, Get, Headers, HttpCode, Param, Post, Put, Res } from '@nestjs/common';
-import { ApiHeader, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import {
   type AdjustmentRequest,
   adjustmentRequestSchema,
@@ -30,7 +30,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { IdempotencyService } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';
@@ -38,12 +38,6 @@ import { FolioService } from '../folio/folio.service.js';
 import { FrontOfficeService } from './front-office.service.js';
 import { HousekeepingService } from './housekeeping.service.js';
 import { NightAuditService } from './night-audit.service.js';
-
-const idempotencyHeader = ApiHeader({
-  name: 'Idempotency-Key',
-  required: true,
-  description: 'Unique per attempt; retries reuse it',
-});
 
 @ApiTags('front office')
 @Controller('properties/:propertyId')
@@ -119,7 +113,7 @@ export class FrontOfficeController {
   @Post('folios/:folioId/charges')
   @RequirePermission('folio.post')
   @HttpCode(200)
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(200, folioSchema)
   postCharge(
     @Param('folioId') folioId: string,
@@ -135,7 +129,7 @@ export class FrontOfficeController {
   @Post('folios/:folioId/payments')
   @RequirePermission('payment.create')
   @HttpCode(200)
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(200, folioSchema)
   recordPayment(
     @Param('folioId') folioId: string,
@@ -151,7 +145,7 @@ export class FrontOfficeController {
   @Post('folios/:folioId/adjustments')
   @RequirePermission('folio.adjust')
   @HttpCode(200)
-  @idempotencyHeader
+  @idempotencyKeyHeader
   @ZodResponse(200, folioSchema)
   adjust(
     @Param('folioId') folioId: string,

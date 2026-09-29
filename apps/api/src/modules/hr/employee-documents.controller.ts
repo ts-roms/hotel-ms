@@ -1,8 +1,6 @@
-import { Controller, Delete, Get, HttpCode, Param, Post, Put, Req, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiProduces, ApiTags } from '@nestjs/swagger';
 import {
-  type DocumentRetention,
-  documentRetentionSchema,
   EMPLOYEE_DOCUMENT_TYPES,
   employeeDocumentSchema,
   type UploadEmployeeDocumentQuery,
@@ -12,7 +10,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
-import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';
+import { ZodQuery, ZodResponse } from '../../common/zod.js';
 import { EmployeeDocumentsService } from './documents.service.js';
 
 /** RFC 6266 Content-Disposition: an ASCII fallback plus the exact UTF-8 name. */
@@ -82,26 +80,5 @@ export class EmployeeDocumentsController {
     @Param('documentId') documentId: string,
   ): Promise<void> {
     await this.documents.remove(uuidParam(employeeId), uuidParam(documentId));
-  }
-}
-
-/** Retention rules for employee documents, per category (ADR-0021). */
-@ApiTags('hr')
-@Controller('document-retention')
-export class DocumentRetentionController {
-  constructor(private readonly documents: EmployeeDocumentsService) {}
-
-  @Get()
-  @RequirePermission('employee.documents', 'organization')
-  @ZodResponse(200, documentRetentionSchema)
-  get() {
-    return this.documents.retention();
-  }
-
-  @Put()
-  @RequirePermission('employee.documents', 'organization')
-  @ZodResponse(200, documentRetentionSchema)
-  set(@ZodBody(documentRetentionSchema) body: DocumentRetention) {
-    return this.documents.setRetention(body);
   }
 }
