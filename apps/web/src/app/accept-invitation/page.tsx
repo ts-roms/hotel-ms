@@ -1,5 +1,6 @@
 'use client';
 
+import { tokenFromHash } from '@hotel/api-client';
 import { passwordSchema } from '@hotel/contracts';
 import { Alert, Button, CardContent, Input, Label, Notice, Skeleton } from '@hotel/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { AuthShell } from '@/components/auth-shell';
 import { api } from '@/lib/api';
-import { errorMessage, tokenFromHash } from '@/lib/errors';
+import { errorMessage } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 
 export default function AcceptInvitationPage() {

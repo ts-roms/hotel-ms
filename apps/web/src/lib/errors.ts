@@ -1,4 +1,4 @@
-import { ApiError } from '@hotel/api-client';
+import { ApiError, problemText } from '@hotel/api-client';
 import { t } from './i18n';
 
 /**
@@ -17,19 +17,9 @@ export function errorMessage(error: unknown): string | null {
       return t('login.rateLimited');
     case 'INVALID_TOKEN':
       return t('reset.invalid');
-    case 'VALIDATION_FAILED':
-      return error.problem.errors?.map((e) => e.message).join(' ') ?? error.message;
     case 'FORBIDDEN':
       return error.problem.detail ?? t('error.forbidden');
     default:
-      return error.status < 500
-        ? (error.problem.detail ?? error.problem.title)
-        : t('error.generic');
+      return error.status < 500 ? problemText(error) : t('error.generic');
   }
-}
-
-/** Reads `token` from the URL fragment (#token=...), which is never sent to servers. */
-export function tokenFromHash(): string | null {
-  if (typeof window === 'undefined') return null;
-  return new URLSearchParams(window.location.hash.slice(1)).get('token');
 }

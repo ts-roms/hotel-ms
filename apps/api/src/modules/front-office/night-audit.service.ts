@@ -8,12 +8,15 @@ import { ProblemException } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { AuditService } from '../audit/audit.service.js';
-import { FolioService } from '../folio/folio.service.js';
+import { FolioService } from '../finance/folio/folio.service.js';
 import { OutboxService } from '../outbox/outbox.service.js';
-import { releaseInventory } from '../pms/inventory.js';
-import { businessDateOf } from '../pms/rooms.service.js';
+import { releaseInventory } from '../pms/inventory/inventory.js';
+import { businessDateOf } from '../pms/inventory/rooms.service.js';
 import { frontDeskInclude, toFrontDeskItem } from './front-office.service.js';
-import { ensureHousekeepingTask, recordRoomStatus } from './room-status.js';
+import {
+  ensureHousekeepingTask,
+  recordRoomStatus,
+} from '../operations/housekeeping/room-status.js';
 
 const cannotClose = (detail: string) =>
   new ProblemException(409, 'INVALID_STATE', 'Business day cannot close', detail);

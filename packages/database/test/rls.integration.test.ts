@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createPrismaClient, withDbContext, type PrismaClient } from '../src/index.js';
 import { prepareTestDatabase, testDatabaseUrls } from '../src/testing.js';
-import type { DemoWorld } from '../src/demo-world.js';
+import type { DemoWorld } from '../src/seed/demo-world.js';
 
 let world: DemoWorld;
 let owner: PrismaClient;

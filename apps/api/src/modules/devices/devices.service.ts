@@ -15,7 +15,7 @@ import type { RequestContext } from '../../common/request-context.js';
 import { PrismaService, TenantDb } from '../../infrastructure/database.js';
 import { RateLimiter } from '../../infrastructure/redis.js';
 import { AuditService } from '../audit/audit.service.js';
-import { photoRetentionDaysInTx } from '../hr/photo-retention.js';
+import { photoRetentionDaysInTx } from '../hr/time/photo-retention.js';
 import {
   KioskAuth,
   OPERATOR_MAX_MS,

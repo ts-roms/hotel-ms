@@ -7,7 +7,7 @@
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
 import { RequestMethod } from '@nestjs/common';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CONTROLLERS } from '../src/app.module.js';
+import { CONTROLLERS } from '../src/api-surface.js';
 import {
   GUEST_ROUTE,
   type GuestRouteOptions,
@@ -15,7 +15,7 @@ import {
   NO_ORGANIZATION,
   REQUIRED_PERMISSION,
 } from '../src/common/route-metadata.js';
-import { DEMO_PASSWORD } from '@hotel/database';
+import { DEMO_PASSWORD } from '@hotel/database/testing';
 import { startTestApp, type TestContext, TestClient, WEB_ORIGIN } from './harness.js';
 
 interface RouteInfo {

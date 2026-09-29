@@ -1,3 +1,6 @@
+/** Domain events relayed from the transactional outbox by the worker (ADR-0005). */
+export const DOMAIN_EVENTS_QUEUE = 'domain-events';
+
 /**
  * Background job payloads that are not domain events (queue: `notifications`).
  * Payloads may contain single-use links; jobs are removed from Redis on completion.

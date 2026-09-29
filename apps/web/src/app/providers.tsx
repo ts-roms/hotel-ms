@@ -1,28 +1,20 @@
 'use client';
 
-import { ApiError } from '@hotel/api-client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createQueryClient, useRequestsInFlight } from '@hotel/api-client/react';
+import { TopProgress } from '@hotel/ui';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import { TopProgress } from '@/components/top-progress';
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            // Never retry authorization or validation failures; they will not change.
-            retry: (failureCount, error) =>
-              !(error instanceof ApiError && error.status < 500) && failureCount < 2,
-            refetchOnWindowFocus: false,
-          },
-        },
-      }),
-  );
+  const [queryClient] = useState(createQueryClient);
   return (
     <QueryClientProvider client={queryClient}>
-      <TopProgress />
+      <RequestProgress />
       {children}
     </QueryClientProvider>
   );
+}
+
+function RequestProgress() {
+  return <TopProgress busy={useRequestsInFlight()} />;
 }

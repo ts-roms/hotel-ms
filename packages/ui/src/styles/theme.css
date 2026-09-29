@@ -1,0 +1,98 @@
+/*
+ * Design tokens shared by the staff and guest apps (blueprint §6.3: packages/ui owns them).
+ * Import after Tailwind: `@import 'tailwindcss'; @import '@hotel/ui/theme.css';`
+ *
+ * Each app defines the color values (--background, --primary, ...) for light and dark;
+ * this file maps them to Tailwind colors and adds the motion tokens @hotel/ui uses.
+ */
+
+/* Let Tailwind see the class names used by the shared components. */
+@source '../';
+
+/* Dark mode: html.dark (the staff app's toggle, or the guest app following the OS). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+}
+
+/* Motion: short, eased-out entrances. Everything is disabled under reduced motion. */
+@theme {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 0.35s var(--ease-out-expo) both;
+  --animate-slide-up: slide-up 0.45s var(--ease-out-expo) both;
+  --animate-slide-in-left: slide-in-left 0.3s var(--ease-out-expo) both;
+  --animate-scale-in: scale-in 0.35s var(--ease-out-expo) both;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-progress: progress 1.2s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  @keyframes slide-in-left {
+    from {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes progress {
+    from {
+      transform: translateX(-100%) scaleX(0.4);
+    }
+    50% {
+      transform: translateX(30%) scaleX(0.6);
+    }
+    to {
+      transform: translateX(110%) scaleX(0.4);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

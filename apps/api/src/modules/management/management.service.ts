@@ -15,7 +15,7 @@ import { toMinor } from '../../common/money.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { fromLocal, localToday } from '../../common/zoned-time.js';
 import { TenantDb } from '../../infrastructure/database.js';
-import { AttendanceService } from '../hr/attendance.service.js';
+import { AttendanceService } from '../hr/time/attendance.service.js';
 
 const signed = (v: bigint | null | undefined) => {
   const n = v ?? 0n;

@@ -16,6 +16,7 @@
     "@aws-sdk/client-sns": "^3.1141.0",
     "@hotel/contracts": "workspace:*",
     "@hotel/database": "workspace:*",
+    "@hotel/format": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.80.0",
     "@opentelemetry/instrumentation": "^0.222.0",

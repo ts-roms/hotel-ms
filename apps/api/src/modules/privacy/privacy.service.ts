@@ -3,13 +3,13 @@ import type { AnonymizeResult } from '@hotel/contracts';
 import type { Tx } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
 import { fromDbDate } from '../../common/dates.js';
+import { toMajor } from '../../common/money.js';
 import { invalidState, Problems } from '../../common/problem.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { TenantDb } from '../../infrastructure/database.js';
 import { OBJECT_STORAGE, type ObjectStorage } from '../../infrastructure/storage.js';
 import { AuditService } from '../audit/audit.service.js';
 
-const money = (minor: bigint) => Number(minor) / 100;
 const day = (d: Date | null) => (d ? fromDbDate(d) : null);
 const iso = (d: Date | null) => (d ? d.toISOString() : null);
 
@@ -126,12 +126,12 @@ export class PrivacyService {
             charges: f.lines.map((x) => ({
               date: day(x.businessDate),
               description: x.description,
-              amount: money(x.amountMinor),
+              amount: toMajor(x.amountMinor, f.currency),
             })),
             payments: f.payments.map((p) => ({
               date: day(p.businessDate),
               method: p.method,
-              amount: money(p.amountMinor),
+              amount: toMajor(p.amountMinor, p.currency),
               currency: p.currency,
             })),
           })),
@@ -150,7 +150,7 @@ export class PrivacyService {
           status: o.status,
           createdAt: o.createdAt.toISOString(),
           currency: o.currency,
-          total: money(o.totalMinor),
+          total: toMajor(o.totalMinor, o.currency),
           notes: o.notes,
           items: o.items.map((i) => ({ name: i.name, quantity: i.quantity, notes: i.notes })),
         })),
@@ -375,7 +375,7 @@ export class PrivacyService {
         pay: pay.map((c) => ({
           effectiveFrom: day(c.effectiveFrom),
           payBasis: c.payBasis,
-          amount: money(c.amountMinor),
+          amount: toMajor(c.amountMinor, c.currency),
           currency: c.currency,
         })),
       };

@@ -3,8 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { type EmailJob, NOTIFICATIONS_QUEUE } from '@hotel/contracts';
-import { DEMO_PASSWORD, type DemoWorld } from '@hotel/database';
-import { prepareTestDatabase, testDatabaseUrls } from '@hotel/database/testing';
+import {
+  DEMO_PASSWORD,
+  type DemoWorld,
+  prepareTestDatabase,
+  testDatabaseUrls,
+} from '@hotel/database/testing';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
 import { createApp } from '../src/app.factory.js';

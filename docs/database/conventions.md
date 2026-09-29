@@ -10,6 +10,9 @@ Read this before adding a table. The reasoning is in ADR-0003 and blueprint §7.
 3. **Property-owned?** Add `propertyId` and reference the property with the composite key:
    `@relation(fields: [organizationId, propertyId], references: [organizationId, id])`.
 4. **Will other tables reference it?** Add `@@unique([organizationId, id])`.
+   Put the model, and any enum only it uses, in the schema file of the bounded context that
+   owns it (blueprint §6.1): `packages/database/prisma/schema/<context>.prisma`, kebab-case
+   (`front-office.prisma`, `guest-experience.prisma`). Never a file per release or feature.
 5. **Write a migration** with `pnpm db:migrate:dev --create-only --name <name>`, then add by hand:
    - `ENABLE` + `FORCE ROW LEVEL SECURITY` and a `tenant_isolation` policy `TO app_rw`
    - `GRANT` statements. Append-only tables get `SELECT, INSERT` only.

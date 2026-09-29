@@ -6,13 +6,13 @@ import { ClsService } from 'nestjs-cls';
 import type { RequestContext } from '../../common/request-context.js';
 import { ENV, type Env } from '../../config/env.js';
 import { reportError } from '../../infrastructure/error-reporting.js';
-import { GuestIdentityService } from '../guest-portal/guest-identity.service.js';
-import { EmployeeDocumentsService } from '../hr/documents.service.js';
-import { LeaveService } from '../hr/leave.service.js';
-import { ProfileRecordsService } from '../hr/profile-records.service.js';
-import { TimeClockService } from '../hr/time-clock.service.js';
+import { GuestIdentityService } from '../pms/guests/guest-identity.service.js';
+import { EmployeeDocumentsService } from '../hr/workforce/employee-documents.service.js';
+import { LeaveService } from '../hr/time/leave.service.js';
+import { ProfileRecordsService } from '../hr/workforce/profile-records.service.js';
+import { TimeClockService } from '../hr/time/time-clock.service.js';
 import { RemindersService } from './reminders.service.js';
-import { ReportsService } from '../payments/reports.service.js';
+import { FinanceReportsService } from '../finance/reports/finance-reports.service.js';
 
 /**
  * Runs scheduled tenant jobs planned by the worker (ADR-0017). Each job runs in its own
@@ -26,7 +26,7 @@ export class TenantJobsProcessor implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly cls: ClsService<RequestContext>,
-    private readonly reports: ReportsService,
+    private readonly reports: FinanceReportsService,
     private readonly leave: LeaveService,
     private readonly documents: EmployeeDocumentsService,
     private readonly timeClock: TimeClockService,

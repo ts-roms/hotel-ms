@@ -37,3 +37,4 @@ export * from './blocks/empty-state.js';
 export * from './blocks/loading.js';
 export * from './blocks/page-header.js';
 export * from './blocks/stat-card.js';
+export * from './blocks/top-progress.js';

@@ -13,6 +13,16 @@ export function formatMinor(minor: bigint, currency: string, locale = 'en-PH'): 
   );
 }
 
+/** Minor units as a major-unit number in the currency's own decimals (JSON exports). */
+export function toMajor(minor: bigint | number, currency: string): number {
+  return Number(minor) / 10 ** currencyDigits(currency);
+}
+
+/** Minor units as a plain decimal string, e.g. "1234.50" PHP or "1500" JPY (CSV exports). */
+export function toDecimalString(minor: bigint | number, currency: string): string {
+  return toMajor(minor, currency).toFixed(currencyDigits(currency));
+}
+
 const MICROS = 1_000_000n;
 
 /** "56.25" → 56_250_000n (exact; up to 6 decimals). */

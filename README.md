@@ -86,7 +86,7 @@ are written to `apps/worker/.mail/` instead of being sent.
 Administrative actions (members, roles, audit log) need two-step verification: enable it
 under **Security** with any authenticator app. The seed creates two organizations and several users that cover
 the access-scope cases (org admin, single-property GM, multi-property user, org-wide auditor,
-multi-organization consultant). They are listed in `packages/database/src/demo-world.ts`,
+multi-organization consultant). They are listed in `packages/database/src/seed/demo-world.ts`,
 together with the shared development password. Demo data is never seeded when
 `NODE_ENV=production`.
 

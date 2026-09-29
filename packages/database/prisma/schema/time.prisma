@@ -1,0 +1,301 @@
+// Time and labour (blueprint §13): shift templates, scheduling, staffing requirements,
+// attendance (punches, corrections, time clock photos) and leave.
+
+enum ShiftStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+enum PunchType {
+  IN
+  OUT
+  BREAK_START
+  BREAK_END
+}
+
+enum PunchSource {
+  WEB
+  KIOSK
+  /// Added by an approved attendance correction.
+  CORRECTION
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveLedgerKind {
+  ACCRUAL
+  USAGE
+  ADJUSTMENT
+  /// Gives back the usage of a cancelled approved leave.
+  REVERSAL
+}
+
+model ShiftTemplate {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  departmentId   String?   @map("department_id") @db.Uuid
+  name           String
+  /// Property-local wall-clock time, "HH:mm". An end before the start ends the next day.
+  startTime      String    @map("start_time") @db.VarChar(5)
+  endTime        String    @map("end_time") @db.VarChar(5)
+  breakMinutes   Int       @default(60) @map("break_minutes")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  property   Property    @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  department Department? @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId])
+  @@map("shift_templates")
+}
+
+/// A concrete shift. Instants are computed from property-local times at creation, so the
+/// schedule survives DST (blueprint §13.3).
+model Shift {
+  id             String      @id @default(uuid(7)) @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
+  propertyId     String      @map("property_id") @db.Uuid
+  employeeId     String      @map("employee_id") @db.Uuid
+  departmentId   String      @map("department_id") @db.Uuid
+  templateId     String?     @map("template_id") @db.Uuid
+  /// Shifts created together as a recurring series (ADR-0028).
+  seriesId       String?     @map("series_id") @db.Uuid
+  /// Property-local date the shift starts on.
+  shiftDate      DateTime    @map("shift_date") @db.Date
+  startsAt       DateTime    @map("starts_at") @db.Timestamptz(3)
+  endsAt         DateTime    @map("ends_at") @db.Timestamptz(3)
+  breakMinutes   Int         @map("break_minutes")
+  status         ShiftStatus @default(DRAFT)
+  notes          String      @default("")
+  publishedAt    DateTime?   @map("published_at") @db.Timestamptz(3)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?     @map("created_by") @db.Uuid
+  version        Int         @default(1)
+
+  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee   Employee   @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, shiftDate])
+  @@index([organizationId, employeeId, shiftDate])
+  @@map("shifts")
+}
+
+/// Minimum staffing for a department and time window on given weekdays (ADR-0028).
+model StaffingRequirement {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  departmentId   String    @map("department_id") @db.Uuid
+  /// 0 = Sunday … 6 = Saturday.
+  weekdays       Int[]
+  /// Property-local "HH:mm"; an end at or before the start ends the next day.
+  startTime      String    @map("start_time") @db.VarChar(5)
+  endTime        String    @map("end_time") @db.VarChar(5)
+  minStaff       Int       @map("min_staff")
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy      String?   @map("created_by") @db.Uuid
+
+  property   Property   @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  department Department @relation(fields: [organizationId, departmentId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId])
+  @@map("staffing_requirements")
+}
+
+/// Raw clock events. Append-only: corrections add punches, never edit them (§13.2).
+model AttendancePunch {
+  id             String      @id @default(uuid(7)) @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
+  propertyId     String      @map("property_id") @db.Uuid
+  employeeId     String      @map("employee_id") @db.Uuid
+  type           PunchType
+  at             DateTime    @db.Timestamptz(3)
+  source         PunchSource
+  correctionId   String?     @map("correction_id") @db.Uuid
+  recordedBy     String?     @map("recorded_by") @db.Uuid
+  recordedAt     DateTime    @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  property Property         @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee Employee         @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  photo    AttendancePhoto?
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, at])
+  @@index([organizationId, propertyId, at])
+  @@map("attendance_punches")
+}
+
+model AttendanceCorrection {
+  id             String         @id @default(uuid(7)) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  propertyId     String         @map("property_id") @db.Uuid
+  employeeId     String         @map("employee_id") @db.Uuid
+  type           PunchType
+  at             DateTime       @db.Timestamptz(3)
+  reason         String
+  status         ApprovalStatus @default(PENDING)
+  requestedBy    String?        @map("requested_by") @db.Uuid
+  decidedBy      String?        @map("decided_by") @db.Uuid
+  decidedAt      DateTime?      @map("decided_at") @db.Timestamptz(3)
+  decisionNote   String?        @map("decision_note")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  version        Int            @default(1)
+
+  property Property @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee Employee @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, status])
+  @@map("attendance_corrections")
+}
+
+/// The selfie taken with a time clock punch (ADR-0022). Punches are append-only; the photo
+/// is personal data with its own, shorter life: deleted after a fixed number of days.
+model AttendancePhoto {
+  punchId        String    @id @map("punch_id") @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  deviceId       String?   @map("device_id") @db.Uuid
+  storageKey     String    @unique @map("storage_key")
+  contentType    String    @map("content_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  punch  AttendancePunch @relation(fields: [organizationId, punchId], references: [organizationId, id], onDelete: Restrict)
+  device Device?         @relation(fields: [organizationId, deviceId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, punchId])
+  @@index([organizationId, createdAt])
+  @@map("attendance_photos")
+}
+
+/// Organization leave policy per type. Jurisdiction packs are seed configuration, never code.
+model LeaveType {
+  id                      String    @id @default(uuid(7)) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  code                    String
+  name                    String
+  paid                    Boolean   @default(true)
+  allowNegative           Boolean   @default(false) @map("allow_negative")
+  minNoticeDays           Int       @default(0) @map("min_notice_days")
+  /// Half-days posted on the 1st of each month to active employees (0 = no accrual).
+  accrualHalfDaysPerMonth Int       @default(0) @map("accrual_half_days_per_month")
+  /// Manager approval first, then HR (two steps).
+  hrApprovalRequired      Boolean   @default(false) @map("hr_approval_required")
+  archivedAt              DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  ledger       LeaveLedgerEntry[]
+  balances     LeaveBalance[]
+  requests     LeaveRequest[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@map("leave_types")
+}
+
+/// Source of truth for leave balances. Append-only; amounts in half-days.
+model LeaveLedgerEntry {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  employeeId     String          @map("employee_id") @db.Uuid
+  leaveTypeId    String          @map("leave_type_id") @db.Uuid
+  kind           LeaveLedgerKind
+  halfDays       Int             @map("half_days")
+  effectiveDate  DateTime        @map("effective_date") @db.Date
+  leaveRequestId String?         @map("leave_request_id") @db.Uuid
+  /// "YYYY-MM" for scheduled monthly accruals (one per employee, type and month).
+  accrualPeriod  String?         @map("accrual_period") @db.VarChar(7)
+  note           String          @default("")
+  createdBy      String?         @map("created_by") @db.Uuid
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  employee  Employee  @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  leaveType LeaveType @relation(fields: [organizationId, leaveTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, employeeId, leaveTypeId])
+  @@map("leave_ledger")
+}
+
+/// Cached SUM(leave_ledger.half_days), maintained by a trigger on the ledger.
+model LeaveBalance {
+  organizationId String   @map("organization_id") @db.Uuid
+  employeeId     String   @map("employee_id") @db.Uuid
+  leaveTypeId    String   @map("leave_type_id") @db.Uuid
+  halfDays       Int      @default(0) @map("half_days")
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  employee  Employee  @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  leaveType LeaveType @relation(fields: [organizationId, leaveTypeId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([employeeId, leaveTypeId])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  organizationId    String         @map("organization_id") @db.Uuid
+  /// Property whose approvers handle the request (the employee's assignment there).
+  propertyId        String         @map("property_id") @db.Uuid
+  employeeId        String         @map("employee_id") @db.Uuid
+  leaveTypeId       String         @map("leave_type_id") @db.Uuid
+  startDate         DateTime       @map("start_date") @db.Date
+  /// Inclusive.
+  endDate           DateTime       @map("end_date") @db.Date
+  halfDays          Int            @map("half_days")
+  reason            String         @default("")
+  status            ApprovalStatus @default(PENDING)
+  /// The step that decides next (1 = manager, 2 = HR).
+  approvalStep      Int            @default(1) @map("approval_step")
+  approvalsRequired Int            @default(1) @map("approvals_required")
+  requestedBy       String?        @map("requested_by") @db.Uuid
+  decidedBy         String?        @map("decided_by") @db.Uuid
+  decidedAt         DateTime?      @map("decided_at") @db.Timestamptz(3)
+  decisionNote      String?        @map("decision_note")
+  cancelledAt       DateTime?      @map("cancelled_at") @db.Timestamptz(3)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  version           Int            @default(1)
+
+  property  Property        @relation(fields: [organizationId, propertyId], references: [organizationId, id], onDelete: Restrict)
+  employee  Employee        @relation(fields: [organizationId, employeeId], references: [organizationId, id], onDelete: Restrict)
+  leaveType LeaveType       @relation(fields: [organizationId, leaveTypeId], references: [organizationId, id], onDelete: Restrict)
+  approvals LeaveApproval[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, propertyId, status])
+  @@index([organizationId, employeeId, startDate])
+  @@map("leave_requests")
+}
+
+/// One row per decision in a leave approval chain. Append-only.
+model LeaveApproval {
+  id             String   @id @default(uuid(7)) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  leaveRequestId String   @map("leave_request_id") @db.Uuid
+  step           Int
+  decision       String
+  decidedBy      String?  @map("decided_by") @db.Uuid
+  note           String?
+  decidedAt      DateTime @default(now()) @map("decided_at") @db.Timestamptz(3)
+
+  request LeaveRequest @relation(fields: [organizationId, leaveRequestId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([leaveRequestId, step])
+  @@map("leave_approvals")
+}

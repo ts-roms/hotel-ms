@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+import { OrganizationController } from './organization.controller.js';
+import { PropertiesController } from './properties.controller.js';
+import { PropertiesService } from './properties.service.js';
+
+/** Tenancy (blueprint §6.1): organization settings, feature flags and properties. */
+@Module({
+  controllers: [OrganizationController, PropertiesController],
+  providers: [PropertiesService],
+})
+export class TenancyModule {}
