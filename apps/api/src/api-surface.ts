@@ -34,6 +34,7 @@ import { EmployeeRecordsController } from './modules/hr/workforce/employee-recor
 import { HrController } from './modules/hr/workforce/hr.controller.js';
 import { ManagementController } from './modules/management/management.controller.js';
 import { PropertyReportsController } from './modules/management/property-reports.controller.js';
+import { GuestInboxController } from './modules/notifications/guest-inbox.controller.js';
 import { NotificationsController } from './modules/notifications/notifications.controller.js';
 import { HousekeepingController } from './modules/operations/housekeeping/housekeeping.controller.js';
 import { LostFoundController } from './modules/operations/lost-found/lost-found.controller.js';
@@ -82,6 +83,7 @@ export const CONTROLLERS: readonly Type[] = [
   GuestExtrasController,
   GuestIdentityController,
   GuestAdminController,
+  GuestInboxController,
   GuestPortalController,
   HrController,
   LeaveController,

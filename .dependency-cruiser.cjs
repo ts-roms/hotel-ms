@@ -16,6 +16,7 @@ const API_CONTEXTS = [
   // Shared kernel and platform tooling
   'audit',
   'outbox',
+  'idempotency',
   'health',
   'ops',
   // Platform, access and tenancy

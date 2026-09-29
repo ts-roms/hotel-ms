@@ -3,9 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { ApiHeader } from '@nestjs/swagger';
 import { Prisma } from '@hotel/database';
 import { ClsService } from 'nestjs-cls';
-import { TenantDb } from '../infrastructure/database.js';
-import { ProblemException, Problems } from './problem.js';
-import type { RequestContext } from './request-context.js';
+import { TenantDb } from '../../infrastructure/database.js';
+import { ProblemException, Problems } from '../../common/problem.js';
+import type { RequestContext } from '../../common/request-context.js';
 
 /** OpenAPI: the Idempotency-Key header an idempotent route requires. */
 export const idempotencyKeyHeader = ApiHeader({

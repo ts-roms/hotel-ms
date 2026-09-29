@@ -15674,7 +15674,7 @@
     },
     "/api/v1/properties/{propertyId}/reservations/{reservationId}/rooms/{lineId}/guest-message": {
       "post": {
-        "operationId": "GuestAdminController_message",
+        "operationId": "GuestInboxController_message",
         "parameters": [
           {
             "name": "reservationId",

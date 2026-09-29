@@ -27,7 +27,7 @@ import {
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
 import { parseIfMatch } from '../../../common/etag.js';
-import { IdempotencyService } from '../../../common/idempotency.js';
+import { IdempotencyService } from '../../idempotency/idempotency.service.js';
 import { uuidParam } from '../../../common/params.js';
 import { RequirePermission } from '../../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../../common/zod.js';

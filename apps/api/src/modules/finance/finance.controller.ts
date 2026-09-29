@@ -46,7 +46,7 @@ import {
 import type { FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { parseIfMatch } from '../../common/etag.js';
-import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import { RequirePermission } from '../../common/route-metadata.js';
 import { ZodBody, ZodQuery, ZodResponse } from '../../common/zod.js';

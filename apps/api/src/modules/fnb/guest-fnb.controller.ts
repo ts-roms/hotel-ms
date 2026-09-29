@@ -8,7 +8,7 @@ import {
   listOf,
 } from '@hotel/contracts';
 import type { FastifyReply } from 'fastify';
-import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import { GuestRoute } from '../../common/route-metadata.js';
 import { ZodBody, ZodResponse } from '../../common/zod.js';

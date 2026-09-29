@@ -13,9 +13,9 @@ modules and keeps the global exception filter and guards, in their required orde
 
 **Shared kernel.** `CoreModule` (`apps/api/src/core.module.ts`) is global and provides
 configuration (`ENV`), Prisma and `TenantDb`, Redis and the rate limiter, the notification
-queue, realtime, the secret box, object storage and idempotency. `AuditModule` and
-`OutboxModule` are global too, since every context writes audit entries and events. Context
-modules never re-provide these.
+queue, realtime, the secret box and object storage. `AuditModule`, `OutboxModule` and
+`IdempotencyModule` are global too, since every context writes audit entries and events and
+any controller may make a write idempotent. Context modules never re-provide these.
 
 **One controller class per file**, named after the class.
 
@@ -25,12 +25,13 @@ modules never re-provide these.
 | ---------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `audit/`         | Shared kernel (global)                   | audit log service and `/audit-logs`                                                                                                                                    |
 | `outbox/`        | Shared kernel (global)                   | outbox writer                                                                                                                                                          |
+| `idempotency/`   | Shared kernel (global)                   | idempotency service (ADR-0009) and the `Idempotency-Key` header decorator                                                                                              |
 | `health/`        | Platform                                 | liveness and readiness probes                                                                                                                                          |
 | `ops/`           | Platform operators (ADR-0029)            | queue and outbox overview and retries                                                                                                                                  |
 | `access/`        | Access                                   | memberships, roles, role assignments, grants, invitations                                                                                                              |
 | `auth/`          | Platform                                 | sessions, login, MFA, passwords, kiosk device sign-in, the global guards                                                                                               |
 | `tenancy/`       | Tenancy                                  | organization settings and feature flags, properties                                                                                                                    |
-| `notifications/` | Messaging                                | staff notification center, guest messages, guest inbox                                                                                                                 |
+| `notifications/` | Messaging                                | staff notification center, guest messages, guest inbox and staff messages to it                                                                                        |
 | `pms/`           | Inventory, Pricing, Reservations, Guests | `inventory/` (rooms, buildings, blocks), `pricing/` (rate plans, quotes, tax engine, tax rules), `reservations/`, `guests/` (profiles and guest ID documents)          |
 | `operations/`    | Operations                               | `housekeeping/` (incl. room status history), `maintenance/`, `lost-found/`, `service-requests/`                                                                        |
 | `finance/`       | Finance                                  | `folio/` (ledger), `payments/` (intents, holds, providers, refunds, webhooks, sandbox gateway), `cashier/`, `documents/` (invoices, receipts), `settings/`, `reports/` |
@@ -77,6 +78,7 @@ context (2026-09-29):
 | rate plans and overrides, quote, availability                         | `InventoryController`    | `PricingController` (`pms/pricing/`)                         |
 | leave balances and ledger entries, leave types                        | `HrController`           | `LeaveController` (`hr/time/`)                               |
 | birthdays                                                             | `PropertyHrController`   | `BirthdaysController` (`hr/workforce/`)                      |
+| staff message to a guest                                              | `GuestAdminController`   | `GuestInboxController` (`notifications/`)                    |
 
 `InventoryController` now serves rooms only and moved to `pms/inventory/`. With leave in
 `hr/time` and birthdays in `hr/workforce`, the two HR sub-folders no longer import each
@@ -91,17 +93,25 @@ named another context: folio routes are tagged `finance`, tax rules and rate pla
 `pricing`, housekeeping `housekeeping`, guest ID review `guests`; service-request, leave and
 birthday routes kept `guest service`, `hr` and `hr: property`. The night-audit and
 business-day paths now follow the check-in/out routes in the document, ahead of the folio
-routes. Clients that key on operation ids or tags must be regenerated.
+routes. The staff message to a guest moved in a second pass: its operation id changed from
+`GuestAdminController_message` to `GuestInboxController_message` and it kept the
+`guest service` tag and its place in the document. Clients that key on operation ids or
+tags must be regenerated.
 
-Still served across a boundary:
+The staff message route needed no new dependency: `GuestInboxService` already looks up the
+reservation line itself (a read of Reservations' `reservation_rooms`, checking the line is
+booked or in house) before it writes the guest's inbox, so `notifications/` still imports
+no context listed after it.
 
-- `GuestServiceController` keeps only the guest portal link, and `GuestAdminController`
-  portal settings and staff messages to a guest; both stay in `guest-portal/`. The message
-  route calls `GuestInboxService` (Messaging), which comes before `guest-portal` in
-  `API_CONTEXTS`.
-- `MeController` (self service) is in `hr/time/`; its `/me/employee` route answers from
-  `AttendanceService` (Time), which reads the employee record through `HrAccess`
-  (shared by both HR sub-folders).
+`GuestServiceController` keeps only the guest portal link and `GuestAdminController` only
+the portal settings; both are Guest Experience routes.
+
+`MeController` (self service, `hr/time/`) keeps `/me/employee`. Its response is the time
+clock's state: the latest punch (Time's `attendance_punches`, mapped by `toPunchDto`) and
+the punch-photo retention setting (`photo-retention.ts`, Time), plus the caller's employee
+summary, which comes from `HrAccess` and `toEmployeeSummary` in the shared `hr-access.ts`.
+Serving it from `hr/workforce/` would make workforce import time; keeping it in time needs
+no import between the two sub-folders at all, so it stays there.
 
 ## Writes to another context's tables
 

@@ -41,7 +41,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
 import { parseIfMatch } from '../../common/etag.js';
-import { IdempotencyService, idempotencyKeyHeader } from '../../common/idempotency.js';
+import { IdempotencyService, idempotencyKeyHeader } from '../idempotency/idempotency.service.js';
 import { uuidParam } from '../../common/params.js';
 import type { RequestContext } from '../../common/request-context.js';
 import { RequirePermission } from '../../common/route-metadata.js';

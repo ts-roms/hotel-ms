@@ -17,6 +17,7 @@ import { GuestPortalModule } from './modules/guest-portal/guest-portal.module.js
 import { GuestGuard } from './modules/guest-portal/guest-session.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { HrModule } from './modules/hr/hr.module.js';
+import { IdempotencyModule } from './modules/idempotency/idempotency.module.js';
 import { JobsModule } from './modules/jobs/jobs.module.js';
 import { ManagementModule } from './modules/management/management.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
@@ -30,11 +31,12 @@ import { TenancyModule } from './modules/tenancy/tenancy.module.js';
 /**
  * One Nest module per bounded context (blueprint §6.1, ADR-0031). Each declares its
  * controllers and providers and exports only what other contexts call; the shared kernel
- * (CoreModule, AuditModule, OutboxModule) is global.
+ * (CoreModule, AuditModule, OutboxModule, IdempotencyModule) is global.
  */
 export const CONTEXT_MODULES = [
   AuditModule,
   OutboxModule,
+  IdempotencyModule,
   HealthModule,
   AuthModule,
   AccessModule,
